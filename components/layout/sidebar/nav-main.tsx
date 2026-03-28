@@ -86,6 +86,62 @@ type NavItem = {
 
 export const navItems: NavGroup[] = [
   {
+    title: "Practice",
+    items: [
+      {
+        title: "Overview",
+        href: "/dashboard/default",
+        icon: GaugeIcon
+      },
+      {
+        title: "Actions",
+        href: "/dashboard/actions",
+        icon: ActivityIcon,
+        isDataBadge: "12"
+      },
+      {
+        title: "Clients",
+        href: "/dashboard/clients",
+        icon: UsersIcon
+      },
+      {
+        title: "Calendar",
+        href: "/dashboard/apps/calendar",
+        icon: CalendarIcon
+      },
+      {
+        title: "Messages",
+        href: "/dashboard/apps/chat",
+        icon: MessageSquareIcon,
+        isDataBadge: "4"
+      },
+    ]
+  },
+  {
+    title: "Tools",
+    items: [
+      {
+        title: "Documents",
+        href: "/dashboard/documents",
+        icon: FolderIcon
+      },
+      {
+        title: "Settings",
+        href: "/dashboard/pages/settings",
+        icon: SettingsIcon,
+        items: [
+          { title: "Firm Profile", href: "/dashboard/pages/settings/profile" },
+          { title: "Account", href: "/dashboard/pages/settings/account" },
+          { title: "Notifications", href: "/dashboard/pages/settings/notifications" },
+          { title: "Appearance", href: "/dashboard/pages/settings/appearance" },
+        ]
+      },
+    ]
+  },
+];
+
+export const _originalNavItems: NavGroup[] = [
+  {
     title: "Dashboards",
     items: [
       {

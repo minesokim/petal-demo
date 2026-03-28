@@ -1,113 +1,73 @@
 export const notifications = [
   {
     id: 1,
-    title: "Your order is placed",
-    role: "Frontend Developer",
-    desc: "Amet minim mollit non deser unt ullamco est sit aliqua.",
-    avatar: "https://i.pravatar.cc/150?img=1",
+    title: "Priya Sharma uploaded a document",
+    desc: "1099-NEC from TikTok has been uploaded to her portal.",
+    avatar: "",
     status: "online",
-    unread_message: false,
+    unread_message: true,
     type: "text",
-    date: "2 days ago"
+    date: "10 min ago"
   },
   {
     id: 2,
-    title: "Congratulations Darlene  🎉",
-    role: "UI/UX Designer",
-    desc: "Won the monthly best seller badge",
-    avatar: "https://i.pravatar.cc/150?img=2",
+    title: "David Park rescheduled",
+    desc: "Moved review call from 2:00 PM to 3:00 PM today.",
+    avatar: "",
     status: "online",
     unread_message: true,
     type: "text",
-    date: "11 am"
+    date: "25 min ago"
   },
   {
     id: 3,
-    title: "Joaquina Weisenborn",
-    role: "Town planner",
-    desc: "Requesting access permission",
-    avatar: "https://i.pravatar.cc/150?img=3",
-    status: "busy",
+    title: "James & Sofia Rodriguez",
+    desc: "Signed Form 8879. Return ready to file.",
+    avatar: "",
+    status: "online",
     unread_message: true,
-    type: "confirm",
-    date: "12 pm"
+    type: "text",
+    date: "1 hour ago"
   },
   {
     id: 4,
-    title: "Brooklyn Simmons",
-    role: "Data scientist",
-    desc: "Added you to Top Secret Project group...",
-    avatar: "https://i.pravatar.cc/150?img=4",
+    title: "Payment received",
+    desc: "Aisha Johnson paid $350 via Stripe. Invoice #INV-005 marked paid.",
+    avatar: "",
     status: "online",
-    unread_message: true,
+    unread_message: false,
     type: "text",
-    date: "1 pm"
+    date: "2 hours ago"
   },
   {
     id: 5,
-    title: "Margot Henschke",
-    role: "Dietitian",
-    desc: "Cake pie jelly jelly beans. Marzipan lemon drops halvah cake. Pudding cookie lemon drops icing",
-    avatar: "https://i.pravatar.cc/150?img=5",
+    title: "Stale client alert",
+    desc: "Tyrone Mitchell hasn't logged in for 9 days. Last activity: Mar 19.",
+    avatar: "",
     status: "busy",
-    unread_message: false,
+    unread_message: true,
     type: "text",
-    date: "3 pm"
+    date: "This morning"
   },
   {
     id: 6,
-    title: "Sal Piggee",
-    role: "Marketing executive",
-    desc: "Toffee caramels jelly-o tart gummi bears cake I love ice cream lollipop. Sweet liquorice croissant candy danish dessert icing. Cake macaroon gingerbread toffee sweet.",
-    avatar: "https://i.pravatar.cc/150?img=6",
+    title: "New message from Carlos Mendez",
+    desc: "Elena wants to know if we can deduct the new paint booth equipment.",
+    avatar: "",
     status: "online",
     unread_message: false,
     type: "text",
-    date: "4 pm"
+    date: "Yesterday"
   },
   {
     id: 7,
-    title: "Miguel Guelff",
-    role: "Special educational needs teacher",
-    desc: "Biscuit powder oat cake donut brownie ice cream I love soufflé. I love tootsie roll I love powder tootsie roll.",
-    avatar: "https://i.pravatar.cc/150?img=7",
-    status: "online",
-    unread_message: true,
-    type: "text",
-    date: "7 pm"
-  },
-  {
-    id: 8,
-    title: "Mauro Elenbaas",
-    role: "Advertising copywriter",
-    desc: "Bear claw ice cream lollipop gingerbread carrot cake. Brownie gummi bears chocolate muffin croissant jelly I love marzipan wafer.",
-    avatar: "https://i.pravatar.cc/150?img=8",
-    status: "away",
-    unread_message: true,
-    type: "text",
-    date: "10 pm"
-  },
-  {
-    id: 9,
-    title: "Bridgett Omohundro",
-    role: "Designer, television/film set",
-    desc: "Gummies gummi bears I love candy icing apple pie I love marzipan bear claw. I love tart biscuit I love candy canes pudding chupa chups liquorice croissant.",
-    avatar: "https://i.pravatar.cc/150?img=9",
-    status: "offline",
+    title: "Extension reminder",
+    desc: "Vladimir Petrov likely needs an extension. 0 of 16 docs submitted.",
+    avatar: "",
+    status: "busy",
     unread_message: false,
     type: "text",
-    date: "10 pm"
-  },
-  {
-    id: 10,
-    title: "Zenia Jacobs",
-    role: "Building surveyor",
-    desc: "Cake pie jelly jelly beans. Marzipan lemon drops halvah cake. Pudding cookie lemon drops icing",
-    avatar: "https://i.pravatar.cc/150?img=10",
-    status: "away",
-    has_notification: false,
-    type: "text",
-    date: "10 am"
+    date: "Yesterday"
   }
 ];
 

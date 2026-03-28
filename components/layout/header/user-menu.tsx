@@ -1,4 +1,4 @@
-import { BadgeCheck, Bell, ChevronRightIcon, CreditCard, LogOut, Sparkles } from "lucide-react";
+import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,38 +11,30 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { Progress } from "@/components/ui/progress";
 
 export default function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar>
-          <AvatarImage src={`/images/avatars/01.png`} alt="shadcn ui kit" />
-          <AvatarFallback className="rounded-lg">TB</AvatarFallback>
+        <Avatar className="cursor-pointer">
+          <AvatarImage src={`/images/avatars/01.png`} alt="Antonio Vazquez" />
+          <AvatarFallback className="rounded-lg">AV</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-60" align="end">
         <DropdownMenuLabel className="p-0">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <Avatar>
-              <AvatarImage src={`/images/avatars/01.png`} alt="shadcn ui kit" />
-              <AvatarFallback className="rounded-lg">TB</AvatarFallback>
+              <AvatarImage src={`/images/avatars/01.png`} alt="Antonio Vazquez" />
+              <AvatarFallback className="rounded-lg">AV</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">Toby Belhome</span>
-              <span className="text-muted-foreground truncate text-xs">hello@tobybelhome.com</span>
+              <span className="truncate font-semibold">Antonio Vazquez</span>
+              <span className="text-muted-foreground truncate text-xs">antonio@vazantconsulting.com</span>
             </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-            <Link href="https://shadcnuikit.com/pricing" target="_blank">
-              <Sparkles /> Upgrade to Pro
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         <DropdownMenuGroup>
           <DropdownMenuItem>
             <BadgeCheck />
@@ -56,27 +48,18 @@ export default function UserMenu() {
             <Bell />
             Notifications
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/pages/settings">
+              <Settings />
+              Settings
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <LogOut />
           Log out
         </DropdownMenuItem>
-        <div className="bg-muted mt-1.5 rounded-md border">
-          <div className="space-y-3 p-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Credits</h4>
-              <div className="text-muted-foreground flex cursor-pointer items-center text-sm">
-                <span>5 left</span>
-                <ChevronRightIcon className="ml-1 h-4 w-4" />
-              </div>
-            </div>
-            <Progress value={40} indicatorColor="bg-primary" />
-            <div className="text-muted-foreground flex items-center text-sm">
-              Daily credits used first
-            </div>
-          </div>
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
