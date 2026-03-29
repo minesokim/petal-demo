@@ -301,14 +301,14 @@ export default function Page() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex flex-col items-center gap-1 py-5 transition-all ${
+                className={`flex flex-col items-center gap-0.5 py-3 transition-all ${
                   isActive ? `border-b-2 ${hue.border} ${hue.bg}` : "hover:bg-muted/50"
                 }`}
               >
-                <span className={`font-display text-2xl tracking-tight tabular-nums ${isActive ? hue.text : "text-muted-foreground"}`}>
+                <span className={`font-display text-lg tracking-tight tabular-nums ${isActive ? hue.text : "text-muted-foreground"}`}>
                   {tab.count}
                 </span>
-                <span className={`text-xs ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                <span className={`text-[11px] ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                   {tab.label}
                 </span>
               </button>
