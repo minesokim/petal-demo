@@ -9,6 +9,8 @@ export type DocumentStatus = 'received' | 'pending' | 'missing' | 'processing'
 export type UrgencyLevel = 'urgent' | 'high' | 'normal' | 'low'
 export type ActionType = 'missing_docs' | 'stale_client' | 'review_ready' | 'payment_due' | 'signature_needed' | 'appointment_today' | 'ai_draft' | 'follow_up'
 
+export type ClientStatus = 'pending' | 'active' | 'declined'
+
 export interface Client {
   id: string
   fullName: string
@@ -28,6 +30,8 @@ export interface Client {
   type: 'individual' | 'business'
   businessName?: string
   avatar: string
+  clientStatus?: ClientStatus
+  scheduledCall?: string
 }
 
 export interface Document {
@@ -111,6 +115,10 @@ export const clients: Client[] = [
   { id: 'c18', fullName: 'Mei-Lin Wu', email: 'meiwu@wuacupuncture.com', phone: '(626) 555-0134', filingStatus: 'single', returnStage: 'in_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T17:00:00', lastPortalLogin: '2026-03-27T12:00:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Acupuncture practice. Schedule C. Health insurance deduction.', type: 'business', businessName: 'Wu Acupuncture & Wellness', avatar: '/images/avatars/06.png' },
   { id: 'c19', fullName: 'Anthony Russo', email: 'arusso@gmail.com', phone: '(951) 555-0198', filingStatus: 'mfj', returnStage: 'docs_complete', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-25T14:00:00', lastPortalLogin: '2026-03-25T14:00:00', documentsSubmitted: 9, documentsRequired: 9, notes: 'W-2 + investment income. Large stock sales this year. Needs cap gains calc.', type: 'individual', avatar: '/images/avatars/07.png' },
   { id: 'c20', fullName: 'Fatima Al-Hassan', email: 'fatima@eleganthenna.com', phone: '(714) 555-0189', filingStatus: 'mfj', returnStage: 'intake_sent', serviceTier: 'Standard', feeAmount: 350, depositPaid: false, urgency: 'normal', lastActivity: '2026-03-27T10:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 7, notes: 'Henna artist. Cash business. New client referral from Elena Mendez.', type: 'business', businessName: 'Elegant Henna Art', avatar: '/images/avatars/08.png' },
+  // Pending clients - completed intake + deposit + scheduled call, awaiting Antonio's accept/decline
+  { id: 'c21', fullName: 'Sarah Mitchell', email: 'sarah.m@gmail.com', phone: '(626) 555-0201', filingStatus: 'single', returnStage: 'not_started', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T10:00:00', lastPortalLogin: '2026-03-28T10:00:00', documentsSubmitted: 0, documentsRequired: 6, notes: 'Freelance photographer. Found Antonio on Nextdoor. Seems straightforward - W-2 from part-time job + 1099s from photography clients.', type: 'individual', avatar: '/images/avatars/10.png', clientStatus: 'pending', scheduledCall: '2026-03-30T10:00:00' },
+  { id: 'c22', fullName: 'Kevin & Lisa Park', email: 'kpark@gmail.com', phone: '(909) 555-0215', filingStatus: 'mfj', returnStage: 'not_started', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-27T16:00:00', documentsSubmitted: 0, documentsRequired: 12, notes: 'Referred by David Park (brother). Owns a dry cleaning business. Multiple employees. Wants to switch from H&R Block.', type: 'business', businessName: 'Park Cleaners', avatar: '/images/avatars/09.png', clientStatus: 'pending', scheduledCall: '2026-03-29T14:00:00' },
+  { id: 'c23', fullName: 'Daniel Okafor', email: 'dan.okafor@outlook.com', phone: '(714) 555-0233', filingStatus: 'single', returnStage: 'not_started', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T08:00:00', documentsSubmitted: 0, documentsRequired: 4, notes: 'Simple W-2 return. College student with part-time job. Referred by mentor network.', type: 'individual', avatar: '/images/avatars/11.png', clientStatus: 'pending', scheduledCall: '2026-03-31T11:00:00' },
 ]
 
 // ============================================================
