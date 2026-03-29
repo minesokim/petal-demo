@@ -26,14 +26,13 @@ type ChatMessage = {
 const clientThreads: Record<string, ChatMessage[]> = {
   c2: [ // Priya Sharma
     { id: "m1", sender: "client", content: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it. Can you help?", time: "2:30 PM" },
-    { id: "m2", sender: "system", content: "", time: "2:30 PM", systemCard: { type: "documents", title: "Document Upload", description: "You can upload documents through your portal. Go to the Documents tab and tap the upload area.", action: "Open Documents" } },
-    { id: "m2n", sender: "system", content: "Automated response. Antonio will follow up personally.", time: "2:30 PM" },
     { id: "m3", sender: "preparer", content: "Hey Priya! The easiest way is to log into your portal and go to the Docs tab. There's an upload button right at the top. You can take a photo of the 1099 with your phone too - we'll extract the data automatically.", time: "2:45 PM" },
     { id: "m4", sender: "client", content: "Oh perfect! I'll do that now. Also, do I need to report the $500 I made from a one-time sponsored post?", time: "2:52 PM" },
     { id: "m5", sender: "preparer", content: "Yes, all income needs to be reported even if you don't receive a 1099 for it. We'll include it on your Schedule C. Just mention it when you upload your other docs and I'll make sure it's captured.", time: "3:10 PM" },
-    { id: "m6", sender: "client", content: "Got it! One more thing - when will my return be ready? I'm excited to see my refund.", time: "3:15 PM" },
-    { id: "m7", sender: "system", content: "", time: "3:15 PM", systemCard: { type: "status", title: "Return Status", description: "Your return is currently in the document collection phase. Once all documents are received, preparation typically takes 3-5 business days.", action: "View Status" } },
-    { id: "m7n", sender: "system", content: "Automated response. Antonio will follow up personally.", time: "3:15 PM" },
+    { id: "m6", sender: "client", content: "When will my return be ready?", time: "3:15 PM" },
+    { id: "m7", sender: "system", content: "", time: "3:15 PM", systemCard: { type: "status", title: "Return Status", description: "Your return is in the document collection phase. 3 of 7 documents received. Once complete, preparation takes 3-5 business days.", action: "View Status" } },
+    { id: "m7n", sender: "system", content: "Antonio will follow up personally.", time: "3:15 PM" },
+    { id: "m8", sender: "client", content: "Thanks Antonio!", time: "3:20 PM" },
   ],
   c4: [ // DeShawn Williams
     { id: "m1", sender: "preparer", content: "Hi DeShawn! Welcome to Vazant Consulting. I've sent your intake form. Just follow the link to get started.", time: "Mar 18" },
@@ -83,8 +82,8 @@ export default function ClientMessagesPage() {
           // System card (Lane 1 auto-response)
           if (msg.sender === "system" && msg.systemCard) {
             return (
-              <div key={msg.id} className="flex justify-center">
-                <div className="w-[320px] rounded-2xl border bg-muted/30 p-4">
+              <div key={msg.id} className="flex justify-start">
+                <div className="ml-9 max-w-[320px] rounded-2xl border bg-muted/30 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="flex size-5 items-center justify-center rounded bg-primary/10">
                       {msg.systemCard.type === "documents" && <FileText className="size-3 text-primary" />}
