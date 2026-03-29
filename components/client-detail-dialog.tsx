@@ -1,17 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { type Client, stageLabels, actionItems } from "@/lib/mock-data";
 import Link from "next/link";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
-  extensionPredictions, documentExtractions, estimatedTaxCalcs
+  extensionPredictions, documentExtractions, estimatedTaxCalcs,
+  feedActions
 } from "@/lib/actions-mock-data";
+import { getClientChecklist, getClientNotes, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +30,10 @@ import {
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
+import { ActionCard } from "@/components/actions/action-card";
+import { UploadZone } from "@/components/documents/upload-zone";
+import { DocumentChecklist } from "@/components/documents/document-checklist";
+import { DocumentGroup } from "@/components/documents/document-group";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -54,232 +63,185 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
     { id: 6, title: "Filed", date: "Return filed with IRS", status: stageIndex >= 7 ? "completed" : "pending" },
   ];
 
+  const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved);
+  const clientCompliance = complianceAlerts.filter(a => a.clientId === client.id);
+  const clientAnomalies = anomalyAlerts.filter(a => a.clientId === client.id);
+  const clientDeductions = deductionSuggestions.filter(a => a.clientId === client.id);
+  const clientExtensions = extensionPredictions.filter(a => a.clientId === client.id);
+  const clientExtractions = documentExtractions.filter(a => a.clientId === client.id);
+  const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length > 0;
+
+  const checklist = getClientChecklist(client.id);
+  const docGroups = groupDocumentsByCategory(client.id);
+  const notes = getClientNotes(client.id);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-start gap-4">
-            <Avatar className="size-16">
-              <AvatarImage src={client.avatar} alt={client.fullName} />
-              <AvatarFallback className="text-xl">{getInitials(client.fullName)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-xl">{client.fullName}</DialogTitle>
-                {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
-              </div>
-              {client.businessName && (
-                <p className="text-sm text-muted-foreground">{client.businessName}</p>
+      <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl p-0">
+        {/* Header */}
+        <div className="flex items-start gap-4 border-b px-6 py-4">
+          <Avatar className="size-14">
+            <AvatarImage src={client.avatar} alt={client.fullName} />
+            <AvatarFallback className="text-lg">{getInitials(client.fullName)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-lg">{client.fullName}</DialogTitle>
+              {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
+            </div>
+            {client.businessName && <p className="text-sm text-muted-foreground">{client.businessName}</p>}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Badge>{stageLabels[client.returnStage]}</Badge>
+              <Badge variant="outline">{client.serviceTier}</Badge>
+              <Badge variant="outline">${client.feeAmount}</Badge>
+              {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
+              {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
+              <Button size="sm" variant="ghost" className="ml-auto h-7 text-xs" asChild>
+                <Link href={`/dashboard/clients/${client.id}/overview`}>
+                  Open full page <ArrowUpRight className="ml-1 size-3" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabbed content */}
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 120px)" }}>
+          <Tabs defaultValue="overview" className="px-6 pt-2 pb-6">
+            <TabsList variant="line" className="mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="messages">Messages</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+            </TabsList>
+
+            {/* OVERVIEW TAB */}
+            <TabsContent value="overview" className="space-y-5">
+              {/* Actions */}
+              {clientActions.length > 0 && (
+                <div className="space-y-2">
+                  {clientActions.map(action => <ActionDraftCard key={action.id} action={action} />)}
+                </div>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge>{stageLabels[client.returnStage]}</Badge>
-                <Badge variant="outline">{client.serviceTier}</Badge>
-                <Badge variant="outline">${client.feeAmount}</Badge>
-                {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
-                {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
-                <Button size="sm" variant="ghost" className="ml-auto h-7 text-xs" asChild>
-                  <Link href={`/dashboard/clients/${client.id}/overview`}>
-                    Open full profile <ArrowUpRight className="ml-1 size-3" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogHeader>
 
-        {/* Action Needed */}
-        {(() => {
-          const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved);
-          if (clientActions.length === 0) return null;
-          return (
-            <div className="mt-1 space-y-3">
-              {clientActions.map((action) => (
-                <ActionDraftCard key={action.id} action={action} />
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* Intelligence Alerts for this client */}
-        {(() => {
-          const clientCompliance = complianceAlerts.filter(a => a.clientId === client.id);
-          const clientAnomalies = anomalyAlerts.filter(a => a.clientId === client.id);
-          const clientDeductions = deductionSuggestions.filter(a => a.clientId === client.id);
-          const clientExtensions = extensionPredictions.filter(a => a.clientId === client.id);
-          const clientExtractions = documentExtractions.filter(a => a.clientId === client.id);
-          const clientEstimates = estimatedTaxCalcs.filter(a => a.clientId === client.id);
-          const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length + clientEstimates.length > 0;
-          if (!hasIntel) return null;
-          return (
-            <div className="mt-1 space-y-2">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">AI Insights</div>
-              {clientCompliance.map(a => (
-                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.title} for ${client.fullName}. What are the risks and what do I need to do?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{a.title}</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.description}</p>
-                    <div className="mt-1 text-xs text-red-600">Fine risk: {a.fineRisk}</div>
-                  </div>
-                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-              {clientAnomalies.map(a => (
-                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Explain the ${a.metric} anomaly for ${client.fullName}. Revenue changed ${a.changePercent}%. What could be causing this?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{a.metric}: {a.changePercent}% change</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.aiExplanation}</p>
-                  </div>
-                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-              {clientDeductions.map(a => (
-                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.deductionType} (${a.section}) for ${client.fullName}. Estimated savings: $${a.estimatedSavings.toLocaleString()}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                  <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{a.deductionType} ({a.section})</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">~${a.estimatedSavings.toLocaleString()} estimated savings</p>
-                  </div>
-                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-              {clientExtensions.map(a => (
-                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`${client.fullName} has a ${a.probability}% extension likelihood. Factors: ${a.factors.join(", ")}. What should I do?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                  <Clock className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">Extension likelihood: {a.probability}%</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.factors.join(", ")}</p>
-                  </div>
-                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                </button>
-              ))}
-              {clientExtractions.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
-                  <FileText className="mt-0.5 size-4 shrink-0 text-blue-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{a.documentType} extracted ({a.overallConfidence}% confidence)</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.fields.filter(f => f.needsReview).length} fields need review</p>
-                  </div>
+              {/* AI Insights */}
+              {hasIntel && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">AI Insights</div>
+                  {clientCompliance.map(a => (
+                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.title} for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
+                      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
+                      <div className="flex-1"><div className="text-sm font-semibold">{a.title}</div><p className="mt-0.5 text-xs text-muted-foreground">{a.description}</p></div>
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                  {clientAnomalies.map(a => (
+                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Explain the ${a.metric} anomaly for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
+                      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                      <div className="flex-1"><div className="text-sm font-semibold">{a.metric}: {a.changePercent}% change</div><p className="mt-0.5 text-xs text-muted-foreground">{a.aiExplanation}</p></div>
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                  {clientDeductions.map(a => (
+                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.deductionType} for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
+                      <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                      <div className="flex-1"><div className="text-sm font-semibold">{a.deductionType} ({a.section})</div><p className="mt-0.5 text-xs text-muted-foreground">~${a.estimatedSavings.toLocaleString()} savings</p></div>
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                  {clientExtensions.map(a => (
+                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`${client.fullName} extension likelihood: ${a.probability}%`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
+                      <Clock className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                      <div className="flex-1"><div className="text-sm font-semibold">Extension: {a.probability}%</div><p className="mt-0.5 text-xs text-muted-foreground">{a.factors.join(", ")}</p></div>
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
                 </div>
-              ))}
-              {clientEstimates.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
-                  <DollarSign className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">Quarterly estimates: ${a.totalEstimated.toLocaleString()}/year</div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.basis}</p>
-                  </div>
+              )}
+
+              {/* Stats + Timeline */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Return Status</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{client.documentsSubmitted}/{client.documentsRequired}</div><div className="text-[9px] text-muted-foreground">Docs</div></div>
+                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">${client.feeAmount}</div><div className="text-[9px] text-muted-foreground">Fee</div></div>
+                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{client.depositPaid ? "Paid" : "No"}</div><div className="text-[9px] text-muted-foreground">Deposit</div></div>
+                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{docPercent}%</div><div className="text-[9px] text-muted-foreground">Done</div></div>
+                    </div>
+                    <Progress value={docPercent} className="h-1.5" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
+                  <CardContent><TrackingTimeline items={timelineItems} /></CardContent>
+                </Card>
+              </div>
+
+              {/* Contact */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Contact</div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-4" /> {client.email}</div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-4" /> {client.phone}</div>
                 </div>
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* Stats row */}
-        <div className="mt-2 grid grid-cols-4 gap-4">
-          <div className="rounded-xl border p-3 text-center">
-            <FileText className="mx-auto mb-1 size-4 text-muted-foreground" />
-            <div className="font-display text-xl tracking-tight tabular-nums">{client.documentsSubmitted}/{client.documentsRequired}</div>
-            <div className="text-xs text-muted-foreground">Documents</div>
-          </div>
-          <div className="rounded-xl border p-3 text-center">
-            <DollarSign className="mx-auto mb-1 size-4 text-muted-foreground" />
-            <div className="font-display text-xl tracking-tight tabular-nums">${client.feeAmount}</div>
-            <div className="text-xs text-muted-foreground">Fee</div>
-          </div>
-          <div className="rounded-xl border p-3 text-center">
-            <Clock className="mx-auto mb-1 size-4 text-muted-foreground" />
-            <div className="font-display text-xl tracking-tight tabular-nums">{client.depositPaid ? "Paid" : "No"}</div>
-            <div className="text-xs text-muted-foreground">Deposit</div>
-          </div>
-          <div className="rounded-xl border p-3 text-center">
-            <FileText className="mx-auto mb-1 size-4 text-muted-foreground" />
-            <div className="font-display text-xl tracking-tight tabular-nums">{docPercent}%</div>
-            <div className="text-xs text-muted-foreground">Complete</div>
-          </div>
-        </div>
-
-        {/* Document progress bar */}
-        <div className="mt-1">
-          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-            <span>Document progress</span>
-            <span>{client.documentsSubmitted} of {client.documentsRequired}</span>
-          </div>
-          <Progress value={docPercent} className="h-2" />
-        </div>
-
-        <Separator />
-
-        {/* Return Timeline - with pulsing animation */}
-        <div>
-          <h4 className="mb-3 text-sm font-semibold">Return Progress</h4>
-          <TrackingTimeline items={timelineItems} />
-        </div>
-
-        <Separator />
-
-        {/* Contact info */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="mb-2 text-sm font-semibold">Contact</h4>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="size-4" /> {client.email}
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Filing</div>
+                  <div className="text-sm text-muted-foreground">Status: <span className="text-foreground font-medium">{client.filingStatus.toUpperCase()}</span></div>
+                  <div className="text-sm text-muted-foreground">Last login: <span className="text-foreground font-medium">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="size-4" /> {client.phone}
+
+              {/* Notes */}
+              <div className="rounded-xl bg-muted/50 p-3">
+                <p className="text-sm leading-relaxed text-muted-foreground">{client.notes}</p>
               </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="mb-2 text-sm font-semibold">Filing Details</h4>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div>Filing Status: <span className="font-medium text-foreground">{client.filingStatus.toUpperCase()}</span></div>
-              <div>Last Portal Login: <span className="font-medium text-foreground">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
-            </div>
-          </div>
-        </div>
 
-        <Separator />
+              {/* Quick Actions */}
+              <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Send className="size-3.5" /><span className="text-[10px]">Remind</span></Button>
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><FileText className="size-3.5" /><span className="text-[10px]">Request</span></Button>
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><MessageSquare className="size-3.5" /><span className="text-[10px]">Message</span></Button>
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Calendar className="size-3.5" /><span className="text-[10px]">Schedule</span></Button>
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><ExternalLink className="size-3.5" /><span className="text-[10px]">Portal</span></Button>
+                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Pen className="size-3.5" /><span className="text-[10px]">Edit</span></Button>
+              </div>
+            </TabsContent>
 
-        {/* Context notes */}
-        <div>
-          <h4 className="mb-2 text-sm font-semibold">Context Notes</h4>
-          <div className="rounded-xl bg-muted/50 p-4">
-            <p className="text-sm leading-relaxed text-muted-foreground">{client.notes}</p>
-          </div>
-        </div>
+            {/* DOCUMENTS TAB */}
+            <TabsContent value="documents" className="space-y-5">
+              <UploadZone clientName={client.fullName.split(" ")[0]} />
+              {checklist.length > 0 && <DocumentChecklist items={checklist} />}
+              {docGroups.length > 0 && (
+                <div className="space-y-4">
+                  {docGroups.map(g => <DocumentGroup key={g.category} label={g.label} docs={g.docs} missing={g.missing} />)}
+                </div>
+              )}
+              {checklist.length === 0 && docGroups.length === 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">No documents yet.</div>
+              )}
+            </TabsContent>
 
-        {/* Quick Actions */}
-        <div>
-          <h4 className="mb-3 text-sm font-semibold">Actions</h4>
-          <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <Send className="size-4" />
-              <span className="text-xs">Send Reminder</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <FileText className="size-4" />
-              <span className="text-xs">Request Docs</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <MessageSquare className="size-4" />
-              <span className="text-xs">Message</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <Calendar className="size-4" />
-              <span className="text-xs">Schedule Call</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <ExternalLink className="size-4" />
-              <span className="text-xs">View Portal</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3">
-              <Pen className="size-4" />
-              <span className="text-xs">Edit Client</span>
-            </Button>
-          </div>
+            {/* MESSAGES TAB */}
+            <TabsContent value="messages">
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                <Link href={`/dashboard/clients/${client.id}/messages`} className="text-primary hover:underline">Open full message thread</Link>
+              </div>
+            </TabsContent>
+
+            {/* NOTES TAB */}
+            <TabsContent value="notes" className="space-y-3">
+              {notes.length > 0 ? notes.map(n => (
+                <div key={n.id} className="rounded-xl border p-3">
+                  <p className="text-sm leading-relaxed">{n.content}</p>
+                  <div className="mt-2 text-xs text-muted-foreground">{new Date(n.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                </div>
+              )) : (
+                <div className="py-8 text-center text-sm text-muted-foreground">No notes yet.</div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

@@ -37,10 +37,9 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   ];
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking the expand arrow
-    if ((e.target as HTMLElement).closest("[data-expand-toggle]")) return;
-    // Navigate to full profile page
-    window.location.href = `/dashboard/clients/${client.id}/overview`;
+    // Don't open if clicking the expand arrow or profile link
+    if ((e.target as HTMLElement).closest("[data-expand-toggle]") || (e.target as HTMLElement).closest("[data-profile-link]")) return;
+    onOpenDetail?.(client);
   };
 
   return (
