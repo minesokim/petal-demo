@@ -172,6 +172,7 @@ export function AIPanel() {
           { type: "thinking", text: "Analyzing your question against practice data..." },
         ]},
       ]);
+      setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
     }, 800);
 
     // Phase 2: Add searching step
@@ -208,12 +209,12 @@ export function AIPanel() {
     }, 3400);
   };
 
-  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
+  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({ "2": true });
 
   const renderMessages = () => messages.map((msg) => (
     <div key={msg.id}>
       {msg.role === "user" ? (
-        <div className="rounded-xl border border-border/50 bg-background px-4 py-3">
+        <div className="rounded-xl border border-white/15 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-md dark:bg-white/5">
           <p className="text-foreground text-[13px] leading-snug">{msg.content}</p>
         </div>
       ) : (
@@ -332,7 +333,7 @@ export function AIPanel() {
             {messages.length <= 2 && !isTyping && (
               <div className="flex flex-wrap gap-2 pt-2">
                 {suggestedQuestions.map((q) => (
-                  <button key={q} onClick={() => handleSend(q)} className="rounded-full border bg-background px-4 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">{q}</button>
+                  <button key={q} onClick={() => handleSend(q)} className="rounded-full border border-white/15 bg-white/40 px-4 py-2.5 text-[12px] font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10">{q}</button>
                 ))}
               </div>
             )}
@@ -341,7 +342,7 @@ export function AIPanel() {
 
         {/* Input - fixed at bottom, outside scroll */}
         <div className="shrink-0 px-4 pb-5 pt-4">
-          <div className="flex items-center gap-2 rounded-2xl border bg-background px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-md dark:bg-white/5">
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Ask about clients, documents, deadlines..." className="flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground" />
             <button onClick={() => handleSend()} disabled={!input.trim()} className="shrink-0 text-muted-foreground transition-colors hover:text-foreground disabled:text-muted-foreground/30"><SendIcon size={18} /></button>
           </div>
