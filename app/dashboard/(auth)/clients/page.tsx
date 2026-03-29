@@ -31,10 +31,10 @@ export default function ClientsPage() {
   };
 
   const columns = [
-    { key: "pending", label: "Pending", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50 dark:bg-blue-950/30" },
+    { key: "pending", label: "Pending", dot: "bg-purple-500", bg: "bg-purple-50 dark:bg-purple-950/20", headerBg: "bg-purple-50 dark:bg-purple-950/30" },
     { key: "urgent", label: "Urgent", dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-950/20", headerBg: "bg-red-50 dark:bg-red-950/30" },
     { key: "high", label: "High Priority", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20", headerBg: "bg-amber-50 dark:bg-amber-950/30" },
-    { key: "normal", label: "Active", dot: "bg-muted-foreground", bg: "", headerBg: "bg-muted/30" },
+    { key: "normal", label: "Active", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50 dark:bg-blue-950/30" },
     { key: "low", label: "Complete", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20", headerBg: "bg-emerald-50 dark:bg-emerald-950/30" },
   ];
 
