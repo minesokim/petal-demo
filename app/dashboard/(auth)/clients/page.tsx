@@ -64,9 +64,9 @@ export default function ClientsPage() {
       </div>
 
       {/* Kanban-style columns */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {columnData.map((col) => (
-          <div key={col.key} className="min-w-[300px] flex-1">
+          <div key={col.key} className="min-w-[260px] flex-1">
             {/* Column header */}
             <div className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 ${col.headerBg}`}>
               <div className="flex items-center gap-2">
