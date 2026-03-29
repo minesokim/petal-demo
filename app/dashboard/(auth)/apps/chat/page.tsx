@@ -49,7 +49,7 @@ const threads: Record<string, ChatMessage[]> = {
   c11: [
     { id: "1", sender: "preparer", content: "David, your S-Corp return is coming along. I have questions about the payroll summary and new equipment. Can we schedule a call?", time: "Mar 25" },
     { id: "2", sender: "client", content: "Sure! How about Thursday at 2pm?", time: "Mar 26" },
-    { id: "3", sender: "system", content: "", time: "Mar 26", systemCard: { type: "appointment", title: "Appointment Scheduled", description: "Video call March 28 at 2:00 PM. Google Meet link sent 30 min before.", action: "View Calendar" } },
+    { id: "3", sender: "preparer", content: "Thursday at 2pm works. I'll send over a Google Meet link.", time: "Mar 26" },
     { id: "4", sender: "client", content: "Can we push the call to 3pm instead of 2? Got a patient emergency.", time: "8:15 AM" },
     { id: "5", sender: "preparer", content: "Of course. Moved to 3pm. Hope everything is okay!", time: "8:30 AM" },
   ],

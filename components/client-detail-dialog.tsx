@@ -2,6 +2,7 @@
 
 import { type Client, stageLabels, actionItems } from "@/lib/mock-data";
 import Link from "next/link";
+import { useAIPanelAsk } from "@/components/ai-panel";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
   extensionPredictions, documentExtractions, estimatedTaxCalcs
@@ -20,7 +21,7 @@ import {
 import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
-  CheckCircle, AlertTriangle, ArrowUpRight
+  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -36,6 +37,9 @@ interface ClientDetailDialogProps {
 }
 
 export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
+  let askDocket = (_q: string) => {};
+  try { askDocket = useAIPanelAsk(); } catch {}
+
   if (!client) return null;
 
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
@@ -110,41 +114,45 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
             <div className="mt-1 space-y-2">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">AI Insights</div>
               {clientCompliance.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
+                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.title} for ${client.fullName}. What are the risks and what do I need to do?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{a.title}</div>
                     <p className="mt-0.5 text-xs text-muted-foreground">{a.description}</p>
                     <div className="mt-1 text-xs text-red-600">Fine risk: {a.fineRisk}</div>
                   </div>
-                </div>
+                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                </button>
               ))}
               {clientAnomalies.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
+                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Explain the ${a.metric} anomaly for ${client.fullName}. Revenue changed ${a.changePercent}%. What could be causing this?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{a.metric}: {a.changePercent}% change</div>
                     <p className="mt-0.5 text-xs text-muted-foreground">{a.aiExplanation}</p>
                   </div>
-                </div>
+                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                </button>
               ))}
               {clientDeductions.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
+                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.deductionType} (${a.section}) for ${client.fullName}. Estimated savings: $${a.estimatedSavings.toLocaleString()}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
                   <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{a.deductionType} ({a.section})</div>
                     <p className="mt-0.5 text-xs text-muted-foreground">~${a.estimatedSavings.toLocaleString()} estimated savings</p>
                   </div>
-                </div>
+                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                </button>
               ))}
               {clientExtensions.map(a => (
-                <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
+                <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`${client.fullName} has a ${a.probability}% extension likelihood. Factors: ${a.factors.join(", ")}. What should I do?`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
                   <Clock className="mt-0.5 size-4 shrink-0 text-amber-500" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">Extension likelihood: {a.probability}%</div>
                     <p className="mt-0.5 text-xs text-muted-foreground">{a.factors.join(", ")}</p>
                   </div>
-                </div>
+                  <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                </button>
               ))}
               {clientExtractions.map(a => (
                 <div key={a.id} className="flex items-start gap-2 rounded-xl border p-3">
