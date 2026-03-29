@@ -30,9 +30,12 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   const lastActiveLabel = lastActive === null ? "Never" : lastActive === 0 ? "Today" : `${lastActive}d ago`;
   const lastActivePercent = lastActive === null ? "0%" : lastActive === 0 ? "100%" : lastActive <= 3 ? "75%" : lastActive <= 7 ? "40%" : "15%";
 
+  const docsComplete = client.documentsSubmitted >= client.documentsRequired;
+  const returnComplete = client.returnStage === "filed" || client.returnStage === "ready_to_sign";
+
   const stats = [
-    { label: "Documents", value: `${docPercent}%`, displayValue: `${client.documentsSubmitted}/${client.documentsRequired}`, Icon: FileText, barColor: "bg-primary" },
-    { label: "Return Progress", value: `${stagePercent}%`, displayValue: stageLabels[client.returnStage], Icon: Activity, barColor: "bg-primary" },
+    { label: "Documents", value: `${docPercent}%`, displayValue: `${client.documentsSubmitted}/${client.documentsRequired}`, Icon: FileText, barColor: docsComplete ? "bg-emerald-500" : "bg-primary" },
+    { label: "Return Progress", value: `${stagePercent}%`, displayValue: stageLabels[client.returnStage], Icon: Activity, barColor: returnComplete ? "bg-emerald-500" : "bg-primary" },
     { label: "Last Active", value: lastActivePercent, displayValue: lastActiveLabel, Icon: Clock, barColor: lastActive !== null && lastActive <= 3 ? "bg-primary" : lastActive !== null && lastActive <= 7 ? "bg-amber-400" : "bg-red-400" },
   ];
 
