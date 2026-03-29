@@ -9,7 +9,7 @@ import {
   MoreHorizontalIcon, SearchIcon, FileTextIcon,
   Loader2Icon, PanelRightCloseIcon, MessageSquareTextIcon
 } from "lucide-react";
-import { GooeyFilter } from "@/components/ui/gooey-filter";
+import { motion } from "motion/react";
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
@@ -89,13 +89,14 @@ const demoMessages: Message[] = [
     role: "assistant",
     content: "",
     steps: [
-      { type: "thinking", text: "Thinking through the process to find clients at risk of missing the filing deadline." },
-      { type: "searching", text: "Searching for clients with incomplete documents and low portal engagement", source: "Client Pipeline - Active Returns" },
+      { type: "thinking", text: "Analyzing 20 clients against April 15 deadline. Checking document completion rates, portal activity, and filing history." },
+      { type: "searching", text: "Querying client pipeline, document status, and engagement logs", source: "20 clients analyzed" },
+      { type: "found", text: "Identified 5 at-risk clients across 2 urgency levels." },
     ],
     foundContent: {
-      text: "Found details regarding at-risk clients for the April 15 filing deadline.\n\nVladimir Petrov (Petrov Imports LLC) has submitted 0 of 16 required documents with no portal login recorded. DeShawn Williams has submitted 1 of 6 documents, has not paid the deposit, and has never logged into the portal. Tyrone Mitchell has been inactive for 9 days with only 2 of 5 documents submitted, and was extended last year. Priya Sharma is missing 4 documents but remains active on the portal. Thomas and Marie DuBois are missing 3 crypto-related documents including their Coinbase 1099-DA.",
+      text: "**Critical** - Vladimir Petrov: 0/16 docs, never logged in, complex international. Extension almost certain.\n\n**Critical** - DeShawn Williams: 1/6 docs, deposit unpaid, never logged in. New client.\n\n**High** - Tyrone Mitchell: 2/5 docs, 9 days stale, extended last year.\n\n**Moderate** - Priya Sharma: 3/7 docs, missing 1099s but active on portal.\n\n**Moderate** - Thomas DuBois: 11/14 docs, missing crypto records only.",
     },
-    summary: "Based on current filing status and engagement data, 5 clients are at high risk of missing the April 15 deadline. Vladimir Petrov will almost certainly need an extension. DeShawn Williams and Tyrone Mitchell need immediate outreach. AI draft messages have been prepared for both in your Action Feed.",
+    summary: "5 clients at risk. I've prepared draft messages for DeShawn and Tyrone in your Action Feed. Recommend scheduling an extension discussion with Vladimir this week.",
   },
 ];
 
@@ -155,71 +156,139 @@ export function AIPanel() {
   const handleSend = (text?: string) => {
     const msg = text || input;
     if (!msg.trim()) return;
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content: msg }]);
+    const userMsgId = Date.now().toString();
+    const aiMsgId = (Date.now() + 1).toString();
+
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: msg }]);
     setInput("");
     setIsTyping(true);
+
+    // Phase 1: Show reasoning steps one by one
     setTimeout(() => {
+      setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "",
-          steps: [
-            { type: "thinking", text: "Processing your question against practice data." },
-            { type: "searching", text: "Searching client records, documents, and activity logs" },
-          ],
-          foundContent: {
-            text: "This is a demo of the Docket AI Assistant. In the full version, it has real-time access to all 203 client records, document statuses, communication history, and calendar data to provide precise, actionable answers.",
-          },
-          summary: "Every suggestion the AI makes appears for your review first. It never sends messages or takes actions on your behalf without explicit approval.",
-        },
+        { id: aiMsgId, role: "assistant", content: "", steps: [
+          { type: "thinking", text: "Analyzing your question against practice data..." },
+        ]},
       ]);
-      setIsTyping(false);
-    }, 2500);
+    }, 800);
+
+    // Phase 2: Add searching step
+    setTimeout(() => {
+      setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
+        ...m, steps: [
+          { type: "thinking", text: "Analyzing your question against practice data..." },
+          { type: "searching", text: "Searching client records, documents, and activity logs", source: "20 clients queried" },
+        ]
+      } : m));
+    }, 1800);
+
+    // Phase 3: Add found step
+    setTimeout(() => {
+      setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
+        ...m, steps: [
+          ...m.steps!,
+          { type: "found", text: "Found relevant results." },
+        ]
+      } : m));
+    }, 2600);
+
+    // Phase 4: Add the actual answer
+    setTimeout(() => {
+      setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
+        ...m,
+        foundContent: {
+          text: "This is a demo of Ask Docket. In the full version, I have real-time access to all your client records, document statuses, communication history, and calendar data.\n\nI can help with questions about specific clients, missing documents, deadlines, deduction opportunities, and more.",
+        },
+        summary: "Every suggestion I make appears for your review first. I never send messages or take actions without your explicit approval.",
+      } : m));
+      // Auto-expand thinking for new messages
+      setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
+    }, 3400);
   };
+
+  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
 
   const renderMessages = () => messages.map((msg) => (
     <div key={msg.id}>
       {msg.role === "user" ? (
-        <div className="rounded-2xl border border-border/60 bg-background px-6 py-4">
-          <p className="text-foreground text-[15px] leading-snug">{msg.content}</p>
+        <div className="rounded-xl border border-border/50 bg-background px-4 py-3">
+          <p className="text-foreground text-[13px] leading-snug">{msg.content}</p>
         </div>
       ) : (
-        <div className="space-y-5">
-          {msg.steps?.map((step, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className="shrink-0 pt-0.5">
-                {step.type === "thinking" && <ThinkingIcon />}
-                {step.type === "searching" && <SearchingIcon />}
+        <div className="space-y-3">
+          {/* Collapsible reasoning chain */}
+          {msg.steps && msg.steps.length > 0 && (
+            <button
+              onClick={() => setExpandedThinking(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted/50"
+            >
+              <div className="flex size-4 items-center justify-center">
+                <div className="size-1.5 rounded-full bg-primary animate-pulse" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-[14.5px] leading-relaxed">{step.text}</p>
-                {step.source && (
-                  <button className="mt-2 inline-flex items-center gap-2 rounded-lg bg-muted/70 px-3.5 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
-                    <FileTextIcon size={14} className="text-muted-foreground" />
-                    {step.source}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+              <span className="text-[11px] text-muted-foreground">
+                {expandedThinking[msg.id] ? "Hide reasoning" : `Reasoned over ${msg.steps.length} steps`}
+              </span>
+              <svg className={`size-3 text-muted-foreground transition-transform ${expandedThinking[msg.id] ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 4.5L6 7.5L9 4.5" /></svg>
+            </button>
+          )}
+
+          {expandedThinking[msg.id] && msg.steps && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} transition={{ duration: 0.3 }} className="ml-3 space-y-1.5 overflow-hidden border-l border-border/50 pl-3">
+              {msg.steps.map((step, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1, duration: 0.3 }} className="flex items-start gap-2">
+                  <div className="mt-1 shrink-0">
+                    {step.type === "thinking" && <ThinkingIcon />}
+                    {step.type === "searching" && <SearchingIcon />}
+                    {step.type === "found" && <div className="flex size-[18px] items-center justify-center"><div className="size-2 rounded-full bg-emerald-500" /></div>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-muted-foreground text-[11px] leading-relaxed">{step.text}</p>
+                    {step.source && (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        <FileTextIcon size={10} />
+                        {step.source}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Found content - formatted with bold/bullets, animated in */}
           {msg.foundContent && (
-            <div className="flex items-start gap-3">
-              <BulletIcon />
-              <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-[14.5px] leading-[1.75]">{msg.foundContent.text}</p>
-              </div>
-            </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-1 pl-1">
+              {msg.foundContent.text.split("\n\n").map((block, i) => {
+                if (block.startsWith("**")) {
+                  const [bold, ...rest] = block.split(" - ");
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.3 }} className="flex items-start gap-2 py-0.5">
+                      <span className="mt-[5px] size-1 shrink-0 rounded-full bg-foreground/50" />
+                      <p className="text-[12px] leading-relaxed">
+                        <span className="font-semibold text-foreground">{bold.replace(/\*\*/g, "")}</span>
+                        {rest.length > 0 && <span className="text-muted-foreground"> - {rest.join(" - ")}</span>}
+                      </p>
+                    </motion.div>
+                  );
+                }
+                return <motion.p key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }} className="text-[12px] text-muted-foreground leading-relaxed">{block}</motion.p>;
+              })}
+            </motion.div>
           )}
+
+          {/* Summary - animated in last */}
           {msg.summary && (
-            <p className="text-foreground text-[15px] font-semibold leading-[1.7]">{msg.summary}</p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.4 }} className="text-foreground text-[12px] font-medium leading-relaxed">{msg.summary}</motion.p>
           )}
-          <div className="flex items-center gap-2 pt-1">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-10"><ShareIcon size={20} /></Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-10"><RefreshCwIcon size={20} /></Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-10"><CopyIcon size={20} /></Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-10"><MoreHorizontalIcon size={20} /></Button>
+
+          {/* Action icons - smaller */}
+          <div className="flex items-center gap-1 pt-0.5">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-7"><ShareIcon size={14} /></Button>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-7"><RefreshCwIcon size={14} /></Button>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-7"><CopyIcon size={14} /></Button>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground size-7"><MoreHorizontalIcon size={14} /></Button>
           </div>
         </div>
       )}
@@ -231,7 +300,7 @@ export function AIPanel() {
       className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
       style={{ width: isOpen ? 440 : 0, opacity: isOpen ? 1 : 0 }}
     >
-      <div className="flex h-full w-[440px] flex-col bg-gradient-to-b from-sidebar via-sidebar to-[hsl(48_40%_95%)] px-3 pt-3 backdrop-blur-xl dark:to-[hsl(48_30%_8%)]">
+      <div className="flex h-full w-[440px] flex-col bg-gradient-to-b from-sidebar via-[hsl(48_25%_96%)] to-[hsl(142_20%_94%)] px-3 pt-3 backdrop-blur-xl dark:from-sidebar dark:via-[hsl(48_15%_7%)] dark:to-[hsl(142_15%_7%)]">
         {/* Header */}
         <div className="flex items-center gap-4 px-4 pb-6 pt-4">
           <Avatar className="size-11 shrink-0">
@@ -251,46 +320,13 @@ export function AIPanel() {
           <div className="space-y-8 px-4 pb-6">
             {renderMessages()}
             {isTyping && (
-              <div className="flex flex-col items-center gap-4 py-4">
-                <GooeyFilter id="ai-thinking-goo" strength={8} />
-                <div className="relative flex items-center justify-center" style={{ filter: "url(#ai-thinking-goo)" }}>
-                  <div
-                    className="size-5 rounded-full"
-                    style={{
-                      background: "hsl(142.1 76.2% 36.3%)",
-                      animation: "gooLeft 1.6s ease-in-out infinite",
-                    }}
-                  />
-                  <div
-                    className="size-5 rounded-full"
-                    style={{
-                      background: "hsl(214.7 95% 50%)",
-                      animation: "gooCenter 1.6s ease-in-out infinite",
-                    }}
-                  />
-                  <div
-                    className="size-5 rounded-full"
-                    style={{
-                      background: "hsl(47.9 95.8% 53.1%)",
-                      animation: "gooRight 1.6s ease-in-out infinite",
-                    }}
-                  />
+              <div className="flex items-center gap-2 rounded-lg px-2 py-2">
+                <div className="flex gap-1">
+                  <motion.div className="size-1.5 rounded-full bg-primary" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0 }} />
+                  <motion.div className="size-1.5 rounded-full bg-primary" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} />
+                  <motion.div className="size-1.5 rounded-full bg-primary" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} />
                 </div>
-                <span className="text-muted-foreground text-[13px]">Analyzing your practice data...</span>
-                <style>{`
-                  @keyframes gooLeft {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(14px, 0); }
-                  }
-                  @keyframes gooCenter {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(0, -10px); }
-                  }
-                  @keyframes gooRight {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(-14px, 0); }
-                  }
-                `}</style>
+                <span className="text-muted-foreground text-[11px]">Thinking...</span>
               </div>
             )}
             {messages.length <= 2 && !isTyping && (

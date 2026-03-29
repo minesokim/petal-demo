@@ -171,8 +171,8 @@ function Sidebar({
         data-slot="sidebar"
         className={cn(
           "text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col backdrop-blur-xl",
-          "bg-gradient-to-b from-sidebar via-sidebar to-[hsl(142_30%_95%)]",
-          "dark:to-[hsl(142_30%_8%)]",
+          "bg-gradient-to-b from-sidebar via-[hsl(142_20%_96%)] to-[hsl(48_30%_94%)]",
+          "dark:from-sidebar dark:via-[hsl(142_20%_8%)] dark:to-[hsl(48_20%_7%)]",
           className
         )}
         {...props}
