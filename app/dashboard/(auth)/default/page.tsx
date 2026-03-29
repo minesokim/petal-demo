@@ -227,7 +227,7 @@ const initialTodos = [
 export default function Page() {
   const [todos, setTodos] = useState(initialTodos);
   const [activeTab, setActiveTab] = useState("need_you");
-  const [viewMode, setViewMode] = useState<"clients" | "actions">("actions");
+  const [viewMode, setViewMode] = useState<"clients" | "actions">("clients");
   const [detailClient, setDetailClient] = useState<Client | null>(null);
 
   const toggleTodo = (id: number) => {
@@ -305,11 +305,11 @@ export default function Page() {
                   isActive ? `border-b-2 ${hue.border} ${hue.bg}` : "hover:bg-muted/50"
                 }`}
               >
+                <span className={`text-sm font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                  {tab.label}
+                </span>
                 <span className={`font-display text-lg tracking-tight tabular-nums ${isActive ? hue.text : "text-muted-foreground"}`}>
                   {tab.count}
-                </span>
-                <span className={`text-[11px] ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                  {tab.label}
                 </span>
               </button>
             );

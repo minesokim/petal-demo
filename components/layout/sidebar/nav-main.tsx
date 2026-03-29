@@ -94,15 +94,15 @@ export const navItems: NavGroup[] = [
         icon: GaugeIcon
       },
       {
+        title: "Clients",
+        href: "/dashboard/clients",
+        icon: UsersIcon
+      },
+      {
         title: "Actions",
         href: "/dashboard/actions",
         icon: ActivityIcon,
         isDataBadge: "12"
-      },
-      {
-        title: "Clients",
-        href: "/dashboard/clients",
-        icon: UsersIcon
       },
       {
         title: "Calendar",
