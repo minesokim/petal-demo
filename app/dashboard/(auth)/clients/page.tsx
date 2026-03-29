@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { SearchIcon } from "lucide-react";
-import { clients, type Client, type ReturnStage } from "@/lib/mock-data";
+import { clients, stageLabels, type Client, type ReturnStage } from "@/lib/mock-data";
 
 const stageTabs: { key: "all" | ReturnStage; label: string }[] = [
   { key: "all", label: "All Clients" },
@@ -16,6 +16,23 @@ const stageTabs: { key: "all" | ReturnStage; label: string }[] = [
   { key: "ready_to_sign", label: "Ready to Sign" },
   { key: "filed", label: "Filed" },
 ];
+
+// Group clients by urgency for color-coded sections
+function groupByUrgency(clientList: Client[]) {
+  const groups: { key: string; label: string; bg: string; dot: string; clients: Client[] }[] = [
+    { key: "urgent", label: "Urgent", bg: "bg-red-50 dark:bg-red-950/20", dot: "bg-red-500", clients: [] },
+    { key: "high", label: "High priority", bg: "bg-amber-50 dark:bg-amber-950/20", dot: "bg-amber-500", clients: [] },
+    { key: "normal", label: "Active", bg: "", dot: "", clients: [] },
+    { key: "low", label: "Complete", bg: "bg-emerald-50 dark:bg-emerald-950/20", dot: "bg-emerald-500", clients: [] },
+  ];
+
+  for (const client of clientList) {
+    const group = groups.find(g => g.key === client.urgency);
+    if (group) group.clients.push(client);
+  }
+
+  return groups.filter(g => g.clients.length > 0);
+}
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
@@ -32,6 +49,8 @@ export default function ClientsPage() {
       const order = { urgent: 0, high: 1, normal: 2, low: 3 };
       return order[a.urgency] - order[b.urgency];
     });
+
+  const urgencyGroups = groupByUrgency(filtered);
 
   return (
     <div className="space-y-6">
@@ -66,15 +85,34 @@ export default function ClientsPage() {
         })}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((client) => (
-          <ClientCard
-            key={client.id}
-            client={client}
-            onOpenDetail={setDetailClient}
-          />
-        ))}
-      </div>
+      {/* Grouped by urgency with color coding */}
+      {urgencyGroups.map((group) => (
+        <div key={group.key}>
+          {group.dot && (
+            <div className={`mb-3 rounded-xl ${group.bg} p-3`}>
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <span className={`size-2 rounded-full ${group.dot}`} />
+                {group.label} &middot; {group.clients.length}
+              </div>
+            </div>
+          )}
+          {!group.dot && (
+            <div className="mb-3 text-xs font-semibold text-muted-foreground">
+              {group.label} &middot; {group.clients.length}
+            </div>
+          )}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {group.clients.map((client) => (
+              <ClientCard
+                key={client.id}
+                client={client}
+                onOpenDetail={setDetailClient}
+                defaultExpanded
+              />
+            ))}
+          </div>
+        </div>
+      ))}
 
       <ClientDetailDialog
         client={detailClient}

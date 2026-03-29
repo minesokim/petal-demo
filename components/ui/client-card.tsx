@@ -15,10 +15,11 @@ function getInitials(name: string) {
 interface ClientCardProps {
   client: Client;
   onOpenDetail?: (client: Client) => void;
+  defaultExpanded?: boolean;
 }
 
-export function ClientCard({ client, onOpenDetail }: ClientCardProps) {
-  const [expanded, setExpanded] = React.useState(false);
+export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: ClientCardProps) {
+  const [expanded, setExpanded] = React.useState(defaultExpanded);
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['not_started', 'intake_sent', 'docs_collecting', 'docs_complete', 'in_prep', 'in_review', 'ready_to_sign', 'filed'].indexOf(client.returnStage);
   const stagePercent = Math.round((stageIndex / 7) * 100);
@@ -137,19 +138,21 @@ export function ClientCard({ client, onOpenDetail }: ClientCardProps) {
           Open <ArrowUpRight className="size-3" />
         </Link>
 
-        {/* Expand toggle arrow */}
-        <button
-          data-expand-toggle
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded((v) => !v);
-          }}
-          className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <ChevronDown
-            className={`size-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-          />
-        </button>
+        {/* Expand toggle arrow - only show if not defaultExpanded */}
+        {!defaultExpanded && (
+          <button
+            data-expand-toggle
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded((v) => !v);
+            }}
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ChevronDown
+              className={`size-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
       </div>
     </div>
   );
