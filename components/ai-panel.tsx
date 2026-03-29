@@ -19,22 +19,34 @@ type AIPanelContextType = {
   toggle: () => void;
   open: () => void;
   close: () => void;
+  askQuestion: (question: string) => void;
+  pendingQuestion: string | null;
+  clearPendingQuestion: () => void;
 };
 
 const AIPanelContext = createContext<AIPanelContextType>({
   isOpen: false, toggle: () => {}, open: () => {}, close: () => {},
+  askQuestion: () => {}, pendingQuestion: null, clearPendingQuestion: () => {},
 });
 
 export const useAIPanel = () => useContext(AIPanelContext);
+export const useAIPanelAsk = () => {
+  const { askQuestion } = useContext(AIPanelContext);
+  return askQuestion;
+};
 
 export function AIPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   return (
     <AIPanelContext.Provider value={{
       isOpen,
       toggle: () => setIsOpen((v) => !v),
       open: () => setIsOpen(true),
       close: () => setIsOpen(false),
+      askQuestion: (q: string) => { setPendingQuestion(q); setIsOpen(true); },
+      pendingQuestion,
+      clearPendingQuestion: () => setPendingQuestion(null),
     }}>
       {children}
     </AIPanelContext.Provider>
@@ -122,7 +134,7 @@ function BulletIcon() {
 /*  The Panel                                                          */
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
-  const { isOpen, close } = useAIPanel();
+  const { isOpen, close, pendingQuestion, clearPendingQuestion } = useAIPanel();
   const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -131,6 +143,14 @@ export function AIPanel() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Handle pending questions from other components
+  useEffect(() => {
+    if (pendingQuestion && isOpen) {
+      handleSend(pendingQuestion);
+      clearPendingQuestion();
+    }
+  }, [pendingQuestion, isOpen]);
 
   const handleSend = (text?: string) => {
     const msg = text || input;
@@ -211,7 +231,7 @@ export function AIPanel() {
       className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
       style={{ width: isOpen ? 440 : 0, opacity: isOpen ? 1 : 0 }}
     >
-      <div className="bg-sidebar flex h-full w-[440px] flex-col px-3 pt-3">
+      <div className="flex h-full w-[440px] flex-col bg-gradient-to-b from-sidebar via-sidebar to-[hsl(48_40%_95%)] px-3 pt-3 backdrop-blur-xl dark:to-[hsl(48_30%_8%)]">
         {/* Header */}
         <div className="flex items-center gap-4 px-4 pb-6 pt-4">
           <Avatar className="size-11 shrink-0">

@@ -351,7 +351,7 @@ export default function Page() {
                   );
                   return (
                     <div key={`${group.label}-${ci}`} className="rounded-xl border p-4">
-                      <div className="flex items-start gap-3">
+                      <Link href={matchedClientForAvatar ? `/dashboard/clients/${matchedClientForAvatar.id}/overview` : "#"} className="flex items-start gap-3 transition-colors hover:opacity-80">
                         <Avatar className="size-8 shrink-0">
                           {matchedClientForAvatar && <AvatarImage src={matchedClientForAvatar.avatar} alt={actionClient.name} />}
                           <AvatarFallback className="text-[10px]">{actionClient.initials}</AvatarFallback>
@@ -367,7 +367,7 @@ export default function Page() {
                             "bg-emerald-500"
                           }`} />
                         )}
-                      </div>
+                      </Link>
                       {matchedAction?.aiDraft && (
                         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{matchedAction.aiDraft}</p>
                       )}

@@ -3,7 +3,7 @@
 import React from "react";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/layout/header";
-import { AIPanelProvider, AIPanel, useAIPanel } from "@/components/ai-panel";
+import { AIPanelProvider, AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
 
 function MainContent({ children }: { children: React.ReactNode }) {
   const { isOpen } = useAIPanel();

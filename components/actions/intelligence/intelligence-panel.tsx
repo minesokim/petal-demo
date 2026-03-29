@@ -13,6 +13,8 @@ import {
   Brain, Calculator, Mail, Clock, Sparkles, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { ExtractionDialog } from "@/components/documents/extraction-dialog";
+import { type DocumentExtraction } from "@/lib/actions-mock-data";
 import {
   documentExtractions, complianceAlerts, anomalyAlerts,
   extensionPredictions, deductionSuggestions, irsNotices,
@@ -21,87 +23,25 @@ import {
 } from "@/lib/actions-mock-data";
 
 // ============================================================
-// Document Extraction Card (most complex - side-by-side)
+// Document Extraction Card - clickable, opens glassmorphic dialog
 // ============================================================
-function DocumentExtractionCard({ extraction }: { extraction: typeof documentExtractions[0] }) {
-  const [status, setStatus] = useState(extraction.status);
-  const [activeField, setActiveField] = useState<number | null>(null);
-
+function DocumentExtractionCard({ extraction, onOpen }: { extraction: typeof documentExtractions[0]; onOpen: () => void }) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <FileText className="size-4" />
-          {extraction.documentType} - {extraction.clientName}
-        </CardTitle>
-        <CardAction>
-          <Badge variant={extraction.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">
-            {extraction.overallConfidence}% confidence
-          </Badge>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Left: Document preview mock */}
-          <div className="rounded-xl border bg-muted/30 p-4">
-            <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Document preview</div>
-            <div className="space-y-2">
-              {extraction.fields.map((field, i) => (
-                <div
-                  key={i}
-                  className={`rounded-md border px-3 py-2 text-xs transition-colors ${
-                    activeField === i ? "border-primary bg-primary/5" : "bg-background"
-                  }`}
-                >
-                  <span className="text-muted-foreground">{field.source}:</span>{" "}
-                  <span className="font-mono">{field.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Extracted fields with confidence */}
-          <div className="space-y-2">
-            <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Extracted fields</div>
-            {extraction.fields.map((field, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveField(activeField === i ? null : i)}
-                className={`w-full rounded-lg border p-2.5 text-left transition-colors ${
-                  activeField === i ? "border-primary" : "hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium">{field.label}</span>
-                  <span className={`text-[10px] font-semibold tabular-nums ${
-                    field.confidence >= 90 ? "text-emerald-600" : "text-amber-600"
-                  }`}>{field.confidence}%</span>
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{field.value}</div>
-                <Progress
-                  value={field.confidence}
-                  className="mt-1.5 h-1"
-                  indicatorColor={field.confidence >= 90 ? "bg-emerald-500" : "bg-amber-500"}
-                />
-                {field.needsReview && (
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-600">
-                    <AlertTriangle className="size-2.5" /> Needs review
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+    <button onClick={onOpen} className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-md hover:border-primary/20">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+        <FileText className="size-5 text-primary" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">{extraction.documentType} - {extraction.clientName}</span>
+          <Badge variant={extraction.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{extraction.overallConfidence}%</Badge>
         </div>
-
-        <Separator className="my-4" />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setStatus("approved")} disabled={status === "approved"}>
-            <Check className="size-3.5" /> {status === "approved" ? "Approved" : "Approve all"}
-          </Button>
-          <Button size="sm" variant="outline"><FileText className="size-3.5" /> Edit fields</Button>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {extraction.fields.length} fields extracted &middot; {extraction.fields.filter(f => f.needsReview).length} need review &middot; Click to review and push to OLT
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+    </button>
   );
 }
 
@@ -351,13 +291,15 @@ function EstimatedTaxCard({ calc }: { calc: typeof estimatedTaxCalcs[0] }) {
 // Main Intelligence Panel
 // ============================================================
 export function IntelligencePanel() {
+  const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
+
   return (
     <div className="space-y-6">
       {/* Document Extraction */}
       <div>
         <h3 className="mb-3 text-sm font-semibold">Document Extraction</h3>
         <div className="space-y-3">
-          {documentExtractions.map(de => <DocumentExtractionCard key={de.id} extraction={de} />)}
+          {documentExtractions.map(de => <DocumentExtractionCard key={de.id} extraction={de} onOpen={() => setSelectedExtraction(de)} />)}
         </div>
       </div>
 
@@ -416,6 +358,12 @@ export function IntelligencePanel() {
           {estimatedTaxCalcs.map(et => <EstimatedTaxCard key={et.id} calc={et} />)}
         </div>
       </div>
+
+      <ExtractionDialog
+        extraction={selectedExtraction}
+        open={!!selectedExtraction}
+        onOpenChange={(open) => !open && setSelectedExtraction(null)}
+      />
     </div>
   );
 }
