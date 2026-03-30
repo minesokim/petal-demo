@@ -60,13 +60,13 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-sm font-semibold">{client.fullName}</h3>
+              <h3 className="text-sm font-semibold leading-tight">{client.fullName}</h3>
               {client.type === "business" && <Building2 className="size-3.5 shrink-0 text-muted-foreground" />}
               {(client.urgency === "urgent" || client.urgency === "high") && (
                 <span className={`size-2 shrink-0 rounded-full ${client.urgency === "urgent" ? "bg-red-500" : "bg-amber-500"}`} />
               )}
             </div>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground leading-tight">
               {client.businessName || `${client.serviceTier} - $${client.feeAmount}`}
             </p>
           </div>

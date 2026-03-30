@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import {
   SendIcon, CopyIcon, RefreshCwIcon, ShareIcon,
   MoreHorizontalIcon, SearchIcon, FileTextIcon,
-  Loader2Icon, PanelRightCloseIcon, MessageSquareTextIcon
+  Loader2Icon, PanelRightCloseIcon, MessageSquareTextIcon,
+  MaximizeIcon, MinimizeIcon
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -16,17 +17,19 @@ import { motion } from "motion/react";
 /* ------------------------------------------------------------------ */
 type AIPanelContextType = {
   isOpen: boolean;
+  isFullPage: boolean;
   toggle: () => void;
   open: () => void;
   close: () => void;
+  toggleFullPage: () => void;
   askQuestion: (question: string) => void;
   pendingQuestion: string | null;
   clearPendingQuestion: () => void;
 };
 
 const AIPanelContext = createContext<AIPanelContextType>({
-  isOpen: false, toggle: () => {}, open: () => {}, close: () => {},
-  askQuestion: () => {}, pendingQuestion: null, clearPendingQuestion: () => {},
+  isOpen: false, isFullPage: false, toggle: () => {}, open: () => {}, close: () => {},
+  toggleFullPage: () => {}, askQuestion: () => {}, pendingQuestion: null, clearPendingQuestion: () => {},
 });
 
 export const useAIPanel = () => useContext(AIPanelContext);
@@ -37,13 +40,16 @@ export const useAIPanelAsk = () => {
 
 export function AIPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   return (
     <AIPanelContext.Provider value={{
       isOpen,
+      isFullPage,
       toggle: () => setIsOpen((v) => !v),
       open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
+      close: () => { setIsOpen(false); setIsFullPage(false); },
+      toggleFullPage: () => setIsFullPage((v) => !v),
       askQuestion: (q: string) => { setPendingQuestion(q); setIsOpen(true); },
       pendingQuestion,
       clearPendingQuestion: () => setPendingQuestion(null),
@@ -135,7 +141,7 @@ function BulletIcon() {
 /*  The Panel                                                          */
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
-  const { isOpen, close, pendingQuestion, clearPendingQuestion } = useAIPanel();
+  const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion } = useAIPanel();
   const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -298,10 +304,13 @@ export function AIPanel() {
 
   return (
     <aside
-      className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
-      style={{ width: isOpen ? 440 : 0, opacity: isOpen ? 1 : 0 }}
+      className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+      style={{
+        width: isOpen ? (isFullPage ? "100%" : 440) : 0,
+        opacity: isOpen ? 1 : 0,
+      }}
     >
-      <div className="flex h-full w-[440px] flex-col bg-gradient-to-b from-sidebar via-[hsl(48_25%_96%)] to-[hsl(142_20%_94%)] px-3 pt-3 backdrop-blur-xl dark:from-sidebar dark:via-[hsl(48_15%_7%)] dark:to-[hsl(142_15%_7%)]">
+      <div className={`flex h-full flex-col bg-gradient-to-b from-sidebar via-[hsl(48_25%_96%)] to-[hsl(142_20%_94%)] px-3 pt-3 backdrop-blur-xl dark:from-sidebar dark:via-[hsl(48_15%_7%)] dark:to-[hsl(142_15%_7%)] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
         {/* Header */}
         <div className="flex items-center gap-4 px-4 pb-6 pt-4">
           <Avatar className="size-11 shrink-0">
@@ -311,14 +320,19 @@ export function AIPanel() {
             <h2 className="text-[15px] font-semibold leading-tight">Ask Docket</h2>
             <p className="text-muted-foreground text-[13px]">Updated just now</p>
           </div>
-          <Button variant="ghost" size="icon" className="text-muted-foreground size-9" onClick={close}>
-            <PanelRightCloseIcon size={18} />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="text-muted-foreground/50 hover:text-muted-foreground size-8" onClick={toggleFullPage} title={isFullPage ? "Collapse" : "Expand"}>
+              {isFullPage ? <MinimizeIcon size={15} /> : <MaximizeIcon size={15} />}
+            </Button>
+            <Button variant="ghost" size="icon" className="text-muted-foreground size-9" onClick={close}>
+              <PanelRightCloseIcon size={18} />
+            </Button>
+          </div>
         </div>
 
         {/* Scrollable messages - overscroll-contain prevents scroll bleed to main content */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="space-y-8 px-4 pb-6">
+          <div className={`space-y-8 pb-6 transition-all duration-500 ${isFullPage ? "mx-auto max-w-2xl px-6" : "px-4"}`}>
             {renderMessages()}
             {isTyping && (
               <div className="flex items-center gap-2 rounded-lg px-2 py-2">
@@ -341,7 +355,7 @@ export function AIPanel() {
         </div>
 
         {/* Input - fixed at bottom, outside scroll */}
-        <div className="shrink-0 px-4 pb-5 pt-4">
+        <div className={`shrink-0 pb-5 pt-4 transition-all duration-500 ${isFullPage ? "mx-auto w-full max-w-2xl px-6" : "px-4"}`}>
           <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-md dark:bg-white/5">
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Ask about clients, documents, deadlines..." className="flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground" />
             <button onClick={() => handleSend()} disabled={!input.trim()} className="shrink-0 text-muted-foreground transition-colors hover:text-foreground disabled:text-muted-foreground/30"><SendIcon size={18} /></button>

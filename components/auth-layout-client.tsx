@@ -6,11 +6,15 @@ import { SiteHeader } from "@/components/layout/header";
 import { AIPanelProvider, AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
 
 function MainContent({ children }: { children: React.ReactNode }) {
-  const { isOpen } = useAIPanel();
+  const { isOpen, isFullPage } = useAIPanel();
   return (
     <SidebarInset
-      className="transition-[margin] duration-300 ease-in-out"
-      style={{ marginRight: isOpen ? 440 : 0 }}
+      className="transition-[margin,opacity] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+      style={{
+        marginRight: isOpen && !isFullPage ? 440 : 0,
+        opacity: isFullPage ? 0 : 1,
+        pointerEvents: isFullPage ? "none" : "auto",
+      }}
     >
       <SiteHeader />
       <div className="bg-muted/40 flex flex-1 flex-col">
