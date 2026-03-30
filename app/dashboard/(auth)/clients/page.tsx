@@ -105,8 +105,8 @@ export default function ClientsPage() {
             {/* Column cards */}
             <div className="space-y-3">
               {col.key === "pending" ? (
-                // Pending clients get special accept/decline cards
-                col.clients.map((client) => (
+                // Pending clients get special accept/decline cards (exclude already accepted)
+                col.clients.filter(c => !acceptedIds.includes(c.id)).map((client) => (
                   <motion.div
                     key={client.id}
                     initial={{ opacity: 1 }}
@@ -193,23 +193,14 @@ export default function ClientsPage() {
                     )}
 
                     {/* Accept / Decline */}
-                    {acceptedIds.includes(client.id) ? (
-                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/20">
-                        <Check className="size-4 text-emerald-600" />
-                        <span className="text-xs font-medium text-emerald-700">
-                          Accepted{assignedTiers[client.id] ? ` — ${assignedTiers[client.id]}` : ""}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="mt-3 flex gap-2">
-                        <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])} disabled={!assignedTiers[client.id]}>
-                          <Check className="size-3.5" /> Accept
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
-                          <X className="size-3.5" /> Decline
-                        </Button>
-                      </div>
-                    )}
+                    <div className="mt-3 flex gap-2">
+                      <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])} disabled={!assignedTiers[client.id]}>
+                        <Check className="size-3.5" /> Accept
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
+                        <X className="size-3.5" /> Decline
+                      </Button>
+                    </div>
                   </motion.div>
                 ))
               ) : (
