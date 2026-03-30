@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
-import Link from "next/link";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
@@ -127,6 +127,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
           <Tabs defaultValue="overview" className="px-6 pt-2 pb-6">
             <TabsList variant="line" className="mb-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="intake">Intake</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -440,6 +441,91 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
               {/* Contextual Actions — based on stage */}
               <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} />
+            </TabsContent>
+
+            {/* INTAKE TAB */}
+            <TabsContent value="intake" className="space-y-4">
+              {(() => {
+                const intakeMap: Record<string, { submitted: string; service: string; filing: string; spouse?: string; dependents: string[]; income: string[]; selfEmployment?: { business: string; revenue: string }; deductions: string[]; lifeEvents: string[]; priorYear: string; states: string[]; slot: string }> = {
+                  c1: { submitted: "Mar 20, 2026", service: "Complex Return", filing: "Married Filing Jointly", spouse: "Sofia Rodriguez", dependents: ["Isabella Rodriguez (7)", "Lucas Rodriguez (5)"], income: ["W-2 Employee", "Investments / Crypto"], deductions: ["Mortgage interest", "Childcare expenses", "Charitable donations"], lifeEvents: [], priorYear: "Filed with Antonio last year", states: ["California"], slot: "Mon, Mar 24 · 9:00 AM" },
+                  c2: { submitted: "Mar 22, 2026", service: "Complex Return", filing: "Single", dependents: [], income: ["Self-Employed / 1099", "Investments / Crypto"], selfEmployment: { business: "Priya Creates LLC", revenue: "$85,000" }, deductions: ["Home office", "Business expenses"], lifeEvents: ["Started a business"], priorYear: "First time filing", states: ["California"], slot: "Sat, Mar 29 · 1:00 PM" },
+                  c14: { submitted: "Mar 18, 2026", service: "Standard Return", filing: "Single", dependents: [], income: ["W-2 Employee", "Self-Employed / 1099"], selfEmployment: { business: "Aisha's Scrubs (Etsy)", revenue: "$12,400" }, deductions: ["Student loan interest", "Business expenses"], lifeEvents: [], priorYear: "Filed with H&R Block", states: ["California"], slot: "Tue, Mar 19 · 10:00 AM" },
+                  c3: { submitted: "Mar 15, 2026", service: "Standard Return", filing: "Single", dependents: ["Jaylen Mitchell (11)"], income: ["Self-Employed / 1099"], selfEmployment: { business: "Self (Uber/Lyft)", revenue: "$52,000" }, deductions: ["Vehicle expenses"], lifeEvents: ["Divorced"], priorYear: "Filed with Antonio (extended)", states: ["California"], slot: "Thu, Mar 20 · 2:00 PM" },
+                };
+                const data = intakeMap[client.id];
+                if (!data) return (
+                  <div className="py-10 text-center">
+                    <FileText className="mx-auto mb-3 size-10 text-muted-foreground/30" />
+                    <div className="text-sm font-medium">No intake submitted</div>
+                    <div className="text-xs text-muted-foreground mt-1">{client.fullName} hasn&apos;t completed the questionnaire yet.</div>
+                  </div>
+                );
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="size-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-medium text-emerald-700">Completed {data.submitted}</span>
+                      </div>
+                      <Link href={`/dashboard/clients/${client.id}/intake`}>
+                        <Button variant="ghost" size="sm" className="text-xs h-7">Full details →</Button>
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "Service", value: data.service },
+                        { label: "Filing", value: data.filing },
+                        { label: "State", value: data.states.join(", ") },
+                        { label: "Prior Year", value: data.priorYear },
+                        { label: "Appointment", value: data.slot },
+                        { label: "Deposit", value: client.depositPaid ? "Paid" : "Pending" },
+                      ].map(r => (
+                        <div key={r.label} className="rounded-lg border px-3 py-2">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{r.label}</div>
+                          <div className="text-sm font-medium mt-0.5">{r.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {data.spouse && (
+                      <div className="rounded-lg border px-3 py-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spouse</div>
+                        <div className="text-sm font-medium mt-0.5">{data.spouse}</div>
+                      </div>
+                    )}
+                    {data.dependents.length > 0 && (
+                      <div className="rounded-lg border px-3 py-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dependents</div>
+                        {data.dependents.map(d => <div key={d} className="text-sm mt-0.5">{d}</div>)}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Income Sources</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {data.income.map(i => <Badge key={i} variant="secondary" className="text-xs">{i}</Badge>)}
+                      </div>
+                      {data.selfEmployment && (
+                        <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                          <span className="font-medium">{data.selfEmployment.business}</span> · {data.selfEmployment.revenue}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Deductions</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {data.deductions.map(d => <Badge key={d} variant="outline" className="text-xs">{d}</Badge>)}
+                      </div>
+                    </div>
+                    {data.lifeEvents.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Life Events (2025)</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {data.lifeEvents.map(e => <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>)}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </TabsContent>
 
             {/* DOCUMENTS TAB */}

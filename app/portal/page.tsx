@@ -345,16 +345,8 @@ function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
 // Vazant logo SVG component
 function VazantLogo({ size = 64 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 200 200" fill="none">
-      {/* Green V — left stroke */}
-      <path d="M30 30L60 30L100 160L70 160Z" fill="#3D7A4A" />
-      {/* Green V — right stroke */}
-      <path d="M100 160L130 160L170 30L140 30Z" fill="#3D7A4A" />
-      {/* Gold arrow — pointing upper right */}
-      <path d="M125 28L170 28L180 58L155 48L140 70L125 28Z" fill="#C4973B" />
-      {/* Arrow cutout for depth */}
-      <path d="M142 38L158 38L162 50L152 46L146 55L142 38Z" fill="#3D7A4A" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/vazant-logo.webp" alt="Vazant Consulting" width={size} height={size} style={{ objectFit: "contain" }} />
   );
 }
 
