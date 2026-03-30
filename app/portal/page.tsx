@@ -993,30 +993,115 @@ export default function ClientPortal() {
   }
 
   // ─── PORTAL (post-intake) ───
+  const [chatInput, setChatInput] = useState("");
+  const [chatMsgs, setChatMsgs] = useState([
+    { from: "antonio" as const, text: "Got your documents! Starting my review. I'll reach out if I have questions. 👍", time: "10:02 AM" },
+  ]);
+  const [docFolder, setDocFolder] = useState<string | null>(null);
+
+  const portalFolders = [
+    { id: "uploads", name: "My Uploads", count: 3, icon: "📤", color: c.accentLight, files: [
+      { name: "W-2 Riverside Medical.pdf", date: "Mar 24", size: "245 KB", status: "ok" },
+      { name: "Drivers_License.jpg", date: "Mar 24", size: "1.2 MB", status: "ok" },
+      { name: "1099-NEC_Freelance.pdf", date: "Mar 25", size: "89 KB", status: "ok" },
+    ]},
+    { id: "needed", name: "Still Needed", count: 2, icon: "⏳", color: c.warmLight, files: [
+      { name: "1099-INT from Chase Bank", status: "pending" },
+      { name: "Business expense records", status: "pending" },
+    ]},
+    { id: "returns", name: "Tax Returns", count: 1, icon: "📊", color: c.blueLight, files: [
+      { name: "2025_Federal_Return.pdf", date: "Apr 8", size: "1.8 MB", status: "ok" },
+    ]},
+    { id: "agreements", name: "Agreements", count: 2, icon: "📝", color: c.muted, files: [
+      { name: "Engagement Letter 2025.pdf", date: "Mar 27", size: "156 KB", status: "signed" },
+      { name: "7216 Consent.pdf", date: "Mar 27", size: "92 KB", status: "signed" },
+    ]},
+  ];
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    const msg = chatInput.trim().toLowerCase();
+    setChatMsgs(p => [...p, { from: "client" as const, text: chatInput.trim(), time: "Now" }]);
+    setChatInput("");
+
+    // System auto-responses
+    const checks = [
+      { kw: ["appointment", "meeting", "schedule", "call", "when"], response: { from: "system" as const, text: `Your appointment: ${answers.slot || "Mon, Apr 6 · 9:00 AM"} — Phone call with Antonio.`, time: "" } },
+      { kw: ["document", "need", "missing", "upload", "what else"], response: { from: "system" as const, text: "Still needed: 1099-INT from Chase Bank, Business expense records. You've uploaded 3 of 5 documents.", time: "" } },
+      { kw: ["status", "where", "progress", "return", "update"], response: { from: "system" as const, text: "Your return status: Ready for Your Review. Antonio finished preparing your return. Review it and let him know if you have questions.", time: "" } },
+      { kw: ["pay", "cost", "fee", "balance", "owe", "invoice"], response: { from: "system" as const, text: "Payment summary: $50 deposit paid. Remaining balance: $300. Total fee: $350. Payment is due before Form 8879 signing.", time: "" } },
+    ];
+    const match = checks.find(ch => ch.kw.some(k => msg.includes(k)));
+
+    if (match) {
+      setTimeout(() => setChatMsgs(p => [...p, match.response]), 600);
+      setTimeout(() => setChatMsgs(p => [...p, { from: "system" as const, text: "This info is from your account. Antonio will follow up personally if needed.", time: "" }]), 900);
+    } else {
+      setTimeout(() => setChatMsgs(p => [...p, { from: "system" as const, text: "Message sent to Antonio. He usually responds within a few hours.", time: "" }]), 800);
+    }
+  };
+
   return (
     <div style={{
       height: "100vh", display: "flex", flexDirection: "column",
       background: c.bg, maxWidth: 480, margin: "0 auto",
     }}>
       {/* Portal content */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: tab === "messages" ? "hidden" : "auto", display: "flex", flexDirection: "column" }}>
         {tab === "home" && (
           <div style={{ padding: "24px 20px 32px" }}>
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-              <AntonioAvatar size={48} />
-              <div>
-                <div style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text }}>Vazant Consulting</div>
-                <div style={{ fontSize: 12, color: c.dim }}>Antonio Vazquez, EA</div>
+            {/* Personalized greeting */}
+            <div style={{ fontSize: 14, color: c.dim, marginBottom: 4 }}>Good morning,</div>
+            <div style={{ fontSize: 24, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 20 }}>Maria</div>
+
+            {/* Status banner */}
+            <div style={{
+              background: `linear-gradient(135deg, ${c.accent} 0%, ${c.accentDark} 100%)`,
+              borderRadius: 18, padding: "20px 22px", marginBottom: 20, color: "#fff",
+            }}>
+              <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 2 }}>2025 TAX RETURN</div>
+              <div style={{ fontSize: 17, fontWeight: 600, fontFamily: "'Fraunces', serif" }}>Ready for Your Review</div>
+              <div style={{ height: 4, borderRadius: 4, background: "rgba(255,255,255,0.15)", marginTop: 12 }}>
+                <div style={{ width: "70%", height: "100%", borderRadius: 4, background: "#6ECB8B" }} />
               </div>
             </div>
 
-            {/* Status card */}
-            <div style={{
-              background: c.surface, borderRadius: 16, padding: "22px 20px",
-              border: `1px solid ${c.borderLight}`, marginBottom: 20,
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 16 }}>YOUR RETURN STATUS</div>
+            {/* Action needed */}
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 10 }}>ACTION NEEDED</div>
+            {[
+              { label: "Sign Form 8879", desc: "e-file authorization required", icon: "✍️", toTab: "sign" },
+              { label: "Pay remaining balance", desc: "$300.00 due", icon: "💳" },
+            ].map((a, i) => (
+              <div key={i} onClick={() => a.toTab && setTab(a.toTab)} style={{
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px", borderRadius: 14, marginBottom: 8,
+                background: c.surface, border: `1.5px solid ${c.warm}`,
+                cursor: a.toTab ? "pointer" : "default",
+              }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{a.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{a.label}</div>
+                  <div style={{ fontSize: 12, color: c.dim }}>{a.desc}</div>
+                </div>
+                <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: c.warmLight, color: "#9A7245" }}>Action</span>
+              </div>
+            ))}
+
+            {/* Appointment */}
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginTop: 24, marginBottom: 10 }}>UPCOMING</div>
+            <div style={{ padding: "16px 18px", borderRadius: 14, background: c.surface, border: `1px solid ${c.borderLight}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 24 }}>📞</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Meeting with Antonio</div>
+                  <div style={{ fontSize: 12, color: c.dim }}>{answers.slot || "Mon, Apr 6 · 9:00 AM"} &middot; Phone</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Return progress */}
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginTop: 24, marginBottom: 14 }}>RETURN PROGRESS</div>
+            <div style={{ background: c.surface, border: `1px solid ${c.borderLight}`, borderRadius: 16, padding: "20px 18px" }}>
               <StatusTracker steps={[
                 { label: "Intake Complete", done: true },
                 { label: "Documents Received", done: true },
@@ -1029,163 +1114,182 @@ export default function ClientPortal() {
               ]} />
             </div>
 
-            {/* Next step card */}
-            <div style={{
-              background: c.accentLight, borderRadius: 16, padding: "18px 20px",
-              border: `1px solid ${c.accent}20`, marginBottom: 20,
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: c.accent, marginBottom: 6 }}>NEXT STEP</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 4 }}>Review your return</div>
-              <p style={{ fontSize: 13, color: c.secondary, margin: 0, lineHeight: 1.6 }}>
-                Antonio has finished preparing your return. Review it carefully and let him know if you have questions.
-              </p>
-            </div>
-
-            {/* Upcoming appointment */}
-            <div style={{
-              background: c.surface, borderRadius: 16, padding: "18px 20px",
-              border: `1px solid ${c.borderLight}`, marginBottom: 20,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 24 }}>📞</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Appointment with Antonio</div>
-                  <div style={{ fontSize: 12, color: c.dim }}>{answers.slot || "Mon, Apr 6 · 9:00 AM"} &middot; Phone</div>
-                </div>
-              </div>
-            </div>
-
             <AntonioNote text="I've finished your return and it looks great. Take a look when you get a chance. No rush — but the sooner we sign, the sooner it's filed." />
           </div>
         )}
 
         {tab === "docs" && (
-          <div style={{ padding: "24px 20px" }}>
-            <h2 style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text, margin: "0 0 20px" }}>Documents</h2>
-            {[
-              { name: "My Uploads", count: 3, icon: "📤", color: c.accentLight },
-              { name: "Still Needed", count: 2, icon: "⏳", color: c.warmLight },
-              { name: "Tax Returns", count: 1, icon: "📊", color: c.blueLight },
-              { name: "Agreements", count: 2, icon: "📝", color: c.muted },
-            ].map(folder => (
-              <div key={folder.name} style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "16px 18px", borderRadius: 14, marginBottom: 8,
-                background: c.surface, border: `1px solid ${c.borderLight}`,
-                cursor: "pointer",
-              }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                  background: folder.color, display: "flex", alignItems: "center",
-                  justifyContent: "center", fontSize: 20,
-                }}>
-                  {folder.icon}
+          <div style={{ padding: "24px 20px 32px" }}>
+            {docFolder ? (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                  <button onClick={() => setDocFolder(null)} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: c.secondary, fontFamily: "'DM Sans', sans-serif" }}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                  <h2 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: 0 }}>
+                    {portalFolders.find(f => f.id === docFolder)?.name}
+                  </h2>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{folder.name}</div>
-                  <div style={{ fontSize: 12, color: c.dim }}>{folder.count} files</div>
+                {portalFolders.find(f => f.id === docFolder)?.files.map((fl, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 14, marginBottom: 6, background: c.surface, border: `1px solid ${c.borderLight}` }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: fl.status === "pending" ? c.warmLight : fl.status === "signed" ? c.accentLight : c.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                      {fl.status === "pending" ? "⏳" : fl.status === "signed" ? "✍️" : "📄"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fl.name}</div>
+                      <div style={{ fontSize: 11, color: c.dim, marginTop: 2 }}>{"date" in fl && fl.date ? `${fl.date} · ${"size" in fl ? fl.size : ""}` : "Waiting for upload"}</div>
+                    </div>
+                    {fl.status === "pending" ? (
+                      <button style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${c.accent}`, background: "transparent", color: c.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Upload</button>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👁</button>
+                        <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>⬇</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <h2 style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Documents</h2>
+                <p style={{ fontSize: 13, color: c.dim, margin: "0 0 20px" }}>Your secure tax file cabinet</p>
+                <div style={{ padding: "20px 16px", borderRadius: 16, border: `2px dashed ${c.border}`, background: c.surface, textAlign: "center", marginBottom: 20, cursor: "pointer" }}>
+                  <div style={{ fontSize: 24, marginBottom: 4 }}>📸</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Upload or scan</div>
+                  <div style={{ fontSize: 12, color: c.dim, marginTop: 2 }}>Photos from your phone work great</div>
                 </div>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 4L10 8L6 12" stroke={c.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            ))}
-
-            <button style={{
-              width: "100%", padding: "14px", borderRadius: 14, marginTop: 12,
-              border: `2px dashed ${c.border}`, background: "transparent",
-              color: c.secondary, fontSize: 14, fontWeight: 600, cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-            }}>
-              + Upload new document
-            </button>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {portalFolders.map(f => (
+                    <div key={f.id} onClick={() => setDocFolder(f.id)} style={{ padding: "18px 16px", borderRadius: 16, cursor: "pointer", background: c.surface, border: `1px solid ${c.borderLight}` }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 10, background: f.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{f.icon}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{f.name}</div>
+                      <div style={{ fontSize: 12, color: c.dim, marginTop: 2 }}>{f.count} files</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {tab === "messages" && (
-          <div style={{ padding: "24px 20px", display: "flex", flexDirection: "column", height: "100%" }}>
-            <h2 style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text, margin: "0 0 20px" }}>Messages</h2>
-
-            <div style={{
-              display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 16,
-            }}>
-              <AntonioAvatar size={34} />
-              <div style={{
-                padding: "12px 16px", borderRadius: "4px 14px 14px 14px",
-                background: c.surface, border: `1px solid ${c.borderLight}`,
-                maxWidth: "80%",
-              }}>
-                <p style={{ fontSize: 13, color: c.text, lineHeight: 1.6, margin: 0 }}>
-                  Got your documents! Starting my review. I&apos;ll reach out if I have questions. 👍
-                </p>
-                <div style={{ fontSize: 10, color: c.dim, marginTop: 6 }}>10:02 AM</div>
+          <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            {/* Chat header */}
+            <div style={{ padding: "14px 20px", borderBottom: `1px solid ${c.borderLight}`, display: "flex", alignItems: "center", gap: 12, background: c.surface, flexShrink: 0 }}>
+              <div style={{ position: "relative" }}>
+                <AntonioAvatar size={38} />
+                <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#5CB176", border: `2px solid ${c.surface}` }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif" }}>Antonio Vazquez</div>
+                <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
               </div>
             </div>
 
-            <div style={{
-              display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 16,
-              flexDirection: "row-reverse",
-            }}>
-              <div style={{
-                padding: "12px 16px", borderRadius: "14px 4px 14px 14px",
-                background: c.accent, maxWidth: "80%",
-              }}>
-                <p style={{ fontSize: 13, color: "#fff", lineHeight: 1.6, margin: 0 }}>
-                  Thanks Antonio! Quick question — do I need to include my wife&apos;s 1099 from her side business?
-                </p>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>10:15 AM</div>
-              </div>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {chatMsgs.map((m, i) => {
+                if (m.from === "system") {
+                  return (
+                    <div key={i} style={{ alignSelf: "center", padding: "8px 16px", borderRadius: 12, background: c.muted, maxWidth: "90%" }}>
+                      <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.6, margin: 0, textAlign: "center" }}>{m.text}</p>
+                    </div>
+                  );
+                }
+                const isClient = m.from === "client";
+                return (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", flexDirection: isClient ? "row-reverse" : "row" }}>
+                    {!isClient && <AntonioAvatar size={32} />}
+                    <div style={{
+                      padding: "12px 16px",
+                      borderRadius: isClient ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
+                      background: isClient ? c.accent : c.surface,
+                      border: isClient ? "none" : `1px solid ${c.borderLight}`,
+                      maxWidth: "78%",
+                    }}>
+                      <p style={{ fontSize: 13, color: isClient ? "#fff" : c.text, lineHeight: 1.6, margin: 0 }}>{m.text}</p>
+                      {m.time && <div style={{ fontSize: 10, color: isClient ? "rgba(255,255,255,0.5)" : c.dim, marginTop: 6 }}>{m.time}</div>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div style={{
-              display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 16,
-            }}>
-              <AntonioAvatar size={34} />
-              <div style={{
-                padding: "12px 16px", borderRadius: "4px 14px 14px 14px",
-                background: c.surface, border: `1px solid ${c.borderLight}`,
-                maxWidth: "80%",
-              }}>
-                <p style={{ fontSize: 13, color: c.text, lineHeight: 1.6, margin: 0 }}>
-                  Yes! Since you&apos;re filing jointly, I need all of her income docs too. Upload her 1099-NEC through the Docs tab and I&apos;ll include it.
-                </p>
-                <div style={{ fontSize: 10, color: c.dim, marginTop: 6 }}>10:22 AM</div>
+            {/* Chat input */}
+            <div style={{ flexShrink: 0, padding: "10px 16px 14px", borderTop: `1px solid ${c.borderLight}`, background: c.surface }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && sendChat()}
+                  placeholder="Message Antonio..."
+                  style={{
+                    flex: 1, padding: "12px 16px", borderRadius: 14,
+                    border: `1.5px solid ${c.borderLight}`, background: c.bg,
+                    fontSize: 14, color: c.text, outline: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                />
+                <button onClick={sendChat} disabled={!chatInput.trim()} style={{
+                  width: 42, height: 42, borderRadius: 12, border: "none",
+                  background: chatInput.trim() ? c.accent : c.borderLight,
+                  color: chatInput.trim() ? "#fff" : c.dim,
+                  cursor: chatInput.trim() ? "pointer" : "default",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
         )}
 
         {tab === "sign" && (
-          <div style={{ padding: "24px 20px" }}>
-            <h2 style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text, margin: "0 0 8px" }}>Sign Documents</h2>
-            <p style={{ fontSize: 13, color: c.dim, margin: "0 0 24px", lineHeight: 1.6 }}>
-              When your return is ready, Form 8879 will appear here for your e-signature.
-            </p>
+          <div style={{ padding: "24px 20px 32px" }}>
+            <h2 style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Signatures</h2>
+            <p style={{ fontSize: 13, color: c.dim, margin: "0 0 20px" }}>Documents waiting for your signature</p>
 
-            <div style={{
-              padding: "20px", borderRadius: 16, background: c.surface,
-              border: `1px solid ${c.borderLight}`, textAlign: "center",
-            }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: "50%",
-                background: c.muted, margin: "0 auto 14px",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
+            {/* 8879 card */}
+            <div style={{ padding: "18px", borderRadius: 16, marginBottom: 12, background: c.surface, border: `1.5px solid ${c.warm}`, cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>✍️</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Form 8879 &mdash; e-file Authorization</div>
+                  <div style={{ fontSize: 12, color: c.dim, marginTop: 3 }}>4 fields to complete</div>
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: c.warmLight, color: "#9A7245" }}>Pending Signature</span>
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: c.text, marginBottom: 4 }}>No documents to sign yet</div>
-              <p style={{ fontSize: 12, color: c.dim, margin: 0, lineHeight: 1.6 }}>
-                Antonio will send Form 8879 once your return is ready and payment is complete.
-              </p>
+              <PrimaryButton onClick={() => {}} style={{ marginTop: 14 }}>Begin Signing</PrimaryButton>
             </div>
+
+            {/* Completed */}
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginTop: 24, marginBottom: 10 }}>COMPLETED</div>
+            {[
+              { name: "Engagement Letter", date: "Mar 27, 2026" },
+              { name: "7216 Consent", date: "Mar 27, 2026" },
+            ].map((d, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, marginBottom: 6, background: c.surface, border: `1px solid ${c.borderLight}` }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke={c.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{d.name}</div>
+                  <div style={{ fontSize: 11, color: c.dim }}>{d.date}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
       {/* Tab bar */}
-      <TabBar tab={tab} onTab={setTab} />
+      <TabBar tab={tab} onTab={(t) => { setTab(t); setDocFolder(null); }} />
     </div>
   );
 }

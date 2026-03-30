@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
-import { SearchIcon, Check, X, Calendar, Phone, Clock } from "lucide-react";
+import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText } from "lucide-react";
 import { clients, stageLabels, type Client, type ReturnStage } from "@/lib/mock-data";
 import { motion } from "motion/react";
 
@@ -116,22 +116,44 @@ export default function ClientsPage() {
                       <Badge variant="outline" className="text-[10px]">New</Badge>
                     </div>
 
-                    {/* Intake summary */}
-                    <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Check className="size-3 text-emerald-500" /> Intake completed
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="size-3 text-emerald-500" /> $50 deposit paid
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className={`size-3 ${client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500"}`} />
-                        <span className={client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400" : ""}>
-                          Call: {client.scheduledCall ? formatCallTime(client.scheduledCall) : "Not scheduled"}
-                          {client.scheduledCall && isCallPast(client.scheduledCall) && " · Missed"}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Intake context */}
+                    {(() => {
+                      const intakeContext: Record<string, { filing: string; income: string[]; service: string }> = {
+                        c21: { filing: "Single", income: ["W-2", "1099-NEC"], service: "Complex Return" },
+                        c22: { filing: "MFJ", income: ["Business (S-Corp)", "W-2"], service: "Business Tax Return" },
+                        c23: { filing: "Single", income: ["W-2"], service: "Simple Tax Return" },
+                      };
+                      const ctx = intakeContext[client.id];
+                      return (
+                        <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Check className="size-3 text-emerald-500" /> Intake completed
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Check className="size-3 text-emerald-500" /> $50 deposit paid
+                          </div>
+                          {ctx && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <FileText className="size-3 text-primary" />
+                                <span>{ctx.service} &middot; {ctx.filing}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FileText className="size-3 text-muted-foreground/50" />
+                                <span>Income: {ctx.income.join(", ")}</span>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Calendar className={`size-3 ${client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500"}`} />
+                            <span className={client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400" : ""}>
+                              Call: {client.scheduledCall ? formatCallTime(client.scheduledCall) : "Not scheduled"}
+                              {client.scheduledCall && isCallPast(client.scheduledCall) && " · Missed"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Notes */}
                     <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{client.notes}</p>

@@ -18,10 +18,14 @@ interface ServiceTier {
 }
 
 const defaultTiers: ServiceTier[] = [
-  { id: "1", name: "Basic Individual", description: "Simple W-2 returns with standard deductions", price: "150", includes: ["Form 1040", "W-2 income", "Standard deduction", "State filing"] },
-  { id: "2", name: "Standard Individual", description: "Complex returns with itemized deductions and schedules", price: "350", includes: ["Form 1040 + Schedules", "Itemized deductions", "Investment income (Sch D)", "Rental income (Sch E)", "State filing"] },
-  { id: "3", name: "Business + Personal", description: "S-Corp, partnership, or sole proprietor with personal return", price: "500", includes: ["Form 1120S / 1065 / Schedule C", "K-1 preparation", "Personal 1040", "Estimated tax planning", "State filing (business + personal)"] },
-  { id: "4", name: "Bookkeeping Monthly", description: "Monthly reconciliation and financial statements", price: "200", includes: ["Bank reconciliation", "Categorize transactions", "Monthly P&L", "Balance sheet", "QBO / Xero sync"] },
+  { id: "1", name: "Simple Tax Return", description: "W-2 income, limited deductions, standard filing", price: "150", includes: ["Form 1040", "W-2 income", "Standard deduction", "State filing"] },
+  { id: "2", name: "Complex Return", description: "Self-employment, rentals, investments, itemized deductions", price: "350", includes: ["Form 1040 + Schedules", "Itemized deductions", "Investment income (Sch D)", "Rental income (Sch E)", "Self-employment (Sch SE)", "State filing"] },
+  { id: "3", name: "Business Tax Return", description: "S-Corp, LLC, C-Corp, partnership returns with personal", price: "500", includes: ["Form 1120S / 1065 / Schedule C", "K-1 preparation", "Personal 1040", "Estimated tax planning", "Payroll review", "State filing (business + personal)"] },
+  { id: "4", name: "Introductory Consultation", description: "Free session to help decide where to start", price: "0", includes: ["30-minute call", "Service recommendation", "No obligation"] },
+  { id: "5", name: "Business Formation — Basic", description: "LLC, S-Corp, or C-Corp setup and registration", price: "500", includes: ["Entity selection guidance", "State registration", "EIN application", "Operating agreement template"] },
+  { id: "6", name: "Business Formation — Full Service", description: "Complete entity setup with ongoing compliance", price: "1000", includes: ["Everything in Basic", "S-Corp election (Form 2553)", "Registered agent setup", "Initial bookkeeping setup", "First-year compliance calendar"] },
+  { id: "7", name: "Bookkeeping Consultation", description: "Clarity around your bookkeeping needs and support level", price: "0", includes: ["Review current books", "Software recommendation", "Scope of work estimate"] },
+  { id: "8", name: "Strategic Tax & Business Consultation", description: "In-depth guidance on tax planning and business strategy", price: "250", includes: ["60-minute session", "Tax projection", "Entity structure review", "Written recommendations"] },
 ];
 
 export default function ServiceTiersPage() {
