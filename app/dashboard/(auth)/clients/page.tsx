@@ -10,12 +10,14 @@ import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText } from "lucide-react";
 import { clients, stageLabels, type Client, type ReturnStage } from "@/lib/mock-data";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useToast } from "@/components/ui/toast-notification";
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [acceptedIds, setAcceptedIds] = useState<string[]>([]);
+  const { showToast } = useToast();
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
   const [assignedTiers, setAssignedTiers] = useState<Record<string, string>>({});
 
@@ -106,12 +108,15 @@ export default function ClientsPage() {
             <div className="space-y-3">
               {col.key === "pending" ? (
                 // Pending clients get special accept/decline cards (exclude already accepted)
-                col.clients.filter(c => !acceptedIds.includes(c.id)).map((client) => (
+                <AnimatePresence mode="popLayout">
+                {col.clients.filter(c => !acceptedIds.includes(c.id)).map((client) => (
                   <motion.div
                     key={client.id}
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, height: 0 }}
+                    layout
+                    initial={{ opacity: 1, scale: 1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, padding: 0, overflow: "hidden" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     className="rounded-2xl border bg-background p-4 shadow-sm"
                   >
                     <div className="flex items-start gap-3">
@@ -194,7 +199,7 @@ export default function ClientsPage() {
 
                     {/* Accept / Decline */}
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])} disabled={!assignedTiers[client.id]}>
+                      <Button size="sm" className="flex-1" onClick={() => { setAcceptedIds(prev => [...prev, client.id]); showToast("success", `${client.fullName} accepted`, `Moved to ${assignedTiers[client.id] || "Active Clients"}`); }} disabled={!assignedTiers[client.id]}>
                         <Check className="size-3.5" /> Accept
                       </Button>
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
@@ -202,7 +207,8 @@ export default function ClientsPage() {
                       </Button>
                     </div>
                   </motion.div>
-                ))
+                ))}
+                </AnimatePresence>
               ) : (
                 // Regular clients get the standard card
                 col.clients.map((client) => (

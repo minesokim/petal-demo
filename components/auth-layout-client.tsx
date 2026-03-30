@@ -4,6 +4,7 @@ import React from "react";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/layout/header";
 import { AIPanelProvider, AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
+import { ToastProvider } from "@/components/ui/toast-notification";
 
 function MainContent({ children }: { children: React.ReactNode }) {
   const { isOpen, isFullPage } = useAIPanel();
@@ -29,8 +30,10 @@ function MainContent({ children }: { children: React.ReactNode }) {
 export function AuthLayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <AIPanelProvider>
-      <MainContent>{children}</MainContent>
-      <AIPanel />
+      <ToastProvider>
+        <MainContent>{children}</MainContent>
+        <AIPanel />
+      </ToastProvider>
     </AIPanelProvider>
   );
 }

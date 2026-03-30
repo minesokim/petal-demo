@@ -24,6 +24,7 @@ import { IntelligencePanel } from "@/components/actions/intelligence/intelligenc
 import { BatchPanel } from "@/components/actions/batch/batch-panel";
 import { VoiceDumpDialog } from "@/components/actions/voice/voice-dump-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
+import { useToast } from "@/components/ui/toast-notification";
 // Pipeline stages removed — replaced by summary bar in header
 
 const todayAppointments = [
@@ -114,6 +115,7 @@ export default function Page() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
   const [editingDraft, setEditingDraft] = useState<string | null>(null);
+  const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -358,7 +360,7 @@ export default function Page() {
                                   <p className="text-xs leading-relaxed text-muted-foreground">{matchedAction.aiDraft}</p>
                                 )}
                                 <div className="mt-2 flex gap-2">
-                                  <Button size="sm" className="h-7 text-xs" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); }}>
+                                  <Button size="sm" className="h-7 text-xs" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); showToast("sent", `Message sent to ${actionClient.name.split(" ")[0]}`, "Delivered via portal and email"); }}>
                                     <SendIcon className="size-3" /> {editingDraft === matchedAction.id ? "Send edited" : "Send as Antonio"}
                                   </Button>
                                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingDraft(editingDraft === matchedAction.id ? null : matchedAction.id)}>

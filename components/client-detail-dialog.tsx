@@ -618,7 +618,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
             {/* BILLING TAB */}
             <TabsContent value="billing" className="space-y-4">
-              <BillingTab client={client} />
+              <BillingTab client={client} sentBilling={sentBilling} setSentBilling={setSentBilling} />
             </TabsContent>
 
             {/* NOTES TAB */}
@@ -913,7 +913,7 @@ function InlineIrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
 }
 
 // ── Billing Tab ──
-function BillingTab({ client }: { client: Client }) {
+function BillingTab({ client, sentBilling, setSentBilling }: { client: Client; sentBilling: string | null; setSentBilling: (v: string | null) => void }) {
   const ps = getClientPaymentSummary(client.id);
 
   const events: { date: string; label: string; type: "paid" | "sent" | "pending" | "overdue" }[] = [];
