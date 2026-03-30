@@ -34,6 +34,14 @@ function DocumentStatusWidget() {
 
   return (
     <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-1">
+        {docStatusData.map((s) => (
+          <div key={s.label} className="flex items-center gap-1.5" onMouseEnter={() => setHovered(s.label)} onMouseLeave={() => setHovered(null)}>
+            <span className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-[10px] text-muted-foreground">{s.label}: <span className="font-medium text-foreground">{s.value}</span></span>
+          </div>
+        ))}
+      </div>
       <DonutChart
         data={docStatusData}
         size={96}
@@ -58,14 +66,6 @@ function DocumentStatusWidget() {
           </div>
         }
       />
-      <div className="flex flex-col gap-1">
-        {docStatusData.map((s) => (
-          <div key={s.label} className="flex items-center gap-1.5" onMouseEnter={() => setHovered(s.label)} onMouseLeave={() => setHovered(null)}>
-            <span className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-[10px] text-muted-foreground">{s.label}: <span className="font-medium text-foreground">{s.value}</span></span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -92,12 +92,12 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-6">
-        <DocumentStatusWidget />
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
           <p className="text-muted-foreground text-sm">Manage documents across all clients</p>
         </div>
+        <DocumentStatusWidget />
       </div>
 
       <Tabs defaultValue="inbox">
