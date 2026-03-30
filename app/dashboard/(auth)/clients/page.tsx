@@ -120,23 +120,21 @@ export default function ClientsPage() {
                     <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{client.notes}</p>
 
                     {/* Accept / Decline */}
-                    <div className="mt-3 flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setAcceptedIds(prev => [...prev, client.id])}
-                      >
-                        <Check className="size-3.5" /> Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => setDeclinedIds(prev => [...prev, client.id])}
-                      >
-                        <X className="size-3.5" /> Decline
-                      </Button>
-                    </div>
+                    {acceptedIds.includes(client.id) ? (
+                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/20">
+                        <Check className="size-4 text-emerald-600" />
+                        <span className="text-xs font-medium text-emerald-700">Accepted - moved to Active</span>
+                      </div>
+                    ) : (
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])}>
+                          <Check className="size-3.5" /> Accept
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
+                          <X className="size-3.5" /> Decline
+                        </Button>
+                      </div>
+                    )}
                   </motion.div>
                 ))
               ) : (

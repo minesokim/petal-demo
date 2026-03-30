@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Search, ChevronRight, FileText } from "lucide-react";
+import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
+import { motion, AnimatePresence } from "motion/react";
 import { DocumentRow } from "@/components/documents/document-row";
 import { MissingDocRow } from "@/components/documents/missing-doc-row";
 import { DocTypeBadge } from "@/components/documents/doc-type-badge";
@@ -15,6 +17,47 @@ import {
   mockDocuments, checklistItems, firmDocuments,
   getDocumentsByDay, getUnviewedCount, getMissingCount
 } from "@/lib/documents-mock-data";
+
+const docStatusData: DonutChartSegment[] = [
+  { value: 142, color: "hsl(142.1 76.2% 36.3%)", label: "Received" },
+  { value: 34, color: "hsl(0 84.2% 60.2%)", label: "Missing" },
+  { value: 18, color: "hsl(47.9 95.8% 53.1%)", label: "Pending" },
+  { value: 8, color: "hsl(214.7 95% 50%)", label: "Processing" },
+];
+const docTotal = docStatusData.reduce((s, d) => s + d.value, 0);
+
+function DocumentStatusWidget() {
+  const [hovered, setHovered] = useState<string | null>(null);
+  const active = docStatusData.find((d) => d.label === hovered);
+  const displayValue = active?.value ?? docTotal;
+  const displayLabel = active?.label ?? "Total";
+
+  return (
+    <div className="flex items-center gap-4">
+      <DonutChart
+        data={docStatusData}
+        size={80}
+        strokeWidth={12}
+        animationDuration={0.8}
+        highlightOnHover
+        onSegmentHover={(seg) => setHovered(seg?.label ?? null)}
+        centerContent={
+          <div className="flex flex-col items-center">
+            <span className="font-display text-sm tracking-tight tabular-nums">{displayValue}</span>
+          </div>
+        }
+      />
+      <div className="flex flex-col gap-1">
+        {docStatusData.map((s) => (
+          <div key={s.label} className="flex items-center gap-1.5" onMouseEnter={() => setHovered(s.label)} onMouseLeave={() => setHovered(null)}>
+            <span className="size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-[10px] text-muted-foreground">{s.label}: <span className="font-medium text-foreground">{s.value}</span></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DocumentsPage() {
   const [search, setSearch] = useState("");
@@ -38,9 +81,12 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-        <p className="text-muted-foreground text-sm">Manage documents across all clients</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
+          <p className="text-muted-foreground text-sm">Manage documents across all clients</p>
+        </div>
+        <DocumentStatusWidget />
       </div>
 
       <Tabs defaultValue="inbox">

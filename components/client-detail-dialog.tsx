@@ -217,10 +217,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                 </div>
               </div>
 
-              {/* Notes */}
-              <div className="rounded-xl bg-muted/50 p-3">
-                <p className="text-sm leading-relaxed text-muted-foreground">{client.notes}</p>
-              </div>
+              {/* Notes - editable */}
+              <EditableNotes initialNotes={client.notes} />
 
               {/* Quick Actions */}
               <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
@@ -299,6 +297,30 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
     </Dialog>
+  );
+}
+
+// Editable notes component
+function EditableNotes({ initialNotes }: { initialNotes: string }) {
+  const [editing, setEditing] = useState(false);
+  const [notes, setNotes] = useState(initialNotes);
+  return (
+    <div className="rounded-xl bg-muted/50 p-3">
+      {editing ? (
+        <div>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full min-h-[60px] bg-transparent text-sm leading-relaxed outline-none resize-none" autoFocus />
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" className="h-6 text-[10px]" onClick={() => setEditing(false)}><Check className="size-2.5" /> Save</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => { setNotes(initialNotes); setEditing(false); }}>Cancel</Button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setEditing(true)} className="w-full text-left group">
+          <p className="text-sm leading-relaxed text-muted-foreground">{notes}</p>
+          <span className="text-[10px] text-muted-foreground/50 group-hover:text-muted-foreground mt-1 block">Click to edit</span>
+        </button>
+      )}
+    </div>
   );
 }
 
