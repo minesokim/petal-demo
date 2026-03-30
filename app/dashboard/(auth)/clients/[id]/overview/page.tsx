@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,64 +83,95 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* Ready to Prep — confirm all docs received and begin preparation */}
-      {currentStage === "ready_to_prep" && !transitioning && (
-        <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
-              <CheckCircle className="size-4 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Ready to begin preparation</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                All {client.documentsRequired} documents received. Confirm to move {client.fullName.split(" ")[0]} into preparation.
-              </div>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> {client.documentsSubmitted}/{client.documentsRequired} docs received</div>
-                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Deposit paid</div>
-                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Engagement signed</div>
-              </div>
-            </div>
-          </div>
-          <Button
-            className="mt-3 w-full"
-            onClick={() => {
-              setTransitioning(true);
-              setTimeout(() => {
-                setStageOverride("in_preparation");
-                setTransitioning(false);
-              }, 600);
-            }}
+      {/* Ready to Prep / Transition — animated */}
+      <AnimatePresence mode="wait">
+        {currentStage === "ready_to_prep" && !transitioning && !stageOverride && (
+          <motion.div
+            key="ready-card"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
           >
-            <FileText className="size-3.5" /> Begin Preparation
-          </Button>
-        </div>
-      )}
-
-      {/* Transition confirmation */}
-      {transitioning && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <div className="size-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Moving to In Preparation...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Stage advanced confirmation */}
-      {stageOverride === "in_preparation" && client.returnStage === "ready_to_prep" && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500">
-              <Check className="size-4 text-white" />
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                <CheckCircle className="size-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold">Ready to begin preparation</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  All {client.documentsRequired} documents received. Confirm to move {client.fullName.split(" ")[0]} into preparation.
+                </div>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> {client.documentsSubmitted}/{client.documentsRequired} docs received</div>
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Deposit paid</div>
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Engagement signed</div>
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Preparation started</div>
-              <div className="text-xs text-muted-foreground">{client.fullName.split(" ")[0]} has been moved to In Preparation.</div>
+            <Button
+              className="mt-3 w-full"
+              onClick={() => {
+                setTransitioning(true);
+                // Phase 1: show transition message (1.5s)
+                // Phase 2: update stage, show confirmation (auto-fades after 3s)
+                setTimeout(() => {
+                  setStageOverride("in_preparation");
+                  setTransitioning(false);
+                }, 1500);
+              }}
+            >
+              <FileText className="size-3.5" /> Begin Preparation
+            </Button>
+          </motion.div>
+        )}
+
+        {transitioning && (
+          <motion.div
+            key="transitioning"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="rounded-xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-950/10 dark:border-emerald-800/20 p-5 text-center"
+          >
+            <div className="flex items-center justify-center gap-2.5">
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                className="size-2 rounded-full bg-emerald-500"
+              />
+              <span className="text-sm font-medium text-emerald-700/80 dark:text-emerald-400/80">Moving to preparation...</span>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+
+        {stageOverride === "in_preparation" && client.returnStage === "ready_to_prep" && !transitioning && (
+          <motion.div
+            key="confirmed"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+            className="rounded-xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-950/10 dark:border-emerald-800/20 p-4"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.2 }}
+                className="flex size-8 items-center justify-center rounded-full bg-emerald-500"
+              >
+                <Check className="size-4 text-white" />
+              </motion.div>
+              <div>
+                <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Preparation started</div>
+                <div className="text-xs text-muted-foreground">{client.fullName.split(" ")[0]} has been moved to In Preparation.</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Collecting Docs — show progress toward ready */}
       {currentStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
