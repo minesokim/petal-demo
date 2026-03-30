@@ -63,10 +63,10 @@ export default function ClientsPage() {
         <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      {/* Kanban-style columns */}
-      <div className="grid gap-2 pb-4" style={{ gridTemplateColumns: `repeat(${columnData.length}, minmax(0, 1fr))` }}>
+      {/* Kanban-style columns - horizontal scroll */}
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {columnData.map((col) => (
-          <div key={col.key} className="min-w-0 overflow-hidden">
+          <div key={col.key} className="w-[280px] shrink-0">
             {/* Column header */}
             <div className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 ${col.headerBg}`}>
               <div className="flex items-center gap-2">

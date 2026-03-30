@@ -46,17 +46,17 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   };
 
   return (
-    <div className="rounded-2xl bg-muted/60 p-2 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-2xl bg-muted/60 p-2.5 shadow-sm transition-shadow hover:shadow-md">
       {/* Main card area - clickable to open detail */}
       <div
-        className="cursor-pointer rounded-xl bg-background px-3 py-3 shadow-sm"
+        className="cursor-pointer rounded-xl bg-background px-3.5 py-3 shadow-sm"
         onClick={handleCardClick}
       >
         {/* Header row */}
-        <div className="flex items-center gap-2.5">
-          <Avatar className="size-9 shrink-0">
+        <div className="flex items-center gap-3">
+          <Avatar className="size-10 shrink-0">
             <AvatarImage src={client.avatar} alt={client.fullName} />
-            <AvatarFallback className="text-[10px]">{getInitials(client.fullName)}</AvatarFallback>
+            <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -94,10 +94,10 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
               className="overflow-hidden"
             >
               {stats.map(({ label, value, displayValue, Icon, barColor }) => (
-                <div key={label} className="mt-1.5">
-                  <div className="mb-0.5 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Icon className="size-3" /> {label}
+                <div key={label} className="mt-2">
+                  <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="size-3.5" /> {label}
                     </div>
                     <span>{displayValue}</span>
                   </div>
@@ -123,11 +123,11 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
       </div>
 
       {/* Footer */}
-      <div className="mt-1.5 flex items-center gap-1.5 px-1">
-        <div className="flex size-4 items-center justify-center rounded-full bg-primary text-white">
-          <FileText className="size-2.5" />
+      <div className="mt-2 flex items-center gap-2 px-1">
+        <div className="flex size-5 items-center justify-center rounded-full bg-primary text-white">
+          <FileText className="size-3" />
         </div>
-        <span className="flex-1 text-[10px] font-medium text-muted-foreground truncate">
+        <span className="flex-1 text-xs font-medium text-muted-foreground">
           {client.documentsSubmitted}/{client.documentsRequired} docs - {stageLabels[client.returnStage]}
         </span>
 
