@@ -170,7 +170,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                       <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{client.depositPaid ? "Paid" : "No"}</div><div className="text-[9px] text-muted-foreground">Deposit</div></div>
                       <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{docPercent}%</div><div className="text-[9px] text-muted-foreground">Done</div></div>
                     </div>
-                    <Progress value={docPercent} className="h-1.5" />
+                    <Progress value={docPercent} className="h-1.5" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
                   </CardContent>
                 </Card>
                 <Card>
@@ -219,7 +219,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                   <span className="text-sm font-semibold">Document Status</span>
                   <span className="text-xs text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
                 </div>
-                <Progress value={docPercent} className="h-2 mb-3" />
+                <Progress value={docPercent} className="h-2 mb-3" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="flex items-center gap-2"><CheckCircle className="size-3 text-emerald-500" /> <span>{client.documentsSubmitted} received</span></div>
                   <div className="flex items-center gap-2"><Clock className="size-3 text-amber-500" /> <span>{client.documentsRequired - client.documentsSubmitted} outstanding</span></div>

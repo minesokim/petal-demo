@@ -31,6 +31,7 @@ const StatusIcon = ({ status, customIcon }: { status: TimelineItem["status"]; cu
 };
 
 const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
+  const allComplete = items.every(item => item.status === "completed");
   const containerVariants = {
     hidden: {},
     visible: {
@@ -48,7 +49,7 @@ const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
 
   return (
     <motion.ol
-      className={cn("relative ml-4 border-l border-border/50", className)}
+      className={cn("relative ml-4 border-l", allComplete ? "border-emerald-300" : "border-border/50", className)}
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -64,7 +65,8 @@ const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
             className={cn(
               "absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full ring-8 ring-background",
               {
-                "bg-primary": item.status === "completed",
+                "bg-emerald-500": item.status === "completed" && allComplete,
+                "bg-primary": item.status === "completed" && !allComplete,
                 "bg-primary/20": item.status === "in-progress",
                 "bg-muted": item.status === "pending",
               }
