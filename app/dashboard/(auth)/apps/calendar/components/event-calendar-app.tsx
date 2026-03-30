@@ -182,7 +182,7 @@ export default function EventCalendarApp() {
       </div>
 
       {/* Right sidebar - upcoming events + detail panel */}
-      <div className="w-[300px] shrink-0 border-l flex flex-col" style={{ height: "calc(100vh - var(--header-height) - 3rem)" }}>
+      <div className="w-[300px] shrink-0 border-l flex flex-col sticky top-0 h-screen overflow-hidden">
         <AnimatePresence mode="wait">
           {selectedSidebarEvent ? (
             /* Event detail view */
