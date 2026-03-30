@@ -58,6 +58,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
+  const [sentCalc, setSentCalc] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -375,7 +376,9 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                         ))}
                       </div>
                       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
-                      <Button size="sm" className="mt-3"><Calculator className="size-3.5" /> Send to client</Button>
+                      <Button size="sm" className="mt-3" onClick={() => setSentCalc(true)} disabled={sentCalc}>
+                        <Calculator className="size-3.5" /> {sentCalc ? "Sent!" : "Send to client"}
+                      </Button>
                     </div>
                   ))}
 

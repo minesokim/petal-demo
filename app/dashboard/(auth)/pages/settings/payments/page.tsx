@@ -44,7 +44,7 @@ export default function PaymentsSettingsPage() {
                 <p className="text-xs text-muted-foreground">vazantconsulting &middot; Deposits and balance collection</p>
               </div>
             </div>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={() => window.open("https://dashboard.stripe.com", "_blank")}>
               Manage in Stripe <ExternalLink className="ml-1.5 size-3" />
             </Button>
           </div>

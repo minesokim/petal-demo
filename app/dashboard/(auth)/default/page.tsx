@@ -112,6 +112,8 @@ export default function Page() {
   const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
   const [newTodoText, setNewTodoText] = useState("");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
+  const [editingDraft, setEditingDraft] = useState<string | null>(null);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -326,15 +328,33 @@ export default function Page() {
                         </button>
                         {matchedAction?.aiDraft && (
                           <div className="mt-2.5 ml-11">
-                            <p className="text-xs leading-relaxed text-muted-foreground">{matchedAction.aiDraft}</p>
-                            <div className="mt-2 flex gap-2">
-                              <Button size="sm" className="h-7 text-xs">
-                                <SendIcon className="size-3" /> Send as Antonio
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs">
-                                <FileTextIcon className="size-3" /> Edit
-                              </Button>
-                            </div>
+                            {sentDrafts.has(matchedAction.id) ? (
+                              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                Sent to {actionClient.name.split(" ")[0]}
+                              </div>
+                            ) : (
+                              <>
+                                {editingDraft === matchedAction.id ? (
+                                  <textarea
+                                    defaultValue={matchedAction.aiDraft}
+                                    className="w-full rounded-lg border bg-background px-3 py-2 text-xs leading-relaxed outline-none focus:ring-1 focus:ring-primary resize-none"
+                                    rows={3}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <p className="text-xs leading-relaxed text-muted-foreground">{matchedAction.aiDraft}</p>
+                                )}
+                                <div className="mt-2 flex gap-2">
+                                  <Button size="sm" className="h-7 text-xs" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); }}>
+                                    <SendIcon className="size-3" /> {editingDraft === matchedAction.id ? "Send edited" : "Send as Antonio"}
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingDraft(editingDraft === matchedAction.id ? null : matchedAction.id)}>
+                                    <FileTextIcon className="size-3" /> {editingDraft === matchedAction.id ? "Cancel" : "Edit"}
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, Trash2, UserX } from "lucide-react";
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
 
@@ -65,7 +67,19 @@ export default function ClientDetailLayout({ children }: { children: React.React
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem><Mail className="mr-2 size-3.5" /> Send message</DropdownMenuItem>
+            <DropdownMenuItem><Phone className="mr-2 size-3.5" /> Schedule call</DropdownMenuItem>
+            <DropdownMenuItem><FileText className="mr-2 size-3.5" /> Request documents</DropdownMenuItem>
+            <DropdownMenuItem><Download className="mr-2 size-3.5" /> Export client data</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive"><UserX className="mr-2 size-3.5" /> Archive client</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Sub-tabs */}
