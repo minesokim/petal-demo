@@ -17,6 +17,18 @@ export default function ClientsPage() {
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [acceptedIds, setAcceptedIds] = useState<string[]>([]);
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
+  const [assignedTiers, setAssignedTiers] = useState<Record<string, string>>({});
+
+  const serviceTierOptions = [
+    { value: "", label: "Assign service tier..." },
+    { value: "Simple Tax Return — $150", label: "Simple Tax Return — $150" },
+    { value: "Complex Return — $350", label: "Complex Return — $350" },
+    { value: "Business Tax Return — $500", label: "Business Tax Return — $500" },
+    { value: "Business Formation Basic — $500", label: "Business Formation Basic — $500" },
+    { value: "Business Formation Full — $1,000", label: "Business Formation Full — $1,000" },
+    { value: "Bookkeeping Monthly — $200", label: "Bookkeeping Monthly — $200/mo" },
+    { value: "Strategic Consultation — $250", label: "Strategic Consultation — $250" },
+  ];
 
   const filtered = clients.filter((c) => {
     if (search && !c.fullName.toLowerCase().includes(search.toLowerCase())) return false;
@@ -158,15 +170,39 @@ export default function ClientsPage() {
                     {/* Notes */}
                     <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{client.notes}</p>
 
+                    {/* Tier assignment */}
+                    {!acceptedIds.includes(client.id) && (
+                      <div className="mt-3">
+                        <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {(() => {
+                            const ctx: Record<string, string> = { c21: "Complex Return", c22: "Business Tax Return", c23: "Simple Tax Return" };
+                            const requested = ctx[client.id];
+                            return requested ? `Client requested: ${requested}` : "Assign service tier";
+                          })()}
+                        </label>
+                        <select
+                          value={assignedTiers[client.id] || ""}
+                          onChange={(e) => setAssignedTiers(prev => ({ ...prev, [client.id]: e.target.value }))}
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground outline-none transition-colors focus:border-primary"
+                        >
+                          {serviceTierOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     {/* Accept / Decline */}
                     {acceptedIds.includes(client.id) ? (
                       <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/20">
                         <Check className="size-4 text-emerald-600" />
-                        <span className="text-xs font-medium text-emerald-700">Accepted - moved to Active</span>
+                        <span className="text-xs font-medium text-emerald-700">
+                          Accepted{assignedTiers[client.id] ? ` — ${assignedTiers[client.id]}` : ""}
+                        </span>
                       </div>
                     ) : (
                       <div className="mt-3 flex gap-2">
-                        <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])}>
+                        <Button size="sm" className="flex-1" onClick={() => setAcceptedIds(prev => [...prev, client.id])} disabled={!assignedTiers[client.id]}>
                           <Check className="size-3.5" /> Accept
                         </Button>
                         <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
