@@ -134,8 +134,8 @@ const pipelineConfig = {
 } satisfies ChartConfig;
 
 const todayAppointments = [
-  { name: "David Park", avatar: "/images/avatars/11.png", time: "2:00 - 3:00 PM", type: "video" as const, note: "S-Corp return review" },
-  { name: "Miguel Sandoval", avatar: "/images/avatars/09.png", time: "4:00 - 4:30 PM", type: "phone" as const, note: "Discuss incorporation" },
+  { name: "David Park", avatar: "/images/avatars/11.png", time: "3:00 - 4:00 PM", type: "video" as const, note: "S-Corp return review", clientId: "c11" },
+  { name: "Miguel Sandoval", avatar: "/images/avatars/09.png", time: "4:00 - 4:30 PM", type: "phone" as const, note: "Discuss incorporation", clientId: "c9" },
 ];
 
 const urgentActions = [
@@ -515,22 +515,29 @@ export default function Page() {
             </CardAction>
           </CardHeader>
           <CardContent className="space-y-3">
-            {todayAppointments.map((apt) => (
-              <div key={apt.name} className="bg-muted/50 flex items-start gap-3 rounded-xl p-3">
-                <Avatar className="size-9 shrink-0">
-                  <AvatarImage src={apt.avatar} alt={apt.name} />
-                  <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">{apt.name}</div>
-                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                    {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
-                    {apt.time}
+            {todayAppointments.map((apt) => {
+              const aptClient = clients.find(c => c.id === apt.clientId);
+              return (
+                <button
+                  key={apt.name}
+                  onClick={() => aptClient && setDetailClient(aptClient)}
+                  className="bg-muted/50 flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors hover:bg-muted"
+                >
+                  <Avatar className="size-9 shrink-0">
+                    <AvatarImage src={apt.avatar} alt={apt.name} />
+                    <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold">{apt.name}</div>
+                    <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
+                      {apt.time}
+                    </div>
+                    <div className="text-muted-foreground mt-0.5 text-xs">{apt.note}</div>
                   </div>
-                  <div className="text-muted-foreground mt-0.5 text-xs">{apt.note}</div>
-                </div>
-              </div>
-            ))}
+                </button>
+              );
+            })}
           </CardContent>
         </Card>
       </div>
