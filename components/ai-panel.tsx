@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, createContext, useContext, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,7 @@ import {
   Loader2Icon, PanelRightCloseIcon, MessageSquareTextIcon,
   MaximizeIcon, MinimizeIcon
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
@@ -107,38 +106,182 @@ const demoMessages: Message[] = [
   },
 ];
 
-const suggestedByRoute: Record<string, string[]> = {
-  default: [
-    "Who hasn't logged into the portal?",
-    "What's my outstanding revenue?",
-    "Show clients missing documents",
-    "Which returns need my review?",
-  ],
-  chat: [
-    "Which clients haven't been contacted recently?",
-    "Draft a follow-up for stale clients",
-    "Summarize unread messages",
-    "Which threads need my response?",
-  ],
-  calendar: [
-    "What's on my schedule this week?",
-    "Which clients need appointments?",
-    "Any scheduling conflicts?",
-    "Who hasn't had a call in 2 weeks?",
-  ],
-  documents: [
-    "Who's missing the most documents?",
-    "Which uploads need review?",
-    "Show document completion rates",
-    "Who hasn't uploaded anything?",
-  ],
-  clients: [
-    "Which clients are at risk of extension?",
-    "Show me stale clients (no activity 7+ days)",
-    "Who has unpaid deposits?",
-    "Compare this season to last season",
-  ],
+// 8 cycling suggestions — shown 3 at a time with fade animation
+const allSuggestions = [
+  "Who needs my attention today?",
+  "What's my outstanding revenue?",
+  "Who hasn't logged into the portal?",
+  "Show me Priya's missing documents",
+  "Draft a message to DeShawn",
+  "Which returns need my review?",
+  "Compare this season to last season",
+  "Which clients are at risk of extension?",
+];
+
+// Intent-matched demo responses
+type DemoResponse = {
+  steps: ThinkingStep[];
+  foundContent: FoundContent;
+  summary: string;
 };
+
+function matchResponse(query: string): DemoResponse {
+  const q = query.toLowerCase();
+
+  // 1. Who needs my attention / urgent
+  if (q.includes("attention") || q.includes("urgent") || q.includes("needs me") || q.includes("priority")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Scanning all 20 clients for items requiring your immediate attention." },
+        { type: "searching", text: "Checking pipeline stages, overdue items, and pending actions", source: "20 clients analyzed" },
+        { type: "found", text: "Found 7 items needing your attention across 4 categories." },
+      ],
+      foundContent: {
+        text: "**ERO Signatures (2)** - Rodriguez ($500) and Aisha Johnson ($350) have paid and signed. Your countersignature files their returns.\n\n**Overdue Deposits (2)** - DeShawn Williams ($150, 10 days overdue) and Vladimir Petrov ($500, never paid).\n\n**Stale Clients (2)** - Tyrone Mitchell (9 days, no activity) and DeShawn Williams (12 days, never logged in).\n\n**Ready to Prep (1)** - Miguel Sandoval has all 9 docs. Waiting for you to begin preparation.",
+      },
+      summary: "Start with the ERO signatures — those are 2 returns you can file in under a minute. I've prepared draft messages for DeShawn and Tyrone in your Action Feed.",
+    };
+  }
+
+  // 2. Outstanding revenue / money
+  if (q.includes("revenue") || q.includes("outstanding") || q.includes("owed") || q.includes("collected") || q.includes("money")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Calculating revenue across all active clients and invoices." },
+        { type: "searching", text: "Querying payment records, deposits, and outstanding balances", source: "20 clients, 15 invoices" },
+        { type: "found", text: "Revenue breakdown ready." },
+      ],
+      foundContent: {
+        text: "**Collected this season** - $2,400 across 6 clients (3 deposits + 3 full payments).\n\n**Outstanding** - $4,650 across 14 clients. Breakdown: $1,500 in unpaid deposits, $3,150 in pending balance invoices.\n\n**Overdue** - $650 (DeShawn Williams deposit $150, 10 days + Vladimir Petrov deposit $500, never paid).\n\n**Projected total** - $7,050 when all 20 active returns are complete.",
+      },
+      summary: "You've collected 34% of projected revenue. The two overdue deposits ($650) should be prioritized — want me to draft payment reminders?",
+    };
+  }
+
+  // 3. Portal logins
+  if (q.includes("portal") || q.includes("logged in") || q.includes("login") || q.includes("never logged")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Checking portal access records for all active clients." },
+        { type: "searching", text: "Querying last login timestamps and account activation status", source: "20 clients checked" },
+        { type: "found", text: "4 clients have never accessed the portal." },
+      ],
+      foundContent: {
+        text: "**Never logged in** - Vladimir Petrov (new intake, 0/16 docs), DeShawn Williams (new client, 1/6 docs), Ashley Kim (new intake, 0/8 docs), Fatima Al-Hassan (new intake, 0/7 docs).\n\n**Last login 7+ days ago** - Tyrone Mitchell (Mar 19, collecting docs), Jasmine Torres (Mar 24, collecting docs).\n\n**Active on portal this week** - 14 clients have logged in within the last 7 days.",
+      },
+      summary: "The 4 who've never logged in are your highest drop-off risk. Vladimir and DeShawn are both new clients with unpaid deposits — they may need a phone call rather than a portal nudge.",
+    };
+  }
+
+  // 4. Missing documents (specific client or general)
+  if (q.includes("missing") || q.includes("document") || q.includes("docs")) {
+    const isPriya = q.includes("priya");
+    const isDeShawn = q.includes("deshawn");
+    if (isPriya) {
+      return {
+        steps: [
+          { type: "thinking", text: "Looking up Priya Sharma's document checklist." },
+          { type: "searching", text: "Checking required vs received documents", source: "7 items on checklist" },
+          { type: "found", text: "Priya is missing 4 of 7 required documents." },
+        ],
+        foundContent: {
+          text: "**Received (3)** - W-2 (verified), Driver's license (verified), Prior year return (verified).\n\n**Missing (4)** - 1099-NEC (TikTok income, requested 12 days ago), 1099-NEC (brand partnerships, requested 12 days ago), 1099-INT (bank interest, requested 7 days ago), SSN card (requested 7 days ago).\n\n**Notes** - Priya is active on the portal (last login Mar 22) but hasn't uploaded since her initial batch.",
+        },
+        summary: "The 1099-NECs are the blockers — she can't move to prep without them. She mentioned in chat she \"has her TikTok 1099 but isn't sure how to upload it.\" A quick walkthrough message could unblock her.",
+      };
+    }
+    return {
+      steps: [
+        { type: "thinking", text: "Scanning document checklists across all active clients." },
+        { type: "searching", text: "Comparing required vs received documents per client", source: "20 clients, 142 documents" },
+        { type: "found", text: "4 clients have significant missing documents." },
+      ],
+      foundContent: {
+        text: "**Priya Sharma** - 3/7 docs (missing 1099-NECs for TikTok + brand deals, 1099-INT, SSN card). Active on portal.\n\n**DeShawn Williams** - 1/6 docs (missing W-2, 1099s, ID, SSN card, prior return). Never logged in.\n\n**Jasmine Torres** - 4/8 docs (missing 1099-NECs, mortgage 1098, investment statements). Last active Mar 24.\n\n**Tyrone Mitchell** - 2/5 docs (missing Uber 1099-NEC, mileage log, prior return). 9 days stale.",
+      },
+      summary: "DeShawn is the most behind — he hasn't even logged into the portal. Priya is closest to ready but stuck on the 1099 uploads. Want me to draft personalized follow-ups for each?",
+    };
+  }
+
+  // 5. Draft a message
+  if (q.includes("draft") || q.includes("message") || q.includes("write") || q.includes("send")) {
+    const isDeShawn = q.includes("deshawn");
+    const isVlad = q.includes("vladimir") || q.includes("vlad");
+    const name = isDeShawn ? "DeShawn" : isVlad ? "Vladimir" : "the client";
+    const draft = isDeShawn
+      ? "Hey DeShawn! Just checking in on your tax return. I noticed we're still waiting on your W-2 and a few other documents. The quickest way to get started is through your client portal — I've sent you the link. It only takes about 10 minutes to upload everything. Let me know if you have any questions!"
+      : isVlad
+      ? "Vladimir, I wanted to reach out about your 2025 tax return. Given the complexity of Petrov Imports, we should discuss whether filing an extension makes sense. Can we schedule a call this week?"
+      : "Hi! Just following up on your tax return. We're making good progress but need a couple more items from you. Check your portal for the specific documents we're waiting on. Happy to help if you have any questions!";
+    return {
+      steps: [
+        { type: "thinking", text: `Analyzing ${name}'s current status and communication history.` },
+        { type: "searching", text: "Checking pipeline stage, missing items, and last contact", source: "Client record + message history" },
+        { type: "found", text: "Draft generated based on context." },
+      ],
+      foundContent: { text: `**Draft message for ${name}:**\n\n"${draft}"` },
+      summary: "This draft is in your Action Feed for review. Edit or send as-is — I won't send anything without your approval.",
+    };
+  }
+
+  // 6. Returns needing review
+  if (q.includes("review") || q.includes("prepared") || q.includes("ready to file")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Checking for clients in the Client Review stage." },
+        { type: "searching", text: "Querying pipeline for client_review and pay_and_sign stages", source: "20 clients checked" },
+        { type: "found", text: "4 clients need your attention at the review/signing stage." },
+      ],
+      foundContent: {
+        text: "**Client Review (2)** - Roberto Fuentes (return sent Mar 25, 5 days waiting, last portal login Mar 26) and Mei-Lin Wu (return sent Mar 26, 4 days waiting, active on portal).\n\n**Pay & Sign (2)** - James & Sofia Rodriguez ($500 paid, 8879 signed, awaiting ERO) and Aisha Johnson ($350 paid, 8879 signed, awaiting ERO).",
+      },
+      summary: "Rodriguez and Johnson are ready to file right now — just need your ERO signature. Roberto and Mei-Lin are reviewing but haven't signed yet. Roberto is 5 days in — might be worth a nudge.",
+    };
+  }
+
+  // 7. Season comparison
+  if (q.includes("season") || q.includes("compare") || q.includes("last year") || q.includes("progress")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Comparing current season metrics against last year's data." },
+        { type: "searching", text: "Analyzing filing rates, turnaround times, and revenue", source: "2025 vs 2026 season data" },
+        { type: "found", text: "Season comparison ready." },
+      ],
+      foundContent: {
+        text: "**Filed** - 3 of 20 returns (15%). Last year at this point: 5 of 18 (28%). You're behind pace by ~2 returns.\n\n**Average turnaround** - 12 days from docs complete to filed. Last year: 14 days. You're faster this season.\n\n**Revenue** - $2,400 collected of $7,050 projected (34%). Last year at this date: $3,200 of $6,300 (51%).\n\n**Client mix** - More complex returns this year (8 business vs 5 last year). Average fee up 18% ($352 vs $298).",
+      },
+      summary: "You're behind on filings but handling more complex (and higher-value) returns. The bottleneck is document collection — 6 clients are still in Collecting Docs. Clearing that backlog is the fastest path to catching up.",
+    };
+  }
+
+  // 8. Extension risk
+  if (q.includes("extension") || q.includes("risk") || q.includes("deadline") || q.includes("april 15")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Analyzing extension risk based on document completion, engagement, and complexity." },
+        { type: "searching", text: "Scoring each client's likelihood of needing an extension", source: "20 clients scored" },
+        { type: "found", text: "3 clients at high risk of needing extensions." },
+      ],
+      foundContent: {
+        text: "**Almost certain (95%)** - Vladimir Petrov: 0/16 docs, never logged in, complex international business. No engagement whatsoever.\n\n**Likely (70%)** - DeShawn Williams: 1/6 docs, deposit unpaid, new client. 12 days since last activity.\n\n**Moderate (45%)** - Tyrone Mitchell: 2/5 docs, extended last year too. History of late filing.\n\n**Low risk** - All other clients are on track or have enough time to complete.",
+      },
+      summary: "Vladimir almost certainly needs an extension — recommend scheduling a call to confirm and file Form 4868 this week. DeShawn might still make it with aggressive follow-up.",
+    };
+  }
+
+  // Fallback — still helpful, not a dead end
+  return {
+    steps: [
+      { type: "thinking", text: "Processing your question against practice data." },
+      { type: "searching", text: "Searching client records, documents, and activity", source: "20 clients queried" },
+      { type: "found", text: "Here's what I found." },
+    ],
+    foundContent: {
+      text: "I can help with that. Here are some things I can look up right now:\n\n**Clients** - Status, missing docs, deposit history, portal activity, extension risk.\n\n**Revenue** - Collected vs outstanding, overdue payments, projected totals.\n\n**Workflow** - Who's ready to prep, who needs your review, who needs ERO signing.\n\n**Communication** - Draft messages, follow-up suggestions, stale client alerts.",
+    },
+    summary: "Try asking about a specific client by name, or ask about deadlines, revenue, or documents. I work best with specific questions.",
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Icons matching the inspiration                                     */
@@ -165,18 +308,57 @@ function BulletIcon() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Cycling Suggestions                                                */
+/* ------------------------------------------------------------------ */
+function CyclingSuggestions({ onSelect }: { onSelect: (q: string) => void }) {
+  const [setIdx, setSetIdx] = useState(0);
+  const setsOf3 = [
+    [allSuggestions[0], allSuggestions[1], allSuggestions[2]],
+    [allSuggestions[3], allSuggestions[4], allSuggestions[5]],
+    [allSuggestions[6], allSuggestions[7], allSuggestions[0]],
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSetIdx(prev => (prev + 1) % setsOf3.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentSet = setsOf3[setIdx];
+
+  return (
+    <div className="pt-2">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={setIdx}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="flex flex-wrap gap-2"
+        >
+          {currentSet.map((q) => (
+            <button
+              key={q}
+              onClick={() => onSelect(q)}
+              className="rounded-full border border-white/15 bg-white/40 px-4 py-2.5 text-[12px] font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10"
+            >
+              {q}
+            </button>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  The Panel                                                          */
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
   const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion } = useAIPanel();
-  const pathname = usePathname();
-  const suggestedQuestions = useMemo(() => {
-    if (pathname?.includes("/chat")) return suggestedByRoute.chat;
-    if (pathname?.includes("/calendar")) return suggestedByRoute.calendar;
-    if (pathname?.includes("/documents")) return suggestedByRoute.documents;
-    if (pathname?.includes("/clients")) return suggestedByRoute.clients;
-    return suggestedByRoute.default;
-  }, [pathname]);
+
   const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -204,14 +386,14 @@ export function AIPanel() {
     setInput("");
     setIsTyping(true);
 
-    // Phase 1: Show reasoning steps one by one
+    const response = matchResponse(msg);
+
+    // Phase 1: Show first reasoning step
     setTimeout(() => {
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { id: aiMsgId, role: "assistant", content: "", steps: [
-          { type: "thinking", text: "Analyzing your question against practice data..." },
-        ]},
+        { id: aiMsgId, role: "assistant", content: "", steps: [response.steps[0]] },
       ]);
       setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
     }, 800);
@@ -219,20 +401,14 @@ export function AIPanel() {
     // Phase 2: Add searching step
     setTimeout(() => {
       setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
-        ...m, steps: [
-          { type: "thinking", text: "Analyzing your question against practice data..." },
-          { type: "searching", text: "Searching client records, documents, and activity logs", source: "20 clients queried" },
-        ]
+        ...m, steps: [response.steps[0], response.steps[1]]
       } : m));
     }, 1800);
 
     // Phase 3: Add found step
     setTimeout(() => {
       setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
-        ...m, steps: [
-          ...m.steps!,
-          { type: "found", text: "Found relevant results." },
-        ]
+        ...m, steps: response.steps
       } : m));
     }, 2600);
 
@@ -240,12 +416,9 @@ export function AIPanel() {
     setTimeout(() => {
       setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
         ...m,
-        foundContent: {
-          text: "This is a demo of Ask Docket. In the full version, I have real-time access to all your client records, document statuses, communication history, and calendar data.\n\nI can help with questions about specific clients, missing documents, deadlines, deduction opportunities, and more.",
-        },
-        summary: "Every suggestion I make appears for your review first. I never send messages or take actions without your explicit approval.",
+        foundContent: response.foundContent,
+        summary: response.summary,
       } : m));
-      // Auto-expand thinking for new messages
       setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
     }, 3400);
   };
@@ -380,11 +553,7 @@ export function AIPanel() {
               </div>
             )}
             {messages.length <= 2 && !isTyping && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {suggestedQuestions.map((q) => (
-                  <button key={q} onClick={() => handleSend(q)} className="rounded-full border border-white/15 bg-white/40 px-4 py-2.5 text-[12px] font-medium text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10">{q}</button>
-                ))}
-              </div>
+              <CyclingSuggestions onSelect={handleSend} />
             )}
           </div>
         </div>
