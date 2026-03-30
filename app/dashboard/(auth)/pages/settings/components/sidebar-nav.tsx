@@ -4,12 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import {
-  BellIcon,
-  PaletteIcon,
-  UserIcon,
-  PlugIcon,
-  BrainIcon,
-  ClockIcon
+  SettingsIcon
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,19 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const sidebarNavItems = [
   {
-    title: "Firm Profile",
+    title: "Settings",
     href: "/dashboard/pages/settings/profile",
-    icon: UserIcon
-  },
-  {
-    title: "Appearance",
-    href: "/dashboard/pages/settings/appearance",
-    icon: PaletteIcon
-  },
-  {
-    title: "Notifications",
-    href: "/dashboard/pages/settings/notifications",
-    icon: BellIcon
+    icon: SettingsIcon
   },
 ];
 
