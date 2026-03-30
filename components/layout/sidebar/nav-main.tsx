@@ -99,11 +99,6 @@ export const navItems: NavGroup[] = [
         icon: UsersIcon
       },
       {
-        title: "Documents",
-        href: "/dashboard/documents",
-        icon: FolderIcon
-      },
-      {
         title: "Calendar",
         href: "/dashboard/apps/calendar",
         icon: CalendarIcon
@@ -113,6 +108,11 @@ export const navItems: NavGroup[] = [
         href: "/dashboard/apps/chat",
         icon: MessageSquareIcon,
         isDataBadge: "4"
+      },
+      {
+        title: "Documents",
+        href: "/dashboard/documents",
+        icon: FolderIcon
       },
       {
         title: "Settings",
