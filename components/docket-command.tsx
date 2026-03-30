@@ -199,17 +199,21 @@ export function DocketCommand() {
     return () => clearInterval(interval);
   }, [open]);
 
-  // Cmd+K to open
+  // Cmd+K to open, Escape to close (global)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen(prev => !prev);
       }
+      if (e.key === "Escape" && open) {
+        e.preventDefault();
+        close();
+      }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [open, close]);
 
   // Focus input on open
   useEffect(() => {
@@ -297,14 +301,11 @@ export function DocketCommand() {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop — invisible, just catches clicks to close */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
-              className="fixed inset-0 z-50"
+            {/* Backdrop — invisible click catcher */}
+            <div
+              className="fixed inset-0 z-50 cursor-default"
               onClick={close}
+              onMouseDown={(e) => e.target === e.currentTarget && close()}
             />
 
             {/* Command palette */}
@@ -424,14 +425,20 @@ export function DocketCommand() {
                         className="py-2"
                       >
                         {!hasResults && (
-                          <div className="px-4 py-6 text-center">
-                            <p className="text-sm text-muted-foreground/50">No results for &ldquo;{query}&rdquo;</p>
+                          <div className="px-3 py-4">
+                            <p className="mb-3 text-center text-xs text-muted-foreground/40">No matches found</p>
                             <button
                               onClick={handleAiQuery}
-                              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border/30 px-4 py-2 text-sm text-muted-foreground transition-all hover:border-primary/30 hover:text-foreground hover:bg-primary/5"
+                              className="flex w-full items-center gap-3 rounded-xl bg-muted/30 px-3 py-3 text-left transition-colors hover:bg-muted/50"
                             >
-                              <div className="size-1.5 rounded-full bg-primary" />
-                              Ask Docket: &ldquo;{query}&rdquo;
+                              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                                <div className="size-2 rounded-full bg-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[11px] text-muted-foreground/50">Ask Docket</div>
+                                <div className="text-sm truncate">{query}</div>
+                              </div>
+                              <CornerDownLeft className="size-3.5 text-muted-foreground/30 shrink-0" />
                             </button>
                           </div>
                         )}
@@ -518,18 +525,19 @@ export function DocketCommand() {
                             ))}
                           </div>
                         )}
-                        {/* Ask Docket row — always shown when typing, below results */}
+                        {/* Ask Docket row — below results when results exist */}
                         {hasResults && (
-                          <div className="px-2 pb-1 pt-1 border-t border-border/10 mt-1">
+                          <div className="mx-3 mb-2 mt-1">
                             <button
                               onClick={handleAiQuery}
-                              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-primary/5"
+                              className="flex w-full items-center gap-3 rounded-xl bg-muted/30 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
                             >
-                              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                                <div className="size-2 rounded-full bg-primary" />
+                              <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
+                                <div className="size-1.5 rounded-full bg-primary" />
                               </div>
-                              <div className="flex-1">
-                                <div className="text-sm text-muted-foreground">Ask Docket: <span className="text-foreground">&ldquo;{query}&rdquo;</span></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[11px] text-muted-foreground/50">Ask Docket</div>
+                                <div className="text-xs truncate">{query}</div>
                               </div>
                             </button>
                           </div>
@@ -540,24 +548,16 @@ export function DocketCommand() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between border-t border-border/10 px-4 py-2">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
-                      <ArrowUp className="size-2.5" /><ArrowDown className="size-2.5" /> navigate
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
-                      <CornerDownLeft className="size-2.5" /> open
-                    </span>
-                  </div>
-                  {query.trim() && !aiMode && (
-                    <button
-                      onClick={handleAiQuery}
-                      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-muted-foreground/50 transition-all hover:bg-primary/5 hover:text-primary"
-                    >
-                      <div className="size-1.5 rounded-full bg-primary/50" />
-                      <span>Ask Docket</span>
-                    </button>
-                  )}
+                <div className="flex items-center gap-3 border-t border-border/10 px-4 py-2">
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                    <ArrowUp className="size-2.5" /><ArrowDown className="size-2.5" /> navigate
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                    <CornerDownLeft className="size-2.5" /> open
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                    esc close
+                  </span>
                 </div>
               </div>
             </motion.div>
