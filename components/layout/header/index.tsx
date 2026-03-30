@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { Separator } from "@/components/ui/separator";
 import Notifications from "@/components/layout/header/notifications";
-import { ActionSearchBar } from "@/components/ui/action-search-bar";
+import { DocketCommand } from "@/components/docket-command";
 import UserMenu from "@/components/layout/header/user-menu";
 // theme customizer removed
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export function SiteHeader() {
         </Button>
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <div className="max-w-sm flex-1">
-          <ActionSearchBar />
+          <DocketCommand />
         </div>
 
         <div className="ml-auto flex items-center gap-2">
