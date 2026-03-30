@@ -621,8 +621,8 @@ export default function ClientPortal() {
           .done-btn { animation: fadeInUp 0.5s ease 1.3s both; }
         `}</style>
 
-        {/* Top nav (skip on welcome + done screens) */}
-        {step !== "welcome" && step !== "done" && (
+        {/* Top nav (skip on welcome + done + doc modal screens) */}
+        {step !== "welcome" && step !== "done" && !showDoc && (
           <TopNav
             onBack={back}
             title="Vazant Consulting"
@@ -1397,88 +1397,7 @@ export default function ClientPortal() {
               </div>
             )}
 
-            {/* ── Document modal (Engagement Letter) ── */}
-            {showDoc === "engagement" && (
-              <div style={{ position: "fixed", inset: 0, zIndex: 400, background: c.bg, display: "flex", flexDirection: "column" }}>
-                <TopNav onBack={() => setShowDoc(null)} title="Engagement Letter" sub="Vazant Consulting" />
-                <div
-                  onScroll={e => {
-                    const el = e.target as HTMLDivElement;
-                    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setDocScrolled(true);
-                  }}
-                  style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px" }}
-                >
-                  <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 16 }}>Engagement Letter</h3>
-                  {[
-                    ["1. Scope of Service", "The Preparer will prepare your individual income tax return (Form 1040) along with applicable schedules and forms based on the information you provide."],
-                    ["2. Client Responsibilities", "You are responsible for providing complete, accurate, and timely information. This includes all income documents (W-2s, 1099s, K-1s), expense records, and prior year returns."],
-                    ["3. Fees and Payment", "A non-refundable deposit of $50.00 is required to secure your appointment and will be applied toward the total fee. The remaining balance is due before the Form 8879 is released for signature."],
-                    ["4. Cancellation Policy", "Appointments cancelled more than 48 hours in advance receive a full refund. Late cancellations or no-shows forfeit the deposit."],
-                    ["5. Confidentiality", "Client information will be maintained in accordance with IRC Section 7216 and will not be disclosed without written consent."],
-                    ["6. Electronic Filing", "By signing Form 8879, you authorize electronic filing. The Preparer will not file until you have reviewed, paid, and signed."],
-                    ["7. Limitation of Liability", "The Preparer is not responsible for penalties resulting from incomplete or inaccurate information provided by the Client."],
-                    ["8. Data Security", "All data is stored with AES-256 encryption at rest and TLS 1.2+ in transit. A Written Information Security Plan (WISP) is maintained per IRS Publication 4557."],
-                    ["9. Term", "This engagement covers the 2025 tax year. Either party may terminate by written notice."],
-                    ["10. Dispute Resolution", "Disputes shall be resolved through mediation before arbitration or litigation."],
-                  ].map(([h, b], i) => (
-                    <div key={i} style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: c.text, marginBottom: 4 }}>{h}</div>
-                      <p style={{ fontSize: 13.5, lineHeight: 1.8, color: c.secondary, margin: 0 }}>{b}</p>
-                    </div>
-                  ))}
-                  <p style={{ fontSize: 13, fontStyle: "italic", color: c.dim, lineHeight: 1.6 }}>
-                    By agreeing below, you confirm that you have read, understand, and agree to the terms above.
-                  </p>
-                  {!docScrolled && (
-                    <div style={{ textAlign: "center", padding: "16px 0", color: c.dim, fontSize: 12 }}>↓ Scroll to bottom to continue</div>
-                  )}
-                </div>
-                <div style={{ flexShrink: 0, padding: "12px 20px 20px", borderTop: `1px solid ${c.border}`, background: c.surface }}>
-                  <PrimaryButton onClick={() => { setEngAgreed(true); setShowDoc(null); }} disabled={!docScrolled}>
-                    {docScrolled ? "I Agree to the Engagement Letter" : "Scroll to bottom to agree"}
-                  </PrimaryButton>
-                </div>
-              </div>
-            )}
-
-            {/* ── Document modal (7216 Consent) ── */}
-            {showDoc === "7216" && (
-              <div style={{ position: "fixed", inset: 0, zIndex: 400, background: c.bg, display: "flex", flexDirection: "column" }}>
-                <TopNav onBack={() => setShowDoc(null)} title="IRC §7216 Consent" sub="Taxpayer Authorization" />
-                <div
-                  onScroll={e => {
-                    const el = e.target as HTMLDivElement;
-                    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setDocScrolled(true);
-                  }}
-                  style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px" }}
-                >
-                  <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 16 }}>IRC Section 7216 — Taxpayer Consent</h3>
-                  {[
-                    ["Authorized Uses", "1. To prepare and file your federal and state returns for 2025.\n2. To communicate with taxing authorities on your behalf.\n3. To store and process your information using encrypted systems.\n4. To carry forward information for subsequent years, subject to renewed consent."],
-                    ["Information Covered", "This consent applies to: name, SSN, date of birth, address, income records, deduction records, financial accounts, employment info, dependent info, and all other information necessary for tax preparation."],
-                    ["Duration and Revocation", "Effective from signature date until December 31, 2026, or until revoked in writing. Revocation does not affect actions taken prior to revocation."],
-                    ["Your Rights", "You are not required to sign this consent. However, without consent, the Preparer cannot prepare your return. Your information will not be disclosed to unidentified third parties."],
-                    ["Penalties for Unauthorized Disclosure", "Unauthorized use or disclosure of tax return information is a violation of IRC Section 7216, punishable as a misdemeanor with fines up to $1,000 and up to one year imprisonment per violation."],
-                  ].map(([h, b], i) => (
-                    <div key={i} style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: c.text, marginBottom: 4 }}>{h}</div>
-                      <p style={{ fontSize: 13.5, lineHeight: 1.8, color: c.secondary, margin: 0, whiteSpace: "pre-wrap" }}>{b}</p>
-                    </div>
-                  ))}
-                  <p style={{ fontSize: 13, fontStyle: "italic", color: c.dim, lineHeight: 1.6 }}>
-                    By authorizing below, you consent to the use and disclosure of your tax return information as described above.
-                  </p>
-                  {!docScrolled && (
-                    <div style={{ textAlign: "center", padding: "16px 0", color: c.dim, fontSize: 12 }}>↓ Scroll to bottom to continue</div>
-                  )}
-                </div>
-                <div style={{ flexShrink: 0, padding: "12px 20px 20px", borderTop: `1px solid ${c.border}`, background: c.surface }}>
-                  <PrimaryButton onClick={() => { setS72Agreed(true); setShowDoc(null); }} disabled={!docScrolled}>
-                    {docScrolled ? "I Authorize This Consent" : "Scroll to bottom to authorize"}
-                  </PrimaryButton>
-                </div>
-              </div>
-            )}
+            {/* Document modals rendered outside scroll container */}
 
             {/* ── Step 14: Done ── */}
             {step === "done" && (
@@ -1545,8 +1464,8 @@ export default function ClientPortal() {
           </div>
         </div>
 
-        {/* Ask Antonio bar */}
-        {step !== "welcome" && step !== "done" && <AskAntonioBar onClick={() => setAskAntonioOpen(true)} />}
+        {/* Ask Antonio bar — hidden when document modals are open */}
+        {step !== "welcome" && step !== "done" && !showDoc && <AskAntonioBar onClick={() => setAskAntonioOpen(true)} />}
 
         {/* Tutorial overlay */}
         {showTutorial && (
@@ -1699,12 +1618,92 @@ export default function ClientPortal() {
               </div>
             </div>
         )}
+
+        {/* ── Document modal (Engagement Letter) — rendered outside scroll container ── */}
+        {showDoc === "engagement" && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 500, background: c.bg, display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto" }}>
+            <TopNav onBack={() => setShowDoc(null)} title="Engagement Letter" sub="Vazant Consulting" />
+            <div
+              onScroll={e => {
+                const el = e.target as HTMLDivElement;
+                if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setDocScrolled(true);
+              }}
+              style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px" }}
+            >
+              <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 16 }}>Engagement Letter</h3>
+              {[
+                ["1. Scope of Service", "The Preparer will prepare your individual income tax return (Form 1040) along with applicable schedules and forms based on the information you provide."],
+                ["2. Client Responsibilities", "You are responsible for providing complete, accurate, and timely information. This includes all income documents (W-2s, 1099s, K-1s), expense records, and prior year returns."],
+                ["3. Fees and Payment", "A non-refundable deposit of $50.00 is required to secure your appointment and will be applied toward the total fee. The remaining balance is due before the Form 8879 is released for signature."],
+                ["4. Cancellation Policy", "Appointments cancelled more than 48 hours in advance receive a full refund. Late cancellations or no-shows forfeit the deposit."],
+                ["5. Confidentiality", "Client information will be maintained in accordance with IRC Section 7216 and will not be disclosed without written consent."],
+                ["6. Electronic Filing", "By signing Form 8879, you authorize electronic filing. The Preparer will not file until you have reviewed, paid, and signed."],
+                ["7. Limitation of Liability", "The Preparer is not responsible for penalties resulting from incomplete or inaccurate information provided by the Client."],
+                ["8. Data Security", "All data is stored with AES-256 encryption at rest and TLS 1.2+ in transit. A Written Information Security Plan (WISP) is maintained per IRS Publication 4557."],
+                ["9. Term", "This engagement covers the 2025 tax year. Either party may terminate by written notice."],
+                ["10. Dispute Resolution", "Disputes shall be resolved through mediation before arbitration or litigation."],
+              ].map(([h, b], i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: c.text, marginBottom: 4 }}>{h}</div>
+                  <p style={{ fontSize: 13.5, lineHeight: 1.8, color: c.secondary, margin: 0 }}>{b}</p>
+                </div>
+              ))}
+              <p style={{ fontSize: 13, fontStyle: "italic", color: c.dim, lineHeight: 1.6 }}>
+                By agreeing below, you confirm that you have read, understand, and agree to the terms above.
+              </p>
+              {!docScrolled && (
+                <div style={{ textAlign: "center", padding: "16px 0", color: c.dim, fontSize: 12 }}>Scroll to bottom to continue</div>
+              )}
+            </div>
+            <div style={{ flexShrink: 0, padding: "12px 20px 20px", borderTop: `1px solid ${c.border}`, background: c.surface }}>
+              <PrimaryButton onClick={() => { setEngAgreed(true); setShowDoc(null); }} disabled={!docScrolled}>
+                {docScrolled ? "I Agree to the Engagement Letter" : "Scroll to bottom to agree"}
+              </PrimaryButton>
+            </div>
+          </div>
+        )}
+
+        {/* ── Document modal (7216 Consent) — rendered outside scroll container ── */}
+        {showDoc === "7216" && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 500, background: c.bg, display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto" }}>
+            <TopNav onBack={() => setShowDoc(null)} title="IRC Section 7216 Consent" sub="Taxpayer Authorization" />
+            <div
+              onScroll={e => {
+                const el = e.target as HTMLDivElement;
+                if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setDocScrolled(true);
+              }}
+              style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px" }}
+            >
+              <h3 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 16 }}>IRC Section 7216 — Taxpayer Consent</h3>
+              {[
+                ["Authorized Uses", "1. To prepare and file your federal and state returns for 2025.\n2. To communicate with taxing authorities on your behalf.\n3. To store and process your information using encrypted systems.\n4. To carry forward information for subsequent years, subject to renewed consent."],
+                ["Information Covered", "This consent applies to: name, SSN, date of birth, address, income records, deduction records, financial accounts, employment info, dependent info, and all other information necessary for tax preparation."],
+                ["Duration and Revocation", "Effective from signature date until December 31, 2026, or until revoked in writing. Revocation does not affect actions taken prior to revocation."],
+                ["Your Rights", "You are not required to sign this consent. However, without consent, the Preparer cannot prepare your return. Your information will not be disclosed to unidentified third parties."],
+                ["Penalties for Unauthorized Disclosure", "Unauthorized use or disclosure of tax return information is a violation of IRC Section 7216, punishable as a misdemeanor with fines up to $1,000 and up to one year imprisonment per violation."],
+              ].map(([h, b], i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: c.text, marginBottom: 4 }}>{h}</div>
+                  <p style={{ fontSize: 13.5, lineHeight: 1.8, color: c.secondary, margin: 0, whiteSpace: "pre-wrap" }}>{b}</p>
+                </div>
+              ))}
+              <p style={{ fontSize: 13, fontStyle: "italic", color: c.dim, lineHeight: 1.6 }}>
+                By authorizing below, you consent to the use and disclosure of your tax return information as described above.
+              </p>
+              {!docScrolled && (
+                <div style={{ textAlign: "center", padding: "16px 0", color: c.dim, fontSize: 12 }}>Scroll to bottom to continue</div>
+              )}
+            </div>
+            <div style={{ flexShrink: 0, padding: "12px 20px 20px", borderTop: `1px solid ${c.border}`, background: c.surface }}>
+              <PrimaryButton onClick={() => { setS72Agreed(true); setShowDoc(null); }} disabled={!docScrolled}>
+                {docScrolled ? "I Authorize This Consent" : "Scroll to bottom to authorize"}
+              </PrimaryButton>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
-
-
-
 
   // Post-intake: redirect to the full client portal
   router.push("/clientportal");
