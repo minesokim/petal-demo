@@ -5,142 +5,127 @@ import { addDays, setHours, setMinutes, subDays } from "date-fns";
 
 import { EventCalendar, type CalendarEvent } from "./";
 
-const sampleEvents: CalendarEvent[] = [
+// Antonio's real appointments from mock data
+const taxEvents: CalendarEvent[] = [
   {
     id: "1",
-    title: "Annual Planning",
-    description: "Strategic planning for next year",
-    start: subDays(new Date(), 24), // 24 days before today
-    end: subDays(new Date(), 23), // 23 days before today
-    allDay: true,
+    title: "David Park - S-Corp Review",
+    description: "Video call to review S-Corp return. 2 docs still missing (payroll summary, equipment list).",
+    start: setMinutes(setHours(new Date(), 15), 0), // 3:00 PM today (rescheduled from 2pm)
+    end: setMinutes(setHours(new Date(), 16), 0),
     color: "sky",
-    location: "Main Conference Hall"
+    location: "Google Meet"
   },
   {
     id: "2",
-    title: "Project Deadline",
-    description: "Submit final deliverables",
-    start: setMinutes(setHours(subDays(new Date(), 9), 13), 0), // 1:00 PM, 9 days before
-    end: setMinutes(setHours(subDays(new Date(), 9), 15), 30), // 3:30 PM, 9 days before
-    color: "amber",
-    location: "Office"
+    title: "Miguel Sandoval - Incorporation",
+    description: "Discuss incorporating Sandoval Plumbing. Schedule C to S-Corp conversion.",
+    start: setMinutes(setHours(new Date(), 16), 0), // 4:00 PM today
+    end: setMinutes(setHours(new Date(), 16), 30),
+    color: "emerald",
+    location: "Phone call"
   },
   {
     id: "3",
-    title: "Quarterly Budget Review",
-    description: "Strategic planning for next year",
-    start: subDays(new Date(), 13), // 13 days before today
-    end: subDays(new Date(), 13), // 13 days before today
-    allDay: true,
-    color: "orange",
-    location: "Main Conference Hall"
+    title: "Vladimir Petrov - Extension Discussion",
+    description: "0 of 16 docs submitted. Discuss extension timeline and international complexity.",
+    start: setMinutes(setHours(addDays(new Date(), 1), 10), 0), // Tomorrow 10am
+    end: setMinutes(setHours(addDays(new Date(), 1), 11), 0),
+    color: "rose",
+    location: "Google Meet"
   },
   {
     id: "4",
-    title: "Team Meeting",
-    description: "Weekly team sync",
-    start: setMinutes(setHours(new Date(), 10), 0), // 10:00 AM today
-    end: setMinutes(setHours(new Date(), 11), 0), // 11:00 AM today
-    color: "sky",
-    location: "Conference Room A"
+    title: "Marcus Chen - Restaurant Review",
+    description: "Review 3-location Schedule C. Discuss 40% revenue drop and possible location closure.",
+    start: setMinutes(setHours(addDays(new Date(), 2), 14), 0), // Day after tomorrow 2pm
+    end: setMinutes(setHours(addDays(new Date(), 2), 15), 0),
+    color: "amber",
+    location: "Google Meet"
   },
   {
     id: "5",
-    title: "Lunch with Client",
-    description: "Discuss new project requirements",
-    start: setMinutes(setHours(addDays(new Date(), 1), 12), 0), // 12:00 PM, 1 day from now
-    end: setMinutes(setHours(addDays(new Date(), 1), 13), 15), // 1:15 PM, 1 day from now
-    color: "emerald",
-    location: "Downtown Cafe"
+    title: "Carlos & Elena Mendez - Partnership Review",
+    description: "Review 1065 partnership return. Discuss Section 179 paint booth deduction.",
+    start: setMinutes(setHours(addDays(new Date(), 3), 10), 0),
+    end: setMinutes(setHours(addDays(new Date(), 3), 11), 0),
+    color: "sky",
+    location: "Google Meet"
   },
   {
     id: "6",
-    title: "Product Launch",
-    description: "New product release",
-    start: addDays(new Date(), 3), // 3 days from now
-    end: addDays(new Date(), 6), // 6 days from now
-    allDay: true,
-    color: "violet"
+    title: "Kevin & Lisa Park - New Client Call",
+    description: "Pending client. Dry cleaning business. Referred by David Park.",
+    start: setMinutes(setHours(addDays(new Date(), 1), 14), 0),
+    end: setMinutes(setHours(addDays(new Date(), 1), 15), 0),
+    color: "violet",
+    location: "Google Meet"
   },
   {
     id: "7",
-    title: "Sales Conference",
-    description: "Discuss about new clients",
-    start: setMinutes(setHours(addDays(new Date(), 4), 14), 30), // 2:30 PM, 4 days from now
-    end: setMinutes(setHours(addDays(new Date(), 5), 14), 45), // 2:45 PM, 5 days from now
-    color: "rose",
-    location: "Downtown Cafe"
+    title: "Sarah Mitchell - New Client Call",
+    description: "Pending client. Freelance photographer. Found on Nextdoor.",
+    start: setMinutes(setHours(addDays(new Date(), 2), 10), 0),
+    end: setMinutes(setHours(addDays(new Date(), 2), 11), 0),
+    color: "violet",
+    location: "Phone call"
   },
   {
     id: "8",
-    title: "Team Meeting",
-    description: "Weekly team sync",
-    start: setMinutes(setHours(addDays(new Date(), 5), 9), 0), // 9:00 AM, 5 days from now
-    end: setMinutes(setHours(addDays(new Date(), 5), 10), 30), // 10:30 AM, 5 days from now
-    color: "orange",
-    location: "Conference Room A"
+    title: "Daniel Okafor - New Client Call",
+    description: "Pending client. College student, simple W-2. Mentor network referral.",
+    start: setMinutes(setHours(addDays(new Date(), 3), 11), 0),
+    end: setMinutes(setHours(addDays(new Date(), 3), 11), 30),
+    color: "violet",
+    location: "Phone call"
   },
+  // Past events
   {
     id: "9",
-    title: "Review contracts",
-    description: "Weekly team sync",
-    start: setMinutes(setHours(addDays(new Date(), 5), 14), 0), // 2:00 PM, 5 days from now
-    end: setMinutes(setHours(addDays(new Date(), 5), 15), 30), // 3:30 PM, 5 days from now
-    color: "sky",
-    location: "Conference Room A"
+    title: "Priya Sharma - Intake Call",
+    description: "New TikTok creator client. Discussed estimated payments.",
+    start: setMinutes(setHours(subDays(new Date(), 6), 11), 0),
+    end: setMinutes(setHours(subDays(new Date(), 6), 11), 30),
+    color: "emerald",
+    location: "Phone call"
   },
   {
     id: "10",
-    title: "Team Meeting",
-    description: "Weekly team sync",
-    start: setMinutes(setHours(addDays(new Date(), 5), 9), 45), // 9:45 AM, 5 days from now
-    end: setMinutes(setHours(addDays(new Date(), 5), 11), 0), // 11:00 AM, 5 days from now
+    title: "Roberto Fuentes - 1120S Review",
+    description: "Reviewed trucking company return. Complex depreciation.",
+    start: setMinutes(setHours(subDays(new Date(), 2), 14), 0),
+    end: setMinutes(setHours(subDays(new Date(), 2), 15), 30),
     color: "amber",
-    location: "Conference Room A"
+    location: "Google Meet"
   },
+  // April 15 deadline marker
   {
     id: "11",
-    title: "Marketing Strategy Session",
-    description: "Quarterly marketing planning",
-    start: setMinutes(setHours(addDays(new Date(), 9), 10), 0), // 10:00 AM, 9 days from now
-    end: setMinutes(setHours(addDays(new Date(), 9), 15), 30), // 3:30 PM, 9 days from now
-    color: "emerald",
-    location: "Marketing Department"
-  },
-  {
-    id: "12",
-    title: "Annual Shareholders Meeting",
-    description: "Presentation of yearly results",
-    start: addDays(new Date(), 17), // 17 days from now
-    end: addDays(new Date(), 17), // 17 days from now
+    title: "FILING DEADLINE - April 15",
+    description: "IRS filing deadline for 2025 tax year",
+    start: new Date(2026, 3, 15),
+    end: new Date(2026, 3, 15),
     allDay: true,
-    color: "sky",
-    location: "Grand Conference Center"
-  },
-  {
-    id: "13",
-    title: "Product Development Workshop",
-    description: "Brainstorming for new features",
-    start: setMinutes(setHours(addDays(new Date(), 26), 9), 0), // 9:00 AM, 26 days from now
-    end: setMinutes(setHours(addDays(new Date(), 27), 17), 0), // 5:00 PM, 27 days from now
     color: "rose",
-    location: "Innovation Lab"
-  }
+    location: ""
+  },
 ];
 
 export default function EventCalendarApp() {
-  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
+  const [events, setEvents] = useState<CalendarEvent[]>(taxEvents);
 
   const handleEventAdd = (event: CalendarEvent) => {
-    setEvents([...events, event]);
+    setEvents((prev) => [...prev, event]);
   };
 
-  const handleEventUpdate = (updatedEvent: CalendarEvent) => {
-    setEvents(events.map((event) => (event.id === updatedEvent.id ? updatedEvent : event)));
+  const handleEventUpdate = (event: CalendarEvent) => {
+    setEvents((prev) =>
+      prev.map((e) => (e.id === event.id ? event : e))
+    );
   };
 
   const handleEventDelete = (eventId: string) => {
-    setEvents(events.filter((event) => event.id !== eventId));
+    setEvents((prev) => prev.filter((e) => e.id !== eventId));
   };
 
   return (
