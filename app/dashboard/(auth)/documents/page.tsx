@@ -36,8 +36,8 @@ function DocumentStatusWidget() {
     <div className="flex items-center gap-4">
       <DonutChart
         data={docStatusData}
-        size={80}
-        strokeWidth={12}
+        size={96}
+        strokeWidth={14}
         animationDuration={0.8}
         highlightOnHover
         onSegmentHover={(seg) => setHovered(seg?.label ?? null)}

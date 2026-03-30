@@ -170,7 +170,7 @@ export default function EventCalendarApp() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-height)-3rem)]">
+    <div className="flex">
       {/* Calendar - original component untouched */}
       <div className="flex-1 min-w-0">
         <EventCalendar
@@ -182,7 +182,7 @@ export default function EventCalendarApp() {
       </div>
 
       {/* Right sidebar - upcoming events + detail panel */}
-      <div className="w-[300px] shrink-0 border-l flex flex-col overflow-hidden">
+      <div className="w-[300px] shrink-0 border-l flex flex-col" style={{ height: "calc(100vh - var(--header-height) - 3rem)" }}>
         <AnimatePresence mode="wait">
           {selectedSidebarEvent ? (
             /* Event detail view */

@@ -28,7 +28,7 @@ export function DocumentRow({ doc, showNew = false, showDate = false }: Document
 
   return (
     <>
-      <button
+      <div
         onClick={() => setPreviewOpen(true)}
         className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
       >
@@ -56,7 +56,7 @@ export function DocumentRow({ doc, showNew = false, showDate = false }: Document
           <Download className="size-3.5" />
         </button>
         <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-      </button>
+      </div>
 
       <DocumentPreviewDialog
         document={doc}
