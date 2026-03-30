@@ -199,6 +199,15 @@ export function DocketCommand() {
     return () => clearInterval(interval);
   }, [open]);
 
+  // Reset on close
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setAiMode(false);
+    setAiResponse(null);
+    setSelectedIdx(0);
+  }, []);
+
   // Cmd+K to open, Escape to close (global)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -219,15 +228,6 @@ export function DocketCommand() {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
-
-  // Reset on close
-  const close = useCallback(() => {
-    setOpen(false);
-    setQuery("");
-    setAiMode(false);
-    setAiResponse(null);
-    setSelectedIdx(0);
-  }, []);
 
   // Handle AI query
   const handleAiQuery = useCallback(() => {
