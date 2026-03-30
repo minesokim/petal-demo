@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Check, X, AlertTriangle, TrendingDown, FileText,
-  Brain, Calculator, Mail, Clock, Sparkles, ChevronRight
+  Brain, Calculator, Mail, Clock, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
@@ -188,7 +188,7 @@ function DeductionSuggestionCard({ suggestion }: { suggestion: typeof deductionS
       <CardContent className="py-4">
         <div className="flex items-start gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-            <Sparkles className="size-4 text-emerald-600" />
+            <Calculator className="size-4 text-emerald-600" />
           </div>
           <div className="flex-1">
             <div className="text-sm font-semibold">{suggestion.deductionType}</div>

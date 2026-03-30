@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Check, X, AlertTriangle, Pen, ArrowRight,
-  Loader2, FileText, Sparkles, Eye, ChevronRight
+  Loader2, FileText, Eye, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type DocumentExtraction, type ExtractedField } from "@/lib/actions-mock-data";
@@ -124,9 +124,9 @@ export function ExtractionDialog({ extraction, open, onOpenChange }: ExtractionD
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] border-0 bg-transparent p-0 shadow-none sm:max-w-4xl [&>button]:hidden">
-        {/* Glassmorphic container */}
-        <div className="flex flex-col overflow-hidden rounded-2xl border border-white/20 bg-background/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-background/90 max-h-[90vh]">
+      <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none sm:max-w-4xl [&>button]:hidden" style={{ maxHeight: "85vh" }}>
+        {/* Container */}
+        <div className="flex flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl" style={{ maxHeight: "85vh" }}>
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/50 px-6 py-4 shrink-0">
             <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ export function ExtractionDialog({ extraction, open, onOpenChange }: ExtractionD
                   <Badge variant="outline" className="text-[10px]">{extraction.clientName}</Badge>
                 </div>
                 <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Sparkles className="size-3" /> AI-extracted</span>
+                  <span className="flex items-center gap-1">Auto-extracted</span>
                   <span>{approvedCount}/{fields.length} fields approved</span>
                   {needsReviewCount > 0 && (
                     <span className="flex items-center gap-1 text-amber-600"><AlertTriangle className="size-3" /> {needsReviewCount} needs review</span>
