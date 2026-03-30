@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { UploadZone } from "@/components/documents/upload-zone";
@@ -12,7 +13,7 @@ import { clients } from "@/lib/mock-data";
 import { documentExtractions } from "@/lib/actions-mock-data";
 import { getClientChecklist, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { DocumentExtractionView } from "@/components/documents/document-extraction-view";
-import { AlertTriangle, FileText } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle, Download, FileText, FolderDown } from "lucide-react";
 
 export default function ClientDocumentsPage() {
   const params = useParams();
@@ -23,8 +24,68 @@ export default function ClientDocumentsPage() {
   const groups = groupDocumentsByCategory(client.id);
   const extractions = documentExtractions.filter(e => e.clientId === client.id);
 
+  const totalDocs = groups.reduce((sum, g) => sum + g.docs.length, 0);
+  const receivedCount = client.documentsSubmitted;
+  const requiredCount = client.documentsRequired;
+  const allReceived = receivedCount >= requiredCount;
+  const missingCount = checklist.filter(c => c.required && !c.received).length;
+  const docPercent = requiredCount > 0 ? Math.round((receivedCount / requiredCount) * 100) : 0;
+
   return (
     <div className="space-y-6">
+      {/* Document Status Summary */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`flex size-10 items-center justify-center rounded-xl ${allReceived ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted"}`}>
+                {allReceived ? (
+                  <CheckCircle className="size-5 text-emerald-600" />
+                ) : (
+                  <FileText className="size-5 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">
+                    {allReceived ? "All documents received" : `${receivedCount} of ${requiredCount} documents received`}
+                  </span>
+                  {allReceived && (
+                    <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px]">
+                      <Check className="mr-1 size-3" /> Complete
+                    </Badge>
+                  )}
+                  {!allReceived && missingCount > 0 && (
+                    <Badge variant="outline" className="border-amber-200 text-amber-700 text-[10px]">
+                      {missingCount} missing
+                    </Badge>
+                  )}
+                </div>
+                {!allReceived && (
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <Progress value={docPercent} className="h-1.5 w-32" />
+                    <span className="text-[11px] tabular-nums text-muted-foreground">{docPercent}%</span>
+                  </div>
+                )}
+                {allReceived && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {totalDocs} files uploaded &middot; Ready for preparation
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Download All button — only when all docs received */}
+            {allReceived && totalDocs > 0 && (
+              <Button size="sm" variant="outline" className="gap-1.5">
+                <FolderDown className="size-3.5" />
+                Download all ({totalDocs})
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upload zone */}
       <UploadZone clientName={client.fullName.split(" ")[0]} />
 
