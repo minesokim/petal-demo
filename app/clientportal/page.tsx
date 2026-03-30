@@ -135,6 +135,7 @@ export default function ClientPortalDirect() {
   const [rescheduleDay, setRescheduleDay] = useState("Mon, Apr 6");
   const [rescheduleTime, setRescheduleTime] = useState("9:00 AM");
   const [rescheduled, setRescheduled] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatFileRef = useRef<HTMLInputElement>(null);
@@ -187,6 +188,173 @@ export default function ClientPortalDirect() {
     }, 500);
     e.target.value = "";
   };
+
+  // ═══ DOCUMENT VIEWER ═══
+  const DOC_CONTENT: Record<string, { title: string; type: string; pages: number; content: React.ReactNode }> = {
+    "Engagement Letter": {
+      title: "Engagement Letter", type: "PDF", pages: 2,
+      content: (
+        <div style={{ padding: "28px 24px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: c.text, fontFamily: "'Fraunces', serif" }}>Vazant Consulting</div>
+            <div style={{ fontSize: 11, color: c.dim, marginTop: 2 }}>Antonio Vazquez, EA · Montclair, CA 91763</div>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: c.text, marginBottom: 16 }}>Engagement Letter — Tax Preparation Services</div>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}>Dear Maria Gonzalez,</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}>This letter confirms the terms of our engagement for the preparation of your 2025 federal and applicable state income tax returns. This engagement is limited to the preparation of income tax returns based on information you provide.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}><strong>Scope of Services:</strong> We will prepare your 2025 Form 1040 U.S. Individual Income Tax Return and applicable schedules based on the information you provide. We will not audit or otherwise verify the data you submit, although we may ask for clarification or additional documentation.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}><strong>Client Responsibilities:</strong> You are responsible for providing all information required for the preparation of complete and accurate returns. You should retain all documents that support your income, deductions, and credits.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}><strong>Fees:</strong> Our fee for the Complex Return service is $350.00. A deposit of $50.00 is required at the time of engagement, with the remaining balance due upon completion.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}><strong>Signatures:</strong></p>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, paddingTop: 16, borderTop: `1px solid ${c.borderLight}` }}>
+            <div><div style={{ fontSize: 14, fontStyle: "italic", color: c.accent, fontFamily: "'Fraunces', serif" }}>Maria Gonzalez</div><div style={{ fontSize: 10, color: c.dim, marginTop: 4 }}>Client · Mar 27, 2026</div></div>
+            <div><div style={{ fontSize: 14, fontStyle: "italic", color: c.accent, fontFamily: "'Fraunces', serif" }}>Antonio Vazquez</div><div style={{ fontSize: 10, color: c.dim, marginTop: 4 }}>Preparer · Mar 27, 2026</div></div>
+          </div>
+        </div>
+      ),
+    },
+    "7216 Consent": {
+      title: "7216 Consent Form", type: "PDF", pages: 1,
+      content: (
+        <div style={{ padding: "28px 24px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: c.text }}>CONSENT FOR DISCLOSURE OF TAX RETURN INFORMATION</div>
+            <div style={{ fontSize: 11, color: c.dim, marginTop: 4 }}>Pursuant to Internal Revenue Code Section 7216</div>
+          </div>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}>Federal law requires this consent form be provided to you. Unless authorized by law, we cannot disclose your tax return information to third parties for purposes other than the preparation and filing of your tax return without your consent.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}>You are not required to complete this form. If you choose not to complete this form, it will not affect our ability to prepare your tax return.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}><strong>I, Maria Gonzalez,</strong> hereby authorize Antonio Vazquez, EA (Vazant Consulting) to disclose my tax return information as necessary for the purpose of tax return preparation and related tax advisory services for the 2025 tax year.</p>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 12 }}>This consent is valid for one year from the date signed below and may be revoked at any time by notifying the tax preparer in writing.</p>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, paddingTop: 16, borderTop: `1px solid ${c.borderLight}` }}>
+            <div><div style={{ fontSize: 14, fontStyle: "italic", color: c.accent, fontFamily: "'Fraunces', serif" }}>Maria Gonzalez</div><div style={{ fontSize: 10, color: c.dim, marginTop: 4 }}>Signed · Mar 27, 2026</div></div>
+          </div>
+        </div>
+      ),
+    },
+    "Form 8879 (signed)": {
+      title: "Form 8879 — IRS e-file Signature Authorization", type: "PDF", pages: 1,
+      content: (
+        <div style={{ padding: "28px 24px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, letterSpacing: "0.05em" }}>FORM 8879</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: c.text }}>IRS e-file Signature Authorization</div>
+            <div style={{ fontSize: 11, color: c.dim, marginTop: 2 }}>Department of the Treasury — Internal Revenue Service</div>
+          </div>
+          <div style={{ background: c.muted, borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+            {[{ l: "Taxpayer", v: "Maria Gonzalez" }, { l: "Spouse", v: "James Gonzalez" }, { l: "Filing status", v: "Married Filing Jointly" }, { l: "Adjusted gross income", v: "$79,180" }, { l: "Total tax", v: "$8,230" }, { l: "Federal refund", v: "$2,340" }].map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                <span style={{ fontSize: 12, color: c.secondary }}>{r.l}</span><span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: c.secondary, lineHeight: 1.8, marginBottom: 16 }}>I authorize Antonio Vazquez, EA to enter my PIN as my signature on my 2025 electronically filed income tax return.</p>
+          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 16, borderTop: `1px solid ${c.borderLight}` }}>
+            <div><div style={{ fontSize: 14, fontStyle: "italic", color: c.accent, fontFamily: "'Fraunces', serif" }}>Maria Gonzalez</div><div style={{ fontSize: 10, color: c.dim, marginTop: 4 }}>Taxpayer · Mar 30, 2026</div></div>
+            <div><div style={{ fontSize: 14, fontStyle: "italic", color: c.accent, fontFamily: "'Fraunces', serif" }}>James Gonzalez</div><div style={{ fontSize: 10, color: c.dim, marginTop: 4 }}>Spouse · Mar 30, 2026</div></div>
+          </div>
+        </div>
+      ),
+    },
+    "2025 Federal Return": {
+      title: "2025 Federal Tax Return — Form 1040", type: "PDF", pages: 4,
+      content: (
+        <div style={{ padding: "28px 24px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, letterSpacing: "0.05em" }}>FORM 1040</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: c.text }}>U.S. Individual Income Tax Return</div>
+            <div style={{ fontSize: 11, color: c.dim }}>Department of the Treasury — Internal Revenue Service — 2025</div>
+          </div>
+          <div style={{ background: c.muted, borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+            {[{ l: "Name", v: "Maria & James Gonzalez" }, { l: "Address", v: "1842 Oak Valley Dr, Montclair, CA 91763" }, { l: "Filing status", v: "Married Filing Jointly" }].map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                <span style={{ fontSize: 12, color: c.secondary }}>{r.l}</span><span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, marginBottom: 8, letterSpacing: "0.05em" }}>INCOME</div>
+          <div style={{ background: c.surface, borderRadius: 10, border: `1px solid ${c.borderLight}`, padding: "10px 16px", marginBottom: 16 }}>
+            {[{ l: "1. Wages, salaries (W-2)", v: "$72,000" }, { l: "2. Business income (Sch C)", v: "$15,420" }, { l: "8. Total income", v: "$87,420" }, { l: "10. Adjusted gross income", v: "$79,180" }].map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                <span style={{ fontSize: 11, color: c.secondary }}>{r.l}</span><span style={{ fontSize: 11, fontWeight: 600, color: c.text }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, marginBottom: 8, letterSpacing: "0.05em" }}>TAX AND CREDITS</div>
+          <div style={{ background: c.surface, borderRadius: 10, border: `1px solid ${c.borderLight}`, padding: "10px 16px", marginBottom: 16 }}>
+            {[{ l: "12. Standard deduction", v: "$28,400" }, { l: "15. Taxable income", v: "$50,780" }, { l: "16. Tax", v: "$8,230" }, { l: "24. Total tax", v: "$8,230" }].map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                <span style={{ fontSize: 11, color: c.secondary }}>{r.l}</span><span style={{ fontSize: 11, fontWeight: 600, color: c.text }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, marginBottom: 8, letterSpacing: "0.05em" }}>PAYMENTS</div>
+          <div style={{ background: c.accentLight, borderRadius: 10, padding: "10px 16px" }}>
+            {[{ l: "25. Federal tax withheld", v: "$10,570" }, { l: "34. Total payments", v: "$10,570" }, { l: "35. Overpaid (Refund)", v: "$2,340" }].map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderTop: i ? `1px solid ${c.accent}20` : "none" }}>
+                <span style={{ fontSize: 11, color: i === 2 ? c.accent : c.secondary, fontWeight: i === 2 ? 700 : 400 }}>{r.l}</span><span style={{ fontSize: 11, fontWeight: 600, color: i === 2 ? c.accent : c.text }}>{r.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+  };
+
+  // Checklist doc names for viewer
+  const checklistDocContent = (label: string): React.ReactNode => (
+    <div style={{ padding: "28px 24px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={c.accent} strokeWidth="1.5" style={{ margin: "0 auto 12px", display: "block" }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{label}</div>
+        <div style={{ fontSize: 12, color: c.dim, marginTop: 4 }}>Uploaded by Maria Gonzalez</div>
+      </div>
+      <div style={{ background: c.muted, borderRadius: 12, padding: "32px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 11, color: c.dim, marginBottom: 8 }}>Document preview</div>
+        <div style={{ width: "100%", height: 200, background: c.surface, borderRadius: 8, border: `1px solid ${c.borderLight}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 24, color: c.borderLight, marginBottom: 8 }}>PDF</div>
+            <div style={{ fontSize: 11, color: c.dim }}>{label}</div>
+            <div style={{ fontSize: 10, color: c.dim, marginTop: 2 }}>Submitted to Antonio Vazquez, EA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (viewingDoc) {
+    const docData = DOC_CONTENT[viewingDoc];
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: c.bg, maxWidth: 480, margin: "0 auto" }}>
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${c.border}`, background: c.surface, display: "flex", alignItems: "center", gap: 12 }}>
+          <button onClick={() => setViewingDoc(null)} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke={c.secondary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{docData ? docData.title : viewingDoc}</div>
+            {docData && <div style={{ fontSize: 11, color: c.dim }}>{docData.type} · {docData.pages} page{docData.pages > 1 ? "s" : ""}</div>}
+          </div>
+          <button onClick={() => {
+            // Mock download — show brief confirmation
+            const btn = document.getElementById("dl-btn");
+            if (btn) { btn.textContent = "Downloaded!"; setTimeout(() => { if (btn) btn.textContent = "Download"; }, 1500); }
+          }} id="dl-btn" style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${c.accent}`, background: "transparent", color: c.accent, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            Download
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px" }}>
+          <div style={{ background: c.surface, borderRadius: 16, border: `1px solid ${c.borderLight}`, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+            {docData ? docData.content : checklistDocContent(viewingDoc)}
+          </div>
+          {docData && (
+            <div style={{ textAlign: "center", padding: "16px 0", fontSize: 11, color: c.dim }}>
+              Page 1 of {docData.pages}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // ═══ SIGN OUT CONFIRMATION ═══
   if (showSignOut) {
@@ -630,7 +798,11 @@ export default function ClientPortalDirect() {
                     {isReceived && doc.date && <div style={{ fontSize: 11, color: c.dim, marginTop: 1 }}>Received {doc.date}</div>}
                     {isReceived && uploadedIds.includes(doc.id) && <div style={{ fontSize: 11, color: c.accent, marginTop: 1 }}>Just uploaded</div>}
                   </div>
-                  {!isReceived && (
+                  {isReceived ? (
+                    <button onClick={() => setViewingDoc(doc.label)} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                      View
+                    </button>
+                  ) : (
                     <button onClick={() => { setUploadedIds(p => [...p, doc.id]); setChatMsgs(p => [...p, { from: "system", text: `Document received: ${doc.label}. Antonio will review it shortly.`, time: "", type: "doc" }]); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${c.accent}`, background: "transparent", color: c.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                       Upload
                     </button>
@@ -753,7 +925,7 @@ export default function ClientPortalDirect() {
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke={c.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{d.name}</div><div style={{ fontSize: 11, color: c.dim }}>{d.date}</div></div>
-                <button style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>View</button>
+                <button onClick={() => setViewingDoc(d.name)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>View</button>
               </div>
             ))}
           </div>
@@ -835,7 +1007,7 @@ export default function ClientPortalDirect() {
                   <span style={{ fontSize: 13, color: c.text }}>{d.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 11, color: c.dim }}>{d.date}</span>
-                    <button style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>View</button>
+                    <button onClick={() => setViewingDoc(d.name)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>View</button>
                   </div>
                 </div>
               ))}
