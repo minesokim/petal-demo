@@ -10,20 +10,21 @@ import { Separator } from "@/components/ui/separator";
 import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
-  AlertTriangle, ChevronRight
+  AlertTriangle, ChevronRight, Shield, Check, X,
+  TrendingDown, Sparkles, Calculator, Brain, Download
 } from "lucide-react";
-import { clients, stageLabels, actionItems } from "@/lib/mock-data";
+import { clients, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
   extensionPredictions, documentExtractions, estimatedTaxCalcs,
-  feedActions, type FeedAction
+  feedActions, irsNotices, type FeedAction, type DocumentExtraction
 } from "@/lib/actions-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
-import { type DocumentExtraction } from "@/lib/actions-mock-data";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
 import { ActionCard } from "@/components/actions/action-card";
 import { ActionExecutionSheet } from "@/components/actions/action-execution-sheet";
+import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
 
 export default function ClientOverviewPage() {
@@ -32,6 +33,7 @@ export default function ClientOverviewPage() {
   const [selectedAction, setSelectedAction] = useState<FeedAction | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
+  const [eroOpen, setEroOpen] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -39,6 +41,7 @@ export default function ClientOverviewPage() {
 
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(client.returnStage);
+  const ps = getClientPaymentSummary(client.id);
 
   const timelineItems: TimelineItem[] = [
     { id: 1, title: "New Intake", date: "Engagement letter + 7216 consent", status: stageIndex > 0 ? "completed" : stageIndex === 0 ? "in-progress" : "pending" },
@@ -50,7 +53,7 @@ export default function ClientOverviewPage() {
     { id: 7, title: "Filed", date: "Return filed with IRS", status: stageIndex >= 6 ? "completed" : "pending" },
   ];
 
-  const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved);
+  const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved && a.type !== "signature_needed");
   const clientFeedActions = feedActions.filter(a => a.clientId === client.id && !a.isResolved);
   const clientCompliance = complianceAlerts.filter(a => a.clientId === client.id);
   const clientAnomalies = anomalyAlerts.filter(a => a.clientId === client.id);
@@ -58,11 +61,12 @@ export default function ClientOverviewPage() {
   const clientExtensions = extensionPredictions.filter(a => a.clientId === client.id);
   const clientExtractions = documentExtractions.filter(a => a.clientId === client.id);
   const clientEstimates = estimatedTaxCalcs.filter(a => a.clientId === client.id);
-  const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length + clientEstimates.length > 0;
+  const clientIrsNotices = irsNotices.filter(a => a.clientId === client.id);
+  const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length + clientEstimates.length + clientIrsNotices.length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Action items - full interactive feed */}
+      {/* Action items */}
       {(clientFeedActions.length > 0 || clientActions.length > 0) && (
         <div className="space-y-3">
           <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Actions for {client.fullName.split(" ")[0]}</div>
@@ -75,101 +79,144 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* Document Extraction - clickable cards that open glassmorphic dialog */}
-      {clientExtractions.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Document processing</div>
-          {clientExtractions.map(extraction => (
-            <button
-              key={extraction.id}
-              onClick={() => setSelectedExtraction(extraction)}
-              className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-md hover:border-primary/20"
-            >
-              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                <FileText className="size-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{extraction.documentType} ready for review</span>
-                  <Badge variant={extraction.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{extraction.overallConfidence}%</Badge>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {extraction.fields.length} fields extracted &middot; {extraction.fields.filter(f => f.needsReview).length} need review &middot; Click to review and push to OLT
-                </div>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* AI Insights */}
-      {hasIntel && (
-        <div className="space-y-2">
-          <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">AI Insights</div>
-          {clientCompliance.map(a => (
-            <button key={a.id} onClick={() => askDocket(`Tell me more about the ${a.title} compliance requirement for ${client.fullName}. What are the risks and what do I need to do?`)} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
-              <div className="flex-1"><div className="text-sm font-semibold">{a.title}</div><p className="mt-0.5 text-xs text-muted-foreground">{a.description}</p><div className="mt-1 text-xs text-red-600">Fine risk: {a.fineRisk}</div></div>
-              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
-          {clientAnomalies.map(a => (
-            <button key={a.id} onClick={() => askDocket(`Explain the ${a.metric} anomaly for ${client.fullName}. Revenue went from $${a.priorYear.toLocaleString()} to $${a.currentYear.toLocaleString()} (${a.changePercent}% change). What could be causing this and should I be concerned?`)} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-              <div className="flex-1"><div className="text-sm font-semibold">{a.metric}: {a.changePercent}% change</div><p className="mt-0.5 text-xs text-muted-foreground">{a.aiExplanation}</p></div>
-              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
-          {clientDeductions.map(a => (
-            <button key={a.id} onClick={() => askDocket(`Tell me about the ${a.deductionType} (${a.section}) deduction for ${client.fullName}. How does it work and what's the estimated savings of $${a.estimatedSavings.toLocaleString()}?`)} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-              <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-              <div className="flex-1"><div className="text-sm font-semibold">{a.deductionType} ({a.section})</div><p className="mt-0.5 text-xs text-muted-foreground">~${a.estimatedSavings.toLocaleString()} estimated savings</p></div>
-              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
-          {clientExtensions.map(a => (
-            <button key={a.id} onClick={() => askDocket(`${client.fullName} has a ${a.probability}% extension likelihood. What are the factors and what should I do about it?`)} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-              <Clock className="mt-0.5 size-4 shrink-0 text-amber-500" />
-              <div className="flex-1"><div className="text-sm font-semibold">Extension likelihood: {a.probability}%</div><p className="mt-0.5 text-xs text-muted-foreground">{a.factors.join(", ")}</p></div>
-              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        {/* Stats + Progress */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Return Status</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-4 gap-3">
-              <div className="rounded-lg border p-3 text-center">
-                <FileText className="mx-auto mb-1 size-4 text-muted-foreground" />
-                <div className="font-display text-lg tabular-nums tracking-tight">{client.documentsSubmitted}/{client.documentsRequired}</div>
-                <div className="text-[10px] text-muted-foreground">Documents</div>
-              </div>
-              <div className="rounded-lg border p-3 text-center">
-                <DollarSign className="mx-auto mb-1 size-4 text-muted-foreground" />
-                <div className="font-display text-lg tabular-nums tracking-tight">${client.feeAmount}</div>
-                <div className="text-[10px] text-muted-foreground">Fee</div>
-              </div>
-              <div className="rounded-lg border p-3 text-center">
-                <Clock className="mx-auto mb-1 size-4 text-muted-foreground" />
-                <div className="font-display text-lg tabular-nums tracking-tight">{client.depositPaid ? "Paid" : "No"}</div>
-                <div className="text-[10px] text-muted-foreground">Deposit</div>
-              </div>
-              <div className="rounded-lg border p-3 text-center">
-                <FileText className="mx-auto mb-1 size-4 text-muted-foreground" />
-                <div className="font-display text-lg tabular-nums tracking-tight">{docPercent}%</div>
-                <div className="text-[10px] text-muted-foreground">Complete</div>
+      {/* ERO Signature for pay_and_sign clients */}
+      {client.returnStage === "pay_and_sign" && (
+        <div className="rounded-xl border p-4">
+          <div className="flex items-start gap-3">
+            <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">8879 ready for ERO signature</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Client has paid and signed. Your countersignature is needed to file.</div>
+              <div className="mt-2 flex gap-1.5">
+                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Paid</div>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Client signed</div>
+                <div className="flex items-center gap-1 text-[10px] text-amber-600"><Clock className="size-3" /> ERO pending</div>
               </div>
             </div>
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                <span>Document progress</span><span>{client.documentsSubmitted} of {client.documentsRequired}</span>
+          </div>
+          <Button className="mt-3 w-full" onClick={() => setEroOpen(true)}>
+            <Shield className="size-3.5" /> Sign as ERO & file
+          </Button>
+        </div>
+      )}
+
+      {/* AI Intelligence */}
+      {hasIntel && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Brain className="size-4 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Intelligence</span>
+          </div>
+
+          {/* Document Extractions — hero feature */}
+          {clientExtractions.length > 0 && (
+            <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/[0.04] to-transparent p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Sparkles className="size-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">AI-Extracted Documents</div>
+                  <div className="text-[11px] text-muted-foreground">Review extracted fields, then push directly to OLT</div>
+                </div>
               </div>
-              <Progress value={docPercent} className="h-2" />
+              {clientExtractions.map(de => (
+                <button key={de.id} onClick={() => setSelectedExtraction(de)} className="flex w-full items-center gap-4 rounded-xl border bg-card p-3.5 text-left transition-all hover:shadow-md hover:border-primary/30">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                    <FileText className="size-5 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{de.documentType}</span>
+                      <Badge variant={de.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{de.overallConfidence}%</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {de.fields.length} fields extracted · {de.fields.filter(f => f.needsReview).length} need review
+                    </div>
+                  </div>
+                  <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Compliance */}
+          {clientCompliance.map(a => (
+            <ComplianceCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+          ))}
+          {/* Anomalies */}
+          {clientAnomalies.map(a => (
+            <AnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+          ))}
+          {/* Deductions */}
+          {clientDeductions.map(a => (
+            <DeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+          ))}
+          {/* Extensions */}
+          {clientExtensions.map(a => (
+            <div key={a.id} className="rounded-xl border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-amber-500" />
+                  <span className="text-sm font-semibold">Extension likelihood</span>
+                </div>
+                <span className="font-display text-2xl tabular-nums tracking-tight">{a.probability}%</span>
+              </div>
+              <Progress value={a.probability} className="mt-3 h-2" indicatorColor={a.probability >= 80 ? "bg-red-500" : "bg-amber-500"} />
+              <div className="mt-3 space-y-1">
+                {a.factors.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" /> {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {/* Estimated Tax */}
+          {clientEstimates.map(calc => (
+            <div key={calc.id} className="rounded-xl border p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2"><Calculator className="size-4 text-primary" /><span className="text-sm font-semibold">2026 quarterly estimates</span></div>
+                <span className="font-display text-xl tabular-nums tracking-tight">${calc.totalEstimated.toLocaleString()}</span>
+              </div>
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {(["q1", "q2", "q3", "q4"] as const).map(q => (
+                  <div key={q} className="rounded-lg border p-2 text-center">
+                    <div className="font-display text-sm tabular-nums">${calc.quarterlyAmounts[q].toLocaleString()}</div>
+                    <div className="text-[10px] text-muted-foreground">{q.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
+              <Button size="sm" className="mt-3"><Calculator className="size-3.5" /> Send to client</Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Quick stats + Return Progress side by side */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* Stats + Billing summary */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Billing</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">{client.serviceTier} Return</div>
+                <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
+                <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
+                  {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
+                </div>
+              </div>
+            </div>
+            <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
+              <span><strong className="text-foreground">{client.documentsSubmitted}/{client.documentsRequired}</strong> docs</span>
+              <span>·</span>
+              <span>Deposit: <strong className={client.depositPaid ? "text-emerald-600" : "text-red-500"}>{client.depositPaid ? "Paid" : "Unpaid"}</strong></span>
             </div>
           </CardContent>
         </Card>
@@ -183,7 +230,24 @@ export default function ClientOverviewPage() {
         </Card>
       </div>
 
-      {/* Contact + Filing + Notes */}
+      {/* Client Review enhancement */}
+      {client.returnStage === "client_review" && client.returnSentDate && (() => {
+        const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
+        const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
+        return (
+          <div className={`rounded-xl border p-3 ${daysSinceSent > 3 ? "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10" : ""}`}>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="size-4 text-muted-foreground" />
+              <span>Return sent <strong>{daysSinceSent} days ago</strong></span>
+              <span className="text-muted-foreground">·</span>
+              <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "accessed today" : `accessed ${lastLogin}d ago`) : "never accessed"}</span>
+            </div>
+            {daysSinceSent > 3 && <p className="mt-1.5 text-xs text-amber-600">Review may be stale — consider sending a follow-up</p>}
+          </div>
+        );
+      })()}
+
+      {/* Contact + Filing */}
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
@@ -209,29 +273,162 @@ export default function ClientOverviewPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-2 xl:grid-cols-6">
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><Send className="size-4" /><span className="text-xs">Remind</span></Button>
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><FileText className="size-4" /><span className="text-xs">Request Docs</span></Button>
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><MessageSquare className="size-4" /><span className="text-xs">Message</span></Button>
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><Calendar className="size-4" /><span className="text-xs">Schedule</span></Button>
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><ExternalLink className="size-4" /><span className="text-xs">Portal</span></Button>
-        <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-3"><Pen className="size-4" /><span className="text-xs">Edit</span></Button>
+      {/* Contextual Actions */}
+      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} />
+
+      {/* Dialogs */}
+      <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(open) => !open && setSelectedExtraction(null)} />
+      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
+    </div>
+  );
+}
+
+// ── Intelligence Cards (matching popup dialog) ──
+
+function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(alert.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${alert.severity === "critical" ? "bg-red-100 dark:bg-red-900/50" : "bg-amber-100 dark:bg-amber-900/50"}`}>
+          <AlertTriangle className={`size-4 ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{alert.title}</span>
+            <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"} className="text-[10px]">{alert.severity}</Badge>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{alert.description}</p>
+          <div className="mt-2 flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+            <span className="text-red-600">Fine risk: {alert.fineRisk}</span>
+          </div>
+        </div>
       </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => setStatus("acknowledged")}><Check className="size-3.5" /> Acknowledge</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Action Execution Dialog */}
-      <ActionExecutionSheet
-        action={selectedAction}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
+function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(alert.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+          <TrendingDown className="size-4 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">Year-over-year anomaly: {alert.metric}</div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="rounded-lg border p-2 text-center">
+              <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
+              <div className="text-[10px] text-muted-foreground">2024</div>
+            </div>
+            <div className="rounded-lg border p-2 text-center">
+              <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
+              <div className="text-[10px] text-muted-foreground">2025</div>
+            </div>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-center dark:border-red-900 dark:bg-red-950/30">
+              <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
+              <div className="text-[10px] text-muted-foreground">Change</div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{alert.aiExplanation}</p>
+        </div>
+      </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="destructive" onClick={() => setStatus("flagged")}><AlertTriangle className="size-3.5" /> Flag for review</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("proceeded")}><Check className="size-3.5" /> Proceed</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Extraction Dialog */}
-      <ExtractionDialog
-        extraction={selectedExtraction}
-        open={!!selectedExtraction}
-        onOpenChange={(open) => !open && setSelectedExtraction(null)}
-      />
+function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(suggestion.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
+          <Sparkles className="size-4 text-emerald-600" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+          <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+          <div className="mt-2 font-display text-xl tabular-nums tracking-tight text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()} savings</div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{suggestion.description}</p>
+        </div>
+      </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => setStatus("applied")}><Check className="size-3.5" /> Apply</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () => void }) {
+  const actions: { icon: React.ReactNode; label: string; primary?: boolean; onClick?: () => void }[] = [];
+  switch (stage) {
+    case "new_intake":
+      actions.push({ icon: <Send className="size-4" />, label: "Send Intake", primary: true });
+      actions.push({ icon: <Send className="size-4" />, label: "Remind" });
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      break;
+    case "collecting_docs":
+      actions.push({ icon: <FileText className="size-4" />, label: "Request Docs", primary: true });
+      actions.push({ icon: <Send className="size-4" />, label: "Remind" });
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      break;
+    case "ready_to_prep":
+      actions.push({ icon: <FileText className="size-4" />, label: "Start Prep", primary: true });
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      break;
+    case "in_preparation":
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      break;
+    case "client_review":
+      actions.push({ icon: <Send className="size-4" />, label: "Nudge", primary: true });
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      break;
+    case "pay_and_sign":
+      actions.push({ icon: <Shield className="size-4" />, label: "Sign as ERO", primary: true, onClick: onEroSign });
+      actions.push({ icon: <DollarSign className="size-4" />, label: "Send Invoice" });
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      break;
+    case "filed":
+      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      actions.push({ icon: <Download className="size-4" />, label: "Download Return" });
+      break;
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {actions.map((a, i) => (
+        <Button key={i} size="sm" variant={a.primary ? "default" : "outline"} className="h-9" onClick={a.onClick}>
+          {a.icon} {a.label}
+        </Button>
+      ))}
     </div>
   );
 }
