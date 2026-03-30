@@ -68,16 +68,22 @@ export default function ClientOverviewPage() {
   const clientIrsNotices = irsNotices.filter(a => a.clientId === client.id);
   const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length + clientEstimates.length + clientIrsNotices.length > 0;
 
+  // Filter out signature feed actions when dedicated ERO card handles it
+  const filteredFeedActions = currentStage === "pay_and_sign"
+    ? clientFeedActions.filter(a => a.category !== "signature")
+    : clientFeedActions;
+  const filteredActions = clientActions.filter(a => a.type !== "signature_needed");
+
   return (
     <div className="space-y-6">
       {/* Action items */}
-      {(clientFeedActions.length > 0 || clientActions.length > 0) && (
-        <div className="space-y-3">
+      {(filteredFeedActions.length > 0 || filteredActions.length > 0) && (
+        <div className="space-y-4">
           <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Actions for {client.fullName.split(" ")[0]}</div>
-          {clientFeedActions.map(action => (
+          {filteredFeedActions.map(action => (
             <ActionCard key={action.id} action={action} onClick={() => { setSelectedAction(action); setSheetOpen(true); }} />
           ))}
-          {clientActions.filter(a => !clientFeedActions.some(fa => fa.clientId === a.clientId && fa.title === a.title)).map(action => (
+          {filteredActions.filter(a => !filteredFeedActions.some(fa => fa.clientId === a.clientId && fa.title === a.title)).map(action => (
             <ActionDraftCard key={action.id} action={action} />
           ))}
         </div>

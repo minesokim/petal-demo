@@ -135,21 +135,29 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
-              {/* Feed actions (same as full page) */}
-              {clientFeedActions.length > 0 && (
-                <div className="space-y-2">
-                  {clientFeedActions.map(action => (
-                    <ActionCard key={action.id} action={action} onClick={() => {}} />
-                  ))}
-                </div>
-              )}
-
-              {/* Actions (exclude signature actions — handled by dedicated ERO section below) */}
-              {clientActions.filter(a => a.type !== "signature_needed").length > 0 && clientFeedActions.length === 0 && (
-                <div className="space-y-2">
-                  {clientActions.filter(a => a.type !== "signature_needed").map(action => <ActionDraftCard key={action.id} action={action} />)}
-                </div>
-              )}
+              {/* Feed actions — filter out signature actions when ERO card handles it */}
+              {(() => {
+                const filteredFeed = currentStage === "pay_and_sign"
+                  ? clientFeedActions.filter(a => a.category !== "signature")
+                  : clientFeedActions;
+                const filteredActions = clientActions.filter(a => a.type !== "signature_needed");
+                return (
+                  <>
+                    {filteredFeed.length > 0 && (
+                      <div className="space-y-3">
+                        {filteredFeed.map(action => (
+                          <ActionCard key={action.id} action={action} onClick={() => {}} />
+                        ))}
+                      </div>
+                    )}
+                    {filteredActions.length > 0 && filteredFeed.length === 0 && (
+                      <div className="space-y-3">
+                        {filteredActions.map(action => <ActionDraftCard key={action.id} action={action} />)}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Ready to Prep / Transition — animated (synced with full page) */}
               <AnimatePresence mode="wait">
