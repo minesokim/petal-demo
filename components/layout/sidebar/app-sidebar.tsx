@@ -18,7 +18,7 @@ import {
 import { NavMain } from "@/components/layout/sidebar/nav-main";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -39,11 +39,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0!" asChild>
-              <div>
+              <Link href="/dashboard/default">
                 <span className="text-foreground text-lg font-bold tracking-tight group-data-[collapsible=icon]:text-sm">
                   Vazant<span className="text-muted-foreground font-normal group-data-[collapsible=icon]:hidden">.</span>
                 </span>
-              </div>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

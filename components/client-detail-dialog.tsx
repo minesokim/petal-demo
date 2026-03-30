@@ -448,7 +448,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
               {/* Document status summary (synced with full page) */}
               {(() => {
-                const allReceived = client.documentsSubmitted >= client.documentsRequired;
+                const isFiled = client.returnStage === "filed";
+                const allReceived = client.documentsSubmitted >= client.documentsRequired || isFiled;
                 const totalDocs = docGroups.reduce((sum, g) => sum + g.docs.length, 0);
                 const missingCount = checklist.filter(c => c.required && !c.received).length;
                 return (

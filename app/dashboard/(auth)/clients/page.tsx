@@ -50,9 +50,18 @@ export default function ClientsPage() {
 
   const formatCallTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + " at " +
-      d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+    const isPast = d < now;
+    const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+    if (isToday) return `Today at ${timeStr}`;
+    if (isYesterday) return `Yesterday at ${timeStr}`;
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + " at " + timeStr;
   };
+  const isCallPast = (dateStr: string) => new Date(dateStr) < new Date();
 
   return (
     <div className="space-y-4">
@@ -116,8 +125,11 @@ export default function ClientsPage() {
                         <Check className="size-3 text-emerald-500" /> $50 deposit paid
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="size-3 text-blue-500" />
-                        Call: {client.scheduledCall ? formatCallTime(client.scheduledCall) : "Not scheduled"}
+                        <Calendar className={`size-3 ${client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500"}`} />
+                        <span className={client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400" : ""}>
+                          Call: {client.scheduledCall ? formatCallTime(client.scheduledCall) : "Not scheduled"}
+                          {client.scheduledCall && isCallPast(client.scheduledCall) && " · Missed"}
+                        </span>
                       </div>
                     </div>
 

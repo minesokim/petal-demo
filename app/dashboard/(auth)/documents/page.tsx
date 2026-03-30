@@ -7,7 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Search, ChevronRight, FileText } from "lucide-react";
+import { Search, ChevronRight, ChevronDown, FileText, Users } from "lucide-react";
+import { clients } from "@/lib/mock-data";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
 import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
 import { motion, AnimatePresence } from "motion/react";
 import { DocumentRow } from "@/components/documents/document-row";
@@ -15,7 +19,8 @@ import { MissingDocRow } from "@/components/documents/missing-doc-row";
 import { DocTypeBadge } from "@/components/documents/doc-type-badge";
 import {
   mockDocuments, checklistItems, firmDocuments,
-  getDocumentsByDay, getUnviewedCount, getMissingCount
+  getDocumentsByDay, getUnviewedCount, getMissingCount,
+  type MockDocument
 } from "@/lib/documents-mock-data";
 
 const docStatusData: DonutChartSegment[] = [
@@ -70,9 +75,70 @@ function DocumentStatusWidget() {
   );
 }
 
+// Collapsible group for "By client" view
+function ClientDocGroup({ group, defaultOpen }: {
+  group: { name: string; avatar: string; clientId: string; docs: MockDocument[]; submitted: number; required: number };
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const pct = group.required > 0 ? Math.round((group.submitted / group.required) * 100) : 100;
+  const isMissing = group.submitted < group.required;
+
+  return (
+    <Card>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30">
+        <Avatar className="size-7">
+          <AvatarImage src={group.avatar} />
+          <AvatarFallback className="text-[10px]">{group.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold truncate">{group.name}</span>
+            <span className="text-[10px] text-muted-foreground tabular-nums">{group.submitted}/{group.required}</span>
+            {isMissing && <Progress value={pct} className="h-1 w-16" />}
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{group.docs.length} files</span>
+        <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <CardContent className="divide-y border-t p-0">
+          {group.docs.map(doc => <DocumentRow key={doc.id} doc={doc} showDate />)}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+// Collapsible group for "By type" view
+function TypeDocGroup({ typeKey, label, docs, defaultOpen }: {
+  typeKey: string; label: string; docs: MockDocument[]; defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <Card>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30">
+        <DocTypeBadge type={typeKey} />
+        <div className="flex-1">
+          <span className="text-sm font-semibold">{label}</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">{docs.length}</span>
+        <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <CardContent className="divide-y border-t p-0">
+          {docs.sort((a, b) => a.clientName.localeCompare(b.clientName)).map(doc => <DocumentRow key={doc.id} doc={doc} showDate />)}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export default function DocumentsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"recent" | "client" | "type">("recent");
 
   const unviewedCount = getUnviewedCount();
   const missingCount = getMissingCount();
@@ -137,34 +203,108 @@ export default function DocumentsPage() {
           </Card>
         </TabsContent>
 
-        {/* ALL DOCS */}
+        {/* ALL DOCS — 3 view modes */}
         <TabsContent value="all" className="mt-4 space-y-4">
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
               <Input
-                placeholder="Search all documents..."
+                placeholder="Search documents, clients, types..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <div className="flex gap-1">
-              {["all", "w2", "1099_nec", "1099_int", "id", "expense", "return"].map(t => (
-                <Button key={t} size="sm" variant={typeFilter === t ? "default" : "outline"} onClick={() => setTypeFilter(t)}>
-                  {t === "all" ? "All" : t === "w2" ? "W-2" : t === "1099_nec" ? "1099" : t === "id" ? "ID" : t === "expense" ? "Expense" : t === "return" ? "Returns" : t}
-                </Button>
+            <div className="flex rounded-lg border bg-muted/30 p-0.5">
+              {(["recent", "client", "type"] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setViewMode(v)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                    viewMode === v
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v === "recent" ? "Recent" : v === "client" ? "By client" : "By type"}
+                </button>
               ))}
             </div>
           </div>
-          <Card>
-            <CardContent className="divide-y p-0">
-              {allDocsFiltered.map(doc => <DocumentRow key={doc.id} doc={doc} showDate />)}
-              {allDocsFiltered.length === 0 && (
-                <div className="py-12 text-center text-sm text-muted-foreground">No documents found</div>
-              )}
-            </CardContent>
-          </Card>
+
+          {/* Recent view (default) */}
+          {viewMode === "recent" && (
+            <Card>
+              <CardContent className="divide-y p-0">
+                {allDocsFiltered.map(doc => <DocumentRow key={doc.id} doc={doc} showDate />)}
+                {allDocsFiltered.length === 0 && (
+                  <div className="py-12 text-center text-sm text-muted-foreground">No documents found</div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* By client view */}
+          {viewMode === "client" && (() => {
+            const clientGroups = new Map<string, { name: string; avatar: string; clientId: string; docs: typeof allDocsFiltered; submitted: number; required: number }>();
+            allDocsFiltered.forEach(doc => {
+              if (!clientGroups.has(doc.clientId)) {
+                const c = clients.find(cl => cl.id === doc.clientId);
+                clientGroups.set(doc.clientId, {
+                  name: doc.clientName, avatar: doc.clientAvatar, clientId: doc.clientId,
+                  docs: [], submitted: c?.documentsSubmitted ?? 0, required: c?.documentsRequired ?? 0,
+                });
+              }
+              clientGroups.get(doc.clientId)!.docs.push(doc);
+            });
+            // Sort: missing docs first, then recent uploads, then complete
+            const sorted = [...clientGroups.values()].sort((a, b) => {
+              const aMissing = a.required - a.submitted;
+              const bMissing = b.required - b.submitted;
+              if (aMissing !== bMissing) return bMissing - aMissing; // more missing = first
+              return b.docs.length - a.docs.length;
+            });
+
+            return sorted.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No documents found</div>
+            ) : (
+              <div className="space-y-2">
+                {sorted.map((group, i) => (
+                  <ClientDocGroup key={group.clientId} group={group} defaultOpen={i < 4} />
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* By type view */}
+          {viewMode === "type" && (() => {
+            const typeGroups = new Map<string, { label: string; docs: typeof allDocsFiltered }>();
+            const typeOrder = ["W2", "1099", "K1", "EXP", "RET", "ID", "AGR"];
+            allDocsFiltered.forEach(doc => {
+              const key = doc.docTypeLabel;
+              if (!typeGroups.has(key)) typeGroups.set(key, { label: key, docs: [] });
+              typeGroups.get(key)!.docs.push(doc);
+            });
+            const sorted = [...typeGroups.entries()].sort((a, b) => {
+              const ai = typeOrder.indexOf(a[0]); const bi = typeOrder.indexOf(b[0]);
+              return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+
+            const typeLabels: Record<string, string> = {
+              W2: "W-2s", "1099": "1099s", K1: "K-1s", EXP: "Business Expenses",
+              RET: "Tax Returns", ID: "Identity Documents", AGR: "Agreements",
+            };
+
+            return sorted.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">No documents found</div>
+            ) : (
+              <div className="space-y-2">
+                {sorted.map(([key, group], i) => (
+                  <TypeDocGroup key={key} typeKey={key} label={typeLabels[key] || key} docs={group.docs} defaultOpen={i < 4} />
+                ))}
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* FIRM FILES */}

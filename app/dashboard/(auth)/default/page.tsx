@@ -27,6 +27,7 @@ import { useAIPanelAsk } from "@/components/ai-panel";
 // Pipeline stages removed — replaced by summary bar in header
 
 const todayAppointments = [
+  { name: "Sarah Mitchell", avatar: "/images/avatars/10.png", time: "10:00 - 10:30 AM", type: "phone" as const, note: "New client intro call", clientId: "c21" },
   { name: "David Park", avatar: "/images/avatars/11.png", time: "3:00 - 4:00 PM", type: "video" as const, note: "S-Corp return review", clientId: "c11" },
   { name: "Miguel Sandoval", avatar: "/images/avatars/09.png", time: "4:00 - 4:30 PM", type: "phone" as const, note: "Discuss incorporation", clientId: "c9" },
 ];
@@ -136,7 +137,7 @@ export default function Page() {
       <div className="rounded-xl border bg-card px-5 py-4">
         <h1 className="text-2xl font-bold tracking-tight">Good morning, Antonio</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          18 days to deadline · 3 of 20 filed · <span className="text-emerald-600 font-medium">$2,400 collected</span> · <span className="text-foreground font-medium">$4,650 outstanding</span> · <span className="text-red-500 font-medium">1 overdue</span>
+          18 days to deadline · 3 of 20 filed · <span className="text-emerald-600 font-medium">$2,850 collected</span> · <span className="text-foreground font-medium">$4,200 outstanding</span> · <span className="text-red-500 font-medium">1 overdue</span>
         </p>
 
         {/* Status counts — clickable to filter action feed */}
@@ -290,7 +291,7 @@ export default function Page() {
               )}
             </div>
           ) : viewMode === "actions" ? (
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               {(actionGroups[activeTab] || []).map((group) => (
                 <div key={group.label}>
                   <div className="px-1 pt-3 pb-2">

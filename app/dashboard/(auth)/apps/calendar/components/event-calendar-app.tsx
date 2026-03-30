@@ -63,8 +63,8 @@ const taxEvents: CalendarEvent[] = [
     id: "6",
     title: "Kevin & Lisa Park - New Client",
     description: "Pending client. Dry cleaning business. Referred by David Park (brother).",
-    start: setMinutes(setHours(addDays(new Date(), 1), 14), 0),
-    end: setMinutes(setHours(addDays(new Date(), 1), 15), 0),
+    start: setMinutes(setHours(subDays(new Date(), 1), 14), 0),
+    end: setMinutes(setHours(subDays(new Date(), 1), 15), 0),
     color: "violet",
     location: "Google Meet"
   },
@@ -72,8 +72,8 @@ const taxEvents: CalendarEvent[] = [
     id: "7",
     title: "Sarah Mitchell - New Client",
     description: "Pending client. Freelance photographer. Found on Nextdoor.",
-    start: setMinutes(setHours(addDays(new Date(), 2), 10), 0),
-    end: setMinutes(setHours(addDays(new Date(), 2), 11), 0),
+    start: setMinutes(setHours(new Date(), 10), 0),
+    end: setMinutes(setHours(new Date(), 10), 30),
     color: "violet",
     location: "Phone call"
   },
@@ -125,6 +125,9 @@ const clientMap: Record<string, string> = {
   "Carlos": "c15",
   "Priya Sharma": "c2",
   "Roberto Fuentes": "c6",
+  "Sarah Mitchell": "c21",
+  "Kevin": "c22",
+  "Daniel Okafor": "c23",
 };
 
 function getClientId(title: string): string | null {

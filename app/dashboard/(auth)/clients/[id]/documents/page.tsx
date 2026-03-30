@@ -27,7 +27,8 @@ export default function ClientDocumentsPage() {
   const totalDocs = groups.reduce((sum, g) => sum + g.docs.length, 0);
   const receivedCount = client.documentsSubmitted;
   const requiredCount = client.documentsRequired;
-  const allReceived = receivedCount >= requiredCount;
+  const isFiled = client.returnStage === "filed";
+  const allReceived = receivedCount >= requiredCount || isFiled;
   const missingCount = checklist.filter(c => c.required && !c.received).length;
   const docPercent = requiredCount > 0 ? Math.round((receivedCount / requiredCount) * 100) : 0;
 
