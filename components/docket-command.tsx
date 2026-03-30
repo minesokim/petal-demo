@@ -297,25 +297,25 @@ export function DocketCommand() {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop — invisible, just catches clicks to close */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+              transition={{ duration: 0.1 }}
+              className="fixed inset-0 z-50"
               onClick={close}
             />
 
             {/* Command palette */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: -8 }}
+              initial={{ opacity: 0, scale: 0.98, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -8 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-1/2 top-[min(20vh,160px)] z-50 w-full max-w-xl -translate-x-1/2"
+              exit={{ opacity: 0, scale: 0.98, y: -4 }}
+              transition={{ type: "spring", damping: 30, stiffness: 400, mass: 0.8 }}
+              className="fixed left-1/2 top-[min(18vh,140px)] z-50 w-full max-w-xl -translate-x-1/2 px-4"
             >
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/95 shadow-2xl shadow-black/20 backdrop-blur-xl dark:bg-background/90 dark:border-white/5">
+              <div className="overflow-hidden rounded-2xl border border-border/40 bg-background shadow-xl shadow-black/8 dark:border-border/20 dark:shadow-black/30">
                 {/* Input */}
                 <div className="flex items-center gap-3 border-b border-border/30 px-4 py-3">
                   <Search className="size-4 text-muted-foreground/50 shrink-0" />
@@ -424,8 +424,15 @@ export function DocketCommand() {
                         className="py-2"
                       >
                         {!hasResults && (
-                          <div className="py-8 text-center text-sm text-muted-foreground/50">
-                            No results for &ldquo;{query}&rdquo;
+                          <div className="px-4 py-6 text-center">
+                            <p className="text-sm text-muted-foreground/50">No results for &ldquo;{query}&rdquo;</p>
+                            <button
+                              onClick={handleAiQuery}
+                              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border/30 px-4 py-2 text-sm text-muted-foreground transition-all hover:border-primary/30 hover:text-foreground hover:bg-primary/5"
+                            >
+                              <div className="size-1.5 rounded-full bg-primary" />
+                              Ask Docket: &ldquo;{query}&rdquo;
+                            </button>
                           </div>
                         )}
 
@@ -511,32 +518,46 @@ export function DocketCommand() {
                             ))}
                           </div>
                         )}
+                        {/* Ask Docket row — always shown when typing, below results */}
+                        {hasResults && (
+                          <div className="px-2 pb-1 pt-1 border-t border-border/10 mt-1">
+                            <button
+                              onClick={handleAiQuery}
+                              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-primary/5"
+                            >
+                              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                                <div className="size-2 rounded-full bg-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm text-muted-foreground">Ask Docket: <span className="text-foreground">&ldquo;{query}&rdquo;</span></div>
+                              </div>
+                            </button>
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between border-t border-border/20 px-4 py-2">
+                <div className="flex items-center justify-between border-t border-border/10 px-4 py-2">
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/40">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
                       <ArrowUp className="size-2.5" /><ArrowDown className="size-2.5" /> navigate
                     </span>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/40">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
                       <CornerDownLeft className="size-2.5" /> open
                     </span>
                   </div>
-                  <button
-                    onClick={handleAiQuery}
-                    disabled={!query.trim()}
-                    className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 transition-colors hover:text-primary disabled:opacity-30"
-                  >
-                    <div className="size-1.5 rounded-full bg-primary" />
-                    <kbd className="font-mono">
-                      {navigator.platform?.includes("Mac") ? "\u2318" : "Ctrl"}\u23ce
-                    </kbd>
-                    <span>ask Docket</span>
-                  </button>
+                  {query.trim() && !aiMode && (
+                    <button
+                      onClick={handleAiQuery}
+                      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-muted-foreground/50 transition-all hover:bg-primary/5 hover:text-primary"
+                    >
+                      <div className="size-1.5 rounded-full bg-primary/50" />
+                      <span>Ask Docket</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
