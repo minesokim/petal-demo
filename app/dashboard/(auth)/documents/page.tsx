@@ -43,7 +43,18 @@ function DocumentStatusWidget() {
         onSegmentHover={(seg) => setHovered(seg?.label ?? null)}
         centerContent={
           <div className="flex flex-col items-center">
-            <span className="font-display text-sm tracking-tight tabular-nums">{displayValue}</span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={`${displayValue}-${displayLabel}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="font-display text-sm tracking-tight tabular-nums"
+              >
+                {displayValue}
+              </motion.span>
+            </AnimatePresence>
           </div>
         }
       />
@@ -81,12 +92,12 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-6">
+        <DocumentStatusWidget />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
           <p className="text-muted-foreground text-sm">Manage documents across all clients</p>
         </div>
-        <DocumentStatusWidget />
       </div>
 
       <Tabs defaultValue="inbox">
