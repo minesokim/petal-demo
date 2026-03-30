@@ -33,7 +33,7 @@ import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
   CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check,
-  TrendingDown, Calculator, X, Brain
+  TrendingDown, Calculator, X, Brain, Loader2
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -59,6 +59,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [sentCalc, setSentCalc] = useState(false);
+  const [sentBilling, setSentBilling] = useState<string | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -573,9 +575,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                         </div>
                       </div>
                       {allReceived && totalDocs > 0 && (
-                        <Button size="sm" variant="outline" className="gap-1.5 shrink-0">
-                          <Download className="size-3.5" />
-                          Download all
+                        <Button size="sm" variant="outline" className="gap-1.5 shrink-0" disabled={downloadingAll} onClick={() => { setDownloadingAll(true); setTimeout(() => setDownloadingAll(false), 1500); }}>
+                          {downloadingAll ? <><Loader2 className="size-3.5 animate-spin" /> Downloading...</> : <><Download className="size-3.5" /> Download all</>}
                         </Button>
                       )}
                     </div>
@@ -986,9 +987,39 @@ function BillingTab({ client }: { client: Client }) {
 
       {!ps.fullyPaid && (
         <div className="flex gap-2">
-          {ps.deposit?.status === "overdue" && <Button size="sm"><Send className="size-3.5" /> Send payment reminder</Button>}
-          {ps.balance?.status === "pending" && <Button size="sm" variant="outline"><DollarSign className="size-3.5" /> Send invoice</Button>}
-          {ps.balance?.status === "sent" && <Button size="sm" variant="outline"><Send className="size-3.5" /> Resend invoice</Button>}
+          {ps.deposit?.status === "overdue" && (
+            sentBilling === "reminder" ? (
+              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <Check className="size-3.5" /> Reminder sent
+              </div>
+            ) : (
+              <Button size="sm" onClick={() => setSentBilling("reminder")}>
+                <Send className="size-3.5" /> Send payment reminder
+              </Button>
+            )
+          )}
+          {ps.balance?.status === "pending" && (
+            sentBilling === "invoice" ? (
+              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <Check className="size-3.5" /> Invoice sent
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}>
+                <DollarSign className="size-3.5" /> Send invoice
+              </Button>
+            )
+          )}
+          {ps.balance?.status === "sent" && (
+            sentBilling === "resend" ? (
+              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <Check className="size-3.5" /> Invoice resent
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}>
+                <Send className="size-3.5" /> Resend invoice
+              </Button>
+            )
+          )}
         </div>
       )}
     </div>

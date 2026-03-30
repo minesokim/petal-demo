@@ -329,10 +329,22 @@ export default function Page() {
                         {matchedAction?.aiDraft && (
                           <div className="mt-2.5 ml-11">
                             {sentDrafts.has(matchedAction.id) ? (
-                              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 4 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                              >
+                                <motion.svg
+                                  width="14" height="14" viewBox="0 0 14 14" fill="none"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.15 }}
+                                >
+                                  <path d="M3 7L5.5 9.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </motion.svg>
                                 Sent to {actionClient.name.split(" ")[0]}
-                              </div>
+                              </motion.div>
                             ) : (
                               <>
                                 {editingDraft === matchedAction.id ? (

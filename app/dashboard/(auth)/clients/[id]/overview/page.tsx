@@ -38,6 +38,7 @@ export default function ClientOverviewPage() {
   const [eroOpen, setEroOpen] = useState(false);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
+  const [sentBilling, setSentBilling] = useState<string | null>(null);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -313,7 +314,9 @@ export default function ClientOverviewPage() {
                 ))}
               </div>
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
-              <Button size="sm" className="mt-3"><Calculator className="size-3.5" /> Send to client</Button>
+              <Button size="sm" className="mt-3" onClick={() => setSentBilling("calc")} disabled={sentBilling === "calc"}>
+                <Calculator className="size-3.5" /> {sentBilling === "calc" ? "Sent!" : "Send to client"}
+              </Button>
             </div>
           ))}
         </div>
@@ -387,9 +390,21 @@ export default function ClientOverviewPage() {
             {/* Payment actions */}
             {!ps.fullyPaid && (
               <div className="flex gap-2">
-                {ps.deposit?.status === "overdue" && <Button size="sm"><Send className="size-3.5" /> Send payment reminder</Button>}
-                {ps.balance?.status === "pending" && <Button size="sm" variant="outline"><DollarSign className="size-3.5" /> Send invoice</Button>}
-                {ps.balance?.status === "sent" && <Button size="sm" variant="outline"><Send className="size-3.5" /> Resend invoice</Button>}
+                {ps.deposit?.status === "overdue" && (
+                  sentBilling === "reminder"
+                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Reminder sent</div>
+                    : <Button size="sm" onClick={() => setSentBilling("reminder")}><Send className="size-3.5" /> Send payment reminder</Button>
+                )}
+                {ps.balance?.status === "pending" && (
+                  sentBilling === "invoice"
+                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice sent</div>
+                    : <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}><DollarSign className="size-3.5" /> Send invoice</Button>
+                )}
+                {ps.balance?.status === "sent" && (
+                  sentBilling === "resend"
+                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice resent</div>
+                    : <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}><Send className="size-3.5" /> Resend invoice</Button>
+                )}
               </div>
             )}
           </CardContent>
