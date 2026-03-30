@@ -368,7 +368,7 @@ export default function ClientPortal() {
   const stepIndex = hist.filter(h => h !== "welcome").length;
   const totalSteps = answers.service === "intro" || answers.service === "bookkeeping" ? 5
     : answers.service === "formation" || answers.service === "strategic" ? 7
-    : answers.service === "business" ? 16 : 14;
+    : answers.service === "business" ? 17 : 15;
 
   const go = (nextStep: string) => {
     const updated = { ...answers };
@@ -487,7 +487,18 @@ export default function ClientPortal() {
                     Let&apos;s get started
                   </PrimaryButton>
 
-                  <p style={{ fontSize: 12, color: c.dim, marginTop: 12 }}>
+                  <p style={{ fontSize: 11, color: c.dim, marginTop: 14, lineHeight: 1.7, textAlign: "center" }}>
+                    We&apos;ll ask about your filing status, income sources, and dependents.
+                    Then you&apos;ll upload your documents and sign your engagement letter.
+                  </p>
+
+                  <div style={{ textAlign: "center", marginTop: 16 }}>
+                    <a href="/clientportal" style={{ fontSize: 13, color: c.accent, fontWeight: 500, textDecoration: "none", borderBottom: `1px solid ${c.accent}40` }}>
+                      Already a client? Sign in
+                    </a>
+                  </div>
+
+                  <p style={{ fontSize: 11, color: c.dim, marginTop: 14, textAlign: "center" }}>
                     Your information is never shared or sold.
                   </p>
                 </div>
@@ -567,7 +578,31 @@ export default function ClientPortal() {
                     <div style={{ flex: 1 }}><InputField label="" placeholder="ZIP" /></div>
                   </div>
                 </div>
-                <PrimaryButton onClick={() => go("dependents")} style={{ marginTop: 16 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("state_filing")} style={{ marginTop: 16 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── State filing + prior year ── */}
+            {step === "state_filing" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="A few more details" sub="This helps me prepare your return accurately." />
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: c.secondary, display: "block", marginBottom: 6 }}>Which state(s) did you live or work in during 2025?</label>
+                  <InputField label="" placeholder="e.g., California" />
+                  <InputField label="" placeholder="Additional state (if applicable)" />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: c.secondary, display: "block", marginBottom: 6 }}>Did you file a tax return last year?</label>
+                  <OptionCard label="Yes, I filed last year" selected={sel === "filed_yes"} onClick={() => setSel("filed_yes")} />
+                  <OptionCard label="No, I didn't file" selected={sel === "filed_no"} onClick={() => setSel("filed_no")} />
+                </div>
+                {sel === "filed_yes" && (
+                  <div style={{ marginBottom: 12 }}>
+                    <InputField label="Who prepared your return?" placeholder="e.g., Self, H&R Block, another preparer" />
+                    <AntonioNote text="If you have a copy of last year's return, upload it in the documents step — it helps me catch things." />
+                  </div>
+                )}
+                <PrimaryButton onClick={() => go("dependents")} disabled={!sel} style={{ marginTop: 8 }}>Continue</PrimaryButton>
               </div>
             )}
 
@@ -596,6 +631,7 @@ export default function ClientPortal() {
                     <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, marginBottom: 14, letterSpacing: "0.06em" }}>DEPENDENT {i}</div>
                     <InputField label="Full name" placeholder="First and last" />
                     <InputField label="Date of birth" placeholder="MM/DD/YYYY" type="date" />
+                    <InputField label="Social Security Number" placeholder="XXX-XX-XXXX" />
                     <InputField label="Relationship" placeholder="e.g., Son, Daughter, Parent" />
                     <InputField label="Months living with you in 2025" placeholder="e.g., 12" />
                   </div>
@@ -817,6 +853,33 @@ export default function ClientPortal() {
                 <InputField label="Number of employees" placeholder="e.g., 5" />
                 <InputField label="Accounting method" placeholder="Cash or Accrual" />
                 <InputField label="Fiscal year end" placeholder="e.g., 12/31" />
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: c.secondary, display: "block", marginBottom: 6 }}>Business address (if different from home)</label>
+                  <InputField label="" placeholder="Street address" />
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ flex: 2 }}><InputField label="" placeholder="City" /></div>
+                    <div style={{ flex: 1 }}><InputField label="" placeholder="State" /></div>
+                    <div style={{ flex: 1 }}><InputField label="" placeholder="ZIP" /></div>
+                  </div>
+                </div>
+                <InputField label="Accounting software" placeholder="e.g., QuickBooks, Xero, Wave, None" />
+                <InputField label="Payroll provider" placeholder="e.g., ADP, Gusto, In-house, None" />
+                <div style={{ marginTop: 12, padding: "18px 20px", borderRadius: 14, background: c.surface, border: `1.5px solid ${c.borderLight}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: c.dim, marginBottom: 14, letterSpacing: "0.06em" }}>OWNERSHIP</div>
+                  {[1].map(i => (
+                    <div key={i}>
+                      <InputField label={`Owner ${i} name`} placeholder="Full legal name" />
+                      <InputField label="SSN" placeholder="XXX-XX-XXXX" />
+                      <InputField label="Ownership %" placeholder="e.g., 100" />
+                      <InputField label="Title" placeholder="e.g., Managing Member, President" />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: c.secondary, display: "block", marginBottom: 6 }}>Are we also preparing personal returns for any owners?</label>
+                  <OptionCard label="Yes" selected={sel === "k1_yes"} onClick={() => setSel("k1_yes")} />
+                  <OptionCard label="No" selected={sel === "k1_no"} onClick={() => setSel("k1_no")} />
+                </div>
                 <AntonioNote text="If you're not sure about entity type or accounting method, don't worry. I'll verify everything." />
                 <PrimaryButton onClick={() => go("filing")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
               </div>
