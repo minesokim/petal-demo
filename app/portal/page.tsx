@@ -211,7 +211,7 @@ function TopNav({ onBack, title, sub, right }: {
         </button>
       )}
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif" }}>{title}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{title}</div>
         {sub && <div style={{ fontSize: 11, color: c.dim }}>{sub}</div>}
       </div>
       {right}
@@ -745,7 +745,7 @@ export default function ClientPortal() {
                     paddingTop: 10, borderTop: `1px solid ${c.borderLight}`,
                   }}>
                     <span style={{ fontSize: 15, fontWeight: 600 }}>Deposit</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: c.accent, fontFamily: "'Fraunces', serif" }}>$50.00</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: c.accent }}>$50.00</span>
                   </div>
                 </div>
 
@@ -1065,7 +1065,7 @@ export default function ClientPortal() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AntonioAvatar size={34} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif" }}>Ask Antonio</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Ask Antonio</div>
                     <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
                   </div>
                 </div>
@@ -1310,7 +1310,7 @@ export default function ClientPortal() {
                 <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#5CB176", border: `2px solid ${c.surface}` }} />
               </div>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif" }}>Antonio Vazquez</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Antonio Vazquez</div>
                 <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
               </div>
             </div>
