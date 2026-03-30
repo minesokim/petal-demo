@@ -343,7 +343,8 @@ function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
 // ═══════════════════════════════════════════════
 export default function ClientPortal() {
   const [mode, setMode] = useState<"intake" | "portal">("intake");
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState("welcome");
+  const [hist, setHist] = useState<string[]>(["welcome"]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [sel, setSel] = useState<string | null>(null);
   const [multi, setMulti] = useState<string[]>([]);
@@ -363,13 +364,18 @@ export default function ClientPortal() {
   const [docFolder, setDocFolder] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const totalSteps = 14;
+  // Step counter for progress bar (excludes welcome/done)
+  const stepIndex = hist.filter(h => h !== "welcome").length;
+  const totalSteps = answers.service === "intro" || answers.service === "bookkeeping" ? 5
+    : answers.service === "formation" || answers.service === "strategic" ? 7
+    : answers.service === "business" ? 16 : 14;
 
-  const go = (nextStep: number) => {
+  const go = (nextStep: string) => {
     const updated = { ...answers };
-    if (sel !== null) updated[`step_${step}`] = sel;
-    if (multi.length) updated[`step_${step}`] = multi;
+    if (sel !== null) updated[step] = sel;
+    if (multi.length) updated[step] = multi;
     setAnswers(updated);
+    setHist(h => [...h, nextStep]);
     setStep(nextStep);
     setSel(null);
     setMulti([]);
@@ -377,11 +383,12 @@ export default function ClientPortal() {
   };
 
   const back = () => {
-    if (step > 0) {
-      setStep(step - 1);
-      setSel(null);
-      setMulti([]);
-    }
+    if (hist.length <= 1) return;
+    const h = hist.slice(0, -1);
+    setHist(h);
+    setStep(h[h.length - 1]);
+    setSel(null);
+    setMulti([]);
   };
 
   // ─── INTAKE FLOW ───
@@ -392,12 +399,12 @@ export default function ClientPortal() {
         background: c.bg, maxWidth: 480, margin: "0 auto",
       }}>
         {/* Top nav (skip on welcome + done screens) */}
-        {step > 0 && step < totalSteps && (
+        {step !== "welcome" && step !== "done" && (
           <TopNav
             onBack={back}
             title="Vazant Consulting"
             sub="New Client Intake"
-            right={<ProgressBar current={step} total={totalSteps} />}
+            right={<ProgressBar current={stepIndex} total={totalSteps} />}
           />
         )}
 
@@ -408,8 +415,8 @@ export default function ClientPortal() {
             padding: step === 0 ? "0" : "32px 24px 40px",
           }}>
 
-            {/* ── Step 0: Welcome ── */}
-            {step === 0 && (
+            {/* ── Welcome ── */}
+            {step === "welcome" && (
               <div style={{ padding: "0 24px 40px" }}>
                 {/* Welcome video */}
                 <div style={{
@@ -487,10 +494,10 @@ export default function ClientPortal() {
               </div>
             )}
 
-            {/* ── Step 1: Service tier (matches Calendly) ── */}
-            {step === 1 && (
+            {/* ── Service tier (matches Calendly) ── */}
+            {step === "service" && (
               <div>
-                <QuestionHeader step={1} total={totalSteps} question="What brings you in?" sub="Select the service that best fits your needs." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="What brings you in?" sub="Select the service that best fits your needs." />
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 8 }}>TAX PREPARATION</div>
                 <OptionCard label="Simple Tax Return" desc="W-2 income, limited deductions, standard filing" price="Starting at $150" selected={sel === "simple"} onClick={() => setSel("simple")} />
                 <OptionCard label="Complex Return" desc="Self-employment, rentals, investments, itemized deductions" price="Starting at $350" selected={sel === "complex"} onClick={() => setSel("complex")} />
@@ -501,41 +508,50 @@ export default function ClientPortal() {
                 <OptionCard label="Bookkeeping Consultation" desc="Clarity around your bookkeeping needs" selected={sel === "bookkeeping"} onClick={() => setSel("bookkeeping")} />
                 <OptionCard label="Strategic Tax & Business Consultation" desc="In-depth guidance on tax and business matters" selected={sel === "strategic"} onClick={() => setSel("strategic")} />
                 <AntonioNote text="Not sure where to start? The Introductory Consultation is free and I'll point you in the right direction." />
-                <PrimaryButton onClick={() => go(2)} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => {
+                  const svc = sel;
+                  setAnswers(a => ({ ...a, service: svc }));
+                  // Route based on service type
+                  if (svc === "intro" || svc === "bookkeeping") go("contact_info");
+                  else if (svc === "formation") go("business_formation");
+                  else if (svc === "strategic") go("strategic_topics");
+                  else if (svc === "business") go("business_info");
+                  else go("filing"); // simple or complex tax
+                }} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 2: Filing status ── */}
-            {step === 2 && (
+            {step === "filing" && (
               <div>
-                <QuestionHeader step={2} total={totalSteps} question="What's your filing status?" sub="This determines your tax rates and standard deduction." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="What's your filing status?" sub="This determines your tax rates and standard deduction." />
                 <OptionCard label="Single" desc="Unmarried or legally separated" selected={sel === "single"} onClick={() => setSel("single")} />
                 <OptionCard label="Married Filing Jointly" desc="Most common for married couples" selected={sel === "mfj"} onClick={() => setSel("mfj")} />
                 <OptionCard label="Married Filing Separately" selected={sel === "mfs"} onClick={() => setSel("mfs")} />
                 <OptionCard label="Head of Household" desc="Unmarried with qualifying dependents" selected={sel === "hoh"} onClick={() => setSel("hoh")} />
                 <OptionCard label="Qualifying Surviving Spouse" selected={sel === "qw"} onClick={() => setSel("qw")} />
                 <AntonioNote text="If you're not sure between Head of Household and Single, pick what sounds right. I'll verify during my review." />
-                <PrimaryButton onClick={() => go(sel === "mfj" || sel === "mfs" ? 3 : 4)} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go(sel === "mfj" || sel === "mfs" ? "spouse" : "personal_info")} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 3: Spouse info (conditional) ── */}
-            {step === 3 && (
+            {step === "spouse" && (
               <div>
-                <QuestionHeader step={3} total={totalSteps} question="Tell me about your spouse." sub="Basic info for the joint return." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Tell me about your spouse." sub="Basic info for the joint return." />
                 <InputField label="Spouse's full legal name" placeholder="First and last name" />
                 <InputField label="Date of birth" placeholder="MM/DD/YYYY" type="date" />
                 <InputField label="Social Security Number" placeholder="XXX-XX-XXXX" />
                 <InputField label="Occupation" placeholder="e.g., Teacher, Nurse, Engineer" />
                 <AntonioNote text="Your SSN is encrypted the moment you type it. I only see the last 4 digits until I'm actively preparing your return." />
-                <PrimaryButton onClick={() => go(4)} style={{ marginTop: 16 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("personal_info")} style={{ marginTop: 16 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 4: Your info ── */}
-            {step === 4 && (
+            {step === "personal_info" && (
               <div>
-                <QuestionHeader step={4} total={totalSteps} question="Your basic information" sub="This goes directly onto your return." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Your basic information" sub="This goes directly onto your return." />
                 <InputField label="Full legal name" placeholder="First and last name" />
                 <InputField label="Date of birth" placeholder="MM/DD/YYYY" type="date" />
                 <InputField label="Social Security Number" placeholder="XXX-XX-XXXX" />
@@ -551,27 +567,27 @@ export default function ClientPortal() {
                     <div style={{ flex: 1 }}><InputField label="" placeholder="ZIP" /></div>
                   </div>
                 </div>
-                <PrimaryButton onClick={() => go(5)} style={{ marginTop: 16 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("dependents")} style={{ marginTop: 16 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 5: Dependents ── */}
-            {step === 5 && (
+            {step === "dependents" && (
               <div>
-                <QuestionHeader step={5} total={totalSteps} question="Do you have any dependents?" sub="Children, elderly parents, or anyone who depends on you financially." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Do you have any dependents?" sub="Children, elderly parents, or anyone who depends on you financially." />
                 <OptionCard label="No dependents" selected={sel === "none"} onClick={() => setSel("none")} />
                 <OptionCard label="1 dependent" selected={sel === "1"} onClick={() => setSel("1")} />
                 <OptionCard label="2 dependents" selected={sel === "2"} onClick={() => setSel("2")} />
                 <OptionCard label="3 or more" selected={sel === "3+"} onClick={() => setSel("3+")} />
                 <AntonioNote text="Dependents unlock credits like the Child Tax Credit ($2,000+ per child). Even if you're not sure someone qualifies, mention them." />
-                <PrimaryButton onClick={() => go(sel === "none" ? 7 : 6)} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go(sel === "none" ? "income" : "dep_detail")} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 6: Dependent details ── */}
-            {step === 6 && (
+            {step === "dep_detail" && (
               <div>
-                <QuestionHeader step={6} total={totalSteps} question="Tell me about your dependents" sub="Just the basics. I'll sort out who qualifies." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Tell me about your dependents" sub="Just the basics. I'll sort out who qualifies." />
                 {[1, 2].map(i => (
                   <div key={i} style={{
                     padding: "18px 20px", borderRadius: 14, marginBottom: 12,
@@ -585,14 +601,14 @@ export default function ClientPortal() {
                   </div>
                 ))}
                 <AntonioNote text="If you have a child under 13 and pay for daycare, that's a big credit we don't want to miss." />
-                <PrimaryButton onClick={() => go(7)} style={{ marginTop: 16 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("income")} style={{ marginTop: 16 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 7: Income types ── */}
-            {step === 7 && (
+            {step === "income" && (
               <div>
-                <QuestionHeader step={7} total={totalSteps} question="How do you earn income?" sub="Select all that apply." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="How do you earn income?" sub="Select all that apply." />
                 {[
                   { value: "w2", label: "W-2 Employee", desc: "Regular paycheck from an employer" },
                   { value: "self", label: "Self-Employed / 1099", desc: "Freelance, gig work, contracting" },
@@ -608,7 +624,12 @@ export default function ClientPortal() {
                 ))}
                 <AntonioNote text="Don't overthink this. If you got paid for it, select it. I'll sort out the forms." />
                 <PrimaryButton
-                  onClick={() => { setAnswers(a => ({ ...a, income: multi })); go(8); }}
+                  onClick={() => {
+                    setAnswers(a => ({ ...a, income: multi }));
+                    if (multi.includes("self")) go("self_employment");
+                    else if (multi.includes("rental")) go("rental_detail");
+                    else go("tax_questions");
+                  }}
                   disabled={!multi.length}
                   style={{ marginTop: 24 }}
                 >
@@ -618,22 +639,22 @@ export default function ClientPortal() {
             )}
 
             {/* ── Step 8: Tax questions ── */}
-            {step === 8 && (
+            {step === "tax_questions" && (
               <div>
-                <QuestionHeader step={8} total={totalSteps} question="A few quick tax questions" sub="These help me plan your return before we even meet." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="A few quick tax questions" sub="These help me plan your return before we even meet." />
                 <OptionCard label="Did you transact in digital assets?" desc="Crypto, NFTs, stablecoins — even small airdrops count" isMulti selected={multi.includes("crypto")} onClick={() => setMulti(p => p.includes("crypto") ? p.filter(v => v !== "crypto") : [...p, "crypto"])} />
                 <OptionCard label="Did you make estimated tax payments?" desc="Quarterly payments to the IRS" isMulti selected={multi.includes("estimated")} onClick={() => setMulti(p => p.includes("estimated") ? p.filter(v => v !== "estimated") : [...p, "estimated"])} />
                 <OptionCard label="Did you have health insurance all year?" desc="Through employer, marketplace, or Medicare" isMulti selected={multi.includes("health")} onClick={() => setMulti(p => p.includes("health") ? p.filter(v => v !== "health") : [...p, "health"])} />
                 <OptionCard label="Did you contribute to an IRA or HSA?" desc="Traditional IRA, Roth IRA, or Health Savings Account" isMulti selected={multi.includes("ira")} onClick={() => setMulti(p => p.includes("ira") ? p.filter(v => v !== "ira") : [...p, "ira"])} />
                 <AntonioNote text="The digital assets question is on the front page of the 1040 now. The IRS is watching this closely." />
-                <PrimaryButton onClick={() => go(9)} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("deductions")} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
             {/* ── Step 9: Deductions ── */}
-            {step === 9 && (
+            {step === "deductions" && (
               <div>
-                <QuestionHeader step={9} total={totalSteps} question="Quick check on deductions" sub="Select anything that might apply. When in doubt, select it." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Quick check on deductions" sub="Select anything that might apply. When in doubt, select it." />
                 {[
                   { value: "mortgage", label: "Home mortgage" },
                   { value: "student", label: "Student loans" },
@@ -655,7 +676,7 @@ export default function ClientPortal() {
                 <OptionCard label="None of these" selected={multi.includes("none")} isMulti onClick={() => setMulti(["none"])} />
                 <AntonioNote text="Even if you're not sure something counts, select it. I'd rather check than miss a deduction worth hundreds." />
                 <PrimaryButton
-                  onClick={() => { setAnswers(a => ({ ...a, deductions: multi })); go(10); }}
+                  onClick={() => { setAnswers(a => ({ ...a, deductions: multi })); go("refund"); }}
                   disabled={!multi.length}
                   style={{ marginTop: 24 }}
                 >
@@ -665,9 +686,9 @@ export default function ClientPortal() {
             )}
 
             {/* ── Step 10: Refund preference ── */}
-            {step === 10 && (
+            {step === "refund" && (
               <div>
-                <QuestionHeader step={10} total={totalSteps} question="Refund preference" sub="If you're owed a refund, how would you like to receive it?" />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Refund preference" sub="If you're owed a refund, how would you like to receive it?" />
                 <OptionCard label="Direct deposit (fastest)" desc="Refund arrives in 10-21 days" selected={sel === "direct"} onClick={() => setSel("direct")} />
                 <OptionCard label="Paper check by mail" desc="Takes 4-6 weeks" selected={sel === "check"} onClick={() => setSel("check")} />
                 {sel === "direct" && (
@@ -681,14 +702,172 @@ export default function ClientPortal() {
                   </div>
                 )}
                 <AntonioNote text="Direct deposit is always faster. If you owe instead of getting a refund, we'll figure out the best payment plan." />
-                <PrimaryButton onClick={() => go(11)} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("life_events")} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
-            {/* ── Step 11: Schedule appointment ── */}
-            {step === 11 && (
+            {/* ── Self-employment detail (conditional) ── */}
+            {step === "self_employment" && (
               <div>
-                <QuestionHeader step={11} total={totalSteps} question="Schedule your appointment" sub="Pick a type and time that works for you." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Tell me about your self-employment" sub="This opens up lots of deductions." />
+                <InputField label="Business name" placeholder="e.g., Freelance Design LLC" />
+                <InputField label="What do you do?" placeholder="e.g., Graphic design, consulting" />
+                <InputField label="Entity type" placeholder="Sole Prop, LLC, S-Corp, or N/A" />
+                <InputField label="EIN (if any)" placeholder="XX-XXXXXXX or N/A" />
+                <InputField label="Approximate 2025 revenue" placeholder="e.g., $50,000" />
+                <OptionCard label="I use a home office" selected={multi.includes("home_office")} isMulti onClick={() => setMulti(p => p.includes("home_office") ? [] : ["home_office"])} />
+                <OptionCard label="I use a vehicle for business" selected={multi.includes("vehicle")} isMulti onClick={() => setMulti(p => p.includes("vehicle") ? [] : ["vehicle"])} />
+                <AntonioNote text="Self-employment has dozens of deductions most people miss. Home office, mileage, equipment, health insurance. We'll go through all of them." />
+                <PrimaryButton onClick={() => {
+                  setAnswers(a => ({ ...a, selfEmployment: multi }));
+                  if ((answers.income || []).includes("rental")) go("rental_detail");
+                  else go("tax_questions");
+                }} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Rental property detail (conditional) ── */}
+            {step === "rental_detail" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Tell me about your rental property" />
+                <InputField label="Property address" placeholder="Street, City, State" />
+                <InputField label="Monthly rent collected" placeholder="e.g., $2,000" />
+                <InputField label="Monthly mortgage payment" placeholder="e.g., $1,500" />
+                <InputField label="Year acquired" placeholder="e.g., 2019" />
+                <InputField label="Number of rental properties" placeholder="e.g., 1" />
+                <AntonioNote text="Rental properties are one of the best tax advantages. Depreciation, repairs, insurance, mortgage interest — we'll capture everything." />
+                <PrimaryButton onClick={() => go("tax_questions")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Life events ── */}
+            {step === "life_events" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Any major life changes in 2025?" sub="These can significantly affect your return." />
+                <OptionCard label="Got married or divorced" isMulti selected={multi.includes("married")} onClick={() => setMulti(p => p.includes("married") ? p.filter(v => v !== "married") : [...p, "married"])} />
+                <OptionCard label="Had a baby or adopted" isMulti selected={multi.includes("baby")} onClick={() => setMulti(p => p.includes("baby") ? p.filter(v => v !== "baby") : [...p, "baby"])} />
+                <OptionCard label="Bought or sold a home" isMulti selected={multi.includes("home")} onClick={() => setMulti(p => p.includes("home") ? p.filter(v => v !== "home") : [...p, "home"])} />
+                <OptionCard label="Started a business" isMulti selected={multi.includes("new_biz")} onClick={() => setMulti(p => p.includes("new_biz") ? p.filter(v => v !== "new_biz") : [...p, "new_biz"])} />
+                <OptionCard label="Received an inheritance" isMulti selected={multi.includes("inheritance")} onClick={() => setMulti(p => p.includes("inheritance") ? p.filter(v => v !== "inheritance") : [...p, "inheritance"])} />
+                <OptionCard label="None of these" selected={multi.includes("none")} isMulti onClick={() => setMulti(["none"])} />
+                <AntonioNote text="Life changes often mean tax changes. Even if you're not sure it matters, mention it and I'll check." />
+                <PrimaryButton onClick={() => { setAnswers(a => ({ ...a, lifeEvents: multi })); go("documents"); }} disabled={!multi.length} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Dynamic document checklist ── */}
+            {step === "documents" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Upload your documents" sub="Based on your answers, here's what I need. Upload now or add from your portal later." />
+                {(() => {
+                  const docs: { label: string; cat: string; required?: boolean }[] = [
+                    { label: "Photo ID (Driver's License or Passport)", cat: "Required", required: true },
+                  ];
+                  const inc = answers.income || [];
+                  const ded = answers.deductions || [];
+                  if (inc.includes("w2")) docs.push({ label: "W-2 from employer(s)", cat: "Income" });
+                  if (inc.includes("self")) {
+                    docs.push({ label: "1099-NEC / 1099-K from clients", cat: "Self-Employment" });
+                    docs.push({ label: "Business expense records", cat: "Self-Employment" });
+                    if ((answers.selfEmployment || []).includes("vehicle")) docs.push({ label: "Mileage log", cat: "Self-Employment" });
+                  }
+                  if (inc.includes("rental")) {
+                    docs.push({ label: "Rental income records", cat: "Rental" });
+                    docs.push({ label: "1098 Mortgage (rental property)", cat: "Rental" });
+                  }
+                  if (inc.includes("invest")) docs.push({ label: "1099-B / Brokerage statements", cat: "Investments" });
+                  if (inc.includes("retire")) docs.push({ label: "1099-R / SSA-1099", cat: "Retirement" });
+                  docs.push({ label: "1099-INT from banks (if any)", cat: "Income" });
+                  if (ded.includes("mortgage")) docs.push({ label: "1098 Mortgage Interest", cat: "Deductions" });
+                  if (ded.includes("student")) docs.push({ label: "1098-E Student Loan Interest", cat: "Deductions" });
+                  if (ded.includes("charity")) docs.push({ label: "Charitable donation receipts", cat: "Deductions" });
+                  if (ded.includes("childcare")) docs.push({ label: "Childcare provider info (name, address, EIN)", cat: "Deductions" });
+                  if (ded.includes("education")) docs.push({ label: "1098-T Tuition Statement", cat: "Education" });
+                  if (answers.filing === "mfj") docs.push({ label: "Spouse's W-2s and 1099s", cat: "Spouse" });
+                  docs.push({ label: "Prior year tax return", cat: "Reference" });
+                  return docs.map((d, i) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "13px 16px", borderRadius: 12, marginBottom: 6,
+                      background: c.surface, border: `1.5px solid ${c.borderLight}`,
+                    }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: c.muted, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c.dim} strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6" /></svg>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{d.label}</div>
+                        <div style={{ fontSize: 11, color: c.dim }}>{d.cat}{d.required ? " · Required" : ""}</div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+                <AntonioNote text="Photos from your phone work great. Upload now or send later from your portal — whatever's easier." />
+                <PrimaryButton onClick={() => go("schedule")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Business info (for business tax returns) ── */}
+            {step === "business_info" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Tell me about your business" sub="This helps me prepare the right return type." />
+                <InputField label="Legal business name" placeholder="e.g., Sandoval Plumbing LLC" />
+                <InputField label="EIN (Employer Identification Number)" placeholder="XX-XXXXXXX" />
+                <InputField label="Entity type" placeholder="S-Corp, LLC, C-Corp, Partnership" />
+                <InputField label="Business activity" placeholder="e.g., Plumbing, Restaurant, Consulting" />
+                <InputField label="Number of employees" placeholder="e.g., 5" />
+                <InputField label="Accounting method" placeholder="Cash or Accrual" />
+                <InputField label="Fiscal year end" placeholder="e.g., 12/31" />
+                <AntonioNote text="If you're not sure about entity type or accounting method, don't worry. I'll verify everything." />
+                <PrimaryButton onClick={() => go("filing")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Business formation ── */}
+            {step === "business_formation" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Business formation details" sub="Tell me about the business you want to set up." />
+                <InputField label="Desired business name" placeholder="e.g., Park Cleaners LLC" />
+                <InputField label="What will the business do?" placeholder="e.g., Dry cleaning, consulting" />
+                <OptionCard label="LLC" selected={sel === "llc"} onClick={() => setSel("llc")} />
+                <OptionCard label="S-Corporation" selected={sel === "scorp"} onClick={() => setSel("scorp")} />
+                <OptionCard label="C-Corporation" selected={sel === "ccorp"} onClick={() => setSel("ccorp")} />
+                <OptionCard label="Not sure — need guidance" selected={sel === "unsure"} onClick={() => setSel("unsure")} />
+                <InputField label="State of incorporation" placeholder="e.g., California" />
+                <InputField label="Number of owners" placeholder="e.g., 1, 2" />
+                <AntonioNote text="If you're not sure which entity type, that's exactly what we'll figure out in our consultation." />
+                <PrimaryButton onClick={() => go("contact_info")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Strategic consultation topics ── */}
+            {step === "strategic_topics" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="What do you want to discuss?" sub="Select all that apply so I can prepare." />
+                <OptionCard label="Tax planning & projections" isMulti selected={multi.includes("planning")} onClick={() => setMulti(p => p.includes("planning") ? p.filter(v => v !== "planning") : [...p, "planning"])} />
+                <OptionCard label="Entity restructuring" desc="LLC to S-Corp, etc." isMulti selected={multi.includes("restructure")} onClick={() => setMulti(p => p.includes("restructure") ? p.filter(v => v !== "restructure") : [...p, "restructure"])} />
+                <OptionCard label="Estimated tax payments" isMulti selected={multi.includes("estimated")} onClick={() => setMulti(p => p.includes("estimated") ? p.filter(v => v !== "estimated") : [...p, "estimated"])} />
+                <OptionCard label="Retirement planning" isMulti selected={multi.includes("retirement")} onClick={() => setMulti(p => p.includes("retirement") ? p.filter(v => v !== "retirement") : [...p, "retirement"])} />
+                <OptionCard label="Real estate strategy" isMulti selected={multi.includes("realestate")} onClick={() => setMulti(p => p.includes("realestate") ? p.filter(v => v !== "realestate") : [...p, "realestate"])} />
+                <OptionCard label="Other" isMulti selected={multi.includes("other")} onClick={() => setMulti(p => p.includes("other") ? p.filter(v => v !== "other") : [...p, "other"])} />
+                <PrimaryButton onClick={() => go("contact_info")} disabled={!multi.length} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Contact info (for non-tax services: intro, bookkeeping, formation, strategic) ── */}
+            {step === "contact_info" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Your contact information" sub="So Antonio can reach you." />
+                <InputField label="Full name" placeholder="First and last" />
+                <InputField label="Email" placeholder="you@email.com" type="email" />
+                <InputField label="Phone" placeholder="(555) 555-5555" type="tel" />
+                <PrimaryButton onClick={() => go("schedule")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+              </div>
+            )}
+
+            {/* ── Schedule appointment ── */}
+            {step === "schedule" && (
+              <div>
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Schedule your appointment" sub="Pick a type and time that works for you." />
                 <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
                   {["Phone", "Video", "In-Person"].map(tp => (
                     <button key={tp} onClick={() => setSel(tp)} style={{
@@ -730,14 +909,22 @@ export default function ClientPortal() {
                   </div>
                 ))}
                 <AntonioNote text="Pick whatever works. If none of these times work, message me and I'll open additional slots." />
-                <PrimaryButton onClick={() => go(12)} disabled={!answers.slot} style={{ marginTop: 20 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("deposit")} disabled={!answers.slot} style={{ marginTop: 20 }}>Continue</PrimaryButton>
               </div>
             )}
 
-            {/* ── Step 12: Deposit payment ── */}
-            {step === 12 && (
+            {/* ── Deposit payment (variable by service) ── */}
+            {step === "deposit" && (() => {
+              const depositAmounts: Record<string, number> = {
+                simple: 50, complex: 50, business: 100,
+                formation: 250, strategic: 125,
+                intro: 0, bookkeeping: 0,
+              };
+              const deposit = depositAmounts[answers.service] ?? 50;
+              const isFree = deposit === 0;
+              return (
               <div>
-                <QuestionHeader step={12} total={totalSteps} question="Secure your appointment" sub="$50 deposit applied toward your final fee." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question={isFree ? "Confirm your appointment" : "Secure your appointment"} sub={isFree ? undefined : `$${deposit} deposit applied toward your final fee.`} />
                 <div style={{
                   background: c.surface, border: `1.5px solid ${c.borderLight}`,
                   borderRadius: 14, padding: "18px 20px", marginBottom: 20,
@@ -746,13 +933,15 @@ export default function ClientPortal() {
                     <span style={{ fontSize: 13, color: c.secondary }}>Appointment</span>
                     <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{answers.slot}</span>
                   </div>
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    paddingTop: 10, borderTop: `1px solid ${c.borderLight}`,
-                  }}>
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>Deposit</span>
-                    <span style={{ fontSize: 20, fontWeight: 700, color: c.accent }}>$50.00</span>
-                  </div>
+                  {!isFree && (
+                    <div style={{
+                      display: "flex", justifyContent: "space-between",
+                      paddingTop: 10, borderTop: `1px solid ${c.borderLight}`,
+                    }}>
+                      <span style={{ fontSize: 15, fontWeight: 600 }}>Deposit</span>
+                      <span style={{ fontSize: 20, fontWeight: 700, color: c.accent }}>${deposit}.00</span>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{
@@ -780,15 +969,18 @@ export default function ClientPortal() {
                     <strong style={{ color: c.secondary }}>Cancellation policy:</strong> Cancel 48+ hours before for a full refund. Late cancellations or no-shows forfeit the deposit.
                   </p>
                 </div>
-                <AntonioNote text="The $50 goes toward your final bill. Cancel 48 hours ahead and you get it right back." />
-                <PrimaryButton onClick={() => go(13)} style={{ marginTop: 20 }}>Pay $50 &amp; Confirm</PrimaryButton>
+                <AntonioNote text={isFree ? "No charge for this consultation. Looking forward to our call!" : `The $${deposit} goes toward your final bill. Cancel 48 hours ahead and you get it right back.`} />
+                <PrimaryButton onClick={() => go("legal")} style={{ marginTop: 20 }}>
+                  {isFree ? "Confirm Appointment" : `Pay $${deposit} & Confirm`}
+                </PrimaryButton>
               </div>
-            )}
+              );
+            })()}
 
             {/* ── Step 13: Engagement + 7216 Consent (scroll-to-agree) ── */}
-            {step === 13 && !showDoc && (
+            {step === "legal" && !showDoc && (
               <div>
-                <QuestionHeader step={13} total={totalSteps} question="Review &amp; authorize" sub="Federal law requires your agreement before I can work with your tax information." />
+                <QuestionHeader step={stepIndex} total={totalSteps} question="Review &amp; authorize" sub="Federal law requires your agreement before I can work with your tax information." />
 
                 {/* Engagement Letter */}
                 <button onClick={() => { if (!engAgreed) { setShowDoc("engagement"); setDocScrolled(false); } }} style={{
@@ -845,7 +1037,7 @@ export default function ClientPortal() {
                 </button>
 
                 <AntonioNote text="These protect both of us. Federal law requires your consent before I can prepare your return." />
-                <PrimaryButton onClick={() => go(14)} disabled={!engAgreed || !s72Agreed} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+                <PrimaryButton onClick={() => go("done")} disabled={!engAgreed || !s72Agreed} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
             )}
 
@@ -933,7 +1125,7 @@ export default function ClientPortal() {
             )}
 
             {/* ── Step 14: Done ── */}
-            {step === 14 && (
+            {step === "done" && (
               <div style={{ textAlign: "center", paddingTop: 24 }}>
                 <div style={{
                   width: 72, height: 72, borderRadius: "50%",
@@ -997,7 +1189,7 @@ export default function ClientPortal() {
         </div>
 
         {/* Ask Antonio bar */}
-        {step > 0 && step < 14 && <AskAntonioBar onClick={() => setAskAntonioOpen(true)} />}
+        {step !== "welcome" && step !== "done" && <AskAntonioBar onClick={() => setAskAntonioOpen(true)} />}
 
         {/* Tutorial overlay */}
         {showTutorial && (
@@ -1050,11 +1242,11 @@ export default function ClientPortal() {
                 <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 12 }}>
                   {[0, 1, 2].map(i => <div key={i} style={{ width: tutStep === i ? 20 : 6, height: 6, borderRadius: 3, background: tutStep === i ? c.accent : c.borderLight, transition: "all 0.25s" }} />)}
                 </div>
-                <PrimaryButton onClick={() => { if (tutStep < 2) setTutStep(tutStep + 1); else { setShowTutorial(false); setStep(1); } }}>
+                <PrimaryButton onClick={() => { if (tutStep < 2) setTutStep(tutStep + 1); else { setShowTutorial(false); go("service"); } }}>
                   {tutStep < 2 ? "Next" : "Let\u2019s Go"}
                 </PrimaryButton>
                 {tutStep < 2 && (
-                  <button onClick={() => { setShowTutorial(false); setStep(1); }} style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "transparent", color: c.dim, fontSize: 13, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 4 }}>
+                  <button onClick={() => { setShowTutorial(false); go("service"); }} style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "transparent", color: c.dim, fontSize: 13, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 4 }}>
                     Skip tutorial
                   </button>
                 )}
