@@ -224,27 +224,36 @@ function AskAntonioBar({ onClick }: { onClick?: () => void }) {
   return (
     <div style={{
       flexShrink: 0, borderTop: `1px solid ${c.borderLight}`,
-      background: c.surface, padding: "10px 20px 14px",
+      background: c.surface, padding: "12px 20px 16px",
+      animation: "slideUpBar 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
     }}>
+      <style>{`@keyframes slideUpBar { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div onClick={onClick} style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "10px 16px", borderRadius: 14,
-        background: c.bg, border: `1.5px solid ${c.borderLight}`,
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "14px 20px", borderRadius: 16,
+        background: `linear-gradient(135deg, ${c.warmLight} 0%, ${c.surface} 100%)`,
+        border: `1.5px solid ${c.warm}40`,
         cursor: "pointer",
+        transition: "all 0.2s ease",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
       }}>
         <div style={{ position: "relative" }}>
-          <AntonioAvatar size={34} />
+          <AntonioAvatar size={40} />
           <div style={{
             position: "absolute", bottom: -1, right: -1,
-            width: 10, height: 10, borderRadius: "50%",
-            background: "#5CB176", border: `2px solid ${c.bg}`,
+            width: 12, height: 12, borderRadius: "50%",
+            background: "#5CB176", border: `2.5px solid ${c.surface}`,
           }} />
         </div>
-        <span style={{ flex: 1, fontSize: 13, color: c.dim }}>Not sure? Ask Antonio</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Not sure? Ask Antonio</div>
+          <div style={{ fontSize: 12, color: c.dim, marginTop: 1 }}>He usually responds within a few hours</div>
+        </div>
         <span style={{
-          padding: "5px 14px", borderRadius: 20,
+          padding: "8px 18px", borderRadius: 22,
           background: c.accent, color: "#fff",
-          fontSize: 11, fontWeight: 600,
+          fontSize: 12, fontWeight: 600,
+          boxShadow: `0 2px 8px ${c.accent}30`,
         }}>
           Message
         </span>
@@ -342,9 +351,26 @@ function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
 // ═══════════════════════════════════════════════
 // MAIN PORTAL
 // ═══════════════════════════════════════════════
+// Vazant logo SVG component
+function VazantLogo({ size = 64 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none">
+      <path d="M25 20L55 100L65 100L38 28Z" fill="#2D5A3D" />
+      <path d="M55 100L85 20L95 20L65 100Z" fill="#2D5A3D" />
+      <path d="M72 20L95 20L105 40L85 35Z" fill="#C4973B" />
+    </svg>
+  );
+}
+
 export default function ClientPortal() {
   const router = useRouter();
-  const [mode, setMode] = useState<"intake" | "portal">("intake");
+  const [mode, setMode] = useState<"login" | "otp" | "intake" | "portal">("login");
+  const [loginPhone, setLoginPhone] = useState("");
+  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
   const [step, setStep] = useState("welcome");
   const [hist, setHist] = useState<string[]>(["welcome"]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -359,6 +385,7 @@ export default function ClientPortal() {
   const [tutStep, setTutStep] = useState(0);
   const [askAntonioOpen, setAskAntonioOpen] = useState(false);
   const [askInput, setAskInput] = useState("");
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatMsgs, setChatMsgs] = useState<{ from: "antonio" | "client" | "system"; text: string; time: string }[]>([
     { from: "antonio", text: "Got your documents! Starting my review. I'll reach out if I have questions. 👍", time: "10:02 AM" },
@@ -398,6 +425,183 @@ export default function ClientPortal() {
     setSel(null);
     setMulti([]);
   };
+
+  // ─── Mock returning client data ───
+  const RETURNING_DATA: Record<string, any> = {
+    filing: "mfj",
+    personal_info: true,
+    state_filing: "filed_yes",
+    dependents: "2",
+  };
+
+  const handleOtpComplete = (code: string) => {
+    setOtpVerifying(true);
+    setTimeout(() => {
+      setOtpVerifying(false);
+      // Mock: phone ending in 88 = returning client (Maria), otherwise new
+      const returning = loginPhone.endsWith("88") || loginPhone.endsWith("0188");
+      setIsReturning(returning);
+      if (returning) {
+        // Returning client → go to client portal
+        router.push("/clientportal");
+      } else {
+        // New client → intake flow
+        setMode("intake");
+      }
+    }, 1500);
+  };
+
+  // ─── LOGIN SCREEN ───
+  if (mode === "login") {
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: c.bg, maxWidth: 480, margin: "0 auto", justifyContent: "center", padding: "40px 28px" }}>
+        <style>{`
+          @keyframes logoFadeIn { from { opacity: 0; transform: translateY(-10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          @keyframes fieldSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+          .login-logo { animation: logoFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+          .login-title { animation: fieldSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+          .login-sub { animation: fieldSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+          .login-field { animation: fieldSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both; }
+          .login-btn { animation: fieldSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both; }
+          .login-footer { animation: fieldSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+        `}</style>
+        <div style={{ textAlign: "center", marginBottom: 40 }} className="login-logo">
+          <VazantLogo size={72} />
+        </div>
+        <h1 className="login-title" style={{ fontSize: 26, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text, textAlign: "center", margin: "0 0 8px" }}>
+          Welcome to Vazant
+        </h1>
+        <p className="login-sub" style={{ fontSize: 14, color: c.secondary, textAlign: "center", margin: "0 0 32px", lineHeight: 1.6 }}>
+          Enter your phone number to get started.<br/>We&apos;ll send you a verification code.
+        </p>
+        <div className="login-field" style={{ marginBottom: 20 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: c.secondary, display: "block", marginBottom: 6 }}>Phone number</label>
+          <input
+            value={loginPhone}
+            onChange={e => setLoginPhone(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && loginPhone.length >= 10) { setOtpSending(true); setTimeout(() => { setOtpSending(false); setMode("otp"); }, 800); } }}
+            placeholder="(555) 555-5555"
+            type="tel"
+            autoFocus
+            style={{ width: "100%", padding: "14px 18px", borderRadius: 14, border: `1.5px solid ${c.border}`, background: c.surface, fontSize: 16, color: c.text, outline: "none", fontFamily: "'Plus Jakarta Sans', sans-serif", boxSizing: "border-box", textAlign: "center", letterSpacing: 1, transition: "border-color 0.2s" }}
+          />
+        </div>
+        <div className="login-btn">
+          <PrimaryButton
+            disabled={loginPhone.length < 10 || otpSending}
+            onClick={() => { setOtpSending(true); setTimeout(() => { setOtpSending(false); setMode("otp"); }, 800); }}
+          >
+            {otpSending ? "Sending code..." : "Continue"}
+          </PrimaryButton>
+        </div>
+        <div className="login-footer" style={{ textAlign: "center", marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 12 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span style={{ fontSize: 11, color: c.dim }}>AES-256 encrypted · Your data is never shared</span>
+          </div>
+          <p style={{ fontSize: 11, color: c.dim }}>Antonio Vazquez, EA · Montclair, CA</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── OTP VERIFICATION SCREEN ───
+  if (mode === "otp") {
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: c.bg, maxWidth: 480, margin: "0 auto", justifyContent: "center", padding: "40px 28px" }}>
+        <style>{`
+          @keyframes otpFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes otpShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+          @keyframes otpSuccess { from { transform: scale(1); } 50% { transform: scale(1.05); } to { transform: scale(1); } }
+          .otp-header { animation: otpFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+          .otp-digits { animation: otpFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+          .otp-shake { animation: otpShake 0.4s ease; }
+          .otp-verifying { animation: otpSuccess 0.3s ease; }
+          .otp-footer { animation: otpFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both; }
+        `}</style>
+        <button onClick={() => { setMode("login"); setOtpDigits(["","","","","",""]); setOtpError(false); }} style={{ position: "absolute", top: 20, left: 20, width: 40, height: 40, borderRadius: 12, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke={c.secondary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div className="otp-header" style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          </div>
+          <h2 style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 500, color: c.text, margin: "0 0 8px" }}>Enter verification code</h2>
+          <p style={{ fontSize: 13, color: c.secondary, lineHeight: 1.6 }}>We sent a 6-digit code to<br/><strong style={{ color: c.text }}>{loginPhone || "(555) 555-5555"}</strong></p>
+        </div>
+        <div className={`otp-digits ${otpError ? "otp-shake" : ""} ${otpVerifying ? "otp-verifying" : ""}`} style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24 }}>
+          {otpDigits.map((d, i) => (
+            <input
+              key={i}
+              ref={el => { otpRefs.current[i] = el; }}
+              value={d}
+              maxLength={1}
+              inputMode="numeric"
+              autoFocus={i === 0}
+              onFocus={e => e.target.select()}
+              onChange={e => {
+                const val = e.target.value.replace(/\D/g, "");
+                if (!val && !d) return;
+                const newDigits = [...otpDigits];
+                newDigits[i] = val.slice(-1);
+                setOtpDigits(newDigits);
+                setOtpError(false);
+                if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                // Auto-submit when all 6 filled
+                if (val && i === 5 && newDigits.every(x => x)) {
+                  handleOtpComplete(newDigits.join(""));
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === "Backspace" && !d && i > 0) {
+                  otpRefs.current[i - 1]?.focus();
+                }
+              }}
+              onPaste={e => {
+                e.preventDefault();
+                const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                if (paste.length === 6) {
+                  const newDigits = paste.split("");
+                  setOtpDigits(newDigits);
+                  otpRefs.current[5]?.focus();
+                  setTimeout(() => handleOtpComplete(paste), 200);
+                }
+              }}
+              style={{
+                width: 48, height: 56, borderRadius: 14, textAlign: "center",
+                fontSize: 22, fontWeight: 600, fontFamily: "'Fraunces', serif",
+                border: `2px solid ${otpError ? c.error : d ? c.accent : c.border}`,
+                background: d ? c.accentLight : c.surface,
+                color: otpError ? c.error : c.text, outline: "none",
+                transition: "all 0.2s ease",
+                boxShadow: d ? `0 2px 8px ${c.accent}15` : "none",
+              }}
+            />
+          ))}
+        </div>
+        {otpVerifying && (
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 20, background: c.accentLight }}>
+              <div style={{ width: 14, height: 14, border: `2px solid ${c.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+              <span style={{ fontSize: 12, color: c.accent, fontWeight: 600 }}>Verifying...</span>
+            </div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+        {otpError && (
+          <p style={{ textAlign: "center", fontSize: 13, color: c.error, marginBottom: 16 }}>Invalid code. Please try again.</p>
+        )}
+        <div className="otp-footer" style={{ textAlign: "center" }}>
+          <button onClick={() => { setOtpDigits(["","","","","",""]); otpRefs.current[0]?.focus(); }} style={{ fontSize: 13, color: c.accent, fontWeight: 500, background: "transparent", border: "none", cursor: "pointer", padding: "8px 16px", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            Resend code
+          </button>
+          <p style={{ fontSize: 11, color: c.dim, marginTop: 12 }}>
+            Code expires in 5:00
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ─── INTAKE FLOW ───
   if (mode === "intake") {
@@ -518,12 +722,6 @@ export default function ClientPortal() {
                     We&apos;ll ask about your filing status, income sources, and dependents.
                     Then you&apos;ll upload your documents and sign your engagement letter.
                   </p>
-
-                  <div style={{ textAlign: "center", marginTop: 16 }}>
-                    <a href="/clientportal" style={{ fontSize: 13, color: c.accent, fontWeight: 500, textDecoration: "none", borderBottom: `1px solid ${c.accent}40` }}>
-                      Already a client? Sign in
-                    </a>
-                  </div>
 
                   <p style={{ fontSize: 11, color: c.dim, marginTop: 14, textAlign: "center" }}>
                     Your information is never shared or sold.
@@ -819,55 +1017,131 @@ export default function ClientPortal() {
             )}
 
             {/* ── Dynamic document checklist ── */}
-            {step === "documents" && (
-              <div>
-                <QuestionHeader step={stepIndex} total={totalSteps} question="Upload your documents" sub="Based on your answers, here's what I need. Upload now or add from your portal later." />
-                {(() => {
-                  const docs: { label: string; cat: string; required?: boolean }[] = [
-                    { label: "Photo ID (Driver's License or Passport)", cat: "Required", required: true },
-                  ];
-                  const inc = answers.income || [];
-                  const ded = answers.deductions || [];
-                  if (inc.includes("w2")) docs.push({ label: "W-2 from employer(s)", cat: "Income" });
-                  if (inc.includes("self")) {
-                    docs.push({ label: "1099-NEC / 1099-K from clients", cat: "Self-Employment" });
-                    docs.push({ label: "Business expense records", cat: "Self-Employment" });
-                    if ((answers.selfEmployment || []).includes("vehicle")) docs.push({ label: "Mileage log", cat: "Self-Employment" });
-                  }
-                  if (inc.includes("rental")) {
-                    docs.push({ label: "Rental income records", cat: "Rental" });
-                    docs.push({ label: "1098 Mortgage (rental property)", cat: "Rental" });
-                  }
-                  if (inc.includes("invest")) docs.push({ label: "1099-B / Brokerage statements", cat: "Investments" });
-                  if (inc.includes("retire")) docs.push({ label: "1099-R / SSA-1099", cat: "Retirement" });
-                  docs.push({ label: "1099-INT from banks (if any)", cat: "Income" });
-                  if (ded.includes("mortgage")) docs.push({ label: "1098 Mortgage Interest", cat: "Deductions" });
-                  if (ded.includes("student")) docs.push({ label: "1098-E Student Loan Interest", cat: "Deductions" });
-                  if (ded.includes("charity")) docs.push({ label: "Charitable donation receipts", cat: "Deductions" });
-                  if (ded.includes("childcare")) docs.push({ label: "Childcare provider info (name, address, EIN)", cat: "Deductions" });
-                  if (ded.includes("education")) docs.push({ label: "1098-T Tuition Statement", cat: "Education" });
-                  if (answers.filing === "mfj") docs.push({ label: "Spouse's W-2s and 1099s", cat: "Spouse" });
-                  docs.push({ label: "Prior year tax return", cat: "Reference" });
-                  return docs.map((d, i) => (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "13px 16px", borderRadius: 12, marginBottom: 6,
-                      background: c.surface, border: `1.5px solid ${c.borderLight}`,
+            {step === "documents" && (() => {
+              const docs: { label: string; cat: string; required?: boolean; icon: string }[] = [
+                { label: "Photo ID", cat: "Driver's License or Passport", required: true, icon: "ID" },
+              ];
+              const inc = answers.income || [];
+              const ded = answers.deductions || [];
+              if (inc.includes("w2")) docs.push({ label: "W-2", cat: "From your employer(s)", icon: "W2" });
+              if (inc.includes("self")) {
+                docs.push({ label: "1099-NEC / 1099-K", cat: "From clients or platforms", icon: "1099" });
+                docs.push({ label: "Business expenses", cat: "Receipts, statements, logs", icon: "EXP" });
+              }
+              if (inc.includes("rental")) docs.push({ label: "Rental records", cat: "Income, mortgage, expenses", icon: "RNT" });
+              if (inc.includes("invest")) docs.push({ label: "1099-B", cat: "Brokerage / crypto statements", icon: "INV" });
+              if (inc.includes("retire")) docs.push({ label: "1099-R / SSA-1099", cat: "Retirement distributions", icon: "RET" });
+              if (ded.includes("mortgage")) docs.push({ label: "1098 Mortgage", cat: "Mortgage interest statement", icon: "MTG" });
+              if (ded.includes("childcare")) docs.push({ label: "Childcare info", cat: "Provider name, address, EIN", icon: "CC" });
+              if (answers.filing === "mfj") docs.push({ label: "Spouse documents", cat: "W-2s, 1099s for your spouse", icon: "SP" });
+              docs.push({ label: "Prior year return", cat: "Last year's tax return (if available)", icon: "PY" });
+
+              const docIdx = answers._docIdx || 0;
+              const docUploaded = answers._docUploaded || [];
+              const current = docs[docIdx];
+              const isLast = docIdx >= docs.length - 1;
+              const uploadedCount = docUploaded.length;
+
+              if (!current) return <div><PrimaryButton onClick={() => go("schedule")}>Continue</PrimaryButton></div>;
+
+              return (
+                <div>
+                  <QuestionHeader step={stepIndex} total={totalSteps} question="Upload your documents" sub={`Document ${docIdx + 1} of ${docs.length}`} />
+
+                  {/* Progress dots */}
+                  <div style={{ display: "flex", gap: 4, marginBottom: 24, justifyContent: "center" }}>
+                    {docs.map((_, i) => (
+                      <div key={i} style={{
+                        width: i === docIdx ? 20 : 6, height: 6, borderRadius: 3,
+                        background: i < docIdx ? c.accent : i === docIdx ? c.accent : c.borderLight,
+                        opacity: (docUploaded as string[]).includes(String(i)) ? 1 : i === docIdx ? 1 : 0.5,
+                        transition: "all 0.3s ease",
+                      }} />
+                    ))}
+                  </div>
+
+                  {/* Current document card */}
+                  <div style={{
+                    background: c.surface, borderRadius: 20, border: `1.5px solid ${c.borderLight}`,
+                    padding: "28px 24px", textAlign: "center", marginBottom: 20,
+                  }}>
+                    <div style={{
+                      width: 56, height: 56, borderRadius: 14, margin: "0 auto 16px",
+                      background: current.required ? c.warmLight : c.accentLight,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, fontWeight: 700, color: current.required ? "#9A7245" : c.accent,
                     }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: c.muted, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c.dim} strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6" /></svg>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{d.label}</div>
-                        <div style={{ fontSize: 11, color: c.dim }}>{d.cat}{d.required ? " · Required" : ""}</div>
-                      </div>
+                      {current.icon}
                     </div>
-                  ));
-                })()}
-                <AntonioNote text="Photos from your phone work great. Upload now or send later from your portal — whatever's easier." />
-                <PrimaryButton onClick={() => go("schedule")} style={{ marginTop: 20 }}>Continue</PrimaryButton>
-              </div>
-            )}
+                    <div style={{ fontSize: 18, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif", marginBottom: 4 }}>{current.label}</div>
+                    <div style={{ fontSize: 13, color: c.secondary }}>{current.cat}</div>
+                    {current.required && <div style={{ marginTop: 8, padding: "3px 10px", borderRadius: 20, background: c.warmLight, color: "#9A7245", fontSize: 11, fontWeight: 600, display: "inline-block" }}>Required</div>}
+
+                    {(docUploaded as string[]).includes(String(docIdx)) ? (
+                      <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: 12, background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                        <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke={c.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: c.accent }}>Uploaded</span>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 20 }}>
+                        {/* Camera button — primary */}
+                        <label style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                          padding: "14px 20px", borderRadius: 14, background: c.accent, color: "#fff",
+                          fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 10,
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                          Take a photo
+                          <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={() => setAnswers(a => ({ ...a, _docUploaded: [...(a._docUploaded || []), String(docIdx)] }))} />
+                        </label>
+                        {/* Attach file — secondary */}
+                        <label style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                          padding: "12px 20px", borderRadius: 14, background: "transparent", border: `1.5px solid ${c.border}`,
+                          color: c.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                          Attach a file
+                          <input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={() => setAnswers(a => ({ ...a, _docUploaded: [...(a._docUploaded || []), String(docIdx)] }))} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Navigation */}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {!(docUploaded as string[]).includes(String(docIdx)) && (
+                      <button onClick={() => {
+                        if (isLast) go("schedule");
+                        else setAnswers(a => ({ ...a, _docIdx: docIdx + 1 }));
+                      }} style={{
+                        flex: 1, padding: "14px 20px", borderRadius: 14, background: "transparent",
+                        border: `1.5px solid ${c.border}`, color: c.secondary, fontSize: 14, fontWeight: 600,
+                        cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}>
+                        {current.required ? "Skip for now" : "I\u2019ll add later"}
+                      </button>
+                    )}
+                    <PrimaryButton onClick={() => {
+                      if (isLast) go("schedule");
+                      else setAnswers(a => ({ ...a, _docIdx: docIdx + 1 }));
+                    }} style={{ flex: 1 }}>
+                      {isLast ? "Continue" : "Next document"}
+                    </PrimaryButton>
+                  </div>
+
+                  {uploadedCount > 0 && (
+                    <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: c.accent, fontWeight: 500 }}>
+                      {uploadedCount} of {docs.length} uploaded
+                    </div>
+                  )}
+
+                  <AntonioNote text="Photos from your phone work great. You can always add more documents from your portal later." />
+                </div>
+              );
+            })()}
 
             {/* ── Business info (for business tax returns) ── */}
             {step === "business_info" && (
@@ -1348,8 +1622,9 @@ export default function ClientPortal() {
 
         {/* Ask Antonio chat overlay */}
         {askAntonioOpen && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end" }}>
-            <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: c.surface, borderRadius: "24px 24px 0 0", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", animation: "fadeIn 0.2s ease both" }}>
+            <style>{`@keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+            <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: c.surface, borderRadius: "24px 24px 0 0", maxHeight: "75vh", display: "flex", flexDirection: "column", animation: "sheetSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AntonioAvatar size={34} />
