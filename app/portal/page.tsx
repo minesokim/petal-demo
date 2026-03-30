@@ -224,36 +224,27 @@ function AskAntonioBar({ onClick }: { onClick?: () => void }) {
   return (
     <div style={{
       flexShrink: 0, borderTop: `1px solid ${c.borderLight}`,
-      background: c.surface, padding: "12px 20px 16px",
-      animation: "slideUpBar 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
+      background: c.surface, padding: "10px 20px 14px",
     }}>
-      <style>{`@keyframes slideUpBar { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div onClick={onClick} style={{
-        display: "flex", alignItems: "center", gap: 14,
-        padding: "14px 20px", borderRadius: 16,
-        background: `linear-gradient(135deg, ${c.warmLight} 0%, ${c.surface} 100%)`,
-        border: `1.5px solid ${c.warm}40`,
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "10px 16px", borderRadius: 14,
+        background: c.bg, border: `1.5px solid ${c.borderLight}`,
+        cursor: "pointer", transition: "border-color 0.2s ease",
       }}>
         <div style={{ position: "relative" }}>
-          <AntonioAvatar size={40} />
+          <AntonioAvatar size={34} />
           <div style={{
             position: "absolute", bottom: -1, right: -1,
-            width: 12, height: 12, borderRadius: "50%",
-            background: "#5CB176", border: `2.5px solid ${c.surface}`,
+            width: 10, height: 10, borderRadius: "50%",
+            background: "#5CB176", border: `2px solid ${c.bg}`,
           }} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Not sure? Ask Antonio</div>
-          <div style={{ fontSize: 12, color: c.dim, marginTop: 1 }}>He usually responds within a few hours</div>
-        </div>
+        <span style={{ flex: 1, fontSize: 13, color: c.dim }}>Not sure? Ask Antonio</span>
         <span style={{
-          padding: "8px 18px", borderRadius: 22,
+          padding: "5px 14px", borderRadius: 20,
           background: c.accent, color: "#fff",
-          fontSize: 12, fontWeight: 600,
-          boxShadow: `0 2px 8px ${c.accent}30`,
+          fontSize: 11, fontWeight: 600,
         }}>
           Message
         </span>
@@ -1622,41 +1613,53 @@ export default function ClientPortal() {
 
         {/* Ask Antonio chat overlay */}
         {askAntonioOpen && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", animation: "fadeIn 0.2s ease both" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: c.bg, display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto", animation: "sheetSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
             <style>{`@keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
-            <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: c.surface, borderRadius: "24px 24px 0 0", maxHeight: "75vh", display: "flex", flexDirection: "column", animation: "sheetSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <AntonioAvatar size={34} />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Ask Antonio</div>
-                    <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
-                  </div>
-                </div>
-                <button onClick={() => setAskAntonioOpen(false)} style={{ border: "none", background: "transparent", fontSize: 24, color: c.dim, cursor: "pointer" }}>&times;</button>
-              </div>
 
-              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
-                <div style={{ padding: "14px 16px", borderRadius: 14, background: c.warmLight, marginBottom: 12 }}>
-                  <p style={{ fontSize: 13, color: "#7A5C35", lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>
-                    &ldquo;If you&apos;re stuck on a question or not sure what to upload, just ask. I&apos;ll get back to you personally.&rdquo;
-                  </p>
-                </div>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${c.borderLight}`, background: c.surface, flexShrink: 0 }}>
+              <button onClick={() => setAskAntonioOpen(false)} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke={c.secondary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div style={{ position: "relative" }}>
+                <AntonioAvatar size={38} />
+                <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#5CB176", border: `2px solid ${c.surface}` }} />
               </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Antonio Vazquez</div>
+                <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
+              </div>
+            </div>
 
-              <div style={{ padding: "10px 20px 20px", borderTop: `1px solid ${c.borderLight}` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input
-                    value={askInput}
-                    onChange={e => setAskInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && askInput.trim()) {
-                        setAskInput("");
-                        setTimeout(() => setAskAntonioOpen(false), 300);
-                      }
-                    }}
-                    placeholder="Type your question..."
-                    autoFocus
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ padding: "14px 18px", borderRadius: "4px 16px 16px 16px", background: c.surface, border: `1px solid ${c.borderLight}`, maxWidth: "85%" }}>
+                <p style={{ fontSize: 14, color: c.text, lineHeight: 1.7, margin: 0 }}>
+                  If you&apos;re stuck on a question or not sure what to upload, just ask. I&apos;ll get back to you personally.
+                </p>
+                <div style={{ fontSize: 10, color: c.dim, marginTop: 6 }}>Antonio · Just now</div>
+              </div>
+              <div style={{ padding: "12px 16px", borderRadius: 14, background: c.warmLight, alignSelf: "center", maxWidth: "90%" }}>
+                <p style={{ fontSize: 12, color: "#7A5C35", lineHeight: 1.6, margin: 0, textAlign: "center" }}>
+                  Your message will be sent directly to Antonio. He&apos;ll respond via text or through your portal.
+                </p>
+              </div>
+            </div>
+
+            {/* Input */}
+            <div style={{ flexShrink: 0, padding: "12px 20px 24px", borderTop: `1px solid ${c.borderLight}`, background: c.surface }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  value={askInput}
+                  onChange={e => setAskInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && askInput.trim()) {
+                      setAskInput("");
+                      setTimeout(() => setAskAntonioOpen(false), 300);
+                    }
+                  }}
+                  placeholder="Type your question..."
+                  autoFocus
                     style={{
                       flex: 1, padding: "12px 16px", borderRadius: 14,
                       border: `1.5px solid ${c.borderLight}`, background: c.bg,
@@ -1678,11 +1681,12 @@ export default function ClientPortal() {
                 </div>
               </div>
             </div>
-          </div>
         )}
       </div>
     );
   }
+
+
 
 
   // Post-intake: redirect to the full client portal
