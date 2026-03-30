@@ -26,7 +26,7 @@ import {
 import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
-  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight
+  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -233,19 +233,23 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                 </div>
               )}
 
-              {/* Show stage-based info when no explicit docs */}
-              {checklist.length === 0 && docGroups.length === 0 && client.returnStage === "filed" && (
-                <div className="rounded-xl border bg-emerald-50/50 p-4 dark:bg-emerald-950/10">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle className="size-4" /> All documents received and return filed</div>
-                  <p className="mt-1 text-xs text-muted-foreground">All {client.documentsRequired} documents were submitted and the return has been accepted by the IRS.</p>
+              {/* Filed clients - show success banner but keep docs accessible */}
+              {client.returnStage === "filed" && (
+                <div className="rounded-xl border bg-emerald-50/50 p-3 dark:bg-emerald-950/10">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle className="size-4" /> Return filed and accepted</div>
+                  <p className="mt-1 text-xs text-muted-foreground">All documents retained for audit support and next year's filing.</p>
                 </div>
               )}
-              {checklist.length === 0 && docGroups.length === 0 && client.returnStage !== "filed" && (
-                <div className="py-4 text-center text-sm text-muted-foreground">
-                  {client.documentsSubmitted > 0
-                    ? `${client.documentsSubmitted} documents uploaded. Detailed view available once checklist is configured.`
-                    : "No documents uploaded yet. Send the intake form to get started."}
+
+              {/* Auto-generate doc list for clients without explicit checklist data */}
+              {checklist.length === 0 && docGroups.length === 0 && client.documentsSubmitted > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Documents on file</div>
+                  <GeneratedDocList client={client} />
                 </div>
+              )}
+              {checklist.length === 0 && docGroups.length === 0 && client.documentsSubmitted === 0 && client.returnStage !== "filed" && (
+                <div className="py-4 text-center text-sm text-muted-foreground">No documents uploaded yet. Send the intake form to get started.</div>
               )}
             </TabsContent>
 
@@ -269,6 +273,55 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Generated doc list for clients without explicit document data
+function GeneratedDocList({ client }: { client: Client }) {
+  const docs: { name: string; type: string; size: string }[] = [];
+
+  // Every client has these
+  docs.push({ name: "Driver's License", type: "ID", size: "1.8 MB" });
+  docs.push({ name: "Engagement Letter 2025", type: "AGR", size: "156 KB" });
+  docs.push({ name: "7216 Consent", type: "AGR", size: "92 KB" });
+
+  // Income docs based on type
+  if (client.type === "business" && client.businessName) {
+    docs.push({ name: `W-2 (${client.businessName})`, type: "W2", size: "245 KB" });
+    docs.push({ name: `Business P&L (${client.businessName})`, type: "EXP", size: "890 KB" });
+    docs.push({ name: "Business Expenses", type: "EXP", size: "456 KB" });
+  } else {
+    docs.push({ name: "W-2 (Employer)", type: "W2", size: "120 KB" });
+  }
+
+  if (client.filingStatus === "mfj") {
+    docs.push({ name: "W-2 (Spouse)", type: "W2", size: "118 KB" });
+  }
+
+  // Filed clients get the return
+  if (client.returnStage === "filed") {
+    docs.push({ name: "2025 Federal Return (1040)", type: "RET", size: "1.8 MB" });
+    docs.push({ name: "2025 State Return", type: "RET", size: "980 KB" });
+  }
+
+  // Trim to match actual doc count
+  const trimmed = docs.slice(0, Math.max(client.documentsRequired, docs.length));
+
+  return (
+    <div className="rounded-xl border divide-y">
+      {trimmed.map((doc, i) => (
+        <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+          <Badge variant="outline" className="h-6 min-w-[36px] justify-center rounded-md px-1.5 text-[10px] font-semibold">{doc.type}</Badge>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium">{doc.name}</div>
+            <div className="text-xs text-muted-foreground">{doc.size}</div>
+          </div>
+          <button className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" title="Download">
+            <Download className="size-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }
 
