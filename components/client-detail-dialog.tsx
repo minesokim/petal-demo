@@ -26,11 +26,12 @@ import {
 import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
-  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download
+  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
 import { ActionCard } from "@/components/actions/action-card";
+import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { UploadZone } from "@/components/documents/upload-zone";
 import { DocumentChecklist } from "@/components/documents/document-checklist";
 import { DocumentGroup } from "@/components/documents/document-group";
@@ -46,6 +47,7 @@ interface ClientDetailDialogProps {
 }
 
 export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
+  const [eroOpen, setEroOpen] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -122,6 +124,27 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               {clientActions.length > 0 && (
                 <div className="space-y-2">
                   {clientActions.map(action => <ActionDraftCard key={action.id} action={action} />)}
+                </div>
+              )}
+
+              {/* ERO Signature for pay_and_sign clients */}
+              {client.returnStage === "pay_and_sign" && (
+                <div className="rounded-xl border p-4">
+                  <div className="flex items-start gap-3">
+                    <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">8879 ready for ERO signature</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Client has paid and signed. Your countersignature is needed to file.</div>
+                      <div className="mt-2 flex gap-1.5">
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Paid</div>
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Client signed</div>
+                        <div className="flex items-center gap-1 text-[10px] text-amber-600"><Clock className="size-3" /> ERO pending</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="mt-3 w-full" onClick={() => setEroOpen(true)}>
+                    <Shield className="size-3.5" /> Sign as ERO & file
+                  </Button>
                 </div>
               )}
 
@@ -273,6 +296,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
           </Tabs>
         </div>
       </DialogContent>
+
+      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
     </Dialog>
   );
 }

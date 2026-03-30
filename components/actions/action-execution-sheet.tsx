@@ -68,6 +68,8 @@ export function ActionExecutionSheet({ action, open, onOpenChange }: ActionExecu
       case "escalate":
         return <EscalationDemo action={action} state={state} onProcess={handleProcess} />;
       case "portal_nudge":
+      case "ero_signature":
+        return <EroSignDemo action={action} state={state} onProcess={handleProcess} />;
         return <NudgeDemo action={action} state={state} onProcess={handleProcess} />;
       default:
         return <GenericDemo action={action} state={state} onProcess={handleProcess} />;
@@ -399,6 +401,35 @@ function GenericDemo({ action, state, onProcess }: { action: FeedAction; state: 
   return (
     <div className="space-y-4">
       <Button className="w-full" onClick={onProcess}><Check className="size-3.5" /> Execute action</Button>
+    </div>
+  );
+}
+
+function EroSignDemo({ action, state, onProcess }: { action: FeedAction; state: DemoState; onProcess: () => void }) {
+  const [confirmed, setConfirmed] = useState(false);
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        {[
+          { label: "Client payment received", done: true },
+          { label: "Client signed Form 8879", done: true },
+          { label: "ERO signature (you)", done: false },
+        ].map((step, i) => (
+          <div key={i} className="flex items-center gap-3 rounded-lg border p-2.5">
+            <div className={`flex size-5 items-center justify-center rounded-full ${step.done ? "bg-emerald-500" : "border-2 border-amber-400"}`}>
+              {step.done && <Check className="size-3 text-white" />}
+            </div>
+            <span className="text-sm">{step.label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-xl border p-3">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} className="mt-1" />
+          <span className="text-xs text-muted-foreground">I confirm I have reviewed this return and am signing as ERO under IRS regulations.</span>
+        </label>
+      </div>
+      <Button className="w-full" disabled={!confirmed} onClick={onProcess}>Sign as ERO & file return</Button>
     </div>
   );
 }
