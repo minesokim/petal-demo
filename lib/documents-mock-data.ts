@@ -76,7 +76,7 @@ export const mockDocuments: MockDocument[] = [
   { id: "d202", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "Drivers_License.jpg", originalFileName: "id_photo.jpg", fileSize: "2.1 MB", docType: "id", docTypeLabel: "ID", docCategory: "identity", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-22T09:00:00" },
   { id: "d203", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "Engagement_Letter_2025.pdf", originalFileName: "Engagement_Letter_2025.pdf", fileSize: "156 KB", docType: "engagement", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-20T08:00:00", status: "signed" },
 
-  // James & Sofia Rodriguez (c3) - Ready to sign
+  // James & Sofia Rodriguez (c3) - Pay & Sign
   { id: "d301", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "2025_Federal_Return.pdf", originalFileName: "2025_Federal_Return.pdf", fileSize: "1.8 MB", docType: "return", docTypeLabel: "RET", docCategory: "returns", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-27T16:00:00", status: "ready_for_review" },
   { id: "d302", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "W-2_James_Rodriguez.pdf", originalFileName: "w2_james.pdf", fileSize: "120 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-15T10:00:00" },
   { id: "d303", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "W-2_Sofia_Rodriguez.pdf", originalFileName: "w2_sofia.pdf", fileSize: "118 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-15T10:05:00" },
@@ -95,7 +95,7 @@ export const mockDocuments: MockDocument[] = [
   { id: "d1801", clientId: "c18", clientName: "Mei-Lin Wu", clientAvatar: "/images/avatars/06.png", fileName: "Schedule_C_Wu_Acupuncture.pdf", originalFileName: "business_records.pdf", fileSize: "456 KB", docType: "expense", docTypeLabel: "EXP", docCategory: "business", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-26T12:00:00" },
   { id: "d1802", clientId: "c18", clientName: "Mei-Lin Wu", clientAvatar: "/images/avatars/06.png", fileName: "1099-NEC_Acupuncture_Clients.pdf", originalFileName: "1099s_combined.pdf", fileSize: "234 KB", docType: "1099_nec", docTypeLabel: "1099", docCategory: "income", uploadedBy: "client", viewedByPreparer: false, uploadedAt: "2026-03-28T07:00:00" },
 
-  // Aisha Johnson (c14) - Ready to sign
+  // Aisha Johnson (c14) - Pay & Sign
   { id: "d1401", clientId: "c14", clientName: "Aisha Johnson", clientAvatar: "/images/avatars/02.png", fileName: "W-2_Regional_Hospital.pdf", originalFileName: "w2_hospital.pdf", fileSize: "110 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-20T11:00:00" },
 ];
 

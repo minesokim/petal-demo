@@ -117,14 +117,13 @@ const revenueConfig = {
 } satisfies ChartConfig;
 
 const pipelineData = [
-  { name: "Not Started", count: 1, fill: "var(--color-muted)" },
-  { name: "Intake Sent", count: 2, fill: "var(--chart-4)" },
-  { name: "Collecting Docs", count: 4, fill: "var(--chart-3)" },
-  { name: "Docs Complete", count: 2, fill: "var(--chart-2)" },
-  { name: "In Prep", count: 4, fill: "var(--chart-1)" },
-  { name: "In Review", count: 2, fill: "var(--chart-5)" },
-  { name: "Ready to Sign", count: 2, fill: "hsl(142 70% 45%)" },
-  { name: "Filed", count: 3, fill: "hsl(142 70% 35%)" },
+  { name: "New Intake", count: 3, fill: "hsl(0 84.2% 60.2%)" },
+  { name: "Collecting Docs", count: 4, fill: "hsl(47.9 95.8% 48%)" },
+  { name: "Ready to Prep", count: 2, fill: "hsl(214.7 95% 58%)" },
+  { name: "In Preparation", count: 4, fill: "hsl(214.7 95% 50%)" },
+  { name: "Client Review", count: 2, fill: "hsl(214.7 95% 44%)" },
+  { name: "Pay & Sign", count: 2, fill: "hsl(142.1 76.2% 42%)" },
+  { name: "Filed", count: 3, fill: "hsl(142.1 76.2% 36.3%)" },
 ];
 
 const pipelineConfig = {
@@ -149,7 +148,7 @@ const urgentActions = [
 // complete: pay_and_sign(2:Rodriguez,Aisha) + filed(3:Linda,Karen,Rachel) = 5
 // Total: 5+6+4+5 = 20
 const summaryTabs = [
-  { key: "need_you", label: "Need you", count: 5 },
+  { key: "need_you", label: "Need you", count: 6 },
   { key: "waiting", label: "Waiting", count: 6 },
   { key: "in_progress", label: "In progress", count: 4 },
   { key: "complete", label: "Complete", count: 5 },
@@ -174,6 +173,9 @@ const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]>
     { label: "Ready to prep", clients: [
       { initials: "MS", name: "Miguel Sandoval", detail: "9 of 9 docs \u00b7 ready for prep", urgency: "none" },
       { initials: "AR", name: "Anthony Russo", detail: "9 of 9 docs \u00b7 cap gains calc needed", urgency: "none" },
+    ]},
+    { label: "ERO signature needed", clients: [
+      { initials: "AJ", name: "Aisha Johnson", detail: "Client paid + signed \u00b7 your countersignature needed", urgency: "amber" },
     ]},
   ],
   waiting: [
@@ -452,11 +454,9 @@ export default function Page() {
           </CardHeader>
           <CardContent className="space-y-1">
             {[
-              { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it. Can you help?", time: "2:30 PM", unread: true },
-              { name: "James & Sofia Rodriguez", avatar: "/images/avatars/03.png", message: "We're ready to sign whenever you are!", time: "7:45 AM", unread: true },
-              { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm instead of 2? Got a patient emergency.", time: "8:15 AM", unread: true },
-              { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know if we can deduct the new paint booth equipment.", time: "Yesterday", unread: true },
-              { name: "Marcus Chen", avatar: "/images/avatars/01.png", message: "All 3 restaurant P&Ls have been uploaded. Let me know if you need anything else.", time: "Yesterday", read: true },
+              { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM", unread: true },
+              { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm instead of 2?", time: "8:15 AM", unread: true },
+              { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday", unread: true },
             ].map((msg, i) => (
               <Link
                 key={i}
@@ -516,10 +516,9 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* Second Row: Todo + Document Status */}
-      <div className="grid gap-4 xl:grid-cols-5">
-        {/* To-Do List */}
-        <Card className="xl:col-span-3">
+      {/* To-Do */}
+      <div className="grid gap-4 xl:grid-cols-1">
+        <Card>
           <CardHeader>
             <CardTitle>To-do</CardTitle>
             <CardAction>
@@ -531,7 +530,7 @@ export default function Page() {
             </CardAction>
           </CardHeader>
           <CardContent className="space-y-1">
-            {todos.map((todo) => (
+            {todos.filter(t => !t.done).slice(0, 3).map((todo) => (
               <label
                 key={todo.id}
                 className="hover:bg-muted/50 flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 transition-colors"
@@ -549,18 +548,6 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        {/* Document Status Donut */}
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle>Document Status</CardTitle>
-            <CardAction>
-              <span className="text-muted-foreground text-xs">Across all clients</span>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <DocumentStatusDonut />
-          </CardContent>
-        </Card>
       </div>
 
       <ClientDetailDialog

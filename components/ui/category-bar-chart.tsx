@@ -47,14 +47,13 @@ const currentSeasonData = [
 ];
 
 const lastSeasonData = [
-  { width: 0, cssColor: "hsl(0 84.2% 60.2%)", label: "Not Started", count: 0 },
-  { width: 0, cssColor: "hsl(47.9 95.8% 53.1%)", label: "Intake Sent", count: 0 },
-  { width: 5.2, cssColor: "hsl(47.9 95.8% 48%)", label: "Collecting Docs", count: 9 },
-  { width: 3.5, cssColor: "hsl(214.7 95% 58%)", label: "Docs Complete", count: 6 },
-  { width: 8.1, cssColor: "hsl(214.7 95% 50%)", label: "In Prep", count: 14 },
-  { width: 5.8, cssColor: "hsl(214.7 95% 44%)", label: "In Review", count: 10 },
-  { width: 4.1, cssColor: "hsl(142.1 76.2% 42%)", label: "Ready to Sign", count: 7 },
-  { width: 73.3, cssColor: "hsl(142.1 76.2% 36.3%)", label: "Filed", count: 126 },
+  { width: 0, cssColor: "hsl(0 84.2% 60.2%)", label: "New Intake", count: 0 },
+  { width: 5.2, cssColor: "hsl(47.9 95.8% 48%)", label: "Collecting Docs", count: 1 },
+  { width: 3.5, cssColor: "hsl(214.7 95% 58%)", label: "Ready to Prep", count: 1 },
+  { width: 8.1, cssColor: "hsl(214.7 95% 50%)", label: "In Preparation", count: 1 },
+  { width: 2.8, cssColor: "hsl(214.7 95% 44%)", label: "Client Review", count: 1 },
+  { width: 4.1, cssColor: "hsl(142.1 76.2% 42%)", label: "Pay & Sign", count: 0 },
+  { width: 76.3, cssColor: "hsl(142.1 76.2% 36.3%)", label: "Filed", count: 14 },
 ];
 
 export const CategoryBarChart = ({
@@ -175,7 +174,9 @@ export const CategoryBarChart = ({
                         opacity: { duration: 1, delay: 0.15 + index * 0.1 },
                       }}
                     >
-                      <div className="h-11 rounded-md" style={{ backgroundColor: item.cssColor }} />
+                      <div className="flex h-9 items-center justify-center rounded-md" style={{ backgroundColor: item.cssColor }}>
+                        {item.count >= 3 && <span className="text-[11px] font-bold text-white">{item.count}</span>}
+                      </div>
                     </motion.div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -187,11 +188,13 @@ export const CategoryBarChart = ({
           </TooltipProvider>
         </div>
 
-        <div className="flex gap-4 pt-1">
-          <div className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: "hsl(0 84.2% 60.2%)" }} /><span className="text-[10px] text-muted-foreground">Need you</span></div>
-          <div className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: "hsl(47.9 95.8% 53.1%)" }} /><span className="text-[10px] text-muted-foreground">Waiting</span></div>
-          <div className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: "hsl(214.7 95% 50%)" }} /><span className="text-[10px] text-muted-foreground">In progress</span></div>
-          <div className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: "hsl(142.1 76.2% 36.3%)" }} /><span className="text-[10px] text-muted-foreground">Complete</span></div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
+          {pipelineData.filter(d => d.width > 0).map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full" style={{ backgroundColor: item.cssColor }} />
+              <span className="text-[9px] text-muted-foreground">{item.label}</span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

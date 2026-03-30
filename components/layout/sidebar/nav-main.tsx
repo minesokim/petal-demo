@@ -86,7 +86,7 @@ type NavItem = {
 
 export const navItems: NavGroup[] = [
   {
-    title: "Practice",
+    title: "",
     items: [
       {
         title: "Overview",
@@ -99,10 +99,9 @@ export const navItems: NavGroup[] = [
         icon: UsersIcon
       },
       {
-        title: "Actions",
-        href: "/dashboard/actions",
-        icon: ActivityIcon,
-        isDataBadge: "12"
+        title: "Documents",
+        href: "/dashboard/documents",
+        icon: FolderIcon
       },
       {
         title: "Calendar",
@@ -115,26 +114,10 @@ export const navItems: NavGroup[] = [
         icon: MessageSquareIcon,
         isDataBadge: "4"
       },
-    ]
-  },
-  {
-    title: "Tools",
-    items: [
-      {
-        title: "Documents",
-        href: "/dashboard/documents",
-        icon: FolderIcon
-      },
       {
         title: "Settings",
-        href: "/dashboard/pages/settings",
-        icon: SettingsIcon,
-        items: [
-          { title: "Firm Profile", href: "/dashboard/pages/settings/profile" },
-          { title: "Account", href: "/dashboard/pages/settings/account" },
-          { title: "Notifications", href: "/dashboard/pages/settings/notifications" },
-          { title: "Appearance", href: "/dashboard/pages/settings/appearance" },
-        ]
+        href: "/dashboard/pages/settings/profile",
+        icon: SettingsIcon
       },
     ]
   },
@@ -431,7 +414,7 @@ export function NavMain() {
     <>
       {navItems.map((nav) => (
         <SidebarGroup key={nav.title}>
-          <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>
+          {nav.title && <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {nav.items.map((item) => (

@@ -54,20 +54,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
-        {/* Tax season countdown */}
-        <Card className="gap-3 overflow-hidden py-3 group-data-[collapsible=icon]:hidden">
-          <CardHeader className="px-3 py-0">
-            <CardTitle className="text-sm">Filing Deadline</CardTitle>
-            <CardDescription>
-              18 days until April 15. 3 of 20 returns filed.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 py-0">
-            <div className="bg-muted h-2 overflow-hidden rounded-full">
-              <div className="bg-primary h-full rounded-full" style={{ width: "44%" }} />
-            </div>
-          </CardContent>
-        </Card>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
