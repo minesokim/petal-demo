@@ -31,7 +31,7 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   const lastActivePercent = lastActive === null ? "0%" : lastActive === 0 ? "100%" : lastActive <= 3 ? "75%" : lastActive <= 7 ? "40%" : "15%";
 
   const docsComplete = client.documentsSubmitted >= client.documentsRequired;
-  const returnComplete = client.returnStage === "filed" || client.returnStage === "ready_to_sign";
+  const returnComplete = client.returnStage === "filed";
 
   const stats = [
     { label: "Documents", value: `${docPercent}%`, displayValue: `${client.documentsSubmitted}/${client.documentsRequired}`, Icon: FileText, barColor: docsComplete ? "bg-emerald-500" : "bg-primary" },

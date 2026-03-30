@@ -212,22 +212,46 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
             {/* DOCUMENTS TAB */}
             <TabsContent value="documents" className="space-y-5">
               <UploadZone clientName={client.fullName.split(" ")[0]} />
+
+              {/* Document summary for this client */}
+              <div className="rounded-xl border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold">Document Status</span>
+                  <span className="text-xs text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
+                </div>
+                <Progress value={docPercent} className="h-2 mb-3" />
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-2"><CheckCircle className="size-3 text-emerald-500" /> <span>{client.documentsSubmitted} received</span></div>
+                  <div className="flex items-center gap-2"><Clock className="size-3 text-amber-500" /> <span>{client.documentsRequired - client.documentsSubmitted} outstanding</span></div>
+                </div>
+              </div>
+
               {checklist.length > 0 && <DocumentChecklist items={checklist} />}
               {docGroups.length > 0 && (
                 <div className="space-y-4">
                   {docGroups.map(g => <DocumentGroup key={g.category} label={g.label} docs={g.docs} missing={g.missing} />)}
                 </div>
               )}
-              {checklist.length === 0 && docGroups.length === 0 && (
-                <div className="py-8 text-center text-sm text-muted-foreground">No documents yet.</div>
+
+              {/* Show stage-based info when no explicit docs */}
+              {checklist.length === 0 && docGroups.length === 0 && client.returnStage === "filed" && (
+                <div className="rounded-xl border bg-emerald-50/50 p-4 dark:bg-emerald-950/10">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle className="size-4" /> All documents received and return filed</div>
+                  <p className="mt-1 text-xs text-muted-foreground">All {client.documentsRequired} documents were submitted and the return has been accepted by the IRS.</p>
+                </div>
+              )}
+              {checklist.length === 0 && docGroups.length === 0 && client.returnStage !== "filed" && (
+                <div className="py-4 text-center text-sm text-muted-foreground">
+                  {client.documentsSubmitted > 0
+                    ? `${client.documentsSubmitted} documents uploaded. Detailed view available once checklist is configured.`
+                    : "No documents uploaded yet. Send the intake form to get started."}
+                </div>
               )}
             </TabsContent>
 
             {/* MESSAGES TAB */}
             <TabsContent value="messages">
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                <Link href={`/dashboard/clients/${client.id}/messages`} className="text-primary hover:underline">Open full message thread</Link>
-              </div>
+              <ClientMessagesInline clientId={client.id} clientAvatar={client.avatar} clientName={client.fullName} />
             </TabsContent>
 
             {/* NOTES TAB */}
@@ -245,5 +269,73 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Inline messages component for the dialog
+const messageThreads: Record<string, { id: string; sender: "client" | "preparer"; content: string; time: string }[]> = {
+  c2: [
+    { id: "1", sender: "client", content: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM" },
+    { id: "2", sender: "preparer", content: "Hey Priya! Log into your portal and go to the Docs tab. You can take a photo of the 1099 with your phone too.", time: "2:45 PM" },
+    { id: "3", sender: "client", content: "Do I need to report the $500 I made from a one-time sponsored post?", time: "2:52 PM" },
+    { id: "4", sender: "preparer", content: "Yes, all income needs to be reported even without a 1099. We'll include it on your Schedule C.", time: "3:10 PM" },
+  ],
+  c3: [
+    { id: "1", sender: "client", content: "Are our returns done?", time: "Mar 25" },
+    { id: "2", sender: "preparer", content: "Yes! I just need you and Sofia to sign Form 8879 to authorize e-filing.", time: "Mar 26" },
+    { id: "3", sender: "client", content: "We're ready to sign whenever you are!", time: "7:45 AM" },
+  ],
+  c4: [
+    { id: "1", sender: "preparer", content: "Hi DeShawn! Welcome. I've sent your intake form - just follow the link.", time: "Mar 18" },
+    { id: "2", sender: "client", content: "Thanks! I'll try to get to it this weekend.", time: "Mar 20" },
+    { id: "3", sender: "preparer", content: "We still need your W-2 and the $50 deposit. April 15 is coming up.", time: "Mar 22" },
+  ],
+  c11: [
+    { id: "1", sender: "preparer", content: "David, your S-Corp return is coming along. Can we schedule a call about the payroll summary?", time: "Mar 25" },
+    { id: "2", sender: "client", content: "Sure! How about Thursday at 2pm?", time: "Mar 26" },
+    { id: "3", sender: "client", content: "Can we push to 3pm? Got a patient emergency.", time: "8:15 AM" },
+    { id: "4", sender: "preparer", content: "Of course. Moved to 3pm. Hope everything is okay!", time: "8:30 AM" },
+  ],
+  c15: [
+    { id: "1", sender: "client", content: "Elena wants to know if we can deduct the new paint booth equipment.", time: "Mar 27" },
+    { id: "2", sender: "preparer", content: "Yes! Section 179 immediate expensing. Full deduction in 2025 instead of 7 years. How much was it?", time: "Mar 27" },
+    { id: "3", sender: "client", content: "About $32,000. That would be a big deduction!", time: "Mar 27" },
+    { id: "4", sender: "preparer", content: "Should save roughly $8,200 in taxes. Numbers ready for our review Monday.", time: "Mar 27" },
+  ],
+  c1: [
+    { id: "1", sender: "client", content: "All 3 restaurant P&Ls have been uploaded.", time: "Mar 27" },
+    { id: "2", sender: "preparer", content: "Got them, thanks Marcus! We'll go over it in our call on the 30th.", time: "Mar 27" },
+  ],
+};
+
+function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId: string; clientAvatar: string; clientName: string }) {
+  const thread = messageThreads[clientId];
+  const [input, setInput] = useState("");
+
+  if (!thread) {
+    return <div className="py-8 text-center text-sm text-muted-foreground">No messages yet with {clientName.split(" ")[0]}.</div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {thread.map(msg => (
+        <div key={msg.id} className={`flex ${msg.sender === "client" ? "justify-start" : "justify-end"}`}>
+          {msg.sender === "client" && (
+            <Avatar className="mr-2 size-6 shrink-0 mt-1">
+              <AvatarImage src={clientAvatar} alt={clientName} />
+              <AvatarFallback className="text-[8px]">{clientName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+            </Avatar>
+          )}
+          <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${msg.sender === "client" ? "border bg-muted/50" : "bg-primary text-primary-foreground"}`}>
+            <p className="text-xs leading-relaxed">{msg.content}</p>
+            <div className={`mt-0.5 text-[9px] ${msg.sender === "client" ? "text-muted-foreground" : "text-primary-foreground/60"}`}>{msg.time}</div>
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center gap-2 pt-2">
+        <input placeholder={`Message ${clientName.split(" ")[0]}...`} value={input} onChange={e => setInput(e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs outline-none" />
+        <Button size="sm" className="h-8"><Send className="size-3" /></Button>
+      </div>
+    </div>
   );
 }
