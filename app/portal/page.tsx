@@ -219,13 +219,13 @@ function TopNav({ onBack, title, sub, right }: {
   );
 }
 
-function AskAntonioBar() {
+function AskAntonioBar({ onClick }: { onClick?: () => void }) {
   return (
     <div style={{
       flexShrink: 0, borderTop: `1px solid ${c.borderLight}`,
       background: c.surface, padding: "10px 20px 14px",
     }}>
-      <div style={{
+      <div onClick={onClick} style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "10px 16px", borderRadius: 14,
         background: c.bg, border: `1.5px solid ${c.borderLight}`,
@@ -351,6 +351,10 @@ export default function ClientPortal() {
   const [engAgreed, setEngAgreed] = useState(false);
   const [s72Agreed, setS72Agreed] = useState(false);
   const [docScrolled, setDocScrolled] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutStep, setTutStep] = useState(0);
+  const [askAntonioOpen, setAskAntonioOpen] = useState(false);
+  const [askInput, setAskInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const totalSteps = 14;
@@ -466,7 +470,7 @@ export default function ClientPortal() {
                     ))}
                   </div>
 
-                  <PrimaryButton onClick={() => setStep(1)}>
+                  <PrimaryButton onClick={() => { setShowTutorial(true); setTutStep(0); }}>
                     Let&apos;s get started
                   </PrimaryButton>
 
@@ -987,7 +991,131 @@ export default function ClientPortal() {
         </div>
 
         {/* Ask Antonio bar */}
-        {step > 0 && step < 14 && <AskAntonioBar />}
+        {step > 0 && step < 14 && <AskAntonioBar onClick={() => setAskAntonioOpen(true)} />}
+
+        {/* Tutorial overlay */}
+        {showTutorial && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <div style={{ width: "100%", maxWidth: 380, background: c.surface, borderRadius: 24, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.25)" }}>
+              <div style={{ padding: "32px 28px 0", textAlign: "center" }}>
+                {tutStep === 0 && (<>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>👋</span></div>
+                  <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Here&apos;s how this works</div>
+                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>Simple questions. Most are just <strong style={{ color: c.text }}>tap to select</strong>.</div>
+                  <div style={{ background: c.bg, borderRadius: 14, padding: "14px 16px", textAlign: "left", border: `1px solid ${c.borderLight}` }}>
+                    <div style={{ fontSize: 11, color: c.dim, marginBottom: 8, fontWeight: 600 }}>EXAMPLE</div>
+                    {["W-2 Employee", "Self-Employed"].map((l, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, marginBottom: 4, background: i === 0 ? c.accentLight : c.surface, border: `1.5px solid ${i === 0 ? c.accent : c.borderLight}` }}>
+                        <span style={{ fontSize: 16 }}>{i === 0 ? "🏢" : "💻"}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: i === 0 ? c.accent : c.text }}>{l}</span>
+                        <div style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", background: i === 0 ? c.accent : "transparent", border: i === 0 ? "none" : `1.5px solid ${c.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {i === 0 && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>)}
+                {tutStep === 1 && (<>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>🤔</span></div>
+                  <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Don&apos;t know the answer?</div>
+                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>If you&apos;re stuck on <strong style={{ color: c.text }}>any question</strong>, tap the bar at the bottom.</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, background: c.bg, border: `1.5px solid ${c.borderLight}` }}>
+                    <AntonioAvatar size={32} />
+                    <span style={{ flex: 1, fontSize: 13, color: c.dim, textAlign: "left" }}>Not sure?</span>
+                    <span style={{ padding: "5px 12px", borderRadius: 18, background: c.accent, color: "#fff", fontSize: 11, fontWeight: 600 }}>Ask Antonio</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: c.accent, fontWeight: 600, marginTop: 10 }}>Always at the bottom</div>
+                </>)}
+                {tutStep === 2 && (<>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>✨</span></div>
+                  <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>You&apos;re ready.</div>
+                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 16 }}>Answer what you can, skip what you can&apos;t, message me for anything.</div>
+                  <div style={{ background: c.bg, borderRadius: 14, padding: "14px 16px", textAlign: "left", border: `1px solid ${c.borderLight}` }}>
+                    {[{ i: "👆", t: "Tap to select answers" }, { i: "💬", t: "Message Antonio if unsure" }, { i: "📄", t: "Upload docs now or later" }, { i: "💾", t: "Progress saves automatically" }].map((x, j) => (
+                      <div key={j} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: j ? `1px solid ${c.borderLight}` : "none" }}>
+                        <span style={{ fontSize: 16 }}>{x.i}</span>
+                        <span style={{ fontSize: 13, color: c.text, fontWeight: 500 }}>{x.t}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>)}
+              </div>
+              <div style={{ padding: "16px 28px 28px" }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 12 }}>
+                  {[0, 1, 2].map(i => <div key={i} style={{ width: tutStep === i ? 20 : 6, height: 6, borderRadius: 3, background: tutStep === i ? c.accent : c.borderLight, transition: "all 0.25s" }} />)}
+                </div>
+                <PrimaryButton onClick={() => { if (tutStep < 2) setTutStep(tutStep + 1); else { setShowTutorial(false); setStep(1); } }}>
+                  {tutStep < 2 ? "Next" : "Let\u2019s Go"}
+                </PrimaryButton>
+                {tutStep < 2 && (
+                  <button onClick={() => { setShowTutorial(false); setStep(1); }} style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "transparent", color: c.dim, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+                    Skip tutorial
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Ask Antonio chat overlay */}
+        {askAntonioOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end" }}>
+            <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: c.surface, borderRadius: "24px 24px 0 0", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <AntonioAvatar size={34} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text, fontFamily: "'Fraunces', serif" }}>Ask Antonio</div>
+                    <div style={{ fontSize: 11, color: c.dim }}>Usually responds within a few hours</div>
+                  </div>
+                </div>
+                <button onClick={() => setAskAntonioOpen(false)} style={{ border: "none", background: "transparent", fontSize: 24, color: c.dim, cursor: "pointer" }}>&times;</button>
+              </div>
+
+              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
+                <div style={{ padding: "14px 16px", borderRadius: 14, background: c.warmLight, marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, color: "#7A5C35", lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>
+                    &ldquo;If you&apos;re stuck on a question or not sure what to upload, just ask. I&apos;ll get back to you personally.&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ padding: "10px 20px 20px", borderTop: `1px solid ${c.borderLight}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    value={askInput}
+                    onChange={e => setAskInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && askInput.trim()) {
+                        setAskInput("");
+                        setTimeout(() => setAskAntonioOpen(false), 300);
+                      }
+                    }}
+                    placeholder="Type your question..."
+                    autoFocus
+                    style={{
+                      flex: 1, padding: "12px 16px", borderRadius: 14,
+                      border: `1.5px solid ${c.borderLight}`, background: c.bg,
+                      fontSize: 14, color: c.text, outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  />
+                  <button onClick={() => { if (askInput.trim()) { setAskInput(""); setTimeout(() => setAskAntonioOpen(false), 300); } }} style={{
+                    width: 42, height: 42, borderRadius: 12, border: "none",
+                    background: askInput.trim() ? c.accent : c.borderLight,
+                    color: askInput.trim() ? "#fff" : c.dim,
+                    cursor: askInput.trim() ? "pointer" : "default",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
