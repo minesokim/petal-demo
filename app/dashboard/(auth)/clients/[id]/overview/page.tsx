@@ -34,13 +34,16 @@ export default function ClientOverviewPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [eroOpen, setEroOpen] = useState(false);
+  const [stageOverride, setStageOverride] = useState<string | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
+  const currentStage = stageOverride || client.returnStage;
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
-  const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(client.returnStage);
+  const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(currentStage);
   const ps = getClientPaymentSummary(client.id);
 
   const timelineItems: TimelineItem[] = [
@@ -80,7 +83,7 @@ export default function ClientOverviewPage() {
       )}
 
       {/* Ready to Prep — confirm all docs received and begin preparation */}
-      {client.returnStage === "ready_to_prep" && (
+      {currentStage === "ready_to_prep" && !transitioning && (
         <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
@@ -98,14 +101,48 @@ export default function ClientOverviewPage() {
               </div>
             </div>
           </div>
-          <Button className="mt-3 w-full">
+          <Button
+            className="mt-3 w-full"
+            onClick={() => {
+              setTransitioning(true);
+              setTimeout(() => {
+                setStageOverride("in_preparation");
+                setTransitioning(false);
+              }, 600);
+            }}
+          >
             <FileText className="size-3.5" /> Begin Preparation
           </Button>
         </div>
       )}
 
+      {/* Transition confirmation */}
+      {transitioning && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="size-2 animate-pulse rounded-full bg-emerald-500" />
+            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Moving to In Preparation...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Stage advanced confirmation */}
+      {stageOverride === "in_preparation" && client.returnStage === "ready_to_prep" && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500">
+              <Check className="size-4 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Preparation started</div>
+              <div className="text-xs text-muted-foreground">{client.fullName.split(" ")[0]} has been moved to In Preparation.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Collecting Docs — show progress toward ready */}
-      {client.returnStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
+      {currentStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
         <div className="rounded-xl border p-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-muted">
@@ -129,7 +166,7 @@ export default function ClientOverviewPage() {
       )}
 
       {/* ERO Signature for pay_and_sign clients */}
-      {client.returnStage === "pay_and_sign" && (
+      {currentStage === "pay_and_sign" && (
         <div className="rounded-xl border p-4">
           <div className="flex items-start gap-3">
             <Shield className="mt-0.5 size-4 shrink-0 text-primary" />

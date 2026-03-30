@@ -55,13 +55,16 @@ interface ClientDetailDialogProps {
 export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
   const [eroOpen, setEroOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
+  const [stageOverride, setStageOverride] = useState<string | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
   if (!client) return null;
 
+  const currentStage = stageOverride || client.returnStage;
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
-  const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(client.returnStage);
+  const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(currentStage);
 
   const timelineItems: TimelineItem[] = [
     { id: 1, title: "New Intake", date: "Engagement letter + 7216 consent", status: stageIndex > 0 ? "completed" : stageIndex === 0 ? "in-progress" : "pending" },
@@ -148,7 +151,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               )}
 
               {/* Ready to Prep — confirm all docs received and begin preparation */}
-              {client.returnStage === "ready_to_prep" && (
+              {currentStage === "ready_to_prep" && !transitioning && (
                 <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
@@ -166,14 +169,46 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                       </div>
                     </div>
                   </div>
-                  <Button className="mt-3 w-full">
+                  <Button
+                    className="mt-3 w-full"
+                    onClick={() => {
+                      setTransitioning(true);
+                      setTimeout(() => {
+                        setStageOverride("in_preparation");
+                        setTransitioning(false);
+                      }, 600);
+                    }}
+                  >
                     <FileText className="size-3.5" /> Begin Preparation
                   </Button>
                 </div>
               )}
 
+              {transitioning && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="size-2 animate-pulse rounded-full bg-emerald-500" />
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Moving to In Preparation...</span>
+                  </div>
+                </div>
+              )}
+
+              {stageOverride === "in_preparation" && client.returnStage === "ready_to_prep" && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500">
+                      <Check className="size-4 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Preparation started</div>
+                      <div className="text-xs text-muted-foreground">{client.fullName.split(" ")[0]} has been moved to In Preparation.</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Collecting Docs — show progress */}
-              {client.returnStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
+              {currentStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
                 <div className="rounded-xl border p-4">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-muted">
@@ -197,7 +232,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               )}
 
               {/* ERO Signature for pay_and_sign clients */}
-              {client.returnStage === "pay_and_sign" && (
+              {currentStage === "pay_and_sign" && (
                 <div className="rounded-xl border p-4">
                   <div className="flex items-start gap-3">
                     <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -385,18 +420,51 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
             <TabsContent value="documents" className="space-y-5">
               <UploadZone clientName={client.fullName.split(" ")[0]} />
 
-              {/* Document summary for this client */}
-              <div className="rounded-xl border p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold">Document Status</span>
-                  <span className="text-xs text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
-                </div>
-                <Progress value={docPercent} className="h-2 mb-3" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex items-center gap-2"><CheckCircle className="size-3 text-emerald-500" /> <span>{client.documentsSubmitted} received</span></div>
-                  <div className="flex items-center gap-2"><Clock className="size-3 text-amber-500" /> <span>{client.documentsRequired - client.documentsSubmitted} outstanding</span></div>
-                </div>
-              </div>
+              {/* Document status summary (synced with full page) */}
+              {(() => {
+                const allReceived = client.documentsSubmitted >= client.documentsRequired;
+                const totalDocs = docGroups.reduce((sum, g) => sum + g.docs.length, 0);
+                const missingCount = checklist.filter(c => c.required && !c.received).length;
+                return (
+                  <div className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex size-9 items-center justify-center rounded-xl ${allReceived ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted"}`}>
+                          {allReceived ? <CheckCircle className="size-4 text-emerald-600" /> : <FileText className="size-4 text-muted-foreground" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">
+                              {allReceived ? "All documents received" : `${client.documentsSubmitted} of ${client.documentsRequired} received`}
+                            </span>
+                            {allReceived && (
+                              <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px]"><Check className="mr-1 size-3" /> Complete</Badge>
+                            )}
+                            {!allReceived && missingCount > 0 && (
+                              <Badge variant="outline" className="border-amber-200 text-amber-700 text-[10px]">{missingCount} missing</Badge>
+                            )}
+                          </div>
+                          {!allReceived && (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <Progress value={docPercent} className="h-1.5 w-24" />
+                              <span className="text-[11px] tabular-nums text-muted-foreground">{docPercent}%</span>
+                            </div>
+                          )}
+                          {allReceived && totalDocs > 0 && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{totalDocs} files uploaded</p>
+                          )}
+                        </div>
+                      </div>
+                      {allReceived && totalDocs > 0 && (
+                        <Button size="sm" variant="outline" className="gap-1.5 shrink-0">
+                          <Download className="size-3.5" />
+                          Download all
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {checklist.length > 0 && <DocumentChecklist items={checklist} />}
               {docGroups.length > 0 && (
