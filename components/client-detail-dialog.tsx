@@ -1028,55 +1028,72 @@ function BillingTab({ client }: { client: Client }) {
 
 // ── Contextual Actions by Stage ──
 function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () => void }) {
-  const actions: { icon: React.ReactNode; label: string; primary?: boolean; onClick?: () => void }[] = [];
+  const [sent, setSent] = useState<string | null>(null);
+  const actions: { icon: React.ReactNode; label: string; sentLabel?: string; primary?: boolean; onClick: () => void }[] = [];
+
+  const sendAction = (key: string) => { setSent(key); setTimeout(() => setSent(null), 2500); };
 
   switch (stage) {
     case "new_intake":
-      actions.push({ icon: <Send className="size-3.5" />, label: "Send Intake", primary: true });
-      actions.push({ icon: <Send className="size-3.5" />, label: "Remind" });
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Send Intake", sentLabel: "Sent!", primary: true, onClick: () => sendAction("intake") });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind", sentLabel: "Reminded", onClick: () => sendAction("remind") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", onClick: () => window.open("/dashboard/apps/calendar", "_blank") });
       break;
     case "collecting_docs":
-      actions.push({ icon: <FileText className="size-3.5" />, label: "Request Docs", primary: true });
-      actions.push({ icon: <Send className="size-3.5" />, label: "Remind" });
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Request Docs", sentLabel: "Requested", primary: true, onClick: () => sendAction("docs") });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind", sentLabel: "Reminded", onClick: () => sendAction("remind") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", onClick: () => window.open("/clientportal", "_blank") });
       break;
     case "ready_to_prep":
-      actions.push({ icon: <FileText className="size-3.5" />, label: "Start Prep", primary: true });
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Start Prep", sentLabel: "Started", primary: true, onClick: () => sendAction("prep") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", onClick: () => window.open("/dashboard/apps/calendar", "_blank") });
       break;
     case "in_preparation":
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
-      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", onClick: () => window.open("/dashboard/apps/calendar", "_blank") });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", onClick: () => window.open("/clientportal", "_blank") });
       break;
     case "client_review":
-      actions.push({ icon: <Send className="size-3.5" />, label: "Nudge", primary: true });
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Nudge", sentLabel: "Nudged", primary: true, onClick: () => sendAction("nudge") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", onClick: () => window.open("/clientportal", "_blank") });
       break;
     case "pay_and_sign":
       actions.push({ icon: <Shield className="size-3.5" />, label: "Sign as ERO", primary: true, onClick: onEroSign });
-      actions.push({ icon: <DollarSign className="size-3.5" />, label: "Send Invoice" });
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <DollarSign className="size-3.5" />, label: "Send Invoice", sentLabel: "Sent!", onClick: () => sendAction("invoice") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
       break;
     case "filed":
-      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
-      actions.push({ icon: <Download className="size-3.5" />, label: "Return" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", onClick: () => { const el = document.querySelector('[data-value="messages"]') as HTMLElement; el?.click(); } });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", onClick: () => window.open("/dashboard/apps/calendar", "_blank") });
+      actions.push({ icon: <Download className="size-3.5" />, label: "Return", sentLabel: "Downloaded", onClick: () => sendAction("return") });
       break;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((a, i) => (
-        <Button key={i} size="sm" variant={a.primary ? "default" : "outline"} className="h-8 text-xs" onClick={a.onClick}>
-          {a.icon} {a.label}
-        </Button>
-      ))}
+      {actions.map((a, i) => {
+        const key = a.label.toLowerCase().replace(/\s/g, "_");
+        const isSent = sent === key;
+        if (isSent && a.sentLabel) {
+          return (
+            <div key={i} className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300 h-8">
+              <Check className="size-3.5" /> {a.sentLabel}
+            </div>
+          );
+        }
+        return (
+          <Button key={i} size="sm" variant={a.primary ? "default" : "outline"} className="h-8 text-xs" onClick={() => {
+            if (a.sentLabel) sendAction(key);
+            else a.onClick();
+          }}>
+            {a.icon} {a.label}
+          </Button>
+        );
+      })}
     </div>
   );
 }

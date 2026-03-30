@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { AlertTriangle, Check, CheckCircle, Download, FileText, FolderDown } fro
 export default function ClientDocumentsPage() {
   const params = useParams();
   const client = clients.find(c => c.id === params.id);
+  const [downloading, setDownloading] = useState(false);
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
   const checklist = getClientChecklist(client.id);
@@ -78,9 +80,9 @@ export default function ClientDocumentsPage() {
 
             {/* Download All button — only when all docs received */}
             {allReceived && totalDocs > 0 && (
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <FolderDown className="size-3.5" />
-                Download all ({totalDocs})
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); setTimeout(() => setDownloading(false), 1500); }}>
+                <FolderDown className={`size-3.5 ${downloading ? "animate-bounce" : ""}`} />
+                {downloading ? "Downloading..." : `Download all (${totalDocs})`}
               </Button>
             )}
           </div>

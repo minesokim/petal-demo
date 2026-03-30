@@ -12,7 +12,7 @@ import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
   AlertTriangle, ChevronRight, Shield, Check, X,
-  TrendingDown, Sparkles, Calculator, Brain, Download
+  TrendingDown, Calculator, Brain, Download
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
@@ -230,20 +230,21 @@ export default function ClientOverviewPage() {
       {hasIntel && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Brain className="size-4 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Intelligence</span>
+            <Brain className="size-3.5 text-muted-foreground" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intelligence</span>
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium text-muted-foreground">Preview</Badge>
           </div>
 
-          {/* Document Extractions — hero feature */}
+          {/* Document Extractions */}
           {clientExtractions.length > 0 && (
-            <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/[0.04] to-transparent p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                  <Sparkles className="size-4 text-primary" />
+            <div className="rounded-xl border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                  <FileText className="size-4 text-muted-foreground" />
                 </div>
-                <div>
-                  <div className="text-sm font-semibold">AI-Extracted Documents</div>
-                  <div className="text-[11px] text-muted-foreground">Review extracted fields, then push directly to OLT</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">Extracted Documents</div>
+                  <div className="text-[11px] text-muted-foreground">Review fields, then push to OLT</div>
                 </div>
               </div>
               {clientExtractions.map(de => (
@@ -573,7 +574,7 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
     <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-          <Sparkles className="size-4 text-emerald-600" />
+          <Calculator className="size-4 text-emerald-600" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold">{suggestion.deductionType}</div>

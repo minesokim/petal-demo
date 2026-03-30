@@ -64,6 +64,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
               <Badge variant="outline">{client.serviceTier}</Badge>
               <Badge variant="outline">${client.feeAmount}</Badge>
               {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
+              {client.urgency === "high" && <Badge className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">High Priority</Badge>}
             </div>
           </div>
         </div>

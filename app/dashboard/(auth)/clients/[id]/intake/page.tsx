@@ -161,7 +161,7 @@ export default function IntakePage() {
             Submitted {submitted.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at {submitted.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={(e) => { const btn = e.currentTarget; btn.textContent = "Exported!"; btn.disabled = true; setTimeout(() => { btn.textContent = "Export PDF"; btn.disabled = false; }, 1500); }}>
           <Download className="size-3.5" />
           Export PDF
         </Button>

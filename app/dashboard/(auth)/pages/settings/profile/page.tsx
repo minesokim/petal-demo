@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Check } from "lucide-react";
 
 export default function FirmProfilePage() {
+  const [saved, setSaved] = useState(false);
+  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
   return (
     <div className="space-y-6">
       <div>
@@ -24,7 +28,7 @@ export default function FirmProfilePage() {
               <AvatarFallback>AV</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <Button size="sm" variant="outline">Change photo</Button>
+              <label><Button size="sm" variant="outline" asChild><span>Change photo</span></Button><input type="file" accept="image/*" className="hidden" /></label>
               <p className="text-[11px] text-muted-foreground">Used on your portal and client emails</p>
             </div>
           </div>
@@ -51,7 +55,9 @@ export default function FirmProfilePage() {
       </Card>
 
       <div className="flex justify-end">
-        <Button>Save changes</Button>
+        <Button onClick={handleSave} disabled={saved}>
+          {saved ? <><Check className="size-3.5" /> Saved</> : "Save changes"}
+        </Button>
       </div>
     </div>
   );

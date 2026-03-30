@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, CreditCard, ExternalLink } from "lucide-react";
-import { useState } from "react";
 
 export default function PaymentsSettingsPage() {
+  const [saved, setSaved] = useState(false);
   const [depositAmount, setDepositAmount] = useState("50");
   const [paymentTerms, setPaymentTerms] = useState("due_on_receipt");
   const [autoInvoice, setAutoInvoice] = useState(true);
@@ -134,7 +135,9 @@ export default function PaymentsSettingsPage() {
       </Card>
 
       <div className="flex justify-end">
-        <Button>Save changes</Button>
+        <Button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }} disabled={saved}>
+          {saved ? <><Check className="size-3.5" /> Saved</> : "Save changes"}
+        </Button>
       </div>
     </div>
   );
