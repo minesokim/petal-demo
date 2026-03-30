@@ -199,7 +199,7 @@ export default function ClientOverviewPage() {
         {/* Stats + Billing summary */}
         <Card>
           <CardHeader><CardTitle className="text-sm">Billing</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold">{client.serviceTier} Return</div>
@@ -213,11 +213,60 @@ export default function ClientOverviewPage() {
               </div>
             </div>
             <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
-              <span><strong className="text-foreground">{client.documentsSubmitted}/{client.documentsRequired}</strong> docs</span>
-              <span>·</span>
-              <span>Deposit: <strong className={client.depositPaid ? "text-emerald-600" : "text-red-500"}>{client.depositPaid ? "Paid" : "Unpaid"}</strong></span>
+
+            {/* Line items */}
+            <div className="space-y-2">
+              <div className="rounded-lg border p-2.5 flex items-center justify-between">
+                <div><div className="text-xs font-medium">Deposit</div><div className="text-[11px] text-muted-foreground">${ps.deposit?.amount || 50}</div></div>
+                {ps.deposit?.status === "paid" ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+                ) : ps.deposit?.status === "overdue" ? (
+                  <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
+                ) : <Badge variant="secondary" className="text-[10px]">Pending</Badge>}
+              </div>
+              {ps.balance && ps.balance.status !== "not_applicable" && (
+                <div className="rounded-lg border p-2.5 flex items-center justify-between">
+                  <div><div className="text-xs font-medium">Balance</div><div className="text-[11px] text-muted-foreground">${ps.balance.amount}</div></div>
+                  {ps.balance.status === "paid" ? (
+                    <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+                  ) : ps.balance.status === "sent" ? (
+                    <Badge variant="secondary" className="text-[10px]">Invoice sent</Badge>
+                  ) : <Badge variant="outline" className="text-[10px]">Not invoiced</Badge>}
+                </div>
+              )}
             </div>
+
+            {/* Payment timeline */}
+            {(() => {
+              const events: { date: string; label: string; type: string }[] = [];
+              if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit paid — $${ps.deposit.amount}`, type: "paid" });
+              if (ps.deposit?.sentDate && ps.deposit.status !== "paid") events.push({ date: ps.deposit.sentDate, label: `Deposit invoice sent — $${ps.deposit.amount}`, type: ps.deposit.status === "overdue" ? "overdue" : "sent" });
+              if (ps.balance?.paidDate) events.push({ date: ps.balance.paidDate, label: `Balance paid — $${ps.balance.amount}`, type: "paid" });
+              if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice sent — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
+              events.sort((a, b) => a.date.localeCompare(b.date));
+              if (events.length === 0) return null;
+              return (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Payment Timeline</div>
+                  {events.map((e, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs">
+                      <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
+                      <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                      <span>{e.label}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Payment actions */}
+            {!ps.fullyPaid && (
+              <div className="flex gap-2">
+                {ps.deposit?.status === "overdue" && <Button size="sm"><Send className="size-3.5" /> Send payment reminder</Button>}
+                {ps.balance?.status === "pending" && <Button size="sm" variant="outline"><DollarSign className="size-3.5" /> Send invoice</Button>}
+                {ps.balance?.status === "sent" && <Button size="sm" variant="outline"><Send className="size-3.5" /> Resend invoice</Button>}
+              </div>
+            )}
           </CardContent>
         </Card>
 
