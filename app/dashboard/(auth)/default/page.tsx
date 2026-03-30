@@ -20,6 +20,7 @@ import {
 import { CategoryBarChart } from "@/components/ui/category-bar-chart";
 import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
 import { clients, actionItems, type Client } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "motion/react";
@@ -233,6 +234,7 @@ export default function Page() {
   const [viewMode, setViewMode] = useState<"clients" | "actions" | "intelligence" | "batch">("clients");
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [detailClient, setDetailClient] = useState<Client | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<typeof todayAppointments[0] | null>(null);
 
   const toggleTodo = (id: number) => {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
@@ -515,29 +517,26 @@ export default function Page() {
             </CardAction>
           </CardHeader>
           <CardContent className="space-y-3">
-            {todayAppointments.map((apt) => {
-              const aptClient = clients.find(c => c.id === apt.clientId);
-              return (
-                <button
-                  key={apt.name}
-                  onClick={() => aptClient && setDetailClient(aptClient)}
-                  className="bg-muted/50 flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors hover:bg-muted"
-                >
-                  <Avatar className="size-9 shrink-0">
-                    <AvatarImage src={apt.avatar} alt={apt.name} />
-                    <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{apt.name}</div>
-                    <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                      {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
-                      {apt.time}
-                    </div>
-                    <div className="text-muted-foreground mt-0.5 text-xs">{apt.note}</div>
+            {todayAppointments.map((apt) => (
+              <button
+                key={apt.name}
+                onClick={() => setSelectedAppointment(apt)}
+                className="bg-muted/50 flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors hover:bg-muted"
+              >
+                <Avatar className="size-9 shrink-0">
+                  <AvatarImage src={apt.avatar} alt={apt.name} />
+                  <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold">{apt.name}</div>
+                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
+                    {apt.time}
                   </div>
-                </button>
-              );
-            })}
+                  <div className="text-muted-foreground mt-0.5 text-xs">{apt.note}</div>
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -581,6 +580,60 @@ export default function Page() {
         open={!!detailClient}
         onOpenChange={(open) => !open && setDetailClient(null)}
       />
+
+      {/* Appointment Detail Dialog */}
+      {selectedAppointment && (
+        <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{selectedAppointment.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-12">
+                  <AvatarImage src={selectedAppointment.avatar} alt={selectedAppointment.name} />
+                  <AvatarFallback>{selectedAppointment.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-base font-semibold">{selectedAppointment.name}</div>
+                  <div className="text-sm text-muted-foreground">{selectedAppointment.note}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <ClockIcon className="size-4 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">Today, {selectedAppointment.time}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  {selectedAppointment.type === "video" ? <VideoIcon className="size-4 text-muted-foreground" /> : <PhoneIcon className="size-4 text-muted-foreground" />}
+                  <div className="font-medium">{selectedAppointment.type === "video" ? "Google Meet" : "Phone call"}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex gap-2">
+                {selectedAppointment.type === "video" && (
+                  <Button className="flex-1"><VideoIcon className="size-3.5" /> Join Meeting</Button>
+                )}
+                {selectedAppointment.type === "phone" && (
+                  <Button className="flex-1"><PhoneIcon className="size-3.5" /> Call</Button>
+                )}
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href={`/dashboard/clients/${selectedAppointment.clientId}/overview`}>
+                    View Client
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
