@@ -296,8 +296,8 @@ function PaymentDemo({ action, state, onProcess }: { action: FeedAction; state: 
 }
 
 function StageAdvanceDemo({ action, state, onProcess }: { action: FeedAction; state: DemoState; onProcess: () => void }) {
-  const stages = ["Not Started", "Intake Sent", "Collecting", "Docs Complete", "In Prep", "Review", "Sign", "Filed"];
-  const currentIndex = 3; // docs_complete
+  const stages = ["New Intake", "Collecting", "Ready to Prep", "In Preparation", "Client Review", "Pay & Sign", "Filed"];
+  const currentIndex = 2; // ready_to_prep
   return (
     <div className="space-y-4">
       <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Pipeline advancement</div>

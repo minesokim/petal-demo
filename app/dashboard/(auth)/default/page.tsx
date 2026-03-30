@@ -143,16 +143,16 @@ const urgentActions = [
   { name: "James & Sofia Rodriguez", issue: "Return ready - awaiting 8879 signature", priority: "high", hasAiDraft: false },
 ];
 
-// need_you: not_started(1:Vladimir) + ready_to_sign(2:Rodriguez,Aisha) = 3
-// waiting: intake_sent(2:Ashley,Fatima) + docs_collecting(4:Priya,DeShawn,Jasmine,Tyrone) = 6
-// in_progress: docs_complete(2:Miguel,Anthony) + in_prep(4:Marcus,DuBois,David,Mendez) + in_review(2:Roberto,MeiLin) = 8
-// complete: filed(3:Linda,Karen,Rachel) = 3
-// Total: 3+6+8+3 = 20
+// need_you: new_intake(3:Vladimir,Ashley,Fatima) + ready_to_prep(2:Miguel,Anthony) + pay_and_sign ERO pending = 5
+// waiting: collecting_docs(4:Priya,DeShawn,Jasmine,Tyrone) + client_review(2:Roberto,MeiLin) = 6
+// in_progress: in_preparation(4:Marcus,DuBois,David,Mendez) = 4
+// complete: pay_and_sign(2:Rodriguez,Aisha) + filed(3:Linda,Karen,Rachel) = 5
+// Total: 5+6+4+5 = 20
 const summaryTabs = [
-  { key: "need_you", label: "Need you", count: 3 },
+  { key: "need_you", label: "Need you", count: 5 },
   { key: "waiting", label: "Waiting", count: 6 },
-  { key: "in_progress", label: "In progress", count: 8 },
-  { key: "complete", label: "Complete", count: 3 },
+  { key: "in_progress", label: "In progress", count: 4 },
+  { key: "complete", label: "Complete", count: 5 },
 ];
 
 type ActionClient = {
@@ -162,50 +162,48 @@ type ActionClient = {
   urgency: "red" | "amber" | "green" | "none";
 };
 
-// Each client appears in exactly ONE tab based on their return stage
+// New bucket mapping based on 7-stage workflow
 const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]> = {
   need_you: [
-    // not_started (1) + ready_to_sign (2) = 3 clients
-    { label: "Not started", clients: [
+    // new_intake (3) + ready_to_prep (2) = 5 clients Antonio needs to act on
+    { label: "New intakes", clients: [
       { initials: "VP", name: "Vladimir Petrov", detail: "0 of 16 docs \u00b7 never logged in", urgency: "red" },
-    ]},
-    { label: "Ready to sign", clients: [
-      { initials: "JR", name: "James & Sofia Rodriguez", detail: "Form 8879 \u00b7 payment confirmed", urgency: "amber" },
-      { initials: "AJ", name: "Aisha Johnson", detail: "Form 8879 \u00b7 payment confirmed", urgency: "amber" },
-    ]},
-  ],
-  waiting: [
-    // intake_sent (2) + docs_collecting (4) = 6 clients
-    { label: "Intake sent", clients: [
       { initials: "AK", name: "Ashley Kim", detail: "Intake sent \u00b7 2 days ago", urgency: "none" },
       { initials: "FA", name: "Fatima Al-Hassan", detail: "Intake sent \u00b7 yesterday", urgency: "none" },
     ]},
+    { label: "Ready to prep", clients: [
+      { initials: "MS", name: "Miguel Sandoval", detail: "9 of 9 docs \u00b7 ready for prep", urgency: "none" },
+      { initials: "AR", name: "Anthony Russo", detail: "9 of 9 docs \u00b7 cap gains calc needed", urgency: "none" },
+    ]},
+  ],
+  waiting: [
+    // collecting_docs (4) + client_review (2) = 6 clients Antonio is waiting on
     { label: "Collecting documents", clients: [
       { initials: "PS", name: "Priya Sharma", detail: "3 of 7 docs \u00b7 missing 1099s", urgency: "amber" },
       { initials: "DW", name: "DeShawn Williams", detail: "1 of 6 docs \u00b7 deposit unpaid", urgency: "red" },
       { initials: "JT", name: "Jasmine Torres", detail: "4 of 8 docs \u00b7 freelance 1099s", urgency: "amber" },
       { initials: "TM", name: "Tyrone Mitchell", detail: "2 of 5 docs \u00b7 9 days stale", urgency: "red" },
     ]},
+    { label: "Client reviewing return", clients: [
+      { initials: "RF", name: "Roberto Fuentes", detail: "1120S \u00b7 sent for client review", urgency: "none" },
+      { initials: "MW", name: "Mei-Lin Wu", detail: "Schedule C \u00b7 sent for client review", urgency: "none" },
+    ]},
   ],
   in_progress: [
-    // docs_complete (2) + in_prep (4) + in_review (2) = 8 clients
-    { label: "Docs complete", clients: [
-      { initials: "MS", name: "Miguel Sandoval", detail: "9 of 9 docs \u00b7 ready for prep", urgency: "none" },
-      { initials: "AR", name: "Anthony Russo", detail: "9 of 9 docs \u00b7 cap gains calc needed", urgency: "none" },
-    ]},
+    // in_preparation (4) = 4 clients Antonio is actively working on
     { label: "In preparation", clients: [
       { initials: "MC", name: "Marcus Chen", detail: "Schedule C \u00b7 3 locations", urgency: "none" },
       { initials: "TD", name: "Thomas & Marie DuBois", detail: "1040 + crypto \u00b7 11 of 14 docs", urgency: "amber" },
       { initials: "DP", name: "David Park", detail: "1120S \u00b7 18 of 20 docs", urgency: "none" },
       { initials: "CM", name: "Carlos & Elena Mendez", detail: "1065 partnership \u00b7 13 of 14 docs", urgency: "none" },
     ]},
-    { label: "In review", clients: [
-      { initials: "RF", name: "Roberto Fuentes", detail: "1120S + personal \u00b7 ready for review", urgency: "amber" },
-      { initials: "MW", name: "Mei-Lin Wu", detail: "Schedule C \u00b7 ready for review", urgency: "amber" },
-    ]},
   ],
   complete: [
-    // filed (3) = 3 clients
+    // pay_and_sign (2) + filed (3) = 5 clients done or nearly done
+    { label: "Pay & sign", clients: [
+      { initials: "JR", name: "James & Sofia Rodriguez", detail: "8879 \u00b7 awaiting payment + signature", urgency: "amber" },
+      { initials: "AJ", name: "Aisha Johnson", detail: "8879 \u00b7 awaiting payment + signature", urgency: "amber" },
+    ]},
     { label: "Filed & accepted", clients: [
       { initials: "LN", name: "Linda Nakamura", detail: "1040 \u00b7 filed Mar 15", urgency: "green" },
       { initials: "KO", name: "Karen O'Brien", detail: "1040 \u00b7 filed Mar 10", urgency: "green" },

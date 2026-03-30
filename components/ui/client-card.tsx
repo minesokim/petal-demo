@@ -21,7 +21,7 @@ interface ClientCardProps {
 export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: ClientCardProps) {
   const [expanded, setExpanded] = React.useState(defaultExpanded);
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
-  const stageIndex = ['not_started', 'intake_sent', 'docs_collecting', 'docs_complete', 'in_prep', 'in_review', 'ready_to_sign', 'filed'].indexOf(client.returnStage);
+  const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(client.returnStage);
   const stagePercent = Math.round((stageIndex / 7) * 100);
 
   const lastActive = client.lastPortalLogin
@@ -73,8 +73,8 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
           <Badge
             variant={
               client.returnStage === "filed" ? "default" :
-              client.returnStage === "ready_to_sign" ? "default" :
-              client.returnStage === "docs_collecting" ? "secondary" :
+              client.returnStage === "pay_and_sign" ? "default" :
+              client.returnStage === "collecting_docs" ? "secondary" :
               "outline"
             }
             className="shrink-0 text-[10px]"

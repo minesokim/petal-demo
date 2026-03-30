@@ -38,15 +38,16 @@ export default function ClientOverviewPage() {
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
-  const stageIndex = ["not_started", "intake_sent", "docs_collecting", "docs_complete", "in_prep", "in_review", "ready_to_sign", "filed"].indexOf(client.returnStage);
+  const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(client.returnStage);
 
   const timelineItems: TimelineItem[] = [
-    { id: 1, title: "Intake Sent", date: "Engagement letter + 7216 consent", status: stageIndex > 1 ? "completed" : stageIndex === 1 ? "in-progress" : "pending" },
-    { id: 2, title: "Documents Collected", date: `${client.documentsSubmitted} of ${client.documentsRequired} received`, status: stageIndex > 3 ? "completed" : stageIndex >= 2 && stageIndex <= 3 ? "in-progress" : "pending" },
-    { id: 3, title: "In Preparation", date: "Return being prepared", status: stageIndex > 4 ? "completed" : stageIndex === 4 ? "in-progress" : "pending" },
-    { id: 4, title: "Review", date: "Reviewing for accuracy", status: stageIndex > 5 ? "completed" : stageIndex === 5 ? "in-progress" : "pending" },
-    { id: 5, title: "Ready to Sign", date: "8879 e-signature pending", status: stageIndex > 6 ? "completed" : stageIndex === 6 ? "in-progress" : "pending" },
-    { id: 6, title: "Filed", date: "Return filed with IRS", status: stageIndex >= 7 ? "completed" : "pending" },
+    { id: 1, title: "New Intake", date: "Engagement letter + 7216 consent", status: stageIndex > 0 ? "completed" : stageIndex === 0 ? "in-progress" : "pending" },
+    { id: 2, title: "Collecting Docs", date: `${client.documentsSubmitted} of ${client.documentsRequired} received`, status: stageIndex > 1 ? "completed" : stageIndex === 1 ? "in-progress" : "pending" },
+    { id: 3, title: "Ready to Prep", date: "All docs received, queued", status: stageIndex > 2 ? "completed" : stageIndex === 2 ? "in-progress" : "pending" },
+    { id: 4, title: "In Preparation", date: "Antonio preparing the return", status: stageIndex > 3 ? "completed" : stageIndex === 3 ? "in-progress" : "pending" },
+    { id: 5, title: "Client Review", date: "Client reviewing the return", status: stageIndex > 4 ? "completed" : stageIndex === 4 ? "in-progress" : "pending" },
+    { id: 6, title: "Pay & Sign", date: "Payment + 8879 + ERO signature", status: stageIndex > 5 ? "completed" : stageIndex === 5 ? "in-progress" : "pending" },
+    { id: 7, title: "Filed", date: "Return filed with IRS", status: stageIndex >= 6 ? "completed" : "pending" },
   ];
 
   const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved);

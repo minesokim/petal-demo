@@ -30,15 +30,19 @@ type DateRange = {
 
 // Colors match document status donut exactly:
 // Red hsl(0 84.2% 60.2%), Yellow hsl(47.9 95.8% 53.1%), Blue hsl(214.7 95% 50%), Green hsl(142.1 76.2% 36.3%)
-// Actual counts from 20 mock clients: 1+2+4+2+4+2+2+3 = 20
+// New 7-stage workflow mapped to 4 colors:
+// Red (need you): new_intake(3)
+// Amber (waiting): collecting_docs(4)
+// Blue (in progress): ready_to_prep(2) + in_preparation(4) + client_review(2)
+// Green (complete): pay_and_sign(2) + filed(3)
+// Pending clients (3) not counted in pipeline
 const currentSeasonData = [
-  { width: 5, cssColor: "hsl(0 84.2% 60.2%)", label: "Not Started", count: 1 },
-  { width: 10, cssColor: "hsl(47.9 95.8% 53.1%)", label: "Intake Sent", count: 2 },
+  { width: 15, cssColor: "hsl(0 84.2% 60.2%)", label: "New Intake", count: 3 },
   { width: 20, cssColor: "hsl(47.9 95.8% 48%)", label: "Collecting Docs", count: 4 },
-  { width: 10, cssColor: "hsl(214.7 95% 58%)", label: "Docs Complete", count: 2 },
-  { width: 20, cssColor: "hsl(214.7 95% 50%)", label: "In Prep", count: 4 },
-  { width: 10, cssColor: "hsl(214.7 95% 44%)", label: "In Review", count: 2 },
-  { width: 10, cssColor: "hsl(142.1 76.2% 42%)", label: "Ready to Sign", count: 2 },
+  { width: 10, cssColor: "hsl(214.7 95% 58%)", label: "Ready to Prep", count: 2 },
+  { width: 20, cssColor: "hsl(214.7 95% 50%)", label: "In Preparation", count: 4 },
+  { width: 10, cssColor: "hsl(214.7 95% 44%)", label: "Client Review", count: 2 },
+  { width: 10, cssColor: "hsl(142.1 76.2% 42%)", label: "Pay & Sign", count: 2 },
   { width: 15, cssColor: "hsl(142.1 76.2% 36.3%)", label: "Filed", count: 3 },
 ];
 
