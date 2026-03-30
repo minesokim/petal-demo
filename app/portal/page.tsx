@@ -376,6 +376,7 @@ export default function ClientPortal() {
   const [tutStep, setTutStep] = useState(0);
   const [askAntonioOpen, setAskAntonioOpen] = useState(false);
   const [askInput, setAskInput] = useState("");
+  const [tutSel, setTutSel] = useState<string[]>([]);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatMsgs, setChatMsgs] = useState<{ from: "antonio" | "client" | "system"; text: string; time: string }[]>([
@@ -1555,30 +1556,46 @@ export default function ClientPortal() {
                 {tutStep === 0 && (<>
                   <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: c.accent }}>1</div>
                   <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Here&apos;s how this works</div>
-                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>Simple questions. Most are just <strong style={{ color: c.text }}>tap to select</strong>.</div>
+                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>Simple questions. Most are just <strong style={{ color: c.text }}>tap to select</strong>. Try it!</div>
                   <div style={{ background: c.bg, borderRadius: 14, padding: "14px 16px", textAlign: "left", border: `1px solid ${c.borderLight}` }}>
-                    <div style={{ fontSize: 11, color: c.dim, marginBottom: 8, fontWeight: 600 }}>EXAMPLE</div>
-                    {["W-2 Employee", "Self-Employed"].map((l, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, marginBottom: 4, background: i === 0 ? c.accentLight : c.surface, border: `1.5px solid ${i === 0 ? c.accent : c.borderLight}` }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? c.accent : c.dim }}>{i === 0 ? "W2" : "1099"}</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: i === 0 ? c.accent : c.text }}>{l}</span>
-                        <div style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", background: i === 0 ? c.accent : "transparent", border: i === 0 ? "none" : `1.5px solid ${c.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {i === 0 && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    <div style={{ fontSize: 11, color: c.dim, marginBottom: 8, fontWeight: 600 }}>TRY IT — TAP ONE</div>
+                    {[{ key: "w2", label: "W-2 Employee", tag: "W2" }, { key: "self", label: "Self-Employed", tag: "1099" }].map(opt => {
+                      const selected = tutSel.includes(opt.key);
+                      return (
+                        <div key={opt.key} onClick={() => setTutSel(p => p.includes(opt.key) ? p.filter(v => v !== opt.key) : [...p, opt.key])} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, marginBottom: 6, background: selected ? c.accentLight : c.surface, border: `1.5px solid ${selected ? c.accent : c.borderLight}`, cursor: "pointer", transition: "all 0.2s ease", transform: selected ? "scale(1.02)" : "scale(1)" }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: selected ? c.accent : c.dim }}>{opt.tag}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: selected ? c.accent : c.text }}>{opt.label}</span>
+                          <div style={{ marginLeft: "auto", width: 20, height: 20, borderRadius: "50%", background: selected ? c.accent : "transparent", border: selected ? "none" : `1.5px solid ${c.border}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s ease" }}>
+                            {selected && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+                  {tutSel.length > 0 && <div style={{ fontSize: 12, color: c.accent, fontWeight: 600, marginTop: 10, transition: "all 0.2s" }}>Nice! That&apos;s all there is to it.</div>}
                 </>)}
                 {tutStep === 1 && (<>
                   <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#9A7245" }}>2</div>
                   <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Don&apos;t know the answer?</div>
-                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>If you&apos;re stuck on <strong style={{ color: c.text }}>any question</strong>, tap the bar at the bottom.</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, background: c.bg, border: `1.5px solid ${c.borderLight}` }}>
-                    <AntonioAvatar size={32} />
-                    <span style={{ flex: 1, fontSize: 13, color: c.dim, textAlign: "left" }}>Not sure?</span>
-                    <span style={{ padding: "5px 12px", borderRadius: 18, background: c.accent, color: "#fff", fontSize: 11, fontWeight: 600 }}>Ask Antonio</span>
+                  <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>If you&apos;re stuck on <strong style={{ color: c.text }}>any question</strong>, tap below to message Antonio.</div>
+                  <div onClick={() => setTutSel(p => p.includes("asked") ? p : [...p, "asked"])} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 14, background: c.bg, border: `1.5px solid ${tutSel.includes("asked") ? c.accent : c.borderLight}`, cursor: "pointer", transition: "all 0.2s ease" }}>
+                    <div style={{ position: "relative" }}>
+                      <AntonioAvatar size={34} />
+                      <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: "50%", background: "#5CB176", border: `2px solid ${c.bg}` }} />
+                    </div>
+                    <span style={{ flex: 1, fontSize: 13, color: c.dim, textAlign: "left" }}>Not sure? Ask Antonio</span>
+                    <span style={{ padding: "6px 14px", borderRadius: 18, background: c.accent, color: "#fff", fontSize: 11, fontWeight: 600 }}>Message</span>
                   </div>
-                  <div style={{ fontSize: 12, color: c.accent, fontWeight: 600, marginTop: 10 }}>Always at the bottom</div>
+                  {tutSel.includes("asked") && (
+                    <div style={{ marginTop: 12, padding: "14px 16px", borderRadius: 14, background: c.accentLight, border: `1px solid ${c.accent}20`, textAlign: "left", animation: "fadeInUp 0.3s ease both" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <AntonioAvatar size={24} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c.accent }}>Antonio</span>
+                      </div>
+                      <p style={{ fontSize: 13, color: c.text, lineHeight: 1.6, margin: 0 }}>No worries! Just type your question and I&apos;ll get back to you personally. Nothing is a dumb question.</p>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: c.accent, fontWeight: 600, marginTop: 10 }}>Always at the bottom of every screen</div>
                 </>)}
                 {tutStep === 2 && (<>
                   <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: c.accent }}>3</div>
