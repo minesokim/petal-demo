@@ -11,7 +11,7 @@ import {
   UsersIcon, FileTextIcon, AlertTriangleIcon, DollarSignIcon,
   TrendingUpIcon, ChevronRightIcon, VideoIcon, PhoneIcon,
   MapPinIcon, ClockIcon, SparklesIcon, ZapIcon,
-  SendIcon, CircleCheckIcon, ArrowUpRightIcon, CalendarIcon, MessageSquareIcon
+  SendIcon, CircleCheckIcon, ArrowUpRightIcon, CalendarIcon, MessageSquareIcon, MicIcon
 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, Pie, PieChart, Cell } from "recharts";
 import {
@@ -25,6 +25,9 @@ import { clients, actionItems, type Client } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
+import { IntelligencePanel } from "@/components/actions/intelligence/intelligence-panel";
+import { BatchPanel } from "@/components/actions/batch/batch-panel";
+import { VoiceDumpDialog } from "@/components/actions/voice/voice-dump-dialog";
 
 const docStatusData: DonutChartSegment[] = [
   { value: 142, color: "hsl(142.1 76.2% 36.3%)", label: "Received" },
@@ -227,7 +230,8 @@ const initialTodos = [
 export default function Page() {
   const [todos, setTodos] = useState(initialTodos);
   const [activeTab, setActiveTab] = useState("need_you");
-  const [viewMode, setViewMode] = useState<"clients" | "actions">("clients");
+  const [viewMode, setViewMode] = useState<"clients" | "actions" | "intelligence" | "batch">("clients");
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [detailClient, setDetailClient] = useState<Client | null>(null);
 
   const toggleTodo = (id: number) => {
@@ -319,19 +323,21 @@ export default function Page() {
         {/* Section header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
           <h3 className="text-sm font-semibold">{summaryTabs.find(t => t.key === activeTab)?.label}</h3>
-          <div className="flex rounded-lg border">
-            <button
-              onClick={() => setViewMode("clients")}
-              className={`px-3 py-1 text-xs font-medium transition-colors ${viewMode === "clients" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} rounded-l-md`}
-            >
-              Clients
-            </button>
-            <button
-              onClick={() => setViewMode("actions")}
-              className={`px-3 py-1 text-xs font-medium transition-colors ${viewMode === "actions" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} rounded-r-md`}
-            >
-              Actions
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border">
+              {(["clients", "actions", "intelligence", "batch"] as const).map((mode, i, arr) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${viewMode === mode ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""}`}
+                >
+                  {mode === "clients" ? "Clients" : mode === "actions" ? "Actions" : mode === "intelligence" ? "AI" : "Batch"}
+                </button>
+              ))}
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setVoiceOpen(true)}>
+              <MicIcon className="size-3" /> Voice
+            </Button>
           </div>
         </div>
 
@@ -432,8 +438,21 @@ export default function Page() {
               })()}
             </div>
           )}
+          {viewMode === "intelligence" && (
+            <div className="mt-3">
+              <IntelligencePanel />
+            </div>
+          )}
+          {viewMode === "batch" && (
+            <div className="mt-3">
+              <BatchPanel />
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Voice Dump Dialog */}
+      <VoiceDumpDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
 
       {/* Main Grid */}
       <div className="grid gap-4 xl:grid-cols-3">
