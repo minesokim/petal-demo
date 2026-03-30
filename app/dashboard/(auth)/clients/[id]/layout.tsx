@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building2, MoreHorizontal } from "lucide-react";
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
-import { FloatingTimeTracker } from "@/components/time-tracker";
 
 export default function ClientDetailLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -92,9 +91,6 @@ export default function ClientDetailLayout({ children }: { children: React.React
       <div className="pt-6">
         {children}
       </div>
-
-      {/* Floating time tracker */}
-      <FloatingTimeTracker clientId={clientId} clientName={client.fullName} />
     </div>
   );
 }

@@ -74,6 +74,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   ];
 
   const clientActions = actionItems.filter(a => a.clientId === client.id && !a.isResolved);
+  const clientFeedActions = feedActions.filter(a => a.clientId === client.id && !a.isResolved);
   const clientCompliance = complianceAlerts.filter(a => a.clientId === client.id);
   const clientAnomalies = anomalyAlerts.filter(a => a.clientId === client.id);
   const clientDeductions = deductionSuggestions.filter(a => a.clientId === client.id);
@@ -130,10 +131,68 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
+              {/* Feed actions (same as full page) */}
+              {clientFeedActions.length > 0 && (
+                <div className="space-y-2">
+                  {clientFeedActions.map(action => (
+                    <ActionCard key={action.id} action={action} onClick={() => {}} />
+                  ))}
+                </div>
+              )}
+
               {/* Actions (exclude signature actions — handled by dedicated ERO section below) */}
-              {clientActions.filter(a => a.type !== "signature_needed").length > 0 && (
+              {clientActions.filter(a => a.type !== "signature_needed").length > 0 && clientFeedActions.length === 0 && (
                 <div className="space-y-2">
                   {clientActions.filter(a => a.type !== "signature_needed").map(action => <ActionDraftCard key={action.id} action={action} />)}
+                </div>
+              )}
+
+              {/* Ready to Prep — confirm all docs received and begin preparation */}
+              {client.returnStage === "ready_to_prep" && (
+                <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                      <CheckCircle className="size-4 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">Ready to begin preparation</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        All {client.documentsRequired} documents received. Confirm to move {client.fullName.split(" ")[0]} into preparation.
+                      </div>
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> {client.documentsSubmitted}/{client.documentsRequired} docs</div>
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Deposit paid</div>
+                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Engagement signed</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="mt-3 w-full">
+                    <FileText className="size-3.5" /> Begin Preparation
+                  </Button>
+                </div>
+              )}
+
+              {/* Collecting Docs — show progress */}
+              {client.returnStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
+                <div className="rounded-xl border p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-muted">
+                      <Clock className="size-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">Waiting on documents</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {client.documentsRequired - client.documentsSubmitted} documents still needed from {client.fullName.split(" ")[0]}.
+                      </div>
+                      <div className="mt-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
+                          <span className="text-[10px] font-medium tabular-nums">{docPercent}%</span>
+                        </div>
+                        <Progress value={docPercent} className="h-1.5" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe, Upload, Eye } from "lucide-react";
+import { Globe, Upload, Eye, Video, Play, Pencil, Trash2, Plus } from "lucide-react";
 import { useState } from "react";
 
 const stageMessages = [
@@ -17,10 +17,62 @@ const stageMessages = [
   { stage: "Filed", key: "filed", default: "Your return has been filed with the IRS. You'll receive confirmation once it's accepted." },
 ];
 
+interface WelcomeVideo {
+  id: string;
+  label: string;
+  description: string;
+  trigger: string;
+  url: string;
+  uploaded: boolean;
+}
+
+const defaultVideos: WelcomeVideo[] = [
+  {
+    id: "first_time",
+    label: "First-Time Client",
+    description: "Introduce yourself and walk new clients through how the portal works, what to expect, and how to upload their documents.",
+    trigger: "Shown on first login after onboarding",
+    url: "",
+    uploaded: false,
+  },
+  {
+    id: "returning",
+    label: "Returning Client",
+    description: "Welcome back message for clients who filed with you last year. Highlight what's new and what you'll need from them this season.",
+    trigger: "Shown on first login of new tax season",
+    url: "",
+    uploaded: false,
+  },
+  {
+    id: "docs_complete",
+    label: "Documents Received",
+    description: "Thank the client for submitting everything and let them know what happens next. Sets expectations for turnaround time.",
+    trigger: "Shown when all required documents are received",
+    url: "",
+    uploaded: true,
+  },
+  {
+    id: "return_ready",
+    label: "Return Ready for Review",
+    description: "Walk the client through how to review their return, what to look for, and how to ask questions before signing.",
+    trigger: "Shown when return moves to Client Review stage",
+    url: "",
+    uploaded: false,
+  },
+  {
+    id: "post_filing",
+    label: "Post-Filing Thank You",
+    description: "Thank the client, confirm their return is filed, explain refund timelines, and mention year-round services like bookkeeping or estimated taxes.",
+    trigger: "Shown after return is filed and accepted",
+    url: "",
+    uploaded: false,
+  },
+];
+
 export default function PortalSettingsPage() {
   const [welcomeMessage, setWelcomeMessage] = useState("Welcome to Vazant Consulting's secure client portal. Upload your documents, track your return, and message Antonio directly.");
-  const [portalMessaging, setPortalMessaging] = useState(true);
   const [messages, setMessages] = useState(stageMessages.map(s => ({ ...s, value: s.default })));
+  const [videos, setVideos] = useState(defaultVideos);
 
   return (
     <div className="space-y-6">
@@ -60,10 +112,70 @@ export default function PortalSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Welcome Message</CardTitle>
-          <CardDescription>First thing clients see when they log in.</CardDescription>
+          <CardDescription>Text greeting shown on the portal homepage beneath your video.</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} rows={3} className="resize-none" />
+        </CardContent>
+      </Card>
+
+      {/* Welcome Videos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Welcome Videos</CardTitle>
+          <CardDescription>
+            Personal video messages shown to clients at key moments. Clients see your face, hear your voice, and feel the human touch that sets your practice apart.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {videos.map((video) => (
+            <div key={video.id} className="rounded-xl border p-4">
+              <div className="flex items-start gap-3">
+                <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${video.uploaded ? "bg-primary/10" : "bg-muted"}`}>
+                  <Video className={`size-4 ${video.uploaded ? "text-primary" : "text-muted-foreground"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{video.label}</span>
+                    {video.uploaded ? (
+                      <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px]">Uploaded</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Not uploaded</Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{video.description}</p>
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <span className="text-[10px] font-medium text-muted-foreground/60">Trigger:</span>
+                    <span className="text-[10px] text-muted-foreground">{video.trigger}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {video.uploaded ? (
+                    <>
+                      <Button size="icon" variant="ghost" className="size-7"><Play className="size-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="size-7"><Pencil className="size-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline">
+                      <Upload className="mr-1.5 size-3" /> Upload
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="rounded-xl border border-dashed p-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Videos should be 30-90 seconds. MP4 or MOV, max 100MB.
+            </p>
+            <p className="mt-1 text-[10px] text-muted-foreground/60">
+              Tip: Record with your phone in landscape. Clients appreciate seeing your face — it builds trust.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -88,21 +200,6 @@ export default function PortalSettingsPage() {
               />
             </div>
           ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Portal Features</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium">Client messaging</div>
-              <p className="text-xs text-muted-foreground">Allow clients to message you directly through the portal.</p>
-            </div>
-            <Switch checked={portalMessaging} onCheckedChange={setPortalMessaging} />
-          </div>
         </CardContent>
       </Card>
 
