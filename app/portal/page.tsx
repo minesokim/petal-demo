@@ -96,7 +96,7 @@ function OptionCard({ label, desc, price, icon, selected, onClick, isMulti }: {
       width: "100%", padding: "15px 18px", borderRadius: 14, marginBottom: 8,
       background: selected ? c.accentLight : c.surface,
       border: `1.5px solid ${selected ? c.accent : c.borderLight}`,
-      cursor: "pointer", textAlign: "left", fontFamily: "'DM Sans', sans-serif",
+      cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans', sans-serif",
       transition: "all 0.15s ease",
     }}>
       {icon && <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>}
@@ -142,7 +142,7 @@ function InputField({ label, placeholder, type = "text" }: {
           width: "100%", padding: "12px 14px", borderRadius: 12,
           border: `1.5px solid ${c.border}`, background: c.surface,
           fontSize: 14, color: c.text, outline: "none",
-          fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box",
+          fontFamily: "'Plus Jakarta Sans', sans-serif", boxSizing: "border-box",
           transition: "border-color 0.15s",
         }}
         onFocus={e => e.target.style.borderColor = c.accent}
@@ -158,7 +158,7 @@ function PrimaryButton({ children, onClick, disabled, style: sx }: {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       width: "100%", padding: "15px 24px", borderRadius: 14,
-      border: "none", fontFamily: "'DM Sans', sans-serif",
+      border: "none", fontFamily: "'Plus Jakarta Sans', sans-serif",
       background: disabled ? c.borderLight : c.accent,
       color: disabled ? c.dim : "#fff",
       fontSize: 15, fontWeight: 600, cursor: disabled ? "default" : "pointer",
@@ -203,7 +203,7 @@ function TopNav({ onBack, title, sub, right }: {
           width: 36, height: 36, borderRadius: 10,
           border: `1px solid ${c.border}`, background: "transparent",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          color: c.secondary, fontFamily: "'DM Sans', sans-serif",
+          color: c.secondary, fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -320,7 +320,7 @@ function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
         <button key={t.key} onClick={() => onTab(t.key)} style={{
           flex: 1, padding: "10px 0 8px", border: "none", background: "transparent",
           cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={tab === t.key ? c.accent : c.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d={t.icon} />
@@ -355,6 +355,11 @@ export default function ClientPortal() {
   const [tutStep, setTutStep] = useState(0);
   const [askAntonioOpen, setAskAntonioOpen] = useState(false);
   const [askInput, setAskInput] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatMsgs, setChatMsgs] = useState<{ from: "antonio" | "client" | "system"; text: string; time: string }[]>([
+    { from: "antonio", text: "Got your documents! Starting my review. I'll reach out if I have questions. 👍", time: "10:02 AM" },
+  ]);
+  const [docFolder, setDocFolder] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const totalSteps = 14;
@@ -691,7 +696,7 @@ export default function ClientPortal() {
                       background: sel === tp ? c.accentLight : c.surface,
                       color: sel === tp ? c.accent : c.secondary,
                       fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
                       transition: "all 0.15s",
                     }}>
                       {tp === "Phone" ? "📞" : tp === "Video" ? "💻" : "🏢"} {tp}
@@ -716,7 +721,7 @@ export default function ClientPortal() {
                             background: answers.slot === k ? c.accentLight : c.surface,
                             color: answers.slot === k ? c.accent : c.text,
                             fontSize: 13, fontWeight: 600, cursor: "pointer",
-                            fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+                            fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s",
                           }}>{s}</button>
                         );
                       })}
@@ -788,7 +793,7 @@ export default function ClientPortal() {
                 <button onClick={() => { if (!engAgreed) { setShowDoc("engagement"); setDocScrolled(false); } }} style={{
                   width: "100%", textAlign: "left", padding: "18px 20px", borderRadius: 14, marginBottom: 12,
                   background: c.surface, border: `1.5px solid ${engAgreed ? c.accent : c.borderLight}`,
-                  cursor: engAgreed ? "default" : "pointer", fontFamily: "'DM Sans', sans-serif",
+                  cursor: engAgreed ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: 14,
                 }}>
                   <div style={{
@@ -815,7 +820,7 @@ export default function ClientPortal() {
                   background: c.surface, border: `1.5px solid ${s72Agreed ? c.accent : c.borderLight}`,
                   cursor: !engAgreed ? "default" : s72Agreed ? "default" : "pointer",
                   opacity: !engAgreed && !s72Agreed ? 0.5 : 1,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: 14,
                 }}>
                   <div style={{
@@ -1048,7 +1053,7 @@ export default function ClientPortal() {
                   {tutStep < 2 ? "Next" : "Let\u2019s Go"}
                 </PrimaryButton>
                 {tutStep < 2 && (
-                  <button onClick={() => { setShowTutorial(false); setStep(1); }} style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "transparent", color: c.dim, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+                  <button onClick={() => { setShowTutorial(false); setStep(1); }} style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "transparent", color: c.dim, fontSize: 13, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 4 }}>
                     Skip tutorial
                   </button>
                 )}
@@ -1097,7 +1102,7 @@ export default function ClientPortal() {
                       flex: 1, padding: "12px 16px", borderRadius: 14,
                       border: `1.5px solid ${c.borderLight}`, background: c.bg,
                       fontSize: 14, color: c.text, outline: "none",
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
                     }}
                   />
                   <button onClick={() => { if (askInput.trim()) { setAskInput(""); setTimeout(() => setAskAntonioOpen(false), 300); } }} style={{
@@ -1121,12 +1126,6 @@ export default function ClientPortal() {
   }
 
   // ─── PORTAL (post-intake) ───
-  const [chatInput, setChatInput] = useState("");
-  const [chatMsgs, setChatMsgs] = useState([
-    { from: "antonio" as const, text: "Got your documents! Starting my review. I'll reach out if I have questions. 👍", time: "10:02 AM" },
-  ]);
-  const [docFolder, setDocFolder] = useState<string | null>(null);
-
   const portalFolders = [
     { id: "uploads", name: "My Uploads", count: 3, icon: "📤", color: c.accentLight, files: [
       { name: "W-2 Riverside Medical.pdf", date: "Mar 24", size: "245 KB", status: "ok" },
@@ -1251,7 +1250,7 @@ export default function ClientPortal() {
             {docFolder ? (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <button onClick={() => setDocFolder(null)} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: c.secondary, fontFamily: "'DM Sans', sans-serif" }}>
+                  <button onClick={() => setDocFolder(null)} style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: c.secondary, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                   <h2 style={{ fontSize: 18, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: 0 }}>
@@ -1268,7 +1267,7 @@ export default function ClientPortal() {
                       <div style={{ fontSize: 11, color: c.dim, marginTop: 2 }}>{"date" in fl && fl.date ? `${fl.date} · ${"size" in fl ? fl.size : ""}` : "Waiting for upload"}</div>
                     </div>
                     {fl.status === "pending" ? (
-                      <button style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${c.accent}`, background: "transparent", color: c.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Upload</button>
+                      <button style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${c.accent}`, background: "transparent", color: c.accent, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Upload</button>
                     ) : (
                       <div style={{ display: "flex", gap: 6 }}>
                         <button style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👁</button>
@@ -1356,7 +1355,7 @@ export default function ClientPortal() {
                     flex: 1, padding: "12px 16px", borderRadius: 14,
                     border: `1.5px solid ${c.borderLight}`, background: c.bg,
                     fontSize: 14, color: c.text, outline: "none",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
                   }}
                 />
                 <button onClick={sendChat} disabled={!chatInput.trim()} style={{
@@ -1365,7 +1364,7 @@ export default function ClientPortal() {
                   color: chatInput.trim() ? "#fff" : c.dim,
                   cursor: chatInput.trim() ? "pointer" : "default",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
                 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
