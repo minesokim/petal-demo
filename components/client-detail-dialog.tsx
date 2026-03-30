@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { type Client, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
+import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
+import { AIDraftCard } from "@/components/messaging/ai-draft-card";
+import { MessageInput } from "@/components/messaging/message-input";
 import Link from "next/link";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import {
@@ -467,47 +470,23 @@ function GeneratedDocList({ client }: { client: Client }) {
   );
 }
 
-// Inline messages component for the dialog
-const messageThreads: Record<string, { id: string; sender: "client" | "preparer"; content: string; time: string }[]> = {
-  c2: [
-    { id: "1", sender: "client", content: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM" },
-    { id: "2", sender: "preparer", content: "Hey Priya! Log into your portal and go to the Docs tab. You can take a photo of the 1099 with your phone too.", time: "2:45 PM" },
-    { id: "3", sender: "client", content: "Do I need to report the $500 I made from a one-time sponsored post?", time: "2:52 PM" },
-    { id: "4", sender: "preparer", content: "Yes, all income needs to be reported even without a 1099. We'll include it on your Schedule C.", time: "3:10 PM" },
-  ],
-  c3: [
-    { id: "1", sender: "client", content: "Are our returns done?", time: "Mar 25" },
-    { id: "2", sender: "preparer", content: "Yes! I just need you and Sofia to sign Form 8879 to authorize e-filing.", time: "Mar 26" },
-    { id: "3", sender: "client", content: "We're ready to sign whenever you are!", time: "7:45 AM" },
-  ],
-  c4: [
-    { id: "1", sender: "preparer", content: "Hi DeShawn! Welcome. I've sent your intake form - just follow the link.", time: "Mar 18" },
-    { id: "2", sender: "client", content: "Thanks! I'll try to get to it this weekend.", time: "Mar 20" },
-    { id: "3", sender: "preparer", content: "We still need your W-2 and the $150 deposit. April 15 is coming up.", time: "Mar 22" },
-  ],
-  c11: [
-    { id: "1", sender: "preparer", content: "David, your S-Corp return is coming along. Can we schedule a call about the payroll summary?", time: "Mar 25" },
-    { id: "2", sender: "client", content: "Sure! How about Thursday at 2pm?", time: "Mar 26" },
-    { id: "3", sender: "client", content: "Can we push to 3pm? Got a patient emergency.", time: "8:15 AM" },
-    { id: "4", sender: "preparer", content: "Of course. Moved to 3pm. Hope everything is okay!", time: "8:30 AM" },
-  ],
-  c15: [
-    { id: "1", sender: "client", content: "Elena wants to know if we can deduct the new paint booth equipment.", time: "Mar 27" },
-    { id: "2", sender: "preparer", content: "Yes! Section 179 immediate expensing. Full deduction in 2025 instead of 7 years. How much was it?", time: "Mar 27" },
-    { id: "3", sender: "client", content: "About $32,000. That would be a big deduction!", time: "Mar 27" },
-    { id: "4", sender: "preparer", content: "Should save roughly $8,200 in taxes. Numbers ready for our review Monday.", time: "Mar 27" },
-  ],
-  c1: [
-    { id: "1", sender: "client", content: "All 3 restaurant P&Ls have been uploaded.", time: "Mar 27" },
-    { id: "2", sender: "preparer", content: "Got them, thanks Marcus! We'll go over it in our call on the 30th.", time: "Mar 27" },
-  ],
-};
-
+// Inline messages component for the dialog — uses shared message data
 function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId: string; clientAvatar: string; clientName: string }) {
-  const thread = messageThreads[clientId];
+  const baseThread = getThread(clientId);
+  const [localMsgs, setLocalMsgs] = useState<ChatMessageType[]>([]);
   const [input, setInput] = useState("");
+  const [dismissedDrafts, setDismissedDrafts] = useState<Set<string>>(new Set());
+  const drafts = getClientDrafts(clientId).filter(d => !dismissedDrafts.has(d.id));
 
-  if (!thread) {
+  // Filter to just client/preparer messages for the compact dialog view (skip system cards)
+  const thread = [...baseThread, ...localMsgs].filter(m => m.sender === "client" || m.sender === "preparer");
+
+  const sendMsg = (text: string) => {
+    setLocalMsgs(prev => [...prev, { id: `sent-${Date.now()}`, sender: "preparer", content: text, time: "Just now" }]);
+    drafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  };
+
+  if (thread.length === 0 && drafts.length === 0) {
     return <div className="py-8 text-center text-sm text-muted-foreground">No messages yet with {clientName.split(" ")[0]}.</div>;
   }
 
@@ -527,10 +506,21 @@ function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId
           </div>
         </div>
       ))}
-      <div className="flex items-center gap-2 pt-2">
-        <input placeholder={`Message ${clientName.split(" ")[0]}...`} value={input} onChange={e => setInput(e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs outline-none" />
-        <Button size="sm" className="h-8"><Send className="size-3" /></Button>
-      </div>
+      {/* AI Draft */}
+      {drafts.length > 0 && (
+        <AIDraftCard
+          draft={drafts[0]}
+          onSend={sendMsg}
+          onEdit={(text) => { setInput(text); drafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id]))); }}
+          onDismiss={() => setDismissedDrafts(prev => new Set([...prev, drafts[0].id]))}
+        />
+      )}
+      <MessageInput
+        placeholder={`Message ${clientName.split(" ")[0]}...`}
+        value={input}
+        onChange={setInput}
+        onSend={(text) => { sendMsg(text); setInput(""); }}
+      />
     </div>
   );
 }

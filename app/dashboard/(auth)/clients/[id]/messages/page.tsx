@@ -5,88 +5,48 @@ import { useParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Send, FileText, Calendar, DollarSign, Clock, Bot, ChevronRight } from "lucide-react";
+import { FileText, Calendar, DollarSign, Clock, Bot, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { clients } from "@/lib/mock-data";
-
-// Per-client message threads with system cards
-type ChatMessage = {
-  id: string;
-  sender: "client" | "preparer" | "system";
-  content: string;
-  time: string;
-  systemCard?: {
-    type: string;
-    title: string;
-    description: string;
-    action?: string;
-  };
-};
-
-const clientThreads: Record<string, ChatMessage[]> = {
-  c2: [ // Priya Sharma
-    { id: "m1", sender: "client", content: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it. Can you help?", time: "2:30 PM" },
-    { id: "m3", sender: "preparer", content: "Hey Priya! The easiest way is to log into your portal and go to the Docs tab. There's an upload button right at the top. You can take a photo of the 1099 with your phone too - we'll extract the data automatically.", time: "2:45 PM" },
-    { id: "m4", sender: "client", content: "Oh perfect! I'll do that now. Also, do I need to report the $500 I made from a one-time sponsored post?", time: "2:52 PM" },
-    { id: "m5", sender: "preparer", content: "Yes, all income needs to be reported even if you don't receive a 1099 for it. We'll include it on your Schedule C. Just mention it when you upload your other docs and I'll make sure it's captured.", time: "3:10 PM" },
-    { id: "m6", sender: "client", content: "When will my return be ready?", time: "3:15 PM" },
-    { id: "m7", sender: "system", content: "", time: "3:15 PM", systemCard: { type: "status", title: "Return Status", description: "Your return is in the document collection phase. 3 of 7 documents received. Once complete, preparation takes 3-5 business days.", action: "View Status" } },
-    { id: "m7n", sender: "system", content: "Antonio will follow up personally.", time: "3:15 PM" },
-    { id: "m8", sender: "client", content: "Thanks Antonio!", time: "3:20 PM" },
-  ],
-  c4: [ // DeShawn Williams
-    { id: "m1", sender: "preparer", content: "Hi DeShawn! Welcome to Vazant Consulting. I've sent your intake form. Just follow the link to get started.", time: "Mar 18" },
-    { id: "m2", sender: "client", content: "Thanks! I'll try to get to it this weekend. Been really busy with work.", time: "Mar 20" },
-    { id: "m3", sender: "preparer", content: "No problem at all! Just a heads up - we still need your W-2 and the $50 deposit to start your return. The April 15 deadline is coming up.", time: "Mar 22" },
-    { id: "m4", sender: "client", content: "Sorry I've been busy. Will try to get my W-2 uploaded this weekend.", time: "Mar 26" },
-    { id: "m5", sender: "system", content: "", time: "Mar 26", systemCard: { type: "payment", title: "Deposit Required", description: "A $50 deposit is required to begin preparing your return. You can pay securely through your portal.", action: "Pay Now" } },
-  ],
-  c3: [ // Rodriguez
-    { id: "m1", sender: "client", content: "Hi Antonio, just wanted to check in. Are our returns done?", time: "Mar 25" },
-    { id: "m2", sender: "preparer", content: "Hi James! Yes, your returns are complete and reviewed. I just need you and Sofia to sign Form 8879 to authorize e-filing. I'll send it over now.", time: "Mar 26" },
-    { id: "m3", sender: "client", content: "Great! We're ready to sign whenever you are!", time: "Mar 28, 7:45 AM" },
-    { id: "m4", sender: "system", content: "", time: "Mar 28", systemCard: { type: "signature", title: "E-Signature Ready", description: "Form 8879 is ready for your signature. Both James and Sofia need to sign.", action: "Sign Now" } },
-  ],
-  c11: [ // David Park
-    { id: "m1", sender: "preparer", content: "David, your S-Corp return is coming along. I have a few questions about the payroll summary and the new equipment. Can we schedule a call?", time: "Mar 25" },
-    { id: "m2", sender: "client", content: "Sure! How about Thursday at 2pm?", time: "Mar 26" },
-    { id: "m3", sender: "preparer", content: "Thursday at 2pm works. I'll send over a Google Meet link.", time: "Mar 26" },
-    { id: "m4", sender: "client", content: "Can we push the call to 3pm instead of 2? Got a patient emergency.", time: "Mar 28, 8:15 AM" },
-    { id: "m5", sender: "preparer", content: "Of course, no problem. I've moved it to 3pm. Hope everything is okay!", time: "Mar 28, 8:30 AM" },
-  ],
-  c15: [ // Mendez
-    { id: "m1", sender: "client", content: "Elena wants to know if we can deduct the new paint booth equipment we bought in December.", time: "Mar 27" },
-    { id: "m2", sender: "preparer", content: "Great question! Yes, the paint booth likely qualifies for Section 179 immediate expensing. That's a full deduction in 2025 instead of depreciating over 7 years. How much was it?", time: "Mar 27" },
-    { id: "m3", sender: "client", content: "It was about $32,000. That would be a big deduction!", time: "Mar 27" },
-    { id: "m4", sender: "preparer", content: "That's a significant deduction. I'll include it as Section 179 on your return. Should save you roughly $8,200 in taxes. I'll have the numbers ready for our review on Monday.", time: "Mar 27" },
-  ],
-};
-
-const defaultThread: ChatMessage[] = [
-  { id: "d1", sender: "preparer", content: "No messages yet. This conversation will appear once the client sends their first message or you reach out to them.", time: "" },
-];
+import { getThread, getClientDrafts, type ChatMessage } from "@/lib/messages-data";
+import { AIDraftCard } from "@/components/messaging/ai-draft-card";
+import { MessageInput } from "@/components/messaging/message-input";
 
 export default function ClientMessagesPage() {
   const params = useParams();
   const client = clients.find(c => c.id === params.id);
   const [input, setInput] = useState("");
+  const [localThread, setLocalThread] = useState<ChatMessage[] | null>(null);
+  const [dismissedDrafts, setDismissedDrafts] = useState<Set<string>>(new Set());
 
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
-  const thread = clientThreads[client.id] || defaultThread;
+  const baseThread = getThread(client.id);
+  const thread = localThread || baseThread;
+  const pendingDrafts = getClientDrafts(client.id).filter(d => !dismissedDrafts.has(d.id));
+
+  const sendMessage = (text: string) => {
+    const newMsg: ChatMessage = { id: `sent-${Date.now()}`, sender: "preparer", content: text, time: "Just now" };
+    setLocalThread([...thread, newMsg]);
+    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  };
+
+  const editDraft = (text: string) => {
+    setInput(text);
+    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  };
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 320px)" }}>
       <div className="flex-1 space-y-4 overflow-y-auto pb-4">
-        {thread.map(msg => {
-          // System card (Lane 1 auto-response)
+        {thread.length === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">No messages yet with {client.fullName.split(" ")[0]}.</div>
+        ) : thread.map(msg => {
           if (msg.sender === "system" && msg.systemCard) {
             return (
               <div key={msg.id} className="flex justify-start">
-                <div className="ml-9 max-w-[320px] rounded-2xl border bg-muted/30 p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="ml-9 max-w-[320px] rounded-2xl border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <div className="flex size-5 items-center justify-center rounded bg-primary/10">
-                      {msg.systemCard.type === "documents" && <FileText className="size-3 text-primary" />}
                       {msg.systemCard.type === "status" && <Clock className="size-3 text-primary" />}
                       {msg.systemCard.type === "payment" && <DollarSign className="size-3 text-primary" />}
                       {msg.systemCard.type === "signature" && <FileText className="size-3 text-primary" />}
@@ -106,16 +66,10 @@ export default function ClientMessagesPage() {
             );
           }
 
-          // System note (italic note after auto-response)
           if (msg.sender === "system" && !msg.systemCard) {
-            return (
-              <div key={msg.id} className="text-center">
-                <span className="text-[11px] text-muted-foreground italic">{msg.content}</span>
-              </div>
-            );
+            return <div key={msg.id} className="text-center"><span className="text-[11px] text-muted-foreground italic">{msg.content}</span></div>;
           }
 
-          // Regular message
           const isClient = msg.sender === "client";
           return (
             <div key={msg.id} className={`flex ${isClient ? "justify-start" : "justify-end"}`}>
@@ -125,10 +79,15 @@ export default function ClientMessagesPage() {
                   <AvatarFallback className="text-[9px]">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
                 </Avatar>
               )}
-              <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                isClient ? "border bg-muted/50" : "bg-primary text-primary-foreground"
-              }`}>
+              <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${isClient ? "border bg-muted/50" : "bg-primary text-primary-foreground"}`}>
                 <p className="text-sm leading-relaxed">{msg.content}</p>
+                {msg.attachment && (
+                  <div className={`mt-2 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${isClient ? "border-border" : "border-primary-foreground/20"}`}>
+                    {msg.attachment.type === "image" ? <ImageIcon className="size-3" /> : <FileText className="size-3" />}
+                    <span className="truncate">{msg.attachment.name}</span>
+                    <span className="text-[10px] opacity-60">{msg.attachment.size}</span>
+                  </div>
+                )}
                 {msg.time && <div className={`mt-1 text-[10px] ${isClient ? "text-muted-foreground" : "text-primary-foreground/60"}`}>{msg.time}</div>}
               </div>
             </div>
@@ -136,15 +95,26 @@ export default function ClientMessagesPage() {
         })}
       </div>
 
-      <div className="flex items-center gap-2 border-t pt-4">
-        <input
-          type="text"
+      {/* AI Draft Suggestion */}
+      {pendingDrafts.length > 0 && (
+        <div className="pb-2">
+          <AIDraftCard
+            draft={pendingDrafts[0]}
+            onSend={sendMessage}
+            onEdit={editDraft}
+            onDismiss={() => setDismissedDrafts(prev => new Set([...prev, pendingDrafts[0].id]))}
+          />
+        </div>
+      )}
+
+      {/* Input with file attachments */}
+      <div className="border-t pt-3">
+        <MessageInput
           placeholder={`Message ${client.fullName.split(" ")[0]}...`}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          className="flex-1 rounded-xl border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+          onChange={setInput}
+          onSend={(text) => { sendMessage(text); setInput(""); }}
         />
-        <Button size="icon" className="shrink-0"><Send className="size-4" /></Button>
       </div>
     </div>
   );
