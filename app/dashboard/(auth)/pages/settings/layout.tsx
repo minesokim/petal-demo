@@ -19,7 +19,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       <div className="space-y-0.5">
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground">
-          Manage your account settings and set e-mail preferences.
+          Manage your firm profile, integrations, and preferences.
         </p>
       </div>
       <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">

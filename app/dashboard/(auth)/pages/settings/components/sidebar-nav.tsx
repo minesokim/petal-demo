@@ -5,31 +5,21 @@ import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import {
   BellIcon,
-  ContrastIcon,
-  CreditCardIcon,
   PaletteIcon,
-  ShieldIcon,
-  UserIcon
+  UserIcon,
+  PlugIcon,
+  BrainIcon,
+  ClockIcon
 } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const sidebarNavItems = [
   {
-    title: "Profile",
-    href: "/dashboard/pages/settings",
+    title: "Firm Profile",
+    href: "/dashboard/pages/settings/profile",
     icon: UserIcon
-  },
-  {
-    title: "Account",
-    href: "/dashboard/pages/settings/account",
-    icon: ShieldIcon
-  },
-  {
-    title: "Billing",
-    href: "/dashboard/pages/settings/billing",
-    icon: CreditCardIcon
   },
   {
     title: "Appearance",
@@ -41,11 +31,6 @@ const sidebarNavItems = [
     href: "/dashboard/pages/settings/notifications",
     icon: BellIcon
   },
-  {
-    title: "Display",
-    href: "/dashboard/pages/settings/display",
-    icon: ContrastIcon
-  }
 ];
 
 export function SidebarNav() {

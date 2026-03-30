@@ -1,4 +1,4 @@
-import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -17,15 +17,15 @@ export default function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={`/images/avatars/01.png`} alt="Antonio Vazquez" />
+          <AvatarImage src="/images/avatars/01.png" alt="Antonio Vazquez" />
           <AvatarFallback className="rounded-lg">AV</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-60" align="end">
+      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-56" align="end">
         <DropdownMenuLabel className="p-0">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar>
-              <AvatarImage src={`/images/avatars/01.png`} alt="Antonio Vazquez" />
+            <Avatar className="size-8">
+              <AvatarImage src="/images/avatars/01.png" alt="Antonio Vazquez" />
               <AvatarFallback className="rounded-lg">AV</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
@@ -36,20 +36,8 @@ export default function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <BadgeCheck />
-            Account
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCard />
-            Billing
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Bell />
-            Notifications
-          </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/dashboard/pages/settings">
+            <Link href="/dashboard/pages/settings/profile">
               <Settings />
               Settings
             </Link>

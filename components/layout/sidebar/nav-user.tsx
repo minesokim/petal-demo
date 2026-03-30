@@ -16,8 +16,9 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
-import { BellIcon, CreditCardIcon, LogOutIcon, UserCircle2Icon } from "lucide-react";
+import { BellIcon, LogOutIcon, SettingsIcon } from "lucide-react";
 import { DotsVerticalIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
 
 const userData = {
   name: "Antonio Vazquez",
@@ -66,13 +67,11 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <UserCircle2Icon />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon />
-                Billing
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/pages/settings/profile">
+                  <SettingsIcon />
+                  Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <BellIcon />
