@@ -4,7 +4,7 @@ import * as React from "react";
 import { FileText, ArrowUpRight, Clock, Building2, Activity, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { type Client, stageLabels } from "@/lib/mock-data";
+import { type Client, stageLabels, getClientPaymentSummary } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -22,7 +22,7 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   const [expanded, setExpanded] = React.useState(defaultExpanded);
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(client.returnStage);
-  const stagePercent = Math.round((stageIndex / 7) * 100);
+  const stagePercent = Math.round(((stageIndex + 1) / 7) * 100);
 
   const lastActive = client.lastPortalLogin
     ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24))
@@ -33,11 +33,8 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   const docsComplete = client.documentsSubmitted >= client.documentsRequired;
   const returnComplete = client.returnStage === "filed";
 
-  const stats = [
-    { label: "Documents", value: `${docPercent}%`, displayValue: `${client.documentsSubmitted}/${client.documentsRequired}`, Icon: FileText, barColor: docsComplete ? "bg-emerald-500" : "bg-primary" },
-    { label: "Return Progress", value: `${stagePercent}%`, displayValue: stageLabels[client.returnStage], Icon: Activity, barColor: returnComplete ? "bg-emerald-500" : "bg-primary" },
-    { label: "Last Active", value: lastActivePercent, displayValue: lastActiveLabel, Icon: Clock, barColor: lastActive !== null && lastActive <= 3 ? "bg-primary" : lastActive !== null && lastActive <= 7 ? "bg-amber-400" : "bg-red-400" },
-  ];
+  const stages = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'];
+  const lastActiveColor = lastActive !== null && lastActive <= 3 ? "text-foreground" : lastActive !== null && lastActive <= 7 ? "text-amber-600" : "text-red-500";
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't open if clicking the expand arrow or profile link
@@ -93,24 +90,49 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="overflow-hidden"
             >
-              {stats.map(({ label, value, displayValue, Icon, barColor }) => (
-                <div key={label} className="mt-2">
-                  <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="size-3.5" /> {label}
-                    </div>
-                    <span>{displayValue}</span>
+              {/* Documents bar */}
+              <div className="mt-1">
+                <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="size-3.5" /> Documents
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted">
-                    <motion.div
-                      className={`h-1.5 rounded-full ${barColor}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: value }}
-                      transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-                    />
-                  </div>
+                  <span>{client.documentsSubmitted}/{client.documentsRequired}</span>
                 </div>
-              ))}
+                <div className="h-1.5 w-full rounded-full bg-muted">
+                  <motion.div
+                    className={`h-1.5 rounded-full ${docsComplete ? "bg-emerald-500" : "bg-primary"}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${docPercent}%` }}
+                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                  />
+                </div>
+              </div>
+
+              {/* Return Progress bar */}
+              <div className="mt-2">
+                <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="size-3.5" /> Return Progress
+                  </div>
+                  <span>{stageLabels[client.returnStage]}</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted">
+                  <motion.div
+                    className={`h-1.5 rounded-full ${returnComplete ? "bg-emerald-500" : "bg-primary"}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${stagePercent}%` }}
+                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                  />
+                </div>
+              </div>
+
+              {/* Last Active — text only */}
+              <div className="mt-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="size-3.5" /> Last Active
+                </div>
+                <span className={lastActiveColor}>{lastActiveLabel}</span>
+              </div>
 
               {client.notes && (
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
@@ -128,7 +150,13 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
           <FileText className="size-3" />
         </div>
         <span className="flex-1 text-xs font-medium text-muted-foreground">
-          {client.documentsSubmitted}/{client.documentsRequired} docs - {stageLabels[client.returnStage]}
+          {client.documentsSubmitted}/{client.documentsRequired} docs · {(() => {
+            const ps = getClientPaymentSummary(client.id);
+            if (ps.fullyPaid) return <span className="text-emerald-600">Paid in full</span>;
+            if (ps.hasOverdue) return <span className="text-red-500">${ps.totalOwed} overdue</span>;
+            if (ps.totalOwed > 0) return <span>${ps.totalOwed} remaining</span>;
+            return <span>Deposit {client.depositPaid ? "paid" : "unpaid"}</span>;
+          })()}
         </span>
 
         {/* View full profile */}

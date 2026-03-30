@@ -33,7 +33,7 @@ export function SiteHeader() {
             onClick={aiPanel.toggle}
             size="sm"
             variant={aiPanel.isOpen ? "default" : "outline"}
-            className="gap-1.5"
+            className="gap-1.5 border-white/20 bg-white/40 backdrop-blur-md hover:bg-white/60 dark:bg-white/5 dark:hover:bg-white/10 data-[variant=default]:border-transparent data-[variant=default]:bg-primary data-[variant=default]:text-primary-foreground"
           >
             <MessageSquareTextIcon className="size-3.5" />
             <span className="hidden lg:inline">Ask Docket</span>

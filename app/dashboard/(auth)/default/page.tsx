@@ -14,29 +14,17 @@ import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { clients, actionItems, type Client } from "@/lib/mock-data";
+import { initialTodos, type TodoItem } from "@/lib/actions-mock-data";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 import { IntelligencePanel } from "@/components/actions/intelligence/intelligence-panel";
 import { BatchPanel } from "@/components/actions/batch/batch-panel";
 import { VoiceDumpDialog } from "@/components/actions/voice/voice-dump-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-// Pipeline stages for inline strip
-const pipelineStages = [
-  { label: "Intake", count: 3, color: "hsl(0 84.2% 60.2%)", width: 15 },
-  { label: "Docs", count: 4, color: "hsl(47.9 95.8% 48%)", width: 20 },
-  { label: "Prep Ready", count: 2, color: "hsl(214.7 95% 58%)", width: 10 },
-  { label: "In Prep", count: 4, color: "hsl(214.7 95% 50%)", width: 20 },
-  { label: "Review", count: 2, color: "hsl(214.7 95% 44%)", width: 10 },
-  { label: "Pay & Sign", count: 2, color: "hsl(142.1 76.2% 42%)", width: 10 },
-  { label: "Filed", count: 3, color: "hsl(142.1 76.2% 36.3%)", width: 15 },
-];
+import { useAIPanelAsk } from "@/components/ai-panel";
+// Pipeline stages removed — replaced by summary bar in header
 
 const todayAppointments = [
   { name: "David Park", avatar: "/images/avatars/11.png", time: "3:00 - 4:00 PM", type: "video" as const, note: "S-Corp return review", clientId: "c11" },
@@ -49,11 +37,17 @@ const messages = [
   { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday", unread: true },
 ];
 
+// need_you: ERO sign(2: Rodriguez,Aisha) + new_intake(3: Vladimir,Ashley,Fatima) + ready_to_prep(2: Miguel,Anthony) = 7
+// waiting: collecting_docs(4: Priya,DeShawn,Jasmine,Tyrone) + client_review(2: Roberto,MeiLin) = 6
+// in_progress: in_preparation(4: Marcus,DuBois,David,Mendez) = 4
+// complete: filed(3: Linda,Karen,Rachel) = 3
+// Total: 7+6+4+3 = 20 active clients
 const summaryTabs = [
-  { key: "need_you", label: "Need you", count: 6 },
-  { key: "waiting", label: "Waiting", count: 6 },
-  { key: "in_progress", label: "In progress", count: 4 },
-  { key: "complete", label: "Complete", count: 5 },
+  { key: "need_you", label: "need you", count: 7, color: "bg-red-500" },
+  { key: "waiting", label: "waiting", count: 6, color: "bg-amber-500" },
+  { key: "in_progress", label: "in progress", count: 4, color: "bg-blue-500" },
+  { key: "complete", label: "done", count: 3, color: "bg-emerald-500" },
+  { key: "todos", label: "to-do", count: 0, color: "bg-violet-500" }, // count set dynamically
 ];
 
 type ActionClient = {
@@ -65,13 +59,14 @@ type ActionClient = {
 
 const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]> = {
   need_you: [
-    { label: "ERO signature needed", clients: [
-      { initials: "AJ", name: "Aisha Johnson", detail: "Client paid + signed · your countersignature needed", urgency: "amber" },
+    { label: "Sign & file", clients: [
+      { initials: "JR", name: "James & Sofia Rodriguez", detail: "Paid $500 + signed · your ERO countersignature needed", urgency: "amber" },
+      { initials: "AJ", name: "Aisha Johnson", detail: "Paid $350 + signed · your ERO countersignature needed", urgency: "amber" },
     ]},
     { label: "New intakes", clients: [
-      { initials: "VP", name: "Vladimir Petrov", detail: "0 of 16 docs · never logged in", urgency: "red" },
-      { initials: "AK", name: "Ashley Kim", detail: "Intake sent · 2 days ago", urgency: "none" },
-      { initials: "FA", name: "Fatima Al-Hassan", detail: "Intake sent · yesterday", urgency: "none" },
+      { initials: "VP", name: "Vladimir Petrov", detail: "0 of 16 docs · deposit unpaid · never logged in", urgency: "red" },
+      { initials: "AK", name: "Ashley Kim", detail: "Intake sent · 2 days ago · deposit pending", urgency: "none" },
+      { initials: "FA", name: "Fatima Al-Hassan", detail: "Intake sent · yesterday · nudge in 1 day", urgency: "none" },
     ]},
     { label: "Ready to prep", clients: [
       { initials: "MS", name: "Miguel Sandoval", detail: "9 of 9 docs · ready for prep", urgency: "none" },
@@ -80,33 +75,29 @@ const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]>
   ],
   waiting: [
     { label: "Collecting documents", clients: [
-      { initials: "PS", name: "Priya Sharma", detail: "3 of 7 docs · missing 1099s", urgency: "amber" },
-      { initials: "DW", name: "DeShawn Williams", detail: "1 of 6 docs · deposit unpaid", urgency: "red" },
-      { initials: "JT", name: "Jasmine Torres", detail: "4 of 8 docs · freelance 1099s", urgency: "amber" },
-      { initials: "TM", name: "Tyrone Mitchell", detail: "2 of 5 docs · 9 days stale", urgency: "red" },
+      { initials: "PS", name: "Priya Sharma", detail: "3 of 7 docs · missing 1099s · $300 remaining", urgency: "amber" },
+      { initials: "DW", name: "DeShawn Williams", detail: "1 of 6 docs · $150 deposit overdue 10 days", urgency: "red" },
+      { initials: "JT", name: "Jasmine Torres", detail: "4 of 8 docs · freelance 1099s · $300 remaining", urgency: "amber" },
+      { initials: "TM", name: "Tyrone Mitchell", detail: "2 of 5 docs · 9 days stale · $100 remaining", urgency: "red" },
     ]},
     { label: "Client reviewing return", clients: [
-      { initials: "RF", name: "Roberto Fuentes", detail: "1120S · sent for client review", urgency: "none" },
-      { initials: "MW", name: "Mei-Lin Wu", detail: "Schedule C · sent for client review", urgency: "none" },
+      { initials: "RF", name: "Roberto Fuentes", detail: "1120S · reviewing 5 days · $450 balance invoiced", urgency: "none" },
+      { initials: "MW", name: "Mei-Lin Wu", detail: "Schedule C · reviewing 4 days · $450 balance invoiced", urgency: "none" },
     ]},
   ],
   in_progress: [
     { label: "In preparation", clients: [
-      { initials: "MC", name: "Marcus Chen", detail: "Schedule C · 3 locations", urgency: "none" },
-      { initials: "TD", name: "Thomas & Marie DuBois", detail: "1040 + crypto · 11 of 14 docs", urgency: "amber" },
-      { initials: "DP", name: "David Park", detail: "1120S · 18 of 20 docs", urgency: "none" },
-      { initials: "CM", name: "Carlos & Elena Mendez", detail: "1065 partnership · 13 of 14 docs", urgency: "none" },
+      { initials: "MC", name: "Marcus Chen", detail: "Schedule C · 3 restaurants · $450 remaining", urgency: "none" },
+      { initials: "TD", name: "Thomas & Marie DuBois", detail: "1040 + crypto · 11 of 14 docs · $450 remaining", urgency: "amber" },
+      { initials: "DP", name: "David Park", detail: "1120S · call at 3:00 PM today · $450 remaining", urgency: "amber" },
+      { initials: "CM", name: "Carlos & Elena Mendez", detail: "1065 partnership · 13 of 14 docs · $450 remaining", urgency: "none" },
     ]},
   ],
   complete: [
-    { label: "Pay & sign", clients: [
-      { initials: "JR", name: "James & Sofia Rodriguez", detail: "8879 · awaiting payment + signature", urgency: "amber" },
-      { initials: "AJ", name: "Aisha Johnson", detail: "8879 · awaiting payment + signature", urgency: "amber" },
-    ]},
     { label: "Filed & accepted", clients: [
-      { initials: "LN", name: "Linda Nakamura", detail: "1040 · filed Mar 15", urgency: "green" },
-      { initials: "KO", name: "Karen O'Brien", detail: "1040 · filed Mar 10", urgency: "green" },
-      { initials: "RG", name: "Rachel Goldstein", detail: "1040 MFJ · filed Mar 12", urgency: "green" },
+      { initials: "LN", name: "Linda Nakamura", detail: "1040 · filed Mar 15 · paid in full", urgency: "green" },
+      { initials: "KO", name: "Karen O'Brien", detail: "1040 · filed Mar 10 · paid in full", urgency: "green" },
+      { initials: "RG", name: "Rachel Goldstein", detail: "1040 MFJ · filed Mar 12 · paid in full", urgency: "green" },
     ]},
   ],
 };
@@ -117,218 +108,188 @@ export default function Page() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<typeof todayAppointments[0] | null>(null);
+  const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
+  const [newTodoText, setNewTodoText] = useState("");
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  let askDocket = (_q: string) => {};
+  try { askDocket = useAIPanelAsk(); } catch {}
+
+  const toggleTodo = (id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const addTodo = () => {
+    if (!newTodoText.trim()) return;
+    setTodos(prev => [{ id: `t-${Date.now()}`, text: newTodoText.trim(), done: false, source: "manual", createdAt: new Date().toISOString() }, ...prev]);
+    setNewTodoText("");
+  };
+  const pendingTodoCount = todos.filter(t => !t.done).length;
 
   const tabHues: Record<string, { border: string; bg: string }> = {
-    need_you: { border: "border-red-400", bg: "bg-red-50/40 dark:bg-red-950/15" },
-    waiting: { border: "border-amber-400", bg: "bg-amber-50/40 dark:bg-amber-950/15" },
-    in_progress: { border: "border-blue-400", bg: "bg-blue-50/40 dark:bg-blue-950/15" },
-    complete: { border: "border-emerald-400", bg: "bg-emerald-50/40 dark:bg-emerald-950/15" },
+    need_you: { border: "border-red-500", bg: "bg-red-50/40 dark:bg-red-950/15" },
+    waiting: { border: "border-amber-500", bg: "bg-amber-50/40 dark:bg-amber-950/15" },
+    in_progress: { border: "border-blue-500", bg: "bg-blue-50/40 dark:bg-blue-950/15" },
+    complete: { border: "border-emerald-500", bg: "bg-emerald-50/40 dark:bg-emerald-950/15" },
+    todos: { border: "border-violet-500", bg: "bg-violet-50/40 dark:bg-violet-950/15" },
   };
 
   return (
     <div className="space-y-5">
-      {/* ── Header + Season Context Strip ── */}
-      <div className="space-y-3">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Good morning, Antonio</h1>
-            <p className="text-muted-foreground text-sm">
-              4 urgent items · 2 appointments today
-            </p>
-          </div>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setVoiceOpen(true)}>
-            <MicIcon className="size-3" /> Voice note
-          </Button>
-        </div>
+      {/* ── Header with status bar ── */}
+      <div className="rounded-xl border bg-card px-5 py-4">
+        <h1 className="text-2xl font-bold tracking-tight">Good morning, Antonio</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          18 days to deadline · 3 of 20 filed · <span className="text-emerald-600 font-medium">$2,400 collected</span> · <span className="text-foreground font-medium">$4,650 outstanding</span> · <span className="text-red-500 font-medium">1 overdue</span>
+        </p>
 
-        {/* Compact season strip: deadline + pipeline bar */}
-        <div className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3">
-          {/* Deadline badge */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-center leading-none">
-              <div className="font-display text-lg font-bold tabular-nums">18</div>
-              <div className="text-[9px] font-medium uppercase tracking-wider opacity-70">days</div>
-            </div>
-            <div className="text-sm">
-              <div className="font-semibold">3 of 20 filed</div>
-              <div className="text-muted-foreground text-xs">Due April 15</div>
-            </div>
-          </div>
-
-          <Separator orientation="vertical" className="h-8" />
-
-          {/* Inline pipeline bar */}
-          <div className="flex-1 min-w-0">
-            <TooltipProvider delayDuration={0}>
-              <div className="flex gap-0.5">
-                {pipelineStages.map((stage, i) => (
-                  <Tooltip key={i}>
-                    <TooltipTrigger asChild>
-                      <motion.div
-                        className="cursor-pointer transition-opacity hover:opacity-80"
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: `${stage.width}%`, opacity: 1 }}
-                        transition={{
-                          width: { duration: 1.5, delay: 0.1 + i * 0.06, ease: [0.35, 0, 0.15, 1] },
-                          opacity: { duration: 0.8, delay: 0.1 + i * 0.06 },
-                        }}
-                      >
-                        <div
-                          className="flex h-6 items-center justify-center rounded-[4px]"
-                          style={{ backgroundColor: stage.color }}
-                        >
-                          {stage.count >= 3 && (
-                            <span className="text-[10px] font-bold text-white">{stage.count}</span>
-                          )}
-                        </div>
-                      </motion.div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      {stage.label} — {stage.count} clients
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            </TooltipProvider>
-            <div className="flex gap-2.5 mt-1.5">
-              {pipelineStages.map((stage) => (
-                <div key={stage.label} className="flex items-center gap-1">
-                  <span className="size-1.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                  <span className="text-[9px] text-muted-foreground whitespace-nowrap">{stage.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Right Now: Appointments + Messages ── */}
-      <div className="grid gap-4 xl:grid-cols-5">
-        {/* Today's Schedule — compact */}
-        <Card className="xl:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <CalendarIcon className="size-3.5" />
-              Today
-            </CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                <Link href="/dashboard/apps/calendar">
-                  Calendar <ChevronRightIcon className="size-3" />
-                </Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {todayAppointments.map((apt) => (
-              <button
-                key={apt.name}
-                onClick={() => setSelectedAppointment(apt)}
-                className="bg-muted/50 flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors hover:bg-muted"
-              >
-                <Avatar className="size-8 shrink-0">
-                  <AvatarImage src={apt.avatar} alt={apt.name} />
-                  <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-tight">{apt.name}</div>
-                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                    {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
-                    {apt.time}
-                    <span className="text-muted-foreground/60">·</span>
-                    {apt.note}
-                  </div>
-                </div>
-                <ChevronRightIcon className="size-3.5 text-muted-foreground shrink-0" />
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Messages */}
-        <Card className="xl:col-span-3">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <MessageSquareIcon className="size-3.5" />
-              Messages
-              <Badge variant="secondary" className="ml-1 h-5 rounded-full px-1.5 text-[10px] font-bold">4</Badge>
-            </CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                <Link href="/dashboard/apps/chat">
-                  View all <ChevronRightIcon className="size-3" />
-                </Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-0.5 pt-0">
-            {messages.map((msg, i) => (
-              <Link
-                key={i}
-                href="/dashboard/apps/chat"
-                className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50"
-              >
-                <Avatar className="size-8 shrink-0">
-                  <AvatarImage src={msg.avatar} alt={msg.name} />
-                  <AvatarFallback className="text-[10px]">{msg.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold leading-tight">{msg.name}</span>
-                    <span className="text-muted-foreground shrink-0 text-[11px]">{msg.time}</span>
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">{msg.message}</p>
-                </div>
-                {msg.unread && <span className="size-2 shrink-0 rounded-full bg-blue-500" />}
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Today's Work: Summary Tabs + Action Feed ── */}
-      <Card className="overflow-hidden">
-        {/* Compact summary tabs — single row, number-first */}
-        <div className="grid grid-cols-4 border-b">
+        {/* Status counts — clickable to filter action feed */}
+        <div className="flex items-center gap-5 mt-4">
           {summaryTabs.map((tab) => {
             const isActive = activeTab === tab.key;
-            const hue = tabHues[tab.key];
+            const isHovered = hoveredTab === tab.key;
             return (
-              <button
+              <motion.button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center justify-center gap-2 py-2.5 text-sm transition-all ${
-                  isActive ? `border-b-2 ${hue.border} ${hue.bg} font-semibold` : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-                }`}
+                onMouseEnter={() => setHoveredTab(tab.key)}
+                onMouseLeave={() => setHoveredTab(null)}
+                className={`flex items-center gap-2 cursor-pointer select-none ${isActive ? "opacity-100" : "opacity-50"}`}
+                animate={{ scale: isHovered || isActive ? 1.05 : 1, opacity: isActive ? 1 : isHovered ? 0.8 : 0.5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                <span className={`font-display text-base tabular-nums ${isActive ? "text-foreground" : ""}`}>
-                  {tab.count}
-                </span>
-                <span>{tab.label}</span>
-              </button>
+                <span className={`size-2.5 rounded-full ${tab.color}`} />
+                <span className="font-display text-lg font-semibold tabular-nums">{tab.key === "todos" ? pendingTodoCount : tab.count}</span>
+                <span className={`text-sm ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>{tab.label}</span>
+                {isActive && <span className="size-1 rounded-full bg-foreground/40" />}
+              </motion.button>
             );
           })}
         </div>
 
-        {/* View toggle header */}
+        {/* Segmented progress bar — interactive with spring physics */}
+        <div className="flex gap-1.5 mt-3">
+          {summaryTabs.map((tab, i) => {
+            const getCount = (t: typeof tab) => t.key === "todos" ? pendingTodoCount : t.count;
+            const total = summaryTabs.reduce((s, t) => s + getCount(t), 0);
+            const basePct = (getCount(tab) / total) * 100;
+            const isBarHovered = hoveredTab === tab.key;
+            const isActive = activeTab === tab.key;
+            // When a bar is hovered, it grows by 3%, others shrink proportionally
+            const hoverBoost = isBarHovered ? 3 : hoveredTab ? -(3 / (summaryTabs.length - 1)) : 0;
+            const pct = basePct + hoverBoost;
+            return (
+              <motion.div
+                key={tab.key}
+                className={`h-3.5 rounded-full ${tab.color} cursor-pointer ${isActive ? "opacity-100" : "opacity-50"}`}
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${pct}%`,
+                  opacity: isActive ? 1 : isBarHovered ? 0.8 : 0.5,
+                }}
+                transition={
+                  isBarHovered || hoveredTab
+                    ? { type: "spring", stiffness: 300, damping: 20, mass: 0.8 }
+                    : { duration: 1.2, delay: 0.1 + i * 0.1, ease: [0.35, 0, 0.15, 1] }
+                }
+                onClick={() => setActiveTab(tab.key)}
+                onMouseEnter={() => setHoveredTab(tab.key)}
+                onMouseLeave={() => setHoveredTab(null)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Action Feed ── */}
+      <Card className="overflow-hidden">
+        {/* Section header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h3 className="text-sm font-semibold">{summaryTabs.find(t => t.key === activeTab)?.label}</h3>
-          <div className="flex rounded-lg border">
-            {(["actions", "clients"] as const).map((mode, i, arr) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-3 py-1 text-[11px] font-medium transition-colors ${viewMode === mode ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""}`}
-              >
-                {mode === "actions" ? "Actions" : "Clients"}
-              </button>
-            ))}
+          <h3 className="text-sm font-semibold capitalize">{summaryTabs.find(t => t.key === activeTab)?.label}</h3>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="h-7 gap-1.5 text-[11px]" onClick={() => setVoiceOpen(true)}>
+              <MicIcon className="size-3" /> Voice
+            </Button>
+            {activeTab !== "todos" && (
+              <div className="flex rounded-lg border">
+                {(["actions", "clients"] as const).map((mode, i, arr) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`px-3 py-1 text-[11px] font-medium transition-colors ${viewMode === mode ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""}`}
+                  >
+                    {mode === "actions" ? "Actions" : "Clients"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Content */}
         <CardContent className="pt-0 pb-4">
-          {viewMode === "actions" ? (
+          {activeTab === "todos" ? (
+            /* ── To-do list ── */
+            <div className="space-y-1">
+              {/* Add task input */}
+              <div className="flex items-center gap-2 pb-2">
+                <Input
+                  placeholder="Add a task..."
+                  value={newTodoText}
+                  onChange={e => setNewTodoText(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addTodo()}
+                  className="h-9 text-sm"
+                />
+                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={addTodo} disabled={!newTodoText.trim()}>
+                  Add
+                </Button>
+              </div>
+
+              {/* Pending items */}
+              {todos.filter(t => !t.done).map(todo => (
+                <div key={todo.id} className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
+                  <Checkbox checked={todo.done} onCheckedChange={() => toggleTodo(todo.id)} className="mt-0.5 cursor-pointer" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm leading-snug">{todo.text}</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {todo.clientName && (
+                        <button onClick={() => {
+                          const c = clients.find(cl => cl.id === todo.clientId);
+                          if (c) setDetailClient(c);
+                        }}>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 cursor-pointer hover:bg-muted">{todo.clientName.split(" ")[0]}</Badge>
+                        </button>
+                      )}
+                      {todo.source === "voice" && (
+                        <button onClick={() => askDocket(`Help me with: "${todo.text}"${todo.clientName ? ` for ${todo.clientName}` : ""}`)} className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Ask Docket about this">
+                          <MicIcon className="size-2.5" /> Voice
+                        </button>
+                      )}
+                      {todo.source === "ai" && (
+                        <button onClick={() => askDocket(`Help me with: "${todo.text}"${todo.clientName ? ` for ${todo.clientName}` : ""}`)} className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Ask Docket about this">
+                          <SparklesIcon className="size-2.5" /> AI
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Completed items */}
+              {todos.filter(t => t.done).length > 0 && (
+                <div className="pt-2">
+                  <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Completed</div>
+                  {todos.filter(t => t.done).map(todo => (
+                    <label key={todo.id} className="flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/50 cursor-pointer opacity-50">
+                      <Checkbox checked={todo.done} onCheckedChange={() => toggleTodo(todo.id)} className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm leading-snug line-through">{todo.text}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {todo.clientName && <Badge variant="outline" className="text-[9px] h-4 px-1.5">{todo.clientName.split(" ")[0]}</Badge>}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : viewMode === "actions" ? (
             <div className="space-y-1.5">
               {(actionGroups[activeTab] || []).map((group) => (
                 <div key={group.label}>
@@ -431,6 +392,90 @@ export default function Page() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Today + Messages ── */}
+      <div className="grid gap-4 xl:grid-cols-5">
+        {/* Today's Schedule */}
+        <Card className="xl:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <CalendarIcon className="size-3.5" />
+              Today
+            </CardTitle>
+            <CardAction>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+                <Link href="/dashboard/apps/calendar">
+                  Calendar <ChevronRightIcon className="size-3" />
+                </Link>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {todayAppointments.map((apt) => (
+              <button
+                key={apt.name}
+                onClick={() => setSelectedAppointment(apt)}
+                className="bg-muted/50 flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors hover:bg-muted"
+              >
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage src={apt.avatar} alt={apt.name} />
+                  <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-tight">{apt.name}</div>
+                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
+                    {apt.time}
+                    <span className="text-muted-foreground/60">·</span>
+                    {apt.note}
+                  </div>
+                </div>
+                <ChevronRightIcon className="size-3.5 text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Messages */}
+        <Card className="xl:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <MessageSquareIcon className="size-3.5" />
+              Messages
+              <Badge variant="secondary" className="ml-1 h-5 rounded-full px-1.5 text-[10px] font-bold">3</Badge>
+            </CardTitle>
+            <CardAction>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+                <Link href="/dashboard/apps/chat">
+                  View all <ChevronRightIcon className="size-3" />
+                </Link>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="space-y-0.5 pt-0">
+            {messages.map((msg, i) => (
+              <Link
+                key={i}
+                href="/dashboard/apps/chat"
+                className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50"
+              >
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage src={msg.avatar} alt={msg.name} />
+                  <AvatarFallback className="text-[10px]">{msg.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold leading-tight">{msg.name}</span>
+                    <span className="text-muted-foreground shrink-0 text-[11px]">{msg.time}</span>
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">{msg.message}</p>
+                </div>
+                {msg.unread && <span className="size-2 shrink-0 rounded-full bg-blue-500" />}
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Voice Dump Dialog */}
       <VoiceDumpDialog open={voiceOpen} onOpenChange={setVoiceOpen} />

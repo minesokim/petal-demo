@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { useState, useRef, useEffect, createContext, useContext, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,12 +107,38 @@ const demoMessages: Message[] = [
   },
 ];
 
-const suggestedQuestions = [
-  "Who hasn't logged into the portal?",
-  "What's my outstanding revenue?",
-  "Show clients missing documents",
-  "Which returns need my review?",
-];
+const suggestedByRoute: Record<string, string[]> = {
+  default: [
+    "Who hasn't logged into the portal?",
+    "What's my outstanding revenue?",
+    "Show clients missing documents",
+    "Which returns need my review?",
+  ],
+  chat: [
+    "Which clients haven't been contacted recently?",
+    "Draft a follow-up for stale clients",
+    "Summarize unread messages",
+    "Which threads need my response?",
+  ],
+  calendar: [
+    "What's on my schedule this week?",
+    "Which clients need appointments?",
+    "Any scheduling conflicts?",
+    "Who hasn't had a call in 2 weeks?",
+  ],
+  documents: [
+    "Who's missing the most documents?",
+    "Which uploads need review?",
+    "Show document completion rates",
+    "Who hasn't uploaded anything?",
+  ],
+  clients: [
+    "Which clients are at risk of extension?",
+    "Show me stale clients (no activity 7+ days)",
+    "Who has unpaid deposits?",
+    "Compare this season to last season",
+  ],
+};
 
 /* ------------------------------------------------------------------ */
 /*  Icons matching the inspiration                                     */
@@ -142,6 +169,14 @@ function BulletIcon() {
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
   const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion } = useAIPanel();
+  const pathname = usePathname();
+  const suggestedQuestions = useMemo(() => {
+    if (pathname?.includes("/chat")) return suggestedByRoute.chat;
+    if (pathname?.includes("/calendar")) return suggestedByRoute.calendar;
+    if (pathname?.includes("/documents")) return suggestedByRoute.documents;
+    if (pathname?.includes("/clients")) return suggestedByRoute.clients;
+    return suggestedByRoute.default;
+  }, [pathname]);
   const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);

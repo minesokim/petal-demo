@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Search, Send, Phone, MoreHorizontal, FileText,
-  Calendar, DollarSign, Clock, Bot, ChevronRight
+  Calendar, DollarSign, Clock, Bot, ChevronRight,
+  Sparkles, X, Pen
 } from "lucide-react";
 import { clients, messages } from "@/lib/mock-data";
+import { feedActions } from "@/lib/actions-mock-data";
 import Link from "next/link";
 
 type ChatMessage = {
@@ -42,9 +44,9 @@ const threads: Record<string, ChatMessage[]> = {
   c4: [
     { id: "1", sender: "preparer", content: "Hi DeShawn! Welcome to Vazant Consulting. I've sent your intake form - just follow the link to get started.", time: "Mar 18" },
     { id: "2", sender: "client", content: "Thanks! I'll try to get to it this weekend.", time: "Mar 20" },
-    { id: "3", sender: "preparer", content: "No problem! We still need your W-2 and the $50 deposit to start. April 15 is coming up.", time: "Mar 22" },
+    { id: "3", sender: "preparer", content: "No problem! We still need your W-2 and the $150 deposit to start. April 15 is coming up.", time: "Mar 22" },
     { id: "4", sender: "client", content: "Sorry I've been busy. Will try to get my W-2 uploaded this weekend.", time: "Mar 26" },
-    { id: "5", sender: "system", content: "", time: "Mar 26", systemCard: { type: "payment", title: "Deposit Required", description: "$50 deposit required to begin preparing your return.", action: "Pay Now" } },
+    { id: "5", sender: "system", content: "", time: "Mar 26", systemCard: { type: "payment", title: "Deposit Required", description: "$150 deposit required to begin preparing your return.", action: "Pay Now" } },
   ],
   c11: [
     { id: "1", sender: "preparer", content: "David, your S-Corp return is coming along. I have questions about the payroll summary and new equipment. Can we schedule a call?", time: "Mar 25" },
@@ -67,35 +69,85 @@ const threads: Record<string, ChatMessage[]> = {
     { id: "1", sender: "client", content: "Quick question - do I need to report the $200 I made from a one-time logo design?", time: "Mar 26" },
     { id: "2", sender: "preparer", content: "Yes, all income should be reported regardless of amount. We'll include it on your Schedule C with your other freelance income.", time: "Mar 26" },
   ],
+  // Clients with AI drafts but no prior conversation
+  c7: [
+    { id: "1", sender: "system", content: "New client. Intake form sent 2 days ago — no portal login yet.", time: "Mar 26" },
+  ],
+  c13: [
+    { id: "1", sender: "system", content: "New client. 0 of 16 documents submitted. No portal login. Extension likely.", time: "Mar 20" },
+  ],
+  c17: [
+    { id: "1", sender: "system", content: "Last activity 9 days ago. 2 of 5 documents submitted.", time: "Mar 19" },
+  ],
 };
 
 // Build conversation list from threads
 const conversationList = Object.entries(threads).map(([clientId, msgs]) => {
   const client = clients.find(c => c.id === clientId);
+  if (!client) return null;
   const lastMsg = msgs[msgs.length - 1];
-  const unreadMsgs = msgs.filter(m => m.sender === "client");
   const lastContent = lastMsg.systemCard ? lastMsg.systemCard.title : lastMsg.content;
+  // Check if this client has a pending AI draft
+  const hasDraft = feedActions.some(a => a.clientId === clientId && a.aiDraft && !a.isResolved);
   return {
     clientId,
-    client: client!,
+    client,
     lastMessage: lastContent,
     lastTime: lastMsg.time,
     unread: clientId === "c2" || clientId === "c3" || clientId === "c11" || clientId === "c15",
+    hasDraft,
     messages: msgs,
   };
-}).sort((a, b) => (a.unread === b.unread ? 0 : a.unread ? -1 : 1));
+}).filter(Boolean).sort((a, b) => {
+  // Unread first, then drafts, then rest
+  if (a!.unread !== b!.unread) return a!.unread ? -1 : 1;
+  if (a!.hasDraft !== b!.hasDraft) return a!.hasDraft ? -1 : 1;
+  return 0;
+}) as NonNullable<typeof conversationList[0]>[];
 
 export default function Page() {
   const [selectedId, setSelectedId] = useState(conversationList[0]?.clientId || "c2");
   const [searchQuery, setSearchQuery] = useState("");
   const [input, setInput] = useState("");
+  const [localThreads, setLocalThreads] = useState<Record<string, ChatMessage[]>>(threads);
+  const [dismissedDrafts, setDismissedDrafts] = useState<Set<string>>(new Set());
 
   const selected = conversationList.find(c => c.clientId === selectedId);
-  const thread = threads[selectedId] || [];
+  const thread = localThreads[selectedId] || [];
+
+  // Find AI drafts for selected conversation
+  const pendingDrafts = feedActions.filter(
+    a => a.clientId === selectedId && a.aiDraft && !a.isResolved && !dismissedDrafts.has(a.id)
+  );
 
   const filtered = conversationList.filter(c =>
     c.client.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const sendDraft = (draft: string) => {
+    const newMsg: ChatMessage = {
+      id: `sent-${Date.now()}`,
+      sender: "preparer",
+      content: draft,
+      time: "Just now",
+    };
+    setLocalThreads(prev => ({
+      ...prev,
+      [selectedId]: [...(prev[selectedId] || []), newMsg],
+    }));
+    // Dismiss all drafts for this client after sending
+    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  };
+
+  const editDraft = (draft: string) => {
+    setInput(draft);
+    // Dismiss the draft card since user is editing
+    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  };
+
+  const dismissDraft = (draftId: string) => {
+    setDismissedDrafts(prev => new Set([...prev, draftId]));
+  };
 
   return (
     <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-xl border">
@@ -126,6 +178,12 @@ export default function Page() {
                   <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{convo.lastTime}</span>
                 </div>
                 <p className={`text-xs truncate ${convo.unread ? "text-foreground font-medium" : "text-muted-foreground"}`}>{convo.lastMessage}</p>
+                {convo.hasDraft && !dismissedDrafts.has(feedActions.find(a => a.clientId === convo.clientId && a.aiDraft)?.id || "") && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Sparkles className="size-2.5 text-primary" />
+                    <span className="text-[10px] text-primary font-medium">Draft ready</span>
+                  </div>
+                )}
               </div>
               {convo.unread && <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" />}
             </button>
@@ -209,6 +267,35 @@ export default function Page() {
           })}
         </div>
 
+        {/* AI Draft Suggestion */}
+        {pendingDrafts.length > 0 && (
+          <div className="px-3 pt-2">
+            {pendingDrafts.slice(0, 1).map(draft => (
+              <div key={draft.id} className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="size-3.5 text-primary" />
+                    <span className="text-[11px] font-semibold text-primary">Docket suggests</span>
+                    <span className="text-[10px] text-muted-foreground">· {draft.title}</span>
+                  </div>
+                  <button onClick={() => dismissDraft(draft.id)} className="text-muted-foreground/50 hover:text-muted-foreground">
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{draft.aiDraft}</p>
+                <div className="mt-2.5 flex gap-2">
+                  <Button size="sm" className="h-7 text-xs" onClick={() => sendDraft(draft.aiDraft!)}>
+                    <Send className="size-3" /> Send as Antonio
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => editDraft(draft.aiDraft!)}>
+                    <Pen className="size-3" /> Edit
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 border-t">
           <div className="flex items-center gap-2">
@@ -216,9 +303,17 @@ export default function Page() {
               placeholder={selected ? `Message ${selected.client.fullName.split(" ")[0]}...` : "Select a conversation..."}
               value={input}
               onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && input.trim()) {
+                  sendDraft(input);
+                  setInput("");
+                }
+              }}
               className="h-10"
             />
-            <Button size="icon"><Send className="size-4" /></Button>
+            <Button size="icon" onClick={() => { if (input.trim()) { sendDraft(input); setInput(""); } }}>
+              <Send className="size-4" />
+            </Button>
           </div>
         </div>
       </div>

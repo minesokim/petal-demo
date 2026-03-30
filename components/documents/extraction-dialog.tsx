@@ -124,11 +124,11 @@ export function ExtractionDialog({ extraction, open, onOpenChange }: ExtractionD
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none sm:max-w-4xl [&>button]:hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] border-0 bg-transparent p-0 shadow-none sm:max-w-4xl [&>button]:hidden">
         {/* Glassmorphic container */}
-        <div className="overflow-hidden rounded-2xl border border-white/20 bg-background/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-background/90">
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-white/20 bg-background/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-background/90 max-h-[90vh]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/50 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-border/50 px-6 py-4 shrink-0">
             <div className="flex items-center gap-3">
               <Avatar className="size-10">
                 {client && <img src={client.avatar} alt={client.fullName} className="size-full rounded-full object-cover" />}
@@ -159,7 +159,7 @@ export function ExtractionDialog({ extraction, open, onOpenChange }: ExtractionD
           </div>
 
           {/* Body */}
-          <div className="grid grid-cols-2 divide-x divide-border/50" style={{ height: "65vh" }}>
+          <div className="grid grid-cols-2 divide-x divide-border/50 min-h-0 flex-1 overflow-hidden">
             {/* Left: IRS Form Layout */}
             <div className="overflow-y-auto p-6">
               <div className="mb-3 flex items-center gap-2">

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { type Client, stageLabels, actionItems } from "@/lib/mock-data";
+import { type Client, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
 import Link from "next/link";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
   extensionPredictions, documentExtractions, estimatedTaxCalcs,
-  feedActions
+  feedActions, irsNotices,
+  type DocumentExtraction,
 } from "@/lib/actions-mock-data";
+import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +28,8 @@ import {
 import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
-  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check
+  CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check,
+  TrendingDown, Sparkles, Calculator, X, Brain
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -48,6 +51,7 @@ interface ClientDetailDialogProps {
 
 export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
   const [eroOpen, setEroOpen] = useState(false);
+  const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -72,7 +76,9 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   const clientDeductions = deductionSuggestions.filter(a => a.clientId === client.id);
   const clientExtensions = extensionPredictions.filter(a => a.clientId === client.id);
   const clientExtractions = documentExtractions.filter(a => a.clientId === client.id);
-  const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length > 0;
+  const clientEstimatedTax = estimatedTaxCalcs.filter(a => a.clientId === client.id);
+  const clientIrsNotices = irsNotices.filter(a => a.clientId === client.id);
+  const hasIntel = clientCompliance.length + clientAnomalies.length + clientDeductions.length + clientExtensions.length + clientExtractions.length + clientEstimatedTax.length + clientIrsNotices.length > 0;
 
   const checklist = getClientChecklist(client.id);
   const docGroups = groupDocumentsByCategory(client.id);
@@ -115,15 +121,16 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
+              <TabsTrigger value="billing">Billing</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
-              {/* Actions */}
-              {clientActions.length > 0 && (
+              {/* Actions (exclude signature actions — handled by dedicated ERO section below) */}
+              {clientActions.filter(a => a.type !== "signature_needed").length > 0 && (
                 <div className="space-y-2">
-                  {clientActions.map(action => <ActionDraftCard key={action.id} action={action} />)}
+                  {clientActions.filter(a => a.type !== "signature_needed").map(action => <ActionDraftCard key={action.id} action={action} />)}
                 </div>
               )}
 
@@ -148,60 +155,148 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                 </div>
               )}
 
-              {/* AI Insights */}
+              {/* AI Intelligence */}
               {hasIntel && (
-                <div className="space-y-2">
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">AI Insights</div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Brain className="size-4 text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Intelligence</span>
+                  </div>
+
+                  {/* Document Extractions — OCR to OLT (hero feature) */}
+                  {clientExtractions.length > 0 && (
+                    <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/[0.04] to-transparent p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                          <Sparkles className="size-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold">AI-Extracted Documents</div>
+                          <div className="text-[11px] text-muted-foreground">Review extracted fields, then push directly to OLT</div>
+                        </div>
+                      </div>
+                      {clientExtractions.map(de => (
+                        <button key={de.id} onClick={() => setSelectedExtraction(de)} className="flex w-full items-center gap-4 rounded-xl border bg-card p-3.5 text-left transition-all hover:shadow-md hover:border-primary/30">
+                          <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                            <FileText className="size-5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">{de.documentType}</span>
+                              <Badge variant={de.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{de.overallConfidence}%</Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {de.fields.length} fields extracted · {de.fields.filter(f => f.needsReview).length} need review
+                            </div>
+                          </div>
+                          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Compliance Alerts */}
                   {clientCompliance.map(a => (
-                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.title} for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
-                      <div className="flex-1"><div className="text-sm font-semibold">{a.title}</div><p className="mt-0.5 text-xs text-muted-foreground">{a.description}</p></div>
-                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    </button>
+                    <InlineComplianceCard key={a.id} alert={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
                   ))}
+
+                  {/* YoY Anomalies */}
                   {clientAnomalies.map(a => (
-                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Explain the ${a.metric} anomaly for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                      <div className="flex-1"><div className="text-sm font-semibold">{a.metric}: {a.changePercent}% change</div><p className="mt-0.5 text-xs text-muted-foreground">{a.aiExplanation}</p></div>
-                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    </button>
+                    <InlineAnomalyCard key={a.id} alert={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
                   ))}
+
+                  {/* Deduction Suggestions */}
                   {clientDeductions.map(a => (
-                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`Tell me about ${a.deductionType} for ${client.fullName}`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                      <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                      <div className="flex-1"><div className="text-sm font-semibold">{a.deductionType} ({a.section})</div><p className="mt-0.5 text-xs text-muted-foreground">~${a.estimatedSavings.toLocaleString()} savings</p></div>
-                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    </button>
+                    <InlineDeductionCard key={a.id} suggestion={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
                   ))}
+
+                  {/* Extension Predictions */}
                   {clientExtensions.map(a => (
-                    <button key={a.id} onClick={() => { onOpenChange(false); setTimeout(() => askDocket(`${client.fullName} extension likelihood: ${a.probability}%`), 300); }} className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50">
-                      <Clock className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                      <div className="flex-1"><div className="text-sm font-semibold">Extension: {a.probability}%</div><p className="mt-0.5 text-xs text-muted-foreground">{a.factors.join(", ")}</p></div>
-                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    </button>
+                    <div key={a.id} className="rounded-xl border p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-amber-500" />
+                          <span className="text-sm font-semibold">Extension likelihood</span>
+                        </div>
+                        <span className="font-display text-2xl tabular-nums tracking-tight">{a.probability}%</span>
+                      </div>
+                      <Progress value={a.probability} className="mt-3 h-2" indicatorColor={a.probability >= 80 ? "bg-red-500" : "bg-amber-500"} />
+                      <div className="mt-3 space-y-1">
+                        {a.factors.map((f, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" />
+                            {f}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
+
+                  {/* Estimated Tax Calculations */}
+                  {clientEstimatedTax.map(calc => (
+                    <div key={calc.id} className="rounded-xl border p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calculator className="size-4 text-primary" />
+                          <span className="text-sm font-semibold">2026 quarterly estimates</span>
+                        </div>
+                        <span className="font-display text-xl tabular-nums tracking-tight">${calc.totalEstimated.toLocaleString()}</span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {(["q1", "q2", "q3", "q4"] as const).map(q => (
+                          <div key={q} className="rounded-lg border p-2 text-center">
+                            <div className="font-display text-sm tabular-nums">${calc.quarterlyAmounts[q].toLocaleString()}</div>
+                            <div className="text-[10px] text-muted-foreground">{q.toUpperCase()}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
+                      <Button size="sm" className="mt-3"><Calculator className="size-3.5" /> Send to client</Button>
+                    </div>
+                  ))}
+
+                  {/* IRS Notices */}
+                  {clientIrsNotices.map(n => (
+                    <InlineIrsNoticeCard key={n.id} notice={n} />
+                  ))}
+
                 </div>
               )}
 
-              {/* Stats + Timeline */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Return Status</CardTitle></CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{client.documentsSubmitted}/{client.documentsRequired}</div><div className="text-[9px] text-muted-foreground">Docs</div></div>
-                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">${client.feeAmount}</div><div className="text-[9px] text-muted-foreground">Fee</div></div>
-                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{client.depositPaid ? "Paid" : "No"}</div><div className="text-[9px] text-muted-foreground">Deposit</div></div>
-                      <div className="rounded-lg border p-2 text-center"><div className="font-display text-base tabular-nums">{docPercent}%</div><div className="text-[9px] text-muted-foreground">Done</div></div>
-                    </div>
-                    <Progress value={docPercent} className="h-1.5" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
-                  <CardContent><TrackingTimeline items={timelineItems} /></CardContent>
-                </Card>
+              {/* Quick stats */}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span><strong className="text-foreground">{client.documentsSubmitted}/{client.documentsRequired}</strong> docs</span>
+                <span><strong className="text-foreground">${client.feeAmount}</strong> fee</span>
+                <span>Deposit: <strong className={client.depositPaid ? "text-emerald-600" : "text-red-500"}>{client.depositPaid ? "Paid" : "Unpaid"}</strong></span>
+                <Progress value={docPercent} className="h-1.5 flex-1" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
               </div>
+
+              {/* Return Progress timeline */}
+              <div className="rounded-xl border p-4">
+                <span className="text-sm font-semibold">Return Progress</span>
+                <div className="mt-3">
+                  <TrackingTimeline items={timelineItems} />
+                </div>
+              </div>
+
+              {/* Client Review stage enhancement */}
+              {client.returnStage === "client_review" && client.returnSentDate && (() => {
+                const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
+                const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
+                return (
+                  <div className={`rounded-xl border p-3 ${daysSinceSent > 3 ? "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10" : ""}`}>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="size-4 text-muted-foreground" />
+                      <span>Return sent <strong>{daysSinceSent} days ago</strong></span>
+                      <span className="text-muted-foreground">·</span>
+                      <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "accessed today" : `accessed ${lastLogin}d ago`) : "never accessed"}</span>
+                    </div>
+                    {daysSinceSent > 3 && (
+                      <p className="mt-1.5 text-xs text-amber-600">Review may be stale — consider sending a follow-up</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Contact */}
               <div className="grid gap-4 md:grid-cols-2">
@@ -220,15 +315,8 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               {/* Notes - editable */}
               <EditableNotes initialNotes={client.notes} />
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Send className="size-3.5" /><span className="text-[10px]">Remind</span></Button>
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><FileText className="size-3.5" /><span className="text-[10px]">Request</span></Button>
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><MessageSquare className="size-3.5" /><span className="text-[10px]">Message</span></Button>
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Calendar className="size-3.5" /><span className="text-[10px]">Schedule</span></Button>
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><ExternalLink className="size-3.5" /><span className="text-[10px]">Portal</span></Button>
-                <Button variant="outline" size="sm" className="h-auto flex-col gap-1 py-2"><Pen className="size-3.5" /><span className="text-[10px]">Edit</span></Button>
-              </div>
+              {/* Contextual Actions — based on stage */}
+              <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} />
             </TabsContent>
 
             {/* DOCUMENTS TAB */}
@@ -280,6 +368,11 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
               <ClientMessagesInline clientId={client.id} clientAvatar={client.avatar} clientName={client.fullName} />
             </TabsContent>
 
+            {/* BILLING TAB */}
+            <TabsContent value="billing" className="space-y-4">
+              <BillingTab client={client} />
+            </TabsContent>
+
             {/* NOTES TAB */}
             <TabsContent value="notes" className="space-y-3">
               {notes.length > 0 ? notes.map(n => (
@@ -296,6 +389,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
       </DialogContent>
 
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
+      <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
     </Dialog>
   );
 }
@@ -389,7 +483,7 @@ const messageThreads: Record<string, { id: string; sender: "client" | "preparer"
   c4: [
     { id: "1", sender: "preparer", content: "Hi DeShawn! Welcome. I've sent your intake form - just follow the link.", time: "Mar 18" },
     { id: "2", sender: "client", content: "Thanks! I'll try to get to it this weekend.", time: "Mar 20" },
-    { id: "3", sender: "preparer", content: "We still need your W-2 and the $50 deposit. April 15 is coming up.", time: "Mar 22" },
+    { id: "3", sender: "preparer", content: "We still need your W-2 and the $150 deposit. April 15 is coming up.", time: "Mar 22" },
   ],
   c11: [
     { id: "1", sender: "preparer", content: "David, your S-Corp return is coming along. Can we schedule a call about the payroll summary?", time: "Mar 25" },
@@ -437,6 +531,287 @@ function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId
         <input placeholder={`Message ${clientName.split(" ")[0]}...`} value={input} onChange={e => setInput(e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs outline-none" />
         <Button size="sm" className="h-8"><Send className="size-3" /></Button>
       </div>
+    </div>
+  );
+}
+
+// ── Inline Intelligence Cards ──
+
+function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(alert.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${alert.severity === "critical" ? "bg-red-100 dark:bg-red-900/50" : "bg-amber-100 dark:bg-amber-900/50"}`}>
+          <AlertTriangle className={`size-4 ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{alert.title}</span>
+            <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"} className="text-[10px]">{alert.severity}</Badge>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{alert.description}</p>
+          <div className="mt-2 flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+            <span className="text-red-600">Fine risk: {alert.fineRisk}</span>
+          </div>
+        </div>
+      </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => setStatus("acknowledged")}><Check className="size-3.5" /> Acknowledge</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(alert.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+          <TrendingDown className="size-4 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">Year-over-year anomaly: {alert.metric}</div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="rounded-lg border p-2 text-center">
+              <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
+              <div className="text-[10px] text-muted-foreground">2024</div>
+            </div>
+            <div className="rounded-lg border p-2 text-center">
+              <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
+              <div className="text-[10px] text-muted-foreground">2025</div>
+            </div>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-center dark:border-red-900 dark:bg-red-950/30">
+              <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
+              <div className="text-[10px] text-muted-foreground">Change</div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{alert.aiExplanation}</p>
+        </div>
+      </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="destructive" onClick={() => setStatus("flagged")}><AlertTriangle className="size-3.5" /> Flag for review</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("proceeded")}><Check className="size-3.5" /> Proceed</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlineDeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(suggestion.status);
+  return (
+    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
+          <Sparkles className="size-4 text-emerald-600" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+          <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+          <div className="mt-2 font-display text-xl tabular-nums tracking-tight text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()} savings</div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{suggestion.description}</p>
+        </div>
+      </div>
+      {status === "pending" && (
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => setStatus("applied")}><Check className="size-3.5" /> Apply</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}: ${suggestion.description}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlineIrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
+  const [state, setState] = useState<"idle" | "processing" | "complete">("idle");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(notice.aiDraftResponse);
+
+  return (
+    <div className="rounded-xl border p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/50">
+          <Mail className="size-4 text-red-600" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">{notice.noticeType} Notice</div>
+          <div className="text-xs text-muted-foreground">Received {notice.receivedDate}</div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{notice.summary}</p>
+        </div>
+      </div>
+      <Separator className="my-3" />
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-2">AI-drafted response</div>
+      {editing ? (
+        <div>
+          <textarea value={draft} onChange={e => setDraft(e.target.value)} className="w-full min-h-[100px] rounded-lg border bg-background p-2 text-xs font-mono outline-none resize-none" />
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" onClick={() => { setEditing(false); setState("processing"); setTimeout(() => setState("complete"), 1500); }}><Check className="size-3.5" /> Send</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}><X className="size-3.5" /> Cancel</Button>
+          </div>
+        </div>
+      ) : state === "complete" ? (
+        <div className="flex items-center gap-2 rounded-lg border bg-emerald-50 p-3 dark:bg-emerald-950/20">
+          <Check className="size-4 text-emerald-600" />
+          <span className="text-sm font-medium">Response sent</span>
+        </div>
+      ) : (
+        <div>
+          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">{draft}</pre>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={() => { setState("processing"); setTimeout(() => setState("complete"), 1500); }}><Mail className="size-3.5" /> Send response</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}><FileText className="size-3.5" /> Edit</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Billing Tab ──
+function BillingTab({ client }: { client: Client }) {
+  const ps = getClientPaymentSummary(client.id);
+
+  const events: { date: string; label: string; type: "paid" | "sent" | "pending" | "overdue" }[] = [];
+  if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit paid — $${ps.deposit.amount}`, type: "paid" });
+  if (ps.deposit?.sentDate && ps.deposit.status !== "paid") events.push({ date: ps.deposit.sentDate, label: `Deposit invoice sent — $${ps.deposit.amount}`, type: ps.deposit.status === "overdue" ? "overdue" : "sent" });
+  if (ps.balance?.paidDate) events.push({ date: ps.balance.paidDate, label: `Balance paid — $${ps.balance.amount}`, type: "paid" });
+  if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice sent — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
+  events.sort((a, b) => a.date.localeCompare(b.date));
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-sm font-semibold">{client.serviceTier} Return</div>
+            <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
+          </div>
+          <div className="text-right">
+            <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
+            <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
+              {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
+            </div>
+          </div>
+        </div>
+        <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
+      </div>
+
+      <div className="space-y-2">
+        <div className="rounded-xl border p-3 flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Deposit</div>
+            <div className="text-xs text-muted-foreground">${ps.deposit?.amount || 50}</div>
+          </div>
+          {ps.deposit?.status === "paid" ? (
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+          ) : ps.deposit?.status === "overdue" ? (
+            <Badge variant="destructive">Overdue</Badge>
+          ) : (
+            <Badge variant="secondary">Pending</Badge>
+          )}
+        </div>
+        {ps.balance && ps.balance.status !== "not_applicable" && (
+          <div className="rounded-xl border p-3 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium">Remaining Balance</div>
+              <div className="text-xs text-muted-foreground">${ps.balance.amount}</div>
+            </div>
+            {ps.balance.status === "paid" ? (
+              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+            ) : ps.balance.status === "sent" ? (
+              <Badge variant="secondary">Invoice sent</Badge>
+            ) : (
+              <Badge variant="outline">Not yet invoiced</Badge>
+            )}
+          </div>
+        )}
+      </div>
+
+      {events.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-muted-foreground">Payment Timeline</div>
+          {events.map((e, i) => (
+            <div key={i} className="flex items-center gap-3 text-xs">
+              <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
+              <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+              <span>{e.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!ps.fullyPaid && (
+        <div className="flex gap-2">
+          {ps.deposit?.status === "overdue" && <Button size="sm"><Send className="size-3.5" /> Send payment reminder</Button>}
+          {ps.balance?.status === "pending" && <Button size="sm" variant="outline"><DollarSign className="size-3.5" /> Send invoice</Button>}
+          {ps.balance?.status === "sent" && <Button size="sm" variant="outline"><Send className="size-3.5" /> Resend invoice</Button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Contextual Actions by Stage ──
+function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () => void }) {
+  const actions: { icon: React.ReactNode; label: string; primary?: boolean; onClick?: () => void }[] = [];
+
+  switch (stage) {
+    case "new_intake":
+      actions.push({ icon: <Send className="size-3.5" />, label: "Send Intake", primary: true });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      break;
+    case "collecting_docs":
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Request Docs", primary: true });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      break;
+    case "ready_to_prep":
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Start Prep", primary: true });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      break;
+    case "in_preparation":
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      break;
+    case "client_review":
+      actions.push({ icon: <Send className="size-3.5" />, label: "Nudge", primary: true });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal" });
+      break;
+    case "pay_and_sign":
+      actions.push({ icon: <Shield className="size-3.5" />, label: "Sign as ERO", primary: true, onClick: onEroSign });
+      actions.push({ icon: <DollarSign className="size-3.5" />, label: "Send Invoice" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      break;
+    case "filed":
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message" });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule" });
+      actions.push({ icon: <Download className="size-3.5" />, label: "Return" });
+      break;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {actions.map((a, i) => (
+        <Button key={i} size="sm" variant={a.primary ? "default" : "outline"} className="h-8 text-xs" onClick={a.onClick}>
+          {a.icon} {a.label}
+        </Button>
+      ))}
     </div>
   );
 }

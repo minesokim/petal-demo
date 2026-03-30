@@ -182,6 +182,8 @@ export interface TodoItem {
   done: boolean;
   source: "manual" | "voice" | "ai";
   createdAt: string;
+  clientId?: string;
+  clientName?: string;
 }
 
 // --- Enhanced Action for the feed ---
@@ -207,14 +209,14 @@ export interface FeedAction {
 // --- Feed Actions (expanded from the original 12 to cover all types) ---
 export const feedActions: FeedAction[] = [
   // Document actions
-  { id: "fa1", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", category: "document", type: "request_docs", title: "Missing 4 documents", description: "Still needs: 1099-NEC (TikTok), 1099-NEC (brand deals), bank statements, estimated payment receipts.", priority: 1, aiDraft: "Hi Priya! Your return is looking good so far. We just need a few more documents to finish up: your 1099-NEC from TikTok, any 1099s from brand deals, bank statements, and receipts for estimated payments. You can upload them right in the portal!", createdAt: "2026-03-28T08:00:00", isResolved: false },
-  { id: "fa2", clientId: "c4", clientName: "DeShawn Williams", clientAvatar: "/images/avatars/04.png", category: "document", type: "request_docs", title: "Missing W-2 and deposit", description: "DeShawn hasn't uploaded his W-2 or paid the deposit. Last login was never. Sent intake 10 days ago.", priority: 1, aiDraft: "Hi DeShawn, just checking in! I noticed we're still waiting on your W-2 and the $50 deposit to get started on your return. The April 15 deadline is coming up fast. Can you upload your W-2 through the portal this week?", createdAt: "2026-03-28T08:00:00", isResolved: false },
+  { id: "fa1", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", category: "document", type: "request_docs", title: "Missing 3 documents", description: "TikTok 1099 received. Still needs: 1099-NEC (brand deals), bank statements, estimated payment receipts.", priority: 1, aiDraft: "Hi Priya! Thanks for uploading your TikTok 1099. We just need a few more things to finish up: any 1099s from brand deals, bank statements, and receipts for estimated payments. You can upload them right in the portal!", createdAt: "2026-03-28T08:00:00", isResolved: false },
+  { id: "fa2", clientId: "c4", clientName: "DeShawn Williams", clientAvatar: "/images/avatars/04.png", category: "document", type: "request_docs", title: "Missing W-2 and deposit", description: "DeShawn hasn't uploaded his W-2 or paid the deposit. Last login was never. Sent intake 10 days ago.", priority: 1, aiDraft: "Hi DeShawn, just checking in! I noticed we're still waiting on your W-2 and the $150 deposit to get started on your return. The April 15 deadline is coming up fast. Can you upload your W-2 through the portal this week?", createdAt: "2026-03-28T08:00:00", isResolved: false },
   // Signature
   { id: "fa3", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", category: "signature", type: "send_signature", title: "8879 ready for signature", description: "Return complete and reviewed. Payment confirmed ($500). Ready to send Form 8879 for e-signature.", priority: 2, createdAt: "2026-03-28T07:00:00", isResolved: false },
   { id: "fa4", clientId: "c14", clientName: "Aisha Johnson", clientAvatar: "/images/avatars/02.png", category: "signature", type: "send_signature", title: "8879 ready for signature", description: "Simple return complete. Payment received ($350). Waiting on e-signature.", priority: 2, createdAt: "2026-03-28T07:30:00", isResolved: false },
   // Scheduling
   { id: "fa5", clientId: "c13", clientName: "Vladimir Petrov", clientAvatar: "/images/avatars/01.png", category: "schedule", type: "schedule_appointment", title: "Schedule extension discussion", description: "0 of 16 documents submitted. Extension almost certain. Need to discuss timeline and plan.", priority: 2, aiDraft: "Vladimir, I wanted to reach out about your 2025 tax return. Given the complexity of Petrov Imports, we should discuss filing an extension. Can we schedule a call this week?", createdAt: "2026-03-28T08:00:00", isResolved: false },
-  { id: "fa6", clientId: "c11", clientName: "David Park", clientAvatar: "/images/avatars/11.png", category: "schedule", type: "appointment_reminder", title: "Appointment reminder - 2:00 PM today", description: "Video call to review S-Corp return. 2 documents still missing (payroll summary, equipment list).", priority: 2, createdAt: "2026-03-28T07:00:00", isResolved: false },
+  { id: "fa6", clientId: "c11", clientName: "David Park", clientAvatar: "/images/avatars/11.png", category: "schedule", type: "appointment_reminder", title: "Appointment reminder - 3:00 PM today", description: "Video call to review S-Corp return. Rescheduled from 2pm. 2 documents still missing (payroll summary, equipment list).", priority: 2, createdAt: "2026-03-28T07:00:00", isResolved: false },
   // Payment
   { id: "fa7", clientId: "c4", clientName: "DeShawn Williams", clientAvatar: "/images/avatars/04.png", category: "payment", type: "send_payment_link", title: "Deposit not paid - $150", description: "$150 deposit outstanding for 10 days. Cannot proceed with return preparation until deposit is received.", priority: 2, createdAt: "2026-03-28T08:00:00", isResolved: false },
   // Pipeline
@@ -223,11 +225,11 @@ export const feedActions: FeedAction[] = [
   // Escalation
   { id: "fa10", clientId: "c17", clientName: "Tyrone Mitchell", clientAvatar: "/images/avatars/05.png", category: "escalation", type: "escalate", title: "Stale client - 9 days inactive", description: "Only 2 of 5 docs submitted. Was extended last year. Currently at 'reminder' level.", priority: 1, aiDraft: "Hey Tyrone, I see you started uploading your docs but we still need your 1099-K from Uber, mileage log, and last year's return. I don't want you to have to extend again this year.", createdAt: "2026-03-28T08:00:00", isResolved: false },
   // Review
-  { id: "fa11", clientId: "c6", clientName: "Roberto Fuentes", clientAvatar: "/images/avatars/06.png", category: "pipeline", type: "flag_review", title: "1120S return ready for review", description: "Fuentes Transport Inc. 1120S + personal return prepared. Depreciation schedules updated. Needs Antonio's review.", priority: 3, createdAt: "2026-03-27T16:00:00", isResolved: false },
-  { id: "fa12", clientId: "c18", clientName: "Mei-Lin Wu", clientAvatar: "/images/avatars/06.png", category: "pipeline", type: "flag_review", title: "Schedule C ready for review", description: "Wu Acupuncture. Return prepared with health insurance deduction. QBI deduction calculated.", priority: 3, createdAt: "2026-03-27T17:00:00", isResolved: false },
+  { id: "fa11", clientId: "c6", clientName: "Roberto Fuentes", clientAvatar: "/images/avatars/06.png", category: "pipeline", type: "flag_review", title: "Client reviewing 1120S return", description: "Fuentes Transport Inc. 1120S + personal return sent to Roberto for review. Depreciation schedules updated. Follow up if no response by Monday.", priority: 3, createdAt: "2026-03-27T16:00:00", isResolved: false },
+  { id: "fa12", clientId: "c18", clientName: "Mei-Lin Wu", clientAvatar: "/images/avatars/06.png", category: "pipeline", type: "flag_review", title: "Client reviewing Schedule C", description: "Wu Acupuncture return sent to Mei-Lin for review. Health insurance deduction and QBI deduction included.", priority: 3, createdAt: "2026-03-27T17:00:00", isResolved: false },
   // Nudge
   { id: "fa13", clientId: "c7", clientName: "Ashley Kim", clientAvatar: "/images/avatars/07.png", category: "nudge", type: "portal_nudge", title: "Hasn't started intake - 2 days", description: "Intake link sent 2 days ago. No login yet. Referred by Priya Sharma.", priority: 4, aiDraft: "Hi Ashley! I sent over your intake form a couple days ago. When you get a chance, just follow the link to get started. It only takes about 10 minutes!", createdAt: "2026-03-26T14:00:00", isResolved: false },
-  { id: "fa14", clientId: "c20", clientName: "Fatima Al-Hassan", clientAvatar: "/images/avatars/08.png", category: "nudge", type: "portal_nudge", title: "Hasn't started intake - 1 day", description: "New referral from Elena Mendez. Intake sent yesterday, no response.", priority: 5, createdAt: "2026-03-27T10:00:00", isResolved: false },
+  { id: "fa14", clientId: "c20", clientName: "Fatima Al-Hassan", clientAvatar: "/images/avatars/08.png", category: "nudge", type: "portal_nudge", title: "Hasn't started intake - 1 day", description: "New referral from Elena Mendez. Intake sent yesterday, no response.", priority: 5, aiDraft: "Hi Fatima! Elena Mendez referred you to us — welcome! I sent over your intake form yesterday. When you get a chance, just follow the link to get started. It takes about 10 minutes and we'll handle everything from there.", createdAt: "2026-03-27T10:00:00", isResolved: false },
   // ERO signatures needed
   { id: "fa15", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", category: "signature", type: "ero_signature", title: "8879 ready for ERO signature", description: "Client paid ($500) and signed Form 8879. Your ERO countersignature is needed to file.", priority: 1, createdAt: "2026-03-28T09:00:00", isResolved: false },
   { id: "fa16", clientId: "c14", clientName: "Aisha Johnson", clientAvatar: "/images/avatars/02.png", category: "signature", type: "ero_signature", title: "8879 ready for ERO signature", description: "Client paid ($350) and signed Form 8879. Your ERO countersignature is needed to file.", priority: 1, createdAt: "2026-03-28T09:00:00", isResolved: false },
@@ -454,13 +456,21 @@ export const voiceDumpSession: VoiceDumpSession = {
 
 // --- To-do Items ---
 export const initialTodos: TodoItem[] = [
-  { id: "t1", text: "Review Roberto Fuentes 1120S return", done: false, source: "ai", createdAt: "2026-03-28T07:00:00" },
-  { id: "t2", text: "Call David Park at 2:00 PM", done: false, source: "manual", createdAt: "2026-03-28T07:30:00" },
-  { id: "t3", text: "Send Priya missing docs reminder", done: false, source: "ai", createdAt: "2026-03-28T08:00:00" },
-  { id: "t4", text: "Review Mei-Lin Wu Schedule C", done: false, source: "ai", createdAt: "2026-03-28T08:00:00" },
-  { id: "t5", text: "Follow up with Vladimir about extension", done: false, source: "manual", createdAt: "2026-03-27T16:00:00" },
-  { id: "t6", text: "Process Rodriguez 8879 e-signature", done: true, source: "ai", createdAt: "2026-03-27T14:00:00" },
-  { id: "t7", text: "Send Ashley Kim intake reminder", done: true, source: "ai", createdAt: "2026-03-27T10:00:00" },
+  // AI-generated
+  { id: "t1", text: "Review Roberto Fuentes 1120S return", done: false, source: "ai", createdAt: "2026-03-28T07:00:00", clientId: "c6", clientName: "Roberto Fuentes" },
+  { id: "t3", text: "Send Priya missing docs reminder", done: false, source: "ai", createdAt: "2026-03-28T08:00:00", clientId: "c2", clientName: "Priya Sharma" },
+  { id: "t4", text: "Review Mei-Lin Wu Schedule C", done: false, source: "ai", createdAt: "2026-03-28T08:00:00", clientId: "c18", clientName: "Mei-Lin Wu" },
+  // Manual
+  { id: "t2", text: "Call David Park at 3:00 PM", done: false, source: "manual", createdAt: "2026-03-28T07:30:00", clientId: "c11", clientName: "David Park" },
+  { id: "t5", text: "Follow up with Vladimir about extension", done: false, source: "manual", createdAt: "2026-03-27T16:00:00", clientId: "c13", clientName: "Vladimir Petrov" },
+  // Voice dump items (from this morning's recording)
+  { id: "t8", text: "Check in with DeShawn about his W-2 upload", done: false, source: "voice", createdAt: "2026-03-28T09:15:00", clientId: "c4", clientName: "DeShawn Williams" },
+  { id: "t9", text: "Call Maria at 7 PM tonight", done: false, source: "voice", createdAt: "2026-03-28T09:15:00" },
+  { id: "t10", text: "Follow up with Tyrone about mileage log", done: false, source: "voice", createdAt: "2026-03-28T09:15:00", clientId: "c17", clientName: "Tyrone Mitchell" },
+  // Completed
+  { id: "t6", text: "Process Rodriguez 8879 e-signature", done: true, source: "ai", createdAt: "2026-03-27T14:00:00", clientId: "c3", clientName: "James & Sofia Rodriguez" },
+  { id: "t7", text: "Send Ashley Kim intake reminder", done: true, source: "ai", createdAt: "2026-03-27T10:00:00", clientId: "c7", clientName: "Ashley Kim" },
+  { id: "t11", text: "Pick up lunch for the team", done: true, source: "voice", createdAt: "2026-03-28T09:15:00" },
 ];
 
 // --- Missing Documents Checklist (for document-request demo) ---

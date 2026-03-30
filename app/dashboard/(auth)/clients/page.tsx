@@ -24,23 +24,28 @@ export default function ClientsPage() {
     return true;
   });
 
-  // If accepted, move from pending to the appropriate urgency column
-  const getEffectiveStatus = (c: Client) => {
+  // Map clients to workflow buckets matching Overview terminology
+  const getBucket = (c: Client): string => {
     if (c.clientStatus === "pending" && !acceptedIds.includes(c.id)) return "pending";
-    return c.urgency;
+    const stage = c.returnStage;
+    if (stage === "new_intake" || stage === "ready_to_prep" || stage === "pay_and_sign") return "need_you";
+    if (stage === "collecting_docs" || stage === "client_review") return "waiting";
+    if (stage === "in_preparation") return "in_progress";
+    if (stage === "filed") return "done";
+    return "need_you";
   };
 
   const columns = [
     { key: "pending", label: "Pending", dot: "bg-zinc-400", bg: "bg-zinc-50 dark:bg-zinc-900/20", headerBg: "bg-zinc-100 dark:bg-zinc-900/30" },
-    { key: "urgent", label: "Urgent", dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-950/20", headerBg: "bg-red-50 dark:bg-red-950/30" },
-    { key: "high", label: "High Priority", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20", headerBg: "bg-amber-50 dark:bg-amber-950/30" },
-    { key: "normal", label: "Active", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50 dark:bg-blue-950/30" },
-    { key: "low", label: "Complete", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20", headerBg: "bg-emerald-50 dark:bg-emerald-950/30" },
+    { key: "need_you", label: "Need You", dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-950/20", headerBg: "bg-red-50 dark:bg-red-950/30" },
+    { key: "waiting", label: "Waiting", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20", headerBg: "bg-amber-50 dark:bg-amber-950/30" },
+    { key: "in_progress", label: "In Progress", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50 dark:bg-blue-950/30" },
+    { key: "done", label: "Done", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20", headerBg: "bg-emerald-50 dark:bg-emerald-950/30" },
   ];
 
   const columnData = columns.map(col => ({
     ...col,
-    clients: filtered.filter(c => getEffectiveStatus(c) === col.key),
+    clients: filtered.filter(c => getBucket(c) === col.key),
   })).filter(col => col.clients.length > 0);
 
   const formatCallTime = (dateStr: string) => {

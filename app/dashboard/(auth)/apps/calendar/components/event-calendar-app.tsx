@@ -178,6 +178,7 @@ export default function EventCalendarApp() {
           onEventAdd={handleEventAdd}
           onEventUpdate={handleEventUpdate}
           onEventDelete={handleEventDelete}
+          initialView="week"
         />
       </div>
 
