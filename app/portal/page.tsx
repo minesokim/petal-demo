@@ -309,6 +309,7 @@ function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
     { key: "docs", label: "Docs", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
     { key: "messages", label: "Messages", icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" },
     { key: "sign", label: "Sign", icon: "M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" },
+    { key: "profile", label: "Profile", icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z" },
   ];
   return (
     <div style={{
@@ -491,14 +492,14 @@ export default function ClientPortal() {
               <div>
                 <QuestionHeader step={1} total={totalSteps} question="What brings you in?" sub="Select the service that best fits your needs." />
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 8 }}>TAX PREPARATION</div>
-                <OptionCard label="Simple Tax Return" desc="W-2 income, limited deductions, standard filing" price="Starting at $150" icon="📄" selected={sel === "simple"} onClick={() => setSel("simple")} />
-                <OptionCard label="Complex Return" desc="Self-employment, rentals, investments, itemized deductions" price="Starting at $350" icon="📊" selected={sel === "complex"} onClick={() => setSel("complex")} />
-                <OptionCard label="Business Tax Return" desc="S-Corp, LLC, C-Corp, partnership returns" price="Starting at $500" icon="🏢" selected={sel === "business"} onClick={() => setSel("business")} />
+                <OptionCard label="Simple Tax Return" desc="W-2 income, limited deductions, standard filing" price="Starting at $150" selected={sel === "simple"} onClick={() => setSel("simple")} />
+                <OptionCard label="Complex Return" desc="Self-employment, rentals, investments, itemized deductions" price="Starting at $350" selected={sel === "complex"} onClick={() => setSel("complex")} />
+                <OptionCard label="Business Tax Return" desc="S-Corp, LLC, C-Corp, partnership returns" price="Starting at $500" selected={sel === "business"} onClick={() => setSel("business")} />
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 8, marginTop: 20 }}>OTHER SERVICES</div>
-                <OptionCard label="Introductory Consultation" desc="Free session to explore your options" icon="👋" selected={sel === "intro"} onClick={() => setSel("intro")} />
-                <OptionCard label="Business Formation" desc="LLC, S-Corp, C-Corp setup and registration" icon="🏗️" selected={sel === "formation"} onClick={() => setSel("formation")} />
-                <OptionCard label="Bookkeeping Consultation" desc="Clarity around your bookkeeping needs" icon="📒" selected={sel === "bookkeeping"} onClick={() => setSel("bookkeeping")} />
-                <OptionCard label="Strategic Tax & Business Consultation" desc="In-depth guidance on tax and business matters" icon="🎯" selected={sel === "strategic"} onClick={() => setSel("strategic")} />
+                <OptionCard label="Introductory Consultation" desc="Free session to explore your options" selected={sel === "intro"} onClick={() => setSel("intro")} />
+                <OptionCard label="Business Formation" desc="LLC, S-Corp, C-Corp setup and registration" selected={sel === "formation"} onClick={() => setSel("formation")} />
+                <OptionCard label="Bookkeeping Consultation" desc="Clarity around your bookkeeping needs" selected={sel === "bookkeeping"} onClick={() => setSel("bookkeeping")} />
+                <OptionCard label="Strategic Tax & Business Consultation" desc="In-depth guidance on tax and business matters" selected={sel === "strategic"} onClick={() => setSel("strategic")} />
                 <AntonioNote text="Not sure where to start? The Introductory Consultation is free and I'll point you in the right direction." />
                 <PrimaryButton onClick={() => go(2)} disabled={!sel} style={{ marginTop: 24 }}>Continue</PrimaryButton>
               </div>
@@ -593,11 +594,11 @@ export default function ClientPortal() {
               <div>
                 <QuestionHeader step={7} total={totalSteps} question="How do you earn income?" sub="Select all that apply." />
                 {[
-                  { value: "w2", label: "W-2 Employee", icon: "🏢", desc: "Regular paycheck from an employer" },
-                  { value: "self", label: "Self-Employed / 1099", icon: "💻", desc: "Freelance, gig work, contracting" },
-                  { value: "rental", label: "Rental Property", icon: "🏠", desc: "Income from property you own" },
-                  { value: "invest", label: "Investments / Crypto", icon: "📈", desc: "Stocks, crypto, capital gains" },
-                  { value: "retire", label: "Retirement / Social Security", icon: "🏖️", desc: "Pension, IRA distributions, SSA" },
+                  { value: "w2", label: "W-2 Employee", desc: "Regular paycheck from an employer" },
+                  { value: "self", label: "Self-Employed / 1099", desc: "Freelance, gig work, contracting" },
+                  { value: "rental", label: "Rental Property", desc: "Income from property you own" },
+                  { value: "invest", label: "Investments / Crypto", desc: "Stocks, crypto, capital gains" },
+                  { value: "retire", label: "Retirement / Social Security", desc: "Pension, IRA distributions, SSA" },
                 ].map(o => (
                   <OptionCard
                     key={o.value} label={o.label} desc={o.desc} icon={o.icon} isMulti
@@ -634,13 +635,13 @@ export default function ClientPortal() {
               <div>
                 <QuestionHeader step={9} total={totalSteps} question="Quick check on deductions" sub="Select anything that might apply. When in doubt, select it." />
                 {[
-                  { value: "mortgage", label: "Home mortgage", icon: "🏡" },
-                  { value: "student", label: "Student loans", icon: "🎓" },
-                  { value: "charity", label: "Charitable donations", icon: "❤️" },
-                  { value: "childcare", label: "Childcare costs", icon: "👶" },
-                  { value: "medical", label: "Medical expenses", icon: "🏥" },
-                  { value: "education", label: "Education / tuition", icon: "📚" },
-                  { value: "educator", label: "Educator expenses", icon: "🍎", desc: "K-12 teacher supplies (up to $300)" },
+                  { value: "mortgage", label: "Home mortgage" },
+                  { value: "student", label: "Student loans" },
+                  { value: "charity", label: "Charitable donations" },
+                  { value: "childcare", label: "Childcare costs" },
+                  { value: "medical", label: "Medical expenses" },
+                  { value: "education", label: "Education / tuition" },
+                  { value: "educator", label: "Educator expenses", desc: "K-12 teacher supplies (up to $300)" },
                 ].map(o => (
                   <OptionCard
                     key={o.value} label={o.label} icon={o.icon} desc={o.desc} isMulti
@@ -667,8 +668,8 @@ export default function ClientPortal() {
             {step === 10 && (
               <div>
                 <QuestionHeader step={10} total={totalSteps} question="Refund preference" sub="If you're owed a refund, how would you like to receive it?" />
-                <OptionCard label="Direct deposit (fastest)" desc="Refund arrives in 10-21 days" icon="🏦" selected={sel === "direct"} onClick={() => setSel("direct")} />
-                <OptionCard label="Paper check by mail" desc="Takes 4-6 weeks" icon="📬" selected={sel === "check"} onClick={() => setSel("check")} />
+                <OptionCard label="Direct deposit (fastest)" desc="Refund arrives in 10-21 days" selected={sel === "direct"} onClick={() => setSel("direct")} />
+                <OptionCard label="Paper check by mail" desc="Takes 4-6 weeks" selected={sel === "check"} onClick={() => setSel("check")} />
                 {sel === "direct" && (
                   <div style={{
                     padding: "18px 20px", borderRadius: 14, marginTop: 12,
@@ -699,7 +700,7 @@ export default function ClientPortal() {
                       fontFamily: "'Plus Jakarta Sans', sans-serif",
                       transition: "all 0.15s",
                     }}>
-                      {tp === "Phone" ? "📞" : tp === "Video" ? "💻" : "🏢"} {tp}
+                      {tp}
                     </button>
                   ))}
                 </div>
@@ -1004,14 +1005,14 @@ export default function ClientPortal() {
             <div style={{ width: "100%", maxWidth: 380, background: c.surface, borderRadius: 24, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.25)" }}>
               <div style={{ padding: "32px 28px 0", textAlign: "center" }}>
                 {tutStep === 0 && (<>
-                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>👋</span></div>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: c.accent }}>1</div>
                   <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Here&apos;s how this works</div>
                   <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>Simple questions. Most are just <strong style={{ color: c.text }}>tap to select</strong>.</div>
                   <div style={{ background: c.bg, borderRadius: 14, padding: "14px 16px", textAlign: "left", border: `1px solid ${c.borderLight}` }}>
                     <div style={{ fontSize: 11, color: c.dim, marginBottom: 8, fontWeight: 600 }}>EXAMPLE</div>
                     {["W-2 Employee", "Self-Employed"].map((l, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, marginBottom: 4, background: i === 0 ? c.accentLight : c.surface, border: `1.5px solid ${i === 0 ? c.accent : c.borderLight}` }}>
-                        <span style={{ fontSize: 16 }}>{i === 0 ? "🏢" : "💻"}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? c.accent : c.dim }}>{i === 0 ? "W2" : "1099"}</span>
                         <span style={{ fontSize: 13, fontWeight: 600, color: i === 0 ? c.accent : c.text }}>{l}</span>
                         <div style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", background: i === 0 ? c.accent : "transparent", border: i === 0 ? "none" : `1.5px solid ${c.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {i === 0 && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7L5.5 9.5L11 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -1021,7 +1022,7 @@ export default function ClientPortal() {
                   </div>
                 </>)}
                 {tutStep === 1 && (<>
-                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>🤔</span></div>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#9A7245" }}>2</div>
                   <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>Don&apos;t know the answer?</div>
                   <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 20 }}>If you&apos;re stuck on <strong style={{ color: c.text }}>any question</strong>, tap the bar at the bottom.</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 14, background: c.bg, border: `1.5px solid ${c.borderLight}` }}>
@@ -1032,11 +1033,11 @@ export default function ClientPortal() {
                   <div style={{ fontSize: 12, color: c.accent, fontWeight: 600, marginTop: 10 }}>Always at the bottom</div>
                 </>)}
                 {tutStep === 2 && (<>
-                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 30 }}>✨</span></div>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: c.accent }}>3</div>
                   <div style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, marginBottom: 8 }}>You&apos;re ready.</div>
                   <div style={{ fontSize: 14, color: c.secondary, lineHeight: 1.65, marginBottom: 16 }}>Answer what you can, skip what you can&apos;t, message me for anything.</div>
                   <div style={{ background: c.bg, borderRadius: 14, padding: "14px 16px", textAlign: "left", border: `1px solid ${c.borderLight}` }}>
-                    {[{ i: "👆", t: "Tap to select answers" }, { i: "💬", t: "Message Antonio if unsure" }, { i: "📄", t: "Upload docs now or later" }, { i: "💾", t: "Progress saves automatically" }].map((x, j) => (
+                    {[{ i: "1", t: "Tap to select answers" }, { i: "2", t: "Message Antonio if unsure" }, { i: "3", t: "Upload docs now or later" }, { i: "4", t: "Progress saves automatically" }].map((x, j) => (
                       <div key={j} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: j ? `1px solid ${c.borderLight}` : "none" }}>
                         <span style={{ fontSize: 16 }}>{x.i}</span>
                         <span style={{ fontSize: 13, color: c.text, fontWeight: 500 }}>{x.t}</span>
@@ -1127,19 +1128,19 @@ export default function ClientPortal() {
 
   // ─── PORTAL (post-intake) ───
   const portalFolders = [
-    { id: "uploads", name: "My Uploads", count: 3, icon: "📤", color: c.accentLight, files: [
+    { id: "uploads", name: "My Uploads", count: 3, icon: "U", color: c.accentLight, files: [
       { name: "W-2 Riverside Medical.pdf", date: "Mar 24", size: "245 KB", status: "ok" },
       { name: "Drivers_License.jpg", date: "Mar 24", size: "1.2 MB", status: "ok" },
       { name: "1099-NEC_Freelance.pdf", date: "Mar 25", size: "89 KB", status: "ok" },
     ]},
-    { id: "needed", name: "Still Needed", count: 2, icon: "⏳", color: c.warmLight, files: [
+    { id: "needed", name: "Still Needed", count: 2, icon: "N", color: c.warmLight, files: [
       { name: "1099-INT from Chase Bank", status: "pending" },
       { name: "Business expense records", status: "pending" },
     ]},
-    { id: "returns", name: "Tax Returns", count: 1, icon: "📊", color: c.blueLight, files: [
+    { id: "returns", name: "Tax Returns", count: 1, icon: "R", color: c.blueLight, files: [
       { name: "2025_Federal_Return.pdf", date: "Apr 8", size: "1.8 MB", status: "ok" },
     ]},
-    { id: "agreements", name: "Agreements", count: 2, icon: "📝", color: c.muted, files: [
+    { id: "agreements", name: "Agreements", count: 2, icon: "A", color: c.muted, files: [
       { name: "Engagement Letter 2025.pdf", date: "Mar 27", size: "156 KB", status: "signed" },
       { name: "7216 Consent.pdf", date: "Mar 27", size: "92 KB", status: "signed" },
     ]},
@@ -1196,8 +1197,8 @@ export default function ClientPortal() {
             {/* Action needed */}
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginBottom: 10 }}>ACTION NEEDED</div>
             {[
-              { label: "Sign Form 8879", desc: "e-file authorization required", icon: "✍️", toTab: "sign" },
-              { label: "Pay remaining balance", desc: "$300.00 due", icon: "💳" },
+              { label: "Sign Form 8879", desc: "e-file authorization required", icon: "S", toTab: "sign" },
+              { label: "Pay remaining balance", desc: "$300.00 due", icon: "$" },
             ].map((a, i) => (
               <div key={i} onClick={() => a.toTab && setTab(a.toTab)} style={{
                 display: "flex", alignItems: "center", gap: 14,
@@ -1218,7 +1219,9 @@ export default function ClientPortal() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", color: c.dim, marginTop: 24, marginBottom: 10 }}>UPCOMING</div>
             <div style={{ padding: "16px 18px", borderRadius: 14, background: c.surface, border: `1px solid ${c.borderLight}` }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 24 }}>📞</span>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Meeting with Antonio</div>
                   <div style={{ fontSize: 12, color: c.dim }}>{answers.slot || "Mon, Apr 6 · 9:00 AM"} &middot; Phone</div>
@@ -1259,8 +1262,10 @@ export default function ClientPortal() {
                 </div>
                 {portalFolders.find(f => f.id === docFolder)?.files.map((fl, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 14, marginBottom: 6, background: c.surface, border: `1px solid ${c.borderLight}` }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: fl.status === "pending" ? c.warmLight : fl.status === "signed" ? c.accentLight : c.muted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                      {fl.status === "pending" ? "⏳" : fl.status === "signed" ? "✍️" : "📄"}
+                    <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: fl.status === "pending" ? c.warmLight : fl.status === "signed" ? c.accentLight : c.muted, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={fl.status === "pending" ? "#9A7245" : fl.status === "signed" ? c.accent : c.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        {fl.status === "pending" ? <path d="M12 6v6l4 2M12 2a10 10 0 100 20 10 10 0 000-20z" /> : fl.status === "signed" ? <path d="M9 12l2 2 4-4M12 2a10 10 0 100 20 10 10 0 000-20z" /> : <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM14 2v6h6" />}
+                      </svg>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fl.name}</div>
@@ -1282,14 +1287,14 @@ export default function ClientPortal() {
                 <h2 style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Documents</h2>
                 <p style={{ fontSize: 13, color: c.dim, margin: "0 0 20px" }}>Your secure tax file cabinet</p>
                 <div style={{ padding: "20px 16px", borderRadius: 16, border: `2px dashed ${c.border}`, background: c.surface, textAlign: "center", marginBottom: 20, cursor: "pointer" }}>
-                  <div style={{ fontSize: 24, marginBottom: 4 }}>📸</div>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 8px", display: "block" }}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                   <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Upload or scan</div>
                   <div style={{ fontSize: 12, color: c.dim, marginTop: 2 }}>Photos from your phone work great</div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   {portalFolders.map(f => (
                     <div key={f.id} onClick={() => setDocFolder(f.id)} style={{ padding: "18px 16px", borderRadius: 16, cursor: "pointer", background: c.surface, border: `1px solid ${c.borderLight}` }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 10, background: f.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{f.icon}</div>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 10, background: f.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: c.accent }}>{f.icon}</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{f.name}</div>
                       <div style={{ fontSize: 12, color: c.dim, marginTop: 2 }}>{f.count} files</div>
                     </div>
@@ -1345,7 +1350,10 @@ export default function ClientPortal() {
 
             {/* Chat input */}
             <div style={{ flexShrink: 0, padding: "10px 16px 14px", borderTop: `1px solid ${c.borderLight}`, background: c.surface }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button style={{ width: 42, height: 42, borderRadius: 12, border: `1px solid ${c.borderLight}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: c.dim }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
+                </button>
                 <input
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
@@ -1381,9 +1389,11 @@ export default function ClientPortal() {
             <p style={{ fontSize: 13, color: c.dim, margin: "0 0 20px" }}>Documents waiting for your signature</p>
 
             {/* 8879 card */}
-            <div style={{ padding: "18px", borderRadius: 16, marginBottom: 12, background: c.surface, border: `1.5px solid ${c.warm}`, cursor: "pointer" }}>
+            <div style={{ padding: "18px", borderRadius: 16, marginBottom: 12, background: c.surface, border: `1.5px solid ${c.warm}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>✍️</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: c.warmLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9A7245" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Form 8879 &mdash; e-file Authorization</div>
                   <div style={{ fontSize: 12, color: c.dim, marginTop: 3 }}>4 fields to complete</div>
@@ -1392,7 +1402,7 @@ export default function ClientPortal() {
                   </div>
                 </div>
               </div>
-              <PrimaryButton onClick={() => {}} style={{ marginTop: 14 }}>Begin Signing</PrimaryButton>
+              <PrimaryButton onClick={() => setTab("signing")} style={{ marginTop: 14 }}>Begin Signing</PrimaryButton>
             </div>
 
             {/* Completed */}
@@ -1411,6 +1421,138 @@ export default function ClientPortal() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Signing flow */}
+        {tab === "signing" && (
+          <div style={{ padding: "24px 20px 32px" }}>
+            <TopNav onBack={() => setTab("sign")} title="Form 8879" sub="e-file Authorization" />
+            <div style={{ padding: "24px 0" }}>
+              <div style={{ background: c.surface, borderRadius: 14, border: `1px solid ${c.borderLight}`, padding: "24px 20px", marginBottom: 16, textAlign: "center" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: c.dim }}>FORM 8879</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginTop: 4 }}>IRS e-file Signature Authorization</div>
+                <div style={{ fontSize: 11, color: c.dim, marginTop: 2 }}>Tax Year 2025</div>
+              </div>
+
+              <div style={{ fontSize: 13, color: c.secondary, lineHeight: 1.7, marginBottom: 20 }}>
+                I consent to allow my electronic return originator (ERO) to send my return to the IRS electronically.
+              </div>
+
+              {/* Signature field */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: c.dim, marginBottom: 6 }}>Taxpayer Signature</div>
+                <canvas
+                  id="sig-canvas"
+                  width={680}
+                  height={240}
+                  onMouseDown={(e) => {
+                    const canvas = e.currentTarget;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    ctx.beginPath();
+                    ctx.moveTo((e.clientX - rect.left) * (canvas.width / rect.width), (e.clientY - rect.top) * (canvas.height / rect.height));
+                    const draw = (ev: MouseEvent) => {
+                      ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = c.accent;
+                      ctx.lineTo((ev.clientX - rect.left) * (canvas.width / rect.width), (ev.clientY - rect.top) * (canvas.height / rect.height));
+                      ctx.stroke();
+                    };
+                    const stop = () => { document.removeEventListener("mousemove", draw); document.removeEventListener("mouseup", stop); };
+                    document.addEventListener("mousemove", draw);
+                    document.addEventListener("mouseup", stop);
+                  }}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    const canvas = e.currentTarget;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    ctx.beginPath();
+                    ctx.moveTo((touch.clientX - rect.left) * (canvas.width / rect.width), (touch.clientY - rect.top) * (canvas.height / rect.height));
+                    const draw = (ev: TouchEvent) => {
+                      ev.preventDefault();
+                      const t = ev.touches[0];
+                      ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = c.accent;
+                      ctx.lineTo((t.clientX - rect.left) * (canvas.width / rect.width), (t.clientY - rect.top) * (canvas.height / rect.height));
+                      ctx.stroke();
+                    };
+                    const stop = () => { canvas.removeEventListener("touchmove", draw); canvas.removeEventListener("touchend", stop); };
+                    canvas.addEventListener("touchmove", draw, { passive: false });
+                    canvas.addEventListener("touchend", stop);
+                  }}
+                  style={{
+                    width: "100%", height: 120, borderRadius: 12,
+                    border: `2px dashed ${c.border}`, background: c.bg,
+                    cursor: "crosshair", touchAction: "none",
+                  }}
+                />
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button onClick={() => {
+                    const canvas = document.getElementById("sig-canvas") as HTMLCanvasElement;
+                    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+                  }} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.secondary, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: c.dim, marginBottom: 6 }}>Date</div>
+                <div style={{ padding: "12px 16px", borderRadius: 10, background: c.accentLight, border: `1.5px solid ${c.accent}`, fontSize: 13, fontWeight: 600, color: c.accent }}>
+                  March 30, 2026
+                </div>
+              </div>
+
+              <PrimaryButton onClick={() => setTab("sign")}>Submit Signature</PrimaryButton>
+            </div>
+          </div>
+        )}
+
+        {/* Profile tab */}
+        {tab === "profile" && (
+          <div style={{ padding: "24px 20px 32px" }}>
+            <h2 style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 600, color: c.text, margin: "0 0 20px" }}>Profile</h2>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: c.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 600, color: c.accent }}>MG</div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.text }}>Maria Gonzalez</div>
+                <div style={{ fontSize: 13, color: c.dim }}>maria.gonzalez@email.com</div>
+              </div>
+            </div>
+
+            <div style={{ background: c.surface, borderRadius: 14, border: `1px solid ${c.borderLight}`, overflow: "hidden", marginBottom: 16 }}>
+              {[
+                { label: "Phone", value: "(626) 555-0188" },
+                { label: "Filing status", value: "Married Filing Jointly" },
+                { label: "Service", value: "Complex Return — $350" },
+                { label: "Preparer", value: "Antonio Vazquez, EA" },
+              ].map((item, i) => (
+                <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                  <span style={{ fontSize: 13, color: c.dim }}>{item.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: c.text }}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: c.surface, borderRadius: 14, border: `1px solid ${c.borderLight}`, overflow: "hidden", marginBottom: 16 }}>
+              {[
+                { label: "Refund method", value: "Direct deposit" },
+                { label: "Bank", value: "Chase" },
+                { label: "Account", value: "****4521" },
+              ].map((item, i) => (
+                <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "14px 18px", borderTop: i ? `1px solid ${c.borderLight}` : "none" }}>
+                  <span style={{ fontSize: 13, color: c.dim }}>{item.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: c.text }}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: "14px 18px", borderRadius: 14, background: c.surface, border: `1px solid ${c.borderLight}`, cursor: "pointer" }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: c.error }}>Sign out</div>
+            </div>
           </div>
         )}
       </div>
