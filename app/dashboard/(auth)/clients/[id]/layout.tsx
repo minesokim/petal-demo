@@ -23,6 +23,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
 
   const tabs = [
     { label: "Overview", href: `/dashboard/clients/${clientId}/overview` },
+    { label: "Intake", href: `/dashboard/clients/${clientId}/intake` },
     { label: `Documents`, href: `/dashboard/clients/${clientId}/documents`, badge: docCount },
     { label: "Messages", href: `/dashboard/clients/${clientId}/messages` },
     { label: "Notes", href: `/dashboard/clients/${clientId}/notes` },
