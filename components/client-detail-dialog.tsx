@@ -12,7 +12,7 @@ import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
   extensionPredictions, documentExtractions, estimatedTaxCalcs,
   feedActions, irsNotices,
-  type DocumentExtraction,
+  type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory } from "@/lib/documents-mock-data";
@@ -38,6 +38,7 @@ import {
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
 import { ActionCard } from "@/components/actions/action-card";
+import { ActionExecutionSheet } from "@/components/actions/action-execution-sheet";
 import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { UploadZone } from "@/components/documents/upload-zone";
 import { DocumentChecklist } from "@/components/documents/document-checklist";
@@ -55,6 +56,8 @@ interface ClientDetailDialogProps {
 
 export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
   const [eroOpen, setEroOpen] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<FeedAction | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -150,7 +153,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                     {filteredFeed.length > 0 && (
                       <div className="space-y-3">
                         {filteredFeed.map(action => (
-                          <ActionCard key={action.id} action={action} onClick={() => {}} />
+                          <ActionCard key={action.id} action={action} onClick={() => { setSelectedAction(action); setSheetOpen(true); }} />
                         ))}
                       </div>
                     )}
@@ -638,6 +641,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
 
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
+      {selectedAction && <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedAction(null); }} />}
     </Dialog>
   );
 }

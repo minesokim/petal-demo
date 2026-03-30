@@ -512,7 +512,7 @@ export function AIPanel() {
 
   return (
     <aside
-      className="fixed right-0 top-(--header-height) bottom-0 z-40 flex flex-col overflow-hidden border-l transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+      className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden border-l transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
       style={{
         width: isOpen ? (isFullPage ? "100%" : 440) : 0,
         opacity: isOpen ? 1 : 0,
