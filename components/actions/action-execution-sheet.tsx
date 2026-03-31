@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type FeedAction, type DemoState, calendarSlots, missingDocChecklists, escalationStates } from "@/lib/actions-mock-data";
+import { useToast } from "@/components/ui/toast-notification";
 
 interface ActionExecutionSheetProps {
   action: FeedAction | null;
@@ -28,6 +29,7 @@ export function ActionExecutionSheet({ action, open, onOpenChange }: ActionExecu
   const [state, setState] = useState<DemoState>("idle");
   const [editDraft, setEditDraft] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const { showToast } = useToast();
 
   if (!action) return null;
 
@@ -39,7 +41,15 @@ export function ActionExecutionSheet({ action, open, onOpenChange }: ActionExecu
 
   const handleProcess = () => {
     setState("processing");
-    setTimeout(() => setState("complete"), 1500);
+    setTimeout(() => {
+      setState("complete");
+      showToast("sent", "Sent", `Action completed for ${action.clientName}`);
+      // Auto-close the sheet after a brief moment
+      setTimeout(() => {
+        onOpenChange(false);
+        setTimeout(reset, 300);
+      }, 600);
+    }, 1200);
   };
 
   const handleClose = () => {
@@ -144,17 +154,12 @@ export function ActionExecutionSheet({ action, open, onOpenChange }: ActionExecu
           {state === "complete" && (
             <motion.div
               key="complete"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 rounded-xl border bg-emerald-50 p-4 dark:bg-emerald-950/20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2 py-3 text-sm text-muted-foreground"
             >
-              <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500">
-                <Check className="size-4 text-white" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold">Done</div>
-                <div className="text-muted-foreground text-xs">Action completed for {action.clientName}</div>
-              </div>
+              <Check className="size-4 text-emerald-500" />
+              <span>Done</span>
             </motion.div>
           )}
         </AnimatePresence>

@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
+import { useToast } from "@/components/ui/toast-notification";
 import { ActionCard } from "@/components/actions/action-card";
 import { ActionExecutionSheet } from "@/components/actions/action-execution-sheet";
 import { EroSignatureDialog } from "@/components/ero-signature-dialog";
@@ -61,6 +62,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
+  const { showToast } = useToast();
   const [sentCalc, setSentCalc] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -197,7 +199,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                       className="mt-3 w-full"
                       onClick={() => {
                         setTransitioning(true);
-                        setTimeout(() => { setStageOverride("in_preparation"); setTransitioning(false); }, 1500);
+                        setTimeout(() => { setStageOverride("in_preparation"); setTransitioning(false); showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`); }, 1500);
                       }}
                     >
                       <FileText className="size-3.5" /> Begin Preparation
@@ -210,32 +212,15 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                    className="rounded-xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-950/10 p-5 text-center"
+                    transition={{ duration: 0.4 }}
+                    className="flex items-center gap-2.5 rounded-xl border bg-muted/30 px-4 py-3"
                   >
-                    <div className="flex items-center justify-center gap-2.5">
-                      <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} className="size-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm font-medium text-emerald-700/80 dark:text-emerald-400/80">Moving to preparation...</span>
-                    </div>
-                  </motion.div>
-                )}
-                {stageOverride === "in_preparation" && client.returnStage === "ready_to_prep" && !transitioning && (
-                  <motion.div
-                    key="confirmed"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-                    className="rounded-xl border border-emerald-200/50 bg-emerald-50/30 dark:bg-emerald-950/10 p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.2 }} className="flex size-8 items-center justify-center rounded-full bg-emerald-500">
-                        <Check className="size-4 text-white" />
-                      </motion.div>
-                      <div>
-                        <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Preparation started</div>
-                        <div className="text-xs text-muted-foreground">{client.fullName.split(" ")[0]} has been moved to In Preparation.</div>
-                      </div>
-                    </div>
+                    <motion.div
+                      className="size-4 rounded-full border-2 border-primary border-t-transparent"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span className="text-sm text-muted-foreground">Moving to preparation...</span>
                   </motion.div>
                 )}
               </AnimatePresence>
