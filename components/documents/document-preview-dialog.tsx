@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Download, Printer, X } from "lucide-react";
 import { type MockDocument } from "@/lib/documents-mock-data";
+import { useToast } from "@/components/ui/toast-notification";
 
 // Mock document content based on type
 const mockContent: Record<string, { title: string; sections: { label: string; value: string }[] }> = {
@@ -111,6 +112,7 @@ interface DocumentPreviewDialogProps {
 }
 
 export function DocumentPreviewDialog({ document: doc, open, onOpenChange }: DocumentPreviewDialogProps) {
+  const { showToast } = useToast();
   if (!doc) return null;
 
   const content = mockContent[doc.docType] || {
@@ -152,7 +154,7 @@ export function DocumentPreviewDialog({ document: doc, open, onOpenChange }: Doc
         <Separator className="my-2" />
 
         <div className="flex gap-2">
-          <Button size="sm" variant="outline"><Download className="size-3.5" /> Download</Button>
+          <Button size="sm" variant="outline" onClick={() => showToast("download", `Downloading ${doc.fileName}`, doc.fileSize)}><Download className="size-3.5" /> Download</Button>
           <Button size="sm" variant="outline"><Printer className="size-3.5" /> Print</Button>
         </div>
       </DialogContent>

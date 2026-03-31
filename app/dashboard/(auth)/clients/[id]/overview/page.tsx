@@ -28,6 +28,7 @@ import { ActionCard } from "@/components/actions/action-card";
 import { ActionExecutionSheet } from "@/components/actions/action-execution-sheet";
 import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
+import { useToast } from "@/components/ui/toast-notification";
 
 export default function ClientOverviewPage() {
   const params = useParams();
@@ -39,6 +40,7 @@ export default function ClientOverviewPage() {
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
+  const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -323,171 +325,176 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* Quick stats + Return Progress side by side */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        {/* Stats + Billing summary */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Billing</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">{client.serviceTier} Return</div>
-                <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
-              </div>
-              <div className="text-right">
-                <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
-                <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-                  {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
+      {/* Two-column layout for details */}
+      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+        {/* Left column — billing + intel overflow */}
+        <div className="space-y-5">
+          {/* Billing */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Billing</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">{client.serviceTier} Return</div>
+                  <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
+                  <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
+                    {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
+                  </div>
                 </div>
               </div>
-            </div>
-            <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
+              <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
 
-            {/* Line items */}
-            <div className="space-y-2">
-              <div className="rounded-lg border p-2.5 flex items-center justify-between">
-                <div><div className="text-xs font-medium">Deposit</div><div className="text-[11px] text-muted-foreground">${ps.deposit?.amount || 50}</div></div>
-                {ps.deposit?.status === "paid" ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-                ) : ps.deposit?.status === "overdue" ? (
-                  <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
-                ) : <Badge variant="secondary" className="text-[10px]">Pending</Badge>}
-              </div>
-              {ps.balance && ps.balance.status !== "not_applicable" && (
+              <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg border p-2.5 flex items-center justify-between">
-                  <div><div className="text-xs font-medium">Balance</div><div className="text-[11px] text-muted-foreground">${ps.balance.amount}</div></div>
-                  {ps.balance.status === "paid" ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-                  ) : ps.balance.status === "sent" ? (
-                    <Badge variant="secondary" className="text-[10px]">Invoice sent</Badge>
-                  ) : <Badge variant="outline" className="text-[10px]">Not invoiced</Badge>}
+                  <div><div className="text-xs font-medium">Deposit</div><div className="text-[11px] text-muted-foreground">${ps.deposit?.amount || 50}</div></div>
+                  {ps.deposit?.status === "paid" ? (
+                    <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+                  ) : ps.deposit?.status === "overdue" ? (
+                    <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
+                  ) : <Badge variant="secondary" className="text-[10px]">Pending</Badge>}
+                </div>
+                {ps.balance && ps.balance.status !== "not_applicable" && (
+                  <div className="rounded-lg border p-2.5 flex items-center justify-between">
+                    <div><div className="text-xs font-medium">Balance</div><div className="text-[11px] text-muted-foreground">${ps.balance.amount}</div></div>
+                    {ps.balance.status === "paid" ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
+                    ) : ps.balance.status === "sent" ? (
+                      <Badge variant="secondary" className="text-[10px]">Invoice sent</Badge>
+                    ) : <Badge variant="outline" className="text-[10px]">Not invoiced</Badge>}
+                  </div>
+                )}
+              </div>
+
+              {(() => {
+                const events: { date: string; label: string; type: string }[] = [];
+                if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit — $${ps.deposit.amount}`, type: "paid" });
+                if (ps.deposit?.sentDate && ps.deposit.status !== "paid") events.push({ date: ps.deposit.sentDate, label: `Deposit invoice — $${ps.deposit.amount}`, type: ps.deposit.status === "overdue" ? "overdue" : "sent" });
+                if (ps.balance?.paidDate) events.push({ date: ps.balance.paidDate, label: `Balance — $${ps.balance.amount}`, type: "paid" });
+                if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
+                events.sort((a, b) => a.date.localeCompare(b.date));
+                if (events.length === 0) return null;
+                return (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Payment Timeline</div>
+                    {events.map((e, i) => (
+                      <div key={i} className="flex items-center gap-3 text-xs">
+                        <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
+                        <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                        <span>{e.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {!ps.fullyPaid && (
+                <div className="flex flex-wrap gap-2">
+                  {ps.deposit?.status === "overdue" && (
+                    sentBilling === "reminder"
+                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Reminder sent</div>
+                      : <Button size="sm" onClick={() => setSentBilling("reminder")}><Send className="size-3.5" /> Send reminder</Button>
+                  )}
+                  {ps.balance?.status === "pending" && (
+                    sentBilling === "invoice"
+                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice sent</div>
+                      : <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}><DollarSign className="size-3.5" /> Send invoice</Button>
+                  )}
+                  {ps.balance?.status === "sent" && (
+                    sentBilling === "resend"
+                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice resent</div>
+                      : <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}><Send className="size-3.5" /> Resend invoice</Button>
+                  )}
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Payment timeline */}
-            {(() => {
-              const events: { date: string; label: string; type: string }[] = [];
-              if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit paid — $${ps.deposit.amount}`, type: "paid" });
-              if (ps.deposit?.sentDate && ps.deposit.status !== "paid") events.push({ date: ps.deposit.sentDate, label: `Deposit invoice sent — $${ps.deposit.amount}`, type: ps.deposit.status === "overdue" ? "overdue" : "sent" });
-              if (ps.balance?.paidDate) events.push({ date: ps.balance.paidDate, label: `Balance paid — $${ps.balance.amount}`, type: "paid" });
-              if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice sent — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
-              events.sort((a, b) => a.date.localeCompare(b.date));
-              if (events.length === 0) return null;
-              return (
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Payment Timeline</div>
-                  {events.map((e, i) => (
-                    <div key={i} className="flex items-center gap-3 text-xs">
-                      <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
-                      <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                      <span>{e.label}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Payment actions */}
-            {!ps.fullyPaid && (
-              <div className="flex gap-2">
-                {ps.deposit?.status === "overdue" && (
-                  sentBilling === "reminder"
-                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Reminder sent</div>
-                    : <Button size="sm" onClick={() => setSentBilling("reminder")}><Send className="size-3.5" /> Send payment reminder</Button>
-                )}
-                {ps.balance?.status === "pending" && (
-                  sentBilling === "invoice"
-                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice sent</div>
-                    : <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}><DollarSign className="size-3.5" /> Send invoice</Button>
-                )}
-                {ps.balance?.status === "sent" && (
-                  sentBilling === "resend"
-                    ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice resent</div>
-                    : <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}><Send className="size-3.5" /> Resend invoice</Button>
-                )}
+          {/* Intake snapshot — compact */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Intake Summary</CardTitle>
+              <Link href={`/dashboard/clients/${client.id}/intake`}>
+                <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-4">
+                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
+                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
+                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div><div className="text-sm font-medium mt-0.5">{client.documentsSubmitted} / {client.documentsRequired}</div></div>
+                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {client.notes && (
+                <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
+                  <div className="text-xs text-muted-foreground">{client.notes}</div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Return Timeline */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
-          <CardContent>
-            <TrackingTimeline items={timelineItems} />
-          </CardContent>
-        </Card>
-      </div>
+          {/* Client Review enhancement */}
+          {client.returnStage === "client_review" && client.returnSentDate && (() => {
+            const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
+            const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
+            return (
+              <div className={`rounded-xl border p-3 ${daysSinceSent > 3 ? "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10" : ""}`}>
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="size-4 text-muted-foreground" />
+                  <span>Return sent <strong>{daysSinceSent} days ago</strong></span>
+                  <span className="text-muted-foreground">·</span>
+                  <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "accessed today" : `accessed ${lastLogin}d ago`) : "never accessed"}</span>
+                </div>
+                {daysSinceSent > 3 && <p className="mt-1.5 text-xs text-amber-600">Review may be stale — consider sending a follow-up</p>}
+              </div>
+            );
+          })()}
+        </div>
 
-      {/* Intake snapshot */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm">Intake Summary</CardTitle>
-          <Link href={`/dashboard/clients/${client.id}/intake`}>
-            <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-4">
-            <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
-            <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
-            <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div><div className="text-sm font-medium mt-0.5">{client.documentsSubmitted} / {client.documentsRequired}</div></div>
-            <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
-          </div>
+        {/* Right column — timeline + contact + notes */}
+        <div className="space-y-5">
+          {/* Return Timeline */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
+            <CardContent>
+              <TrackingTimeline items={timelineItems} />
+            </CardContent>
+          </Card>
+
+          {/* Contact — compact */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5" /> {client.email}</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5" /> {client.phone}</div>
+            </CardContent>
+          </Card>
+
+          {/* Filing Details — compact */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Filing Details</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <div>Filing Status: <span className="font-medium text-foreground">{client.filingStatus.toUpperCase()}</span></div>
+              <div>Last Portal Login: <span className="font-medium text-foreground">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
+            </CardContent>
+          </Card>
+
+          {/* Context Notes — compact */}
           {client.notes && (
-            <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
-              <div className="text-xs text-muted-foreground">{client.notes}</div>
-            </div>
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-xs leading-relaxed text-muted-foreground">{client.notes}</p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Client Review enhancement */}
-      {client.returnStage === "client_review" && client.returnSentDate && (() => {
-        const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
-        const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
-        return (
-          <div className={`rounded-xl border p-3 ${daysSinceSent > 3 ? "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10" : ""}`}>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="size-4 text-muted-foreground" />
-              <span>Return sent <strong>{daysSinceSent} days ago</strong></span>
-              <span className="text-muted-foreground">·</span>
-              <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "accessed today" : `accessed ${lastLogin}d ago`) : "never accessed"}</span>
-            </div>
-            {daysSinceSent > 3 && <p className="mt-1.5 text-xs text-amber-600">Review may be stale — consider sending a follow-up</p>}
-          </div>
-        );
-      })()}
-
-      {/* Contact + Filing */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-4" /> {client.email}</div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-4" /> {client.phone}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Filing Details</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <div>Filing Status: <span className="font-medium text-foreground">{client.filingStatus.toUpperCase()}</span></div>
-            <div>Last Portal Login: <span className="font-medium text-foreground">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
-
-      {/* Context Notes */}
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Context Notes</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground">{client.notes}</p>
-        </CardContent>
-      </Card>
 
       {/* Contextual Actions */}
-      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} />
+      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("download", "Downloading tax return", `${client.fullName} — 2025 Federal Return`)} />
 
       {/* Dialogs */}
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
@@ -594,7 +601,7 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
   );
 }
 
-function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () => void }) {
+function ContextualActions({ stage, onEroSign, onDownload }: { stage: string; onEroSign: () => void; onDownload?: () => void }) {
   const actions: { icon: React.ReactNode; label: string; primary?: boolean; onClick?: () => void }[] = [];
   switch (stage) {
     case "new_intake":
@@ -632,7 +639,7 @@ function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () 
     case "filed":
       actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
       actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
-      actions.push({ icon: <Download className="size-4" />, label: "Download Return" });
+      actions.push({ icon: <Download className="size-4" />, label: "Download Return", onClick: onDownload });
       break;
   }
   return (

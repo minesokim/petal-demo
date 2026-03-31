@@ -7,6 +7,7 @@ import { ChevronRight, Download } from "lucide-react";
 import { DocTypeBadge } from "./doc-type-badge";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { type MockDocument } from "@/lib/documents-mock-data";
+import { useToast } from "@/components/ui/toast-notification";
 
 function timeAgo(date: string) {
   const now = new Date("2026-03-28T12:00:00");
@@ -25,6 +26,7 @@ interface DocumentRowProps {
 
 export function DocumentRow({ doc, showNew = false, showDate = false }: DocumentRowProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const { showToast } = useToast();
 
   return (
     <>
@@ -49,7 +51,7 @@ export function DocumentRow({ doc, showNew = false, showDate = false }: Document
           <Badge variant="outline" className="text-[10px]">Ready for review</Badge>
         )}
         <button
-          onClick={(e) => { e.stopPropagation(); /* demo download */ }}
+          onClick={(e) => { e.stopPropagation(); showToast("download", `Downloading ${doc.fileName}`, doc.fileSize); }}
           className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="Quick download"
         >

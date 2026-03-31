@@ -15,11 +15,13 @@ import { documentExtractions } from "@/lib/actions-mock-data";
 import { getClientChecklist, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { DocumentExtractionView } from "@/components/documents/document-extraction-view";
 import { AlertTriangle, Check, CheckCircle, Download, FileText, FolderDown } from "lucide-react";
+import { useToast } from "@/components/ui/toast-notification";
 
 export default function ClientDocumentsPage() {
   const params = useParams();
   const client = clients.find(c => c.id === params.id);
   const [downloading, setDownloading] = useState(false);
+  const { showToast } = useToast();
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
   const checklist = getClientChecklist(client.id);
@@ -80,7 +82,7 @@ export default function ClientDocumentsPage() {
 
             {/* Download All button — only when all docs received */}
             {allReceived && totalDocs > 0 && (
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); setTimeout(() => setDownloading(false), 1500); }}>
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); showToast("download", `Downloading ${totalDocs} files`, `${client.fullName.split(" ")[0]}'s documents`); setTimeout(() => setDownloading(false), 1500); }}>
                 <FolderDown className={`size-3.5 ${downloading ? "animate-bounce" : ""}`} />
                 {downloading ? "Downloading..." : `Download all (${totalDocs})`}
               </Button>

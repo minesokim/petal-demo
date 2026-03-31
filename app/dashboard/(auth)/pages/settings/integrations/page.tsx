@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import Image from "next/image";
 import {
   Check, ExternalLink, Settings2, Unplug, RefreshCw, Clock, Mail
 } from "lucide-react";
@@ -13,7 +14,7 @@ interface Integration {
   id: string;
   name: string;
   description: string;
-  logo: React.ReactNode;
+  logoUrl: string;
   status: "connected" | "available" | "coming_soon";
   connectedAs?: string;
   lastSync?: string;
@@ -21,90 +22,38 @@ interface Integration {
   badge?: string;
 }
 
-// Inline SVG logos for real brands
-const logos = {
-  gcal: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <path d="M18.316 5.684H5.684v12.632h12.632V5.684z" fill="#fff"/>
-      <path d="M6.947 18.316h-1.263a1.263 1.263 0 01-1.263-1.263V6.947" fill="#1A73E8"/>
-      <path d="M18.316 18.316H6.947V5.684h12.632v11.369a1.263 1.263 0 01-1.263 1.263z" fill="#1A73E8" opacity=".1"/>
-      <path d="M18.316 5.684V4.42a1.263 1.263 0 00-1.263-1.263H5.684a1.263 1.263 0 00-1.263 1.263v1.264h13.895z" fill="#4285F4"/>
-      <rect x="4.421" y="5.684" width="15.158" height="12.632" rx="0" fill="#fff"/>
-      <path d="M4.421 6.947h15.158v10.106a1.263 1.263 0 01-1.263 1.263H5.684a1.263 1.263 0 01-1.263-1.263V6.947z" fill="#4285F4" opacity=".08"/>
-      <rect x="8" y="9" width="2.5" height="2" rx=".4" fill="#4285F4"/>
-      <rect x="11" y="9" width="2.5" height="2" rx=".4" fill="#4285F4"/>
-      <rect x="14" y="9" width="2.5" height="2" rx=".4" fill="#4285F4"/>
-      <rect x="8" y="12" width="2.5" height="2" rx=".4" fill="#4285F4"/>
-      <rect x="11" y="12" width="2.5" height="2" rx=".4" fill="#4285F4"/>
-      <rect x="14" y="12" width="2.5" height="2" rx=".4" fill="#4285F4" opacity=".4"/>
-      <rect x="8" y="15" width="2.5" height="2" rx=".4" fill="#4285F4" opacity=".4"/>
-      <rect x="11" y="15" width="2.5" height="2" rx=".4" fill="#4285F4" opacity=".4"/>
-    </svg>
-  ),
-  stripe: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <rect width="24" height="24" rx="4" fill="#635BFF"/>
-      <path d="M11.2 9.6c0-.55.45-.76 1.19-.76.99 0 2.24.3 3.23.84V7.05a8.58 8.58 0 00-3.23-.6c-2.64 0-4.39 1.38-4.39 3.68 0 3.59 4.94 3.01 4.94 4.56 0 .65-.57.86-1.36.86-1.18 0-2.69-.48-3.88-1.14v3.48a9.86 9.86 0 003.88.82c2.7 0 4.55-1.34 4.55-3.68-.01-3.87-4.93-3.18-4.93-4.47z" fill="#fff"/>
-    </svg>
-  ),
-  gmeet: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#00897B"/>
-      <path d="M15 8.5v2l2.5-2V15.5L15 13.5v2a1 1 0 01-1 1h-5a1 1 0 01-1-1v-7a1 1 0 011-1h5a1 1 0 011 1z" fill="#fff"/>
-    </svg>
-  ),
-  gmail: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <path d="M20 4H4l8 6 8-6z" fill="#EA4335"/>
-      <path d="M20 4v16H4V4l8 6 8-6z" fill="#FBBC04" opacity=".3"/>
-      <path d="M4 20V4l8 6-8 14z" fill="#34A853" opacity=".8"/>
-      <path d="M20 20V4l-8 6 8 14z" fill="#4285F4" opacity=".8"/>
-      <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="#D93025" strokeWidth=".5" opacity=".3"/>
-    </svg>
-  ),
-  zoom: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <rect width="24" height="24" rx="4" fill="#2D8CFF"/>
-      <path d="M6 8.5a1.5 1.5 0 011.5-1.5h5a1.5 1.5 0 011.5 1.5v5.5l3.5-2.5v5l-3.5-2.5v1a1.5 1.5 0 01-1.5 1.5h-5A1.5 1.5 0 016 15V8.5z" fill="#fff"/>
-    </svg>
-  ),
-  quickbooks: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <circle cx="12" cy="12" r="10" fill="#2CA01C"/>
-      <path d="M8 8v8h2v-3h2a3 3 0 000-6H8zm2 2h2a1 1 0 010 2h-2v-2zm6 6V8h-2v3h-1a3 3 0 000 6h3zm-2-2v-2h1a1 1 0 010 2h-1z" fill="#fff"/>
-    </svg>
-  ),
-  xero: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <circle cx="12" cy="12" r="10" fill="#13B5EA"/>
-      <path d="M8 8l4 4-4 4M16 8l-4 4 4 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-    </svg>
-  ),
-  olt: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <rect width="24" height="24" rx="4" fill="#1a1a1a"/>
-      <text x="12" y="16" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700" fontFamily="system-ui">OLT</text>
-    </svg>
-  ),
-  irs: (
-    <svg viewBox="0 0 24 24" className="size-6">
-      <rect width="24" height="24" rx="4" fill="#003366"/>
-      <text x="12" y="16" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="700" fontFamily="system-ui">IRS</text>
-    </svg>
-  ),
-};
-
 const allIntegrations: Integration[] = [
-  { id: "gcal", name: "Google Calendar", description: "Sync appointments and meeting links. Changes in either direction stay in sync.", logo: logos.gcal, status: "connected", connectedAs: "antonio@vazantconsulting.com", lastSync: "2 min ago", settingsUrl: "https://calendar.google.com/calendar/r/settings" },
-  { id: "stripe", name: "Stripe", description: "Collect deposits, send invoices, and process payments. Webhooks auto-update client records.", logo: logos.stripe, status: "connected", connectedAs: "vazantconsulting", lastSync: "Just now", settingsUrl: "https://dashboard.stripe.com" },
-  { id: "gmeet", name: "Google Meet", description: "Auto-generate meeting links for video appointments. Links attached to calendar events.", logo: logos.gmeet, status: "connected", connectedAs: "Via Google Calendar", lastSync: "Auto", settingsUrl: "https://meet.google.com" },
-  { id: "gmail", name: "Gmail", description: "Sync email threads with client communications. Emails appear alongside portal messages.", logo: logos.gmail, status: "available", badge: "New" },
-  { id: "zoom", name: "Zoom", description: "Video call links for appointments. Alternative to Google Meet for clients who prefer Zoom.", logo: logos.zoom, status: "available" },
-  { id: "quickbooks", name: "QuickBooks Online", description: "Accounting sync. Import P&L, balance sheets, and client financials directly.", logo: logos.quickbooks, status: "available" },
-  { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logo: logos.xero, status: "available" },
-  { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logo: logos.olt, status: "coming_soon" },
-  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Docket.", logo: logos.irs, status: "coming_soon" },
+  { id: "gcal", name: "Google Calendar", description: "Sync appointments and meeting links. Changes in either direction stay in sync.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg", status: "connected", connectedAs: "antonio@vazantconsulting.com", lastSync: "2 min ago", settingsUrl: "https://calendar.google.com/calendar/r/settings" },
+  { id: "stripe", name: "Stripe", description: "Collect deposits, send invoices, and process payments. Webhooks auto-update client records.", logoUrl: "https://cdn.brandfetch.io/idxAg10C0L/theme/dark/symbol.svg", status: "connected", connectedAs: "vazantconsulting", lastSync: "Just now", settingsUrl: "https://dashboard.stripe.com" },
+  { id: "gmeet", name: "Google Meet", description: "Auto-generate meeting links for video appointments. Links attached to calendar events.", logoUrl: "https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-96dp/logo_meet_2020q4_color_2x_web_96dp.png", status: "connected", connectedAs: "Via Google Calendar", lastSync: "Auto", settingsUrl: "https://meet.google.com" },
+  { id: "gmail", name: "Gmail", description: "Sync email threads with client communications. Emails appear alongside portal messages.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg", status: "available", badge: "New" },
+  { id: "zoom", name: "Zoom", description: "Video call links for appointments. Alternative to Google Meet for clients who prefer Zoom.", logoUrl: "https://cdn.brandfetch.io/idw382nG0y/theme/dark/icon.svg", status: "available" },
+  { id: "quickbooks", name: "QuickBooks Online", description: "Accounting sync. Import P&L, balance sheets, and client financials directly.", logoUrl: "https://cdn.brandfetch.io/idFOePHAbz/theme/dark/symbol.svg", status: "available" },
+  { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logoUrl: "https://cdn.brandfetch.io/id2S-38Kqn/theme/dark/symbol.svg", status: "available" },
+  { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logoUrl: "", status: "coming_soon" },
+  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Docket.", logoUrl: "", status: "coming_soon" },
 ];
+
+function IntegrationLogo({ integration }: { integration: Integration }) {
+  if (integration.logoUrl) {
+    return (
+      <Image
+        src={integration.logoUrl}
+        alt={integration.name}
+        width={28}
+        height={28}
+        className="size-7 object-contain"
+        unoptimized
+      />
+    );
+  }
+  // Fallback: text abbreviation for integrations without a logo
+  return (
+    <div className="flex size-7 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
+      {integration.id === "olt" ? "OLT" : "IRS"}
+    </div>
+  );
+}
 
 export default function IntegrationsPage() {
   const [connected, setConnected] = useState<Set<string>>(new Set(["gcal", "stripe", "gmeet"]));
@@ -144,7 +93,7 @@ export default function IntegrationsPage() {
                 <CardContent className="p-0">
                   <div className="flex items-start gap-4 p-4">
                     <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                      {intg.logo}
+                      <IntegrationLogo integration={intg} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -190,7 +139,7 @@ export default function IntegrationsPage() {
               <Card key={intg.id}>
                 <CardContent className="flex items-start gap-4 p-4">
                   <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                    {intg.logo}
+                    <IntegrationLogo integration={intg} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -213,16 +162,16 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Email Sync Beta */}
+      {/* Email Sync Beta — neutral styling, no yellow */}
       <Card>
         <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/30">
-            <Mail className="size-5 text-amber-600" />
+          <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
+            <Mail className="size-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Email Sync</span>
-              <Badge className="text-[9px] h-4 bg-amber-100 text-amber-800 border-amber-200">Beta</Badge>
+              <Badge variant="secondary" className="text-[9px] h-4">Beta</Badge>
             </div>
             <p className="text-xs text-muted-foreground">Sync Gmail or Outlook emails with client message threads.</p>
           </div>
@@ -238,7 +187,7 @@ export default function IntegrationsPage() {
             <Card key={intg.id} className="opacity-50">
               <CardContent className="flex items-start gap-4 p-4">
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                  {intg.logo}
+                  <IntegrationLogo integration={intg} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
