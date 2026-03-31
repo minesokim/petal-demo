@@ -154,7 +154,7 @@ export function DocumentPreviewDialog({ document: doc, open, onOpenChange }: Doc
         <Separator className="my-2" />
 
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => showToast("download", `Downloading ${doc.fileName}`, doc.fileSize)}><Download className="size-3.5" /> Download</Button>
+          <Button size="sm" variant="outline" onClick={() => showToast("success", `${doc.fileName} downloaded`)}><Download className="size-3.5" /> Download</Button>
           <Button size="sm" variant="outline"><Printer className="size-3.5" /> Print</Button>
         </div>
       </DialogContent>

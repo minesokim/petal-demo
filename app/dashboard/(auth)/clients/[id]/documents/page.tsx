@@ -82,7 +82,7 @@ export default function ClientDocumentsPage() {
 
             {/* Download All button — only when all docs received */}
             {allReceived && totalDocs > 0 && (
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); showToast("download", `Downloading ${totalDocs} files`, `${client.fullName.split(" ")[0]}'s documents`); setTimeout(() => setDownloading(false), 1500); }}>
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); showToast("success", `${totalDocs} files downloaded`, `${client.fullName.split(" ")[0]}'s documents`); setTimeout(() => setDownloading(false), 1500); }}>
                 <FolderDown className={`size-3.5 ${downloading ? "animate-bounce" : ""}`} />
                 {downloading ? "Downloading..." : `Download all (${totalDocs})`}
               </Button>

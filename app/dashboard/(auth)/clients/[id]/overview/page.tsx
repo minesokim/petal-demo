@@ -466,7 +466,7 @@ export default function ClientOverviewPage() {
       </div>
 
       {/* Contextual Actions */}
-      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("download", "Downloading tax return", `${client.fullName} — 2025 Federal Return`)} />
+      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("success", "Tax return downloaded", `${client.fullName} — 2025 Federal Return`)} />
 
       {/* Dialogs */}
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />

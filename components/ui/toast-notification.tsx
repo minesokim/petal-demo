@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, X, Send, Download, FileText, AlertTriangle, File, CheckCircle2 } from "lucide-react";
+import { X, Send, AlertTriangle, File, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-type ToastType = "success" | "sent" | "download" | "warning";
+type ToastType = "success" | "sent" | "warning";
 
 interface Toast {
   id: string;
@@ -32,26 +32,16 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-const icons: Record<ToastType, React.ReactNode> = {
-  success: <Check className="size-4" />,
-  sent: <Send className="size-4" />,
-  download: <Download className="size-4" />,
-  warning: <AlertTriangle className="size-4" />,
-};
-
-const colors: Record<ToastType, string> = {
-  success: "text-emerald-600",
-  sent: "text-primary",
-  download: "text-blue-600",
-  warning: "text-amber-600",
-};
-
-const bgColors: Record<ToastType, string> = {
-  success: "bg-emerald-50 dark:bg-emerald-950/30",
-  sent: "bg-primary/5",
-  download: "bg-blue-50 dark:bg-blue-950/30",
-  warning: "bg-amber-50 dark:bg-amber-950/30",
-};
+function ToastIcon({ type }: { type: ToastType }) {
+  if (type === "success" || type === "sent") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+        <path d="M16.5 8.31V9a7.5 7.5 0 1 1-4.447-6.855M16.5 3 9 10.508l-2.25-2.25" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    );
+  }
+  return <AlertTriangle className="size-[18px] shrink-0 text-amber-500" />;
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -68,7 +58,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const showUpload = useCallback((fileName: string, fileSize: number) => {
     const id = Math.random().toString(36).slice(2);
     setUploads(prev => [...prev, { id, fileName, fileSize, progress: 0 }]);
-    // Simulate upload progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.random() * 25 + 10;
@@ -91,7 +80,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast, showUpload }}>
       {children}
-      {/* Toast + Upload container — top right */}
       <div className="fixed top-4 right-4 z-[999] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: 380 }}>
         <AnimatePresence mode="popLayout">
           {toasts.map(toast => (
@@ -104,26 +92,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="pointer-events-auto"
             >
-              <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-background px-4 py-3 shadow-lg backdrop-blur-sm">
-                <div className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${bgColors[toast.type]}`}>
-                  <span className={colors[toast.type]}>{icons[toast.type]}</span>
-                </div>
+              <div className="inline-flex items-start gap-3 rounded-lg border border-border/60 bg-background p-3 text-sm shadow-lg">
+                <ToastIcon type={toast.type} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">{toast.title}</p>
+                  <p className="font-medium text-foreground">{toast.title}</p>
                   {toast.description && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{toast.description}</p>
+                    <p className="mt-0.5 text-muted-foreground text-xs">{toast.description}</p>
                   )}
                 </div>
                 <button
                   onClick={() => dismiss(toast.id)}
-                  className="mt-0.5 shrink-0 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                  aria-label="close"
+                  className="inline-flex shrink-0 active:scale-95 transition text-muted-foreground/50 hover:text-muted-foreground"
                 >
                   <X className="size-3.5" />
                 </button>
               </div>
             </motion.div>
           ))}
-          {/* Upload progress cards */}
           {uploads.map(upload => (
             <motion.div
               key={upload.id}
@@ -134,8 +120,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="pointer-events-auto"
             >
-              <div className={`flex items-center gap-3 rounded-xl border bg-background p-3.5 shadow-lg ${upload.progress >= 100 ? "border-emerald-500/30" : "border-border/60"}`}>
-                {upload.progress >= 100 ? <CheckCircle2 className="size-6 shrink-0 text-emerald-500" /> : <File className="size-6 shrink-0 text-muted-foreground" />}
+              <div className={`flex items-center gap-3 rounded-lg border bg-background p-3 shadow-lg ${upload.progress >= 100 ? "border-emerald-500/30" : "border-border/60"}`}>
+                {upload.progress >= 100 ? <CheckCircle2 className="size-5 shrink-0 text-emerald-500" /> : <File className="size-5 shrink-0 text-muted-foreground" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{upload.fileName}</p>
                   <div className="mt-1.5 space-y-1">
