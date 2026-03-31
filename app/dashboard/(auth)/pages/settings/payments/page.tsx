@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, CreditCard, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 export default function PaymentsSettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -34,8 +35,8 @@ export default function PaymentsSettingsPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-[#635BFF]/10">
-                <CreditCard className="size-5 text-[#635BFF]" />
+              <div className="flex size-10 items-center justify-center rounded-lg bg-muted/50">
+                <Image src="/logos/stripe.svg" alt="Stripe" width={24} height={24} className="size-6 object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-2">

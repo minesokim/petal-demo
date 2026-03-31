@@ -326,7 +326,7 @@ export default function ClientOverviewPage() {
       )}
 
       {/* Two-column layout for details */}
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
         {/* Left column — billing + intel overflow */}
         <div className="space-y-5">
           {/* Billing */}

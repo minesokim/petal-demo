@@ -7,14 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
 import {
-  Check, ExternalLink, Settings2, Unplug, RefreshCw, Clock, Mail
+  Check, Settings2, Unplug, RefreshCw, Clock, Mail
 } from "lucide-react";
 
 interface Integration {
   id: string;
   name: string;
   description: string;
-  logoUrl: string;
+  logo: string;
   status: "connected" | "available" | "coming_soon";
   connectedAs?: string;
   lastSync?: string;
@@ -23,34 +23,35 @@ interface Integration {
 }
 
 const allIntegrations: Integration[] = [
-  { id: "gcal", name: "Google Calendar", description: "Sync appointments and meeting links. Changes in either direction stay in sync.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg", status: "connected", connectedAs: "antonio@vazantconsulting.com", lastSync: "2 min ago", settingsUrl: "https://calendar.google.com/calendar/r/settings" },
-  { id: "stripe", name: "Stripe", description: "Collect deposits, send invoices, and process payments. Webhooks auto-update client records.", logoUrl: "https://cdn.brandfetch.io/idxAg10C0L/theme/dark/symbol.svg", status: "connected", connectedAs: "vazantconsulting", lastSync: "Just now", settingsUrl: "https://dashboard.stripe.com" },
-  { id: "gmeet", name: "Google Meet", description: "Auto-generate meeting links for video appointments. Links attached to calendar events.", logoUrl: "https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-96dp/logo_meet_2020q4_color_2x_web_96dp.png", status: "connected", connectedAs: "Via Google Calendar", lastSync: "Auto", settingsUrl: "https://meet.google.com" },
-  { id: "gmail", name: "Gmail", description: "Sync email threads with client communications. Emails appear alongside portal messages.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg", status: "available", badge: "New" },
-  { id: "zoom", name: "Zoom", description: "Video call links for appointments. Alternative to Google Meet for clients who prefer Zoom.", logoUrl: "https://cdn.brandfetch.io/idw382nG0y/theme/dark/icon.svg", status: "available" },
-  { id: "quickbooks", name: "QuickBooks Online", description: "Accounting sync. Import P&L, balance sheets, and client financials directly.", logoUrl: "https://cdn.brandfetch.io/idFOePHAbz/theme/dark/symbol.svg", status: "available" },
-  { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logoUrl: "https://cdn.brandfetch.io/id2S-38Kqn/theme/dark/symbol.svg", status: "available" },
-  { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logoUrl: "", status: "coming_soon" },
-  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Docket.", logoUrl: "", status: "coming_soon" },
+  { id: "gcal", name: "Google Calendar", description: "Sync appointments and meeting links. Changes in either direction stay in sync.", logo: "/logos/google-calendar.svg", status: "connected", connectedAs: "antonio@vazantconsulting.com", lastSync: "2 min ago", settingsUrl: "https://calendar.google.com/calendar/r/settings" },
+  { id: "stripe", name: "Stripe", description: "Collect deposits, send invoices, and process payments. Webhooks auto-update client records.", logo: "/logos/stripe.svg", status: "connected", connectedAs: "vazantconsulting", lastSync: "Just now", settingsUrl: "https://dashboard.stripe.com" },
+  { id: "gmeet", name: "Google Meet", description: "Auto-generate meeting links for video appointments. Links attached to calendar events.", logo: "/logos/google-meet.svg", status: "connected", connectedAs: "Via Google Calendar", lastSync: "Auto", settingsUrl: "https://meet.google.com" },
+  { id: "gmail", name: "Gmail", description: "Sync email threads with client communications. Emails appear alongside portal messages.", logo: "/logos/gmail.svg", status: "available", badge: "New" },
+  { id: "zoom", name: "Zoom", description: "Video call links for appointments. Alternative to Google Meet for clients who prefer Zoom.", logo: "/logos/zoom.svg", status: "available" },
+  { id: "quickbooks", name: "QuickBooks Online", description: "Accounting sync. Import P&L, balance sheets, and client financials directly.", logo: "/logos/quickbooks.svg", status: "available" },
+  { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logo: "/logos/xero.svg", status: "available" },
+  { id: "square", name: "Square", description: "Accept in-person payments via Square terminal. Sync transactions with client billing.", logo: "/logos/square.png", status: "available" },
+  { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logo: "", status: "coming_soon" },
+  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Docket.", logo: "", status: "coming_soon" },
 ];
 
-function IntegrationLogo({ integration }: { integration: Integration }) {
-  if (integration.logoUrl) {
+function IntegrationLogo({ src, name }: { src: string; name: string }) {
+  if (src) {
     return (
       <Image
-        src={integration.logoUrl}
-        alt={integration.name}
+        src={src}
+        alt={name}
         width={28}
         height={28}
         className="size-7 object-contain"
-        unoptimized
       />
     );
   }
-  // Fallback: text abbreviation for integrations without a logo
+  // Fallback text abbreviation
+  const abbr = name.includes("OLT") ? "OLT" : name.includes("IRS") ? "IRS" : name.slice(0, 2).toUpperCase();
   return (
     <div className="flex size-7 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
-      {integration.id === "olt" ? "OLT" : "IRS"}
+      {abbr}
     </div>
   );
 }
@@ -93,7 +94,7 @@ export default function IntegrationsPage() {
                 <CardContent className="p-0">
                   <div className="flex items-start gap-4 p-4">
                     <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                      <IntegrationLogo integration={intg} />
+                      <IntegrationLogo src={intg.logo} name={intg.name} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -139,7 +140,7 @@ export default function IntegrationsPage() {
               <Card key={intg.id}>
                 <CardContent className="flex items-start gap-4 p-4">
                   <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                    <IntegrationLogo integration={intg} />
+                    <IntegrationLogo src={intg.logo} name={intg.name} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -162,7 +163,7 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Email Sync Beta — neutral styling, no yellow */}
+      {/* Email Sync Beta */}
       <Card>
         <CardContent className="flex items-center gap-4 p-4">
           <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
@@ -187,7 +188,7 @@ export default function IntegrationsPage() {
             <Card key={intg.id} className="opacity-50">
               <CardContent className="flex items-start gap-4 p-4">
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                  <IntegrationLogo integration={intg} />
+                  <IntegrationLogo src={intg.logo} name={intg.name} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
