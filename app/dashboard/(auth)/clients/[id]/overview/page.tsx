@@ -466,7 +466,7 @@ export default function ClientOverviewPage() {
       </div>
 
       {/* Contextual Actions */}
-      <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("success", "Tax return downloaded", `${client.fullName} — 2025 Federal Return`)} />
+      <ContextualActions stage={client.returnStage} clientId={client.id} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("success", "Tax return downloaded", `${client.fullName} — 2025 Federal Return`)} />
 
       {/* Dialogs */}
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
@@ -573,54 +573,77 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
   );
 }
 
-function ContextualActions({ stage, onEroSign, onDownload }: { stage: string; onEroSign: () => void; onDownload?: () => void }) {
-  const actions: { icon: React.ReactNode; label: string; primary?: boolean; onClick?: () => void }[] = [];
+function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: string; clientId: string; onEroSign: () => void; onDownload?: () => void }) {
+  const [sent, setSent] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const sendAction = (key: string, label: string) => {
+    setSent(key);
+    showToast("success", label);
+    setTimeout(() => setSent(null), 2500);
+  };
+
+  const actions: { icon: React.ReactNode; label: string; key: string; sentLabel?: string; primary?: boolean; onClick: () => void }[] = [];
+
+  const navToMessages = () => { window.location.href = `/dashboard/clients/${clientId}/messages`; };
+  const navToCalendar = () => { window.location.href = "/dashboard/apps/calendar"; };
+
   switch (stage) {
     case "new_intake":
-      actions.push({ icon: <Send className="size-4" />, label: "Send Intake", primary: true });
-      actions.push({ icon: <Send className="size-4" />, label: "Remind" });
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Send Intake", key: "intake", sentLabel: "Sent!", primary: true, onClick: () => sendAction("intake", "Intake sent") });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind", key: "remind", sentLabel: "Reminded", onClick: () => sendAction("remind", "Reminder sent") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
       break;
     case "collecting_docs":
-      actions.push({ icon: <FileText className="size-4" />, label: "Request Docs", primary: true });
-      actions.push({ icon: <Send className="size-4" />, label: "Remind" });
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Request Docs", key: "docs", sentLabel: "Requested", primary: true, onClick: () => sendAction("docs", "Document request sent") });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Remind", key: "remind", sentLabel: "Reminded", onClick: () => sendAction("remind", "Reminder sent") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", key: "portal", onClick: () => window.open("/portal", "_blank") });
       break;
     case "ready_to_prep":
-      actions.push({ icon: <FileText className="size-4" />, label: "Start Prep", primary: true });
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Start Prep", key: "prep", sentLabel: "Started", primary: true, onClick: () => sendAction("prep", "Preparation started") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
       break;
     case "in_preparation":
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
-      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", key: "portal", onClick: () => window.open("/portal", "_blank") });
       break;
     case "client_review":
-      actions.push({ icon: <Send className="size-4" />, label: "Nudge", primary: true });
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <ExternalLink className="size-4" />, label: "Portal" });
+      actions.push({ icon: <Send className="size-3.5" />, label: "Nudge", key: "nudge", sentLabel: "Nudged", primary: true, onClick: () => sendAction("nudge", "Follow-up sent") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <ExternalLink className="size-3.5" />, label: "Portal", key: "portal", onClick: () => window.open("/portal", "_blank") });
       break;
     case "pay_and_sign":
-      actions.push({ icon: <Shield className="size-4" />, label: "Sign as ERO", primary: true, onClick: onEroSign });
-      actions.push({ icon: <DollarSign className="size-4" />, label: "Send Invoice" });
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
+      actions.push({ icon: <Shield className="size-3.5" />, label: "Sign as ERO", key: "ero", primary: true, onClick: onEroSign });
+      actions.push({ icon: <DollarSign className="size-3.5" />, label: "Send Invoice", key: "invoice", sentLabel: "Sent!", onClick: () => sendAction("invoice", "Invoice sent") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
       break;
     case "filed":
-      actions.push({ icon: <MessageSquare className="size-4" />, label: "Message" });
-      actions.push({ icon: <Calendar className="size-4" />, label: "Schedule" });
-      actions.push({ icon: <Download className="size-4" />, label: "Download Return", onClick: onDownload });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
+      actions.push({ icon: <Download className="size-3.5" />, label: "Download Return", key: "download", onClick: () => { if (onDownload) onDownload(); } });
       break;
   }
+
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((a, i) => (
-        <Button key={i} size="sm" variant={a.primary ? "default" : "outline"} className="h-9" onClick={a.onClick}>
-          {a.icon} {a.label}
-        </Button>
-      ))}
+      {actions.map((a) => {
+        const isSent = sent === a.key;
+        if (isSent && a.sentLabel) {
+          return (
+            <div key={a.key} className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300 h-9">
+              <Check className="size-3.5" /> {a.sentLabel}
+            </div>
+          );
+        }
+        return (
+          <Button key={a.key} size="sm" variant={a.primary ? "default" : "outline"} className="h-9" onClick={a.onClick}>
+            {a.icon} {a.label}
+          </Button>
+        );
+      })}
     </div>
   );
 }
