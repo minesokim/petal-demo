@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { type Client, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
+import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions } from "@/lib/mock-data";
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
@@ -49,13 +49,28 @@ function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+function formatCallTime(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (isToday) return `Today at ${timeStr}`;
+  if (isYesterday) return `Yesterday at ${timeStr}`;
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + " at " + timeStr;
+}
+function isCallPast(dateStr: string) { return new Date(dateStr) < new Date(); }
+
 interface ClientDetailDialogProps {
   client: Client | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAccept?: (id: string, tier: string) => void;
+  onDecline?: (id: string) => void;
 }
 
-export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailDialogProps) {
+export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDecline }: ClientDetailDialogProps) {
   const [eroOpen, setEroOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<FeedAction | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -66,6 +81,7 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
   const [sentCalc, setSentCalc] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [assignedTier, setAssignedTier] = useState("");
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -130,8 +146,93 @@ export function ClientDetailDialog({ client, open, onOpenChange }: ClientDetailD
           </div>
         </div>
 
+        {/* Pending intake banner */}
+        {client.clientStatus === "pending" && onAccept && onDecline && (
+          <div className="border-b bg-rose-50/50 dark:bg-rose-950/10 px-6 py-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">Pending Review</Badge>
+            </div>
+
+            {/* Intake details */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Check className="size-3 text-emerald-500" />
+                  <span>Intake completed</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="size-3 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400">$50 deposit paid</span>
+                </div>
+                {(() => {
+                  const ctx = pendingIntakeContext[client.id];
+                  return ctx ? (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="size-3 text-muted-foreground" />
+                        <span>Requested: <strong>{ctx.service}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="size-3 text-muted-foreground/50" />
+                        <span className="text-muted-foreground">{ctx.filing} / {ctx.income.join(", ")}</span>
+                      </div>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className={`size-3 ${client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500"}`} />
+                  <span className={client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400 font-medium" : ""}>
+                    {client.scheduledCall ? formatCallTime(client.scheduledCall) : "No call scheduled"}
+                    {client.scheduledCall && isCallPast(client.scheduledCall) && " · Missed"}
+                  </span>
+                </div>
+                {client.notes && (
+                  <p className="text-muted-foreground leading-relaxed mt-1">{client.notes}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Tier assignment + actions */}
+            <div className="flex items-center gap-2 pt-1">
+              <select
+                value={assignedTier}
+                onChange={(e) => setAssignedTier(e.target.value)}
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground outline-none transition-colors focus:border-primary"
+              >
+                {serviceTierOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                className="h-8"
+                disabled={!assignedTier}
+                onClick={() => {
+                  onAccept(client.id, assignedTier);
+                  onOpenChange(false);
+                }}
+              >
+                <Check className="mr-1 size-3.5" /> Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => {
+                  onDecline(client.id);
+                  onOpenChange(false);
+                }}
+              >
+                <X className="mr-1 size-3.5" /> Decline
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Tabbed content */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 120px)" }}>
+        <div className="overflow-y-auto" style={{ maxHeight: client.clientStatus === "pending" ? "calc(90vh - 340px)" : "calc(90vh - 120px)" }}>
           <Tabs defaultValue="overview" className="px-6 pt-2 pb-6">
             <TabsList variant="line" className="mb-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>

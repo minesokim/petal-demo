@@ -310,6 +310,24 @@ export const pipelineCounts = {
   filed: clients.filter(c => c.returnStage === 'filed').length,
 }
 
+// Intake context for pending clients (will move to backend)
+export const pendingIntakeContext: Record<string, { filing: string; income: string[]; service: string }> = {
+  c21: { filing: "Single", income: ["W-2", "1099-NEC"], service: "Complex Return" },
+  c22: { filing: "MFJ", income: ["Business (S-Corp)", "W-2"], service: "Business Tax Return" },
+  c23: { filing: "Single", income: ["W-2"], service: "Simple Tax Return" },
+}
+
+export const serviceTierOptions = [
+  { value: "", label: "Assign service tier..." },
+  { value: "Simple Tax Return — $150", label: "Simple Tax Return — $150" },
+  { value: "Complex Return — $350", label: "Complex Return — $350" },
+  { value: "Business Tax Return — $500", label: "Business Tax Return — $500" },
+  { value: "Business Formation Basic — $500", label: "Business Formation Basic — $500" },
+  { value: "Business Formation Full — $1,000", label: "Business Formation Full — $1,000" },
+  { value: "Bookkeeping Monthly — $200", label: "Bookkeeping Monthly — $200/mo" },
+  { value: "Strategic Consultation — $250", label: "Strategic Consultation — $250" },
+]
+
 export const stageLabels: Record<ReturnStage, string> = {
   new_intake: 'New Intake',
   collecting_docs: 'Collecting Docs',
