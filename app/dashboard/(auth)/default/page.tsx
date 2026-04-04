@@ -512,7 +512,7 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* Voice Dump Dialog */}
+      {/* Voice Notes Dialog */}
       <VoiceDumpDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
 
       <ClientDetailDialog

@@ -37,7 +37,7 @@ export default function ActionsPage() {
         </div>
         <Button onClick={() => setVoiceOpen(true)}>
           <Mic className="size-4" />
-          Voice Dump
+          Voice Notes
         </Button>
       </div>
 
@@ -80,7 +80,7 @@ export default function ActionsPage() {
         onOpenChange={setSheetOpen}
       />
 
-      {/* Voice Dump Dialog */}
+      {/* Voice Notes Dialog */}
       <VoiceDumpDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
     </div>
   );

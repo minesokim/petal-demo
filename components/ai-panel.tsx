@@ -11,6 +11,7 @@ import {
   MaximizeIcon, MinimizeIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { voiceDumpSession } from "@/lib/actions-mock-data";
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
@@ -368,11 +369,26 @@ export function AIPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
+  // Voice results state
+  const [voiceResults, setVoiceResults] = useState<typeof voiceDumpSession | null>(null);
+  const [voiceChecked, setVoiceChecked] = useState<Record<string, boolean>>({});
+
   // Handle pending questions from other components
   useEffect(() => {
     if (pendingQuestion && isOpen) {
-      handleSend(pendingQuestion);
-      clearPendingQuestion();
+      if (pendingQuestion === "__voice_results__") {
+        // Show voice results instead of sending as a question
+        setVoiceResults(voiceDumpSession);
+        const defaultChecked: Record<string, boolean> = {};
+        voiceDumpSession.parsedItems.forEach(item => {
+          defaultChecked[item.id] = item.category === "action"; // Auto-check actions, not personal todos
+        });
+        setVoiceChecked(defaultChecked);
+        clearPendingQuestion();
+      } else {
+        handleSend(pendingQuestion);
+        clearPendingQuestion();
+      }
     }
   }, [pendingQuestion, isOpen]);
 
@@ -542,6 +558,87 @@ export function AIPanel() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className={`space-y-8 pb-6 transition-all duration-500 ${isFullPage ? "mx-auto max-w-2xl px-6" : "px-4"}`}>
             {renderMessages()}
+
+            {/* Voice Results Card */}
+            {voiceResults && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border bg-background p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-6 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100">
+                      <svg className="size-3 text-white dark:text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                    </div>
+                    <span className="text-sm font-semibold">Voice Note</span>
+                  </div>
+                  <button
+                    onClick={() => setVoiceResults(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+
+                {/* Transcript (collapsible) */}
+                <details className="group">
+                  <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                    View transcript
+                  </summary>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed italic border-l-2 border-muted pl-3">
+                    {voiceResults.transcript}
+                  </p>
+                </details>
+
+                {/* Parsed items as checklist */}
+                <div className="space-y-1.5">
+                  {voiceResults.parsedItems.map(item => (
+                    <label
+                      key={item.id}
+                      className="flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={voiceChecked[item.id] || false}
+                        onChange={(e) => setVoiceChecked(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                        className="mt-0.5 rounded border-border"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs">{item.text}</span>
+                        {item.clientName && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground">
+                            / {item.clientName.split(" ")[0]}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Add to feed button */}
+                <Button
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                  disabled={!Object.values(voiceChecked).some(v => v)}
+                  onClick={() => {
+                    const count = Object.values(voiceChecked).filter(v => v).length;
+                    setVoiceResults(null);
+                    setVoiceChecked({});
+                    // In a real app, this would add items to the action feed
+                    setMessages(prev => [...prev, {
+                      id: Date.now().toString(),
+                      role: "assistant",
+                      content: "",
+                      summary: `Added ${count} item${count !== 1 ? "s" : ""} from your voice note to the action feed.`,
+                    }]);
+                  }}
+                >
+                  Add {Object.values(voiceChecked).filter(v => v).length} to action feed
+                </Button>
+              </motion.div>
+            )}
+
             {isTyping && (
               <div className="flex items-center gap-2 rounded-lg px-2 py-2">
                 <div className="flex gap-1">
