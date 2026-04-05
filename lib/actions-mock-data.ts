@@ -284,16 +284,16 @@ export const documentExtractions: DocumentExtraction[] = [
 export const complianceAlerts: ComplianceAlert[] = [
   {
     id: "ca1", clientId: "c4", clientName: "DeShawn Williams",
-    severity: "critical", title: "Form 8867 Due Diligence Required",
-    description: "DeShawn is filing as Head of Household with 2 dependents. You must complete Form 8867 (Paid Preparer's Due Diligence Checklist) for EITC, CTC, AOTC, and HOH status.",
+    severity: "critical", title: "Form 8867 Due Diligence",
+    description: "HOH with 2 dependents. EITC, CTC, AOTC, and HOH all require 8867.",
     formRequired: "Form 8867", fineRisk: "$600 per return per failure",
     status: "pending",
   },
   {
     id: "ca2", clientId: "c18", clientName: "Mei-Lin Wu",
-    severity: "warning", title: "Schedule C Audit Risk Flag",
-    description: "Wu Acupuncture shows a high expense-to-revenue ratio (78%). This is above the IRS audit trigger threshold for this industry. Recommend documenting all deductions.",
-    formRequired: "Supporting documentation", fineRisk: "Audit risk - substantiation required",
+    severity: "warning", title: "Schedule C Audit Risk",
+    description: "78% expense-to-revenue ratio. Above IRS trigger threshold for this industry.",
+    formRequired: "Supporting documentation", fineRisk: "Audit risk, substantiation required",
     status: "pending",
   },
 ];
@@ -304,7 +304,7 @@ export const anomalyAlerts: AnomalyAlert[] = [
     id: "aa1", clientId: "c1", clientName: "Marcus Chen",
     metric: "Restaurant Revenue (3 locations)",
     priorYear: 485000, currentYear: 291000, changePercent: -40,
-    aiExplanation: "Revenue dropped 40% across all 3 Golden Dragon locations. This could be due to a location closure, seasonal adjustment, or data entry issue. Recommend confirming with client before filing.",
+    aiExplanation: "40% drop across all 3 locations. Possible closure, seasonal shift, or data entry error. Confirm before filing.",
     status: "pending",
   },
 ];
@@ -376,14 +376,14 @@ export const deductionSuggestions: DeductionSuggestion[] = [
     id: "ds1", clientId: "c18", clientName: "Mei-Lin Wu",
     deductionType: "Qualified Business Income", section: "Section 199A",
     estimatedSavings: 2400,
-    description: "Wu Acupuncture qualifies for the 20% QBI deduction on net business income. Based on $48,000 net income, estimated deduction of $9,600 reducing tax by approximately $2,400.",
+    description: "20% QBI on $48K net income. $9,600 deduction.",
     status: "pending",
   },
   {
     id: "ds2", clientId: "c15", clientName: "Carlos & Elena Mendez",
     deductionType: "Equipment Depreciation", section: "Section 179",
     estimatedSavings: 8200,
-    description: "New paint booth equipment purchased in December ($32,000) qualifies for Section 179 immediate expensing. Full deduction in 2025 instead of 7-year depreciation.",
+    description: "$32K paint booth (Dec). Full deduction vs 7-year depreciation.",
     status: "pending",
   },
 ];
@@ -421,13 +421,13 @@ export const estimatedTaxCalcs: EstimatedTaxCalc[] = [
     id: "et1", clientId: "c18", clientName: "Mei-Lin Wu",
     quarterlyAmounts: { q1: 3200, q2: 3200, q3: 3200, q4: 3200 },
     totalEstimated: 12800,
-    basis: "Based on 2025 Schedule C net income of $48,000 and self-employment tax. Using safe harbor method (100% of prior year tax).",
+    basis: "Schedule C net $48K + SE tax. Safe harbor (100% prior year).",
   },
   {
     id: "et2", clientId: "c12", clientName: "Jasmine Torres",
     quarterlyAmounts: { q1: 1800, q2: 1800, q3: 1800, q4: 1800 },
     totalEstimated: 7200,
-    basis: "Based on 2025 freelance income of $42,000. First year with estimated payments recommended to avoid penalty.",
+    basis: "Freelance income $42K. First year, estimates recommended to avoid penalty.",
   },
 ];
 

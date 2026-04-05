@@ -478,97 +478,95 @@ export default function ClientOverviewPage() {
 
 // ── Intelligence Cards (matching popup dialog) ──
 
+// TIER 1: CRITICAL - Red left border, can't miss it
 function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
+  if (status !== "pending") return null;
   return (
-    <div className={`rounded-xl border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
+    <div className="rounded-xl border-l-[3px] border-l-red-500 border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 p-4">
       <div className="flex items-start gap-3">
-        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${alert.severity === "critical" ? "bg-red-100 dark:bg-red-900/50" : "bg-amber-100 dark:bg-amber-900/50"}`}>
-          <AlertTriangle className={`size-4 ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"}`} />
-        </div>
+        <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{alert.title}</span>
-            <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"} className="text-[10px]">{alert.severity}</Badge>
+            {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
           </div>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{alert.description}</p>
-          <div className="mt-2 flex items-center gap-4 text-xs">
-            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
-            <span className="text-red-600">Fine risk: {alert.fineRisk}</span>
-          </div>
+          <div className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{alert.fineRisk}</div>
         </div>
       </div>
-      {status === "pending" && (
-        <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={() => setStatus("acknowledged")}><Check className="size-3.5" /> Acknowledge</Button>
-          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
-        </div>
-      )}
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}>
+          Complete {alert.formRequired}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>Dismiss</Button>
+      </div>
     </div>
   );
 }
 
+// TIER 2: ATTENTION - Amber left border, shows data
 function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
+  if (status !== "pending") return null;
   return (
-    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
-      <div className="flex items-start gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
-          <TrendingDown className="size-4 text-amber-600" />
+    <div className="rounded-xl border-l-[3px] border-l-amber-500 border p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm font-semibold">{alert.metric}</div>
+        <TrendingDown className="size-4 text-amber-500 shrink-0" />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="rounded-lg border p-2 text-center">
+          <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
+          <div className="text-[10px] text-muted-foreground">2024</div>
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">Year-over-year anomaly: {alert.metric}</div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-lg border p-2 text-center">
-              <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
-              <div className="text-[10px] text-muted-foreground">2024</div>
-            </div>
-            <div className="rounded-lg border p-2 text-center">
-              <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
-              <div className="text-[10px] text-muted-foreground">2025</div>
-            </div>
-            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-center dark:border-red-900 dark:bg-red-950/30">
-              <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
-              <div className="text-[10px] text-muted-foreground">Change</div>
-            </div>
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{alert.aiExplanation}</p>
+        <div className="rounded-lg border p-2 text-center">
+          <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
+          <div className="text-[10px] text-muted-foreground">2025</div>
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-2 text-center">
+          <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
+          <div className="text-[10px] text-muted-foreground">Change</div>
         </div>
       </div>
-      {status === "pending" && (
-        <div className="mt-3 flex gap-2">
-          <Button size="sm" variant="destructive" onClick={() => setStatus("flagged")}><AlertTriangle className="size-3.5" /> Flag for review</Button>
-          <Button size="sm" variant="outline" onClick={() => setStatus("proceeded")}><Check className="size-3.5" /> Proceed</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}><Brain className="size-3.5" /> Ask Docket</Button>
-        </div>
-      )}
+      <p className="mt-2 text-xs text-muted-foreground">{alert.aiExplanation}</p>
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus("flagged")}>
+          <AlertTriangle className="mr-1 size-3" /> Flag for review
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>Confirm and proceed</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
+          <Brain className="mr-1 size-3" /> Ask Docket
+        </Button>
+      </div>
     </div>
   );
 }
 
+// TIER 3: OPPORTUNITY - Emerald left border, big savings number
 function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
+  if (status !== "pending") return null;
   return (
-    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
-      <div className="flex items-start gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-          <Calculator className="size-4 text-emerald-600" />
-        </div>
-        <div className="flex-1">
+    <div className="rounded-xl border-l-[3px] border-l-emerald-500 border p-4">
+      <div className="flex items-start justify-between">
+        <div>
           <div className="text-sm font-semibold">{suggestion.deductionType}</div>
           <div className="text-xs text-muted-foreground">{suggestion.section}</div>
-          <div className="mt-2 font-display text-xl tabular-nums tracking-tight text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()} savings</div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{suggestion.description}</p>
+        </div>
+        <div className="text-right">
+          <div className="font-display text-xl tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground">savings</div>
         </div>
       </div>
-      {status === "pending" && (
-        <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={() => setStatus("applied")}><Check className="size-3.5" /> Apply</Button>
-          <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
-        </div>
-      )}
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("applied")}>
+          Apply ${suggestion.estimatedSavings.toLocaleString()} deduction
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>Dismiss</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
+          <Brain className="mr-1 size-3" /> Ask Docket
+        </Button>
+      </div>
     </div>
   );
 }
