@@ -483,7 +483,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border-l-[3px] border-l-red-500 border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 p-4">
+    <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 p-4">
       <div className="flex items-start gap-3">
         <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
@@ -509,7 +509,7 @@ function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomaly
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border-l-[3px] border-l-amber-500 border p-4">
+    <div className="rounded-xl border p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="text-sm font-semibold">{alert.metric}</div>
         <TrendingDown className="size-4 text-amber-500 shrink-0" />
@@ -547,7 +547,7 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border-l-[3px] border-l-emerald-500 border p-4">
+    <div className="rounded-xl border p-4">
       <div className="flex items-start justify-between">
         <div>
           <div className="text-sm font-semibold">{suggestion.deductionType}</div>
