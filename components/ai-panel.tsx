@@ -11,7 +11,9 @@ import {
   MaximizeIcon, MinimizeIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { voiceDumpSession } from "@/lib/actions-mock-data";
+import { voiceDumpSession, type VoiceParsedItem } from "@/lib/actions-mock-data";
+import { clients } from "@/lib/mock-data";
+import { X as XIcon, ChevronDown } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
@@ -372,6 +374,10 @@ export function AIPanel() {
   // Voice results state
   const [voiceResults, setVoiceResults] = useState<typeof voiceDumpSession | null>(null);
   const [voiceChecked, setVoiceChecked] = useState<Record<string, boolean>>({});
+  // Track client assignments (can be changed by user for ambiguous/wrong matches)
+  const [voiceClientMap, setVoiceClientMap] = useState<Record<string, { clientId: string; clientName: string } | null>>({});
+  // Track which items have their client picker open
+  const [openPickerId, setOpenPickerId] = useState<string | null>(null);
 
   // Handle pending questions from other components
   useEffect(() => {
@@ -380,10 +386,16 @@ export function AIPanel() {
         // Show voice results instead of sending as a question
         setVoiceResults(voiceDumpSession);
         const defaultChecked: Record<string, boolean> = {};
+        const defaultClientMap: Record<string, { clientId: string; clientName: string } | null> = {};
         voiceDumpSession.parsedItems.forEach(item => {
-          defaultChecked[item.id] = item.category === "action"; // Auto-check actions, not personal todos
+          defaultChecked[item.id] = item.category === "action";
+          defaultClientMap[item.id] = item.clientId && item.clientName
+            ? { clientId: item.clientId, clientName: item.clientName }
+            : null;
         });
         setVoiceChecked(defaultChecked);
+        setVoiceClientMap(defaultClientMap);
+        setOpenPickerId(null);
         clearPendingQuestion();
       } else {
         handleSend(pendingQuestion);
@@ -574,7 +586,7 @@ export function AIPanel() {
                     <span className="text-sm font-semibold">Voice Note</span>
                   </div>
                   <button
-                    onClick={() => setVoiceResults(null)}
+                    onClick={() => { setVoiceResults(null); setOpenPickerId(null); }}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Dismiss
@@ -591,29 +603,78 @@ export function AIPanel() {
                   </p>
                 </details>
 
-                {/* Parsed items as checklist */}
-                <div className="space-y-1.5">
-                  {voiceResults.parsedItems.map(item => (
-                    <label
-                      key={item.id}
-                      className="flex items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={voiceChecked[item.id] || false}
-                        onChange={(e) => setVoiceChecked(prev => ({ ...prev, [item.id]: e.target.checked }))}
-                        className="mt-0.5 rounded border-border"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs">{item.text}</span>
-                        {item.clientName && (
-                          <span className="ml-1.5 text-[10px] text-muted-foreground">
-                            / {item.clientName.split(" ")[0]}
-                          </span>
+                {/* Parsed items with smart client matching */}
+                <div className="space-y-1">
+                  {voiceResults.parsedItems.map(item => {
+                    const assignedClient = voiceClientMap[item.id];
+                    const isPickerOpen = openPickerId === item.id;
+
+                    return (
+                      <div key={item.id} className="relative">
+                        <div className="flex items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-muted/50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={voiceChecked[item.id] || false}
+                            onChange={(e) => setVoiceChecked(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                            className="mt-0.5 rounded border-border cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs">{item.text}</span>
+                            {/* Client tag */}
+                            <div className="mt-1 flex items-center gap-1 flex-wrap">
+                              {assignedClient ? (
+                                /* Confident/assigned match: show tag with × */
+                                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                  {assignedClient.clientName.split(" ")[0]} {assignedClient.clientName.split(" ").slice(-1)[0]?.[0]}.
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setVoiceClientMap(prev => ({ ...prev, [item.id]: null }));
+                                    }}
+                                    className="ml-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                                  >
+                                    <XIcon className="size-2.5" />
+                                  </button>
+                                </span>
+                              ) : (
+                                /* No match: show "Link client" button */
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenPickerId(isPickerOpen ? null : item.id);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-muted-foreground/30 px-2 py-0.5 text-[10px] text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                                >
+                                  Link client <ChevronDown className="size-2.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Client picker dropdown */}
+                        {isPickerOpen && (
+                          <div className="ml-7 mb-1 rounded-lg border bg-background shadow-lg max-h-36 overflow-y-auto">
+                            <div className="p-1.5">
+                              {clients.filter(c => c.clientStatus !== "declined").slice(0, 10).map(c => (
+                                <button
+                                  key={c.id}
+                                  onClick={() => {
+                                    setVoiceClientMap(prev => ({ ...prev, [item.id]: { clientId: c.id, clientName: c.fullName } }));
+                                    setOpenPickerId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+                                >
+                                  <span className="font-medium">{c.fullName}</span>
+                                  {c.businessName && <span className="text-[10px] text-muted-foreground">{c.businessName}</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </label>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Add to feed button */}
@@ -622,19 +683,25 @@ export function AIPanel() {
                   className="w-full h-8 text-xs"
                   disabled={!Object.values(voiceChecked).some(v => v)}
                   onClick={() => {
-                    const count = Object.values(voiceChecked).filter(v => v).length;
+                    const checkedCount = Object.values(voiceChecked).filter(v => v).length;
+                    const clientLinked = Object.entries(voiceChecked).filter(([id, checked]) => checked && voiceClientMap[id]).length;
+                    const personal = checkedCount - clientLinked;
                     setVoiceResults(null);
                     setVoiceChecked({});
-                    // In a real app, this would add items to the action feed
+                    setVoiceClientMap({});
+                    setOpenPickerId(null);
+                    const parts: string[] = [];
+                    if (clientLinked > 0) parts.push(`${clientLinked} client action${clientLinked !== 1 ? "s" : ""}`);
+                    if (personal > 0) parts.push(`${personal} personal task${personal !== 1 ? "s" : ""}`);
                     setMessages(prev => [...prev, {
                       id: Date.now().toString(),
                       role: "assistant",
                       content: "",
-                      summary: `Added ${count} item${count !== 1 ? "s" : ""} from your voice note to the action feed.`,
+                      summary: `Added ${parts.join(" and ")} from your voice note.`,
                     }]);
                   }}
                 >
-                  Add {Object.values(voiceChecked).filter(v => v).length} to action feed
+                  Add {Object.values(voiceChecked).filter(v => v).length} to feed
                 </Button>
               </motion.div>
             )}

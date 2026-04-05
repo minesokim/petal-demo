@@ -36,11 +36,20 @@ export interface DocumentExtraction {
 // --- Voice Dump ---
 export type VoiceItemCategory = "action" | "todo";
 
+export interface VoiceClientMatch {
+  clientId: string;
+  clientName: string;
+}
+
 export interface VoiceParsedItem {
   id: string;
   text: string;
   clientId?: string;
   clientName?: string;
+  /** "confident" = single match, "ambiguous" = multiple candidates, "none" = no client detected */
+  matchType: "confident" | "ambiguous" | "none";
+  /** For ambiguous matches, the list of possible clients */
+  matchCandidates?: VoiceClientMatch[];
   category: VoiceItemCategory;
   confidence: number;
   status: "pending" | "approved" | "rejected";
@@ -445,12 +454,12 @@ export const voiceDumpSession: VoiceDumpSession = {
   duration: "0:42",
   transcript: "Check in with DeShawn about his W-2, he needs to upload it ASAP. Remind Priya about her 1099 from TikTok. Call Maria at 7 tonight. Schedule Vladimir for an extension discussion this week. Pick up lunch for the team. Follow up with Tyrone about his mileage log, he's been dragging his feet.",
   parsedItems: [
-    { id: "vp1", text: "Check in with DeShawn about his W-2 upload", clientId: "c4", clientName: "DeShawn Williams", category: "action", confidence: 95, status: "pending" },
-    { id: "vp2", text: "Remind Priya about 1099-NEC from TikTok", clientId: "c2", clientName: "Priya Sharma", category: "action", confidence: 92, status: "pending" },
-    { id: "vp3", text: "Call Maria at 7 PM tonight", category: "todo", confidence: 88, status: "pending" },
-    { id: "vp4", text: "Schedule Vladimir Petrov for extension discussion", clientId: "c13", clientName: "Vladimir Petrov", category: "action", confidence: 94, status: "pending" },
-    { id: "vp5", text: "Pick up lunch for the team", category: "todo", confidence: 96, status: "pending" },
-    { id: "vp6", text: "Follow up with Tyrone about mileage log", clientId: "c17", clientName: "Tyrone Mitchell", category: "action", confidence: 91, status: "pending" },
+    { id: "vp1", text: "Check in with DeShawn about his W-2 upload", clientId: "c4", clientName: "DeShawn Williams", matchType: "confident", category: "action", confidence: 95, status: "pending" },
+    { id: "vp2", text: "Remind Priya about 1099-NEC from TikTok", clientId: "c2", clientName: "Priya Sharma", matchType: "confident", category: "action", confidence: 92, status: "pending" },
+    { id: "vp3", text: "Call Maria at 7 PM tonight", matchType: "none", category: "todo", confidence: 88, status: "pending" },
+    { id: "vp4", text: "Schedule Vladimir for extension discussion", clientId: "c13", clientName: "Vladimir Petrov", matchType: "confident", category: "action", confidence: 94, status: "pending" },
+    { id: "vp5", text: "Pick up lunch for the team", matchType: "none", category: "todo", confidence: 96, status: "pending" },
+    { id: "vp6", text: "Follow up with Tyrone about mileage log", clientId: "c17", clientName: "Tyrone Mitchell", matchType: "confident", category: "action", confidence: 91, status: "pending" },
   ],
 };
 
