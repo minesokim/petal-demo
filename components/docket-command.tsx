@@ -277,7 +277,7 @@ export function DocketCommand() {
       {/* ─── Resting trigger ─── */}
       <button
         onClick={() => setOpen(true)}
-        className="relative flex h-9 w-full max-w-sm items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 text-sm backdrop-blur-sm transition-all hover:border-border hover:bg-background/80"
+        className="relative flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm transition-all hover:border-border hover:shadow-sm"
       >
         <Search className="size-3.5 text-muted-foreground/60" />
         <AnimatePresence mode="wait">
@@ -316,7 +316,7 @@ export function DocketCommand() {
               transition={{ type: "spring", damping: 30, stiffness: 400, mass: 0.8 }}
               className="fixed left-1/2 top-[min(18vh,140px)] z-50 w-full max-w-xl -translate-x-1/2 px-4"
             >
-              <div className="overflow-hidden rounded-2xl bg-background shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12),0_2px_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.5),0_2px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
+              <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12),0_2px_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.5),0_2px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
                 {/* Input */}
                 <div className="flex items-center gap-3 border-b border-border/30 px-4 py-3">
                   <Search className="size-4 text-muted-foreground/50 shrink-0" />

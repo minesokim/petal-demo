@@ -253,7 +253,7 @@ export function EventCalendar({
 
   return (
     <div
-      className="flex min-h-[calc(100vh-var(--header-height)-3rem)] flex-col rounded-lg border has-data-[slot=month-view]:flex-1"
+      className="flex min-h-[calc(100vh-var(--header-height)-3rem)] flex-col rounded-lg border bg-white has-data-[slot=month-view]:flex-1"
       style={
         {
           "--event-height": `${EventHeight}px`,
@@ -279,7 +279,7 @@ export function EventCalendar({
                 <ChevronRightIcon size={16} aria-hidden="true" />
               </Button>
             </div>
-            <h2 className="text-sm font-semibold sm:text-lg md:text-xl">{viewTitle}</h2>
+            <h2 className="text-sm font-display sm:text-lg md:text-xl">{viewTitle}</h2>
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>

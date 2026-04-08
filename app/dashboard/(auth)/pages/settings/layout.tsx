@@ -15,7 +15,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+        <h2 className="text-2xl font-display tracking-tight">Settings</h2>
         <p className="text-muted-foreground text-sm">Manage your practice, integrations, and preferences.</p>
       </div>
       <div className="flex gap-6">

@@ -49,7 +49,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">{client.fullName}</h1>
+              <h1 className="text-xl font-display">{client.fullName}</h1>
               {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
             </div>
             <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm">

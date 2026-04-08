@@ -164,7 +164,7 @@ export function ClientsPipelineView({
               return (
                 <div
                   key={client.id}
-                  className="group/card cursor-pointer rounded-xl border bg-background p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/20"
+                  className="group/card cursor-pointer rounded-lg border bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/20"
                   onClick={() => onOpenDetail(client)}
                 >
                   <div className="flex items-center gap-2.5">
@@ -263,7 +263,7 @@ export function ClientsPipelineView({
             })}
 
             {col.clients.length === 0 && (
-              <div className="rounded-xl border border-dashed bg-muted/20 px-3 py-6 text-center">
+              <div className="rounded-lg border border-dashed bg-muted/20 px-3 py-6 text-center">
                 <p className="text-[10px] text-muted-foreground">
                   No clients
                 </p>

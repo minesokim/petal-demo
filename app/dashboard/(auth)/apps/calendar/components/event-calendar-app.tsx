@@ -173,7 +173,7 @@ export default function EventCalendarApp() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex bg-white rounded-lg">
       {/* Calendar - original component untouched */}
       <div className="flex-1 min-w-0">
         <EventCalendar
@@ -239,7 +239,7 @@ export default function EventCalendarApp() {
                     <Separator />
                     <Link
                       href={`/dashboard/clients/${getClientId(selectedSidebarEvent.title)}/overview`}
-                      className="flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition-colors hover:bg-muted/50"
+                      className="flex items-center gap-2 rounded-lg border bg-white p-3 text-sm font-medium transition-colors hover:bg-muted/50"
                     >
                       <FileText className="size-4 text-muted-foreground" />
                       <span className="flex-1">View client profile</span>
@@ -273,7 +273,7 @@ export default function EventCalendarApp() {
                       <button
                         key={event.id}
                         onClick={() => setSelectedSidebarEvent(event)}
-                        className="w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
+                        className="w-full rounded-lg border bg-white p-3 text-left transition-colors hover:bg-muted/50"
                       >
                         <div className="text-xs font-semibold">{event.title}</div>
                         <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">

@@ -39,9 +39,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0!" asChild>
-              <Link href="/dashboard/default">
-                <span className="text-foreground text-lg font-bold tracking-tight group-data-[collapsible=icon]:text-sm">
-                  Vazant<span className="text-muted-foreground font-normal group-data-[collapsible=icon]:hidden">.</span>
+              <Link href="/dashboard/default" className="flex items-center gap-2">
+                <img src="/vazant-logo.webp" alt="Vazant" className="size-7 object-contain" />
+                <span className="text-foreground text-lg tracking-tight group-data-[collapsible=icon]:hidden" style={{ fontFamily: '"P22 Mackinac Pro", Georgia, serif' }}>
+                  Vazant<span className="text-muted-foreground font-normal">.</span>
                 </span>
               </Link>
             </SidebarMenuButton>

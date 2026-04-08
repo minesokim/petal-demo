@@ -9,7 +9,9 @@ import {
   Plus_Jakarta_Sans,
   Hedvig_Letters_Serif,
   Kumbh_Sans,
-  Outfit
+  Outfit,
+  DM_Sans,
+  Lato
 } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +73,17 @@ const outfit = Outfit({
   variable: "--font-outfit"
 });
 
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans"
+});
+
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+  variable: "--font-lato"
+});
+
 export const fontVariables = cn(
   geist.variable,
   inter.variable,
@@ -82,5 +95,7 @@ export const fontVariables = cn(
   plus_jakarta_sans.variable,
   hedvig_letters_serif.variable,
   kumbh_sans.variable,
-  outfit.variable
+  outfit.variable,
+  dmSans.variable,
+  lato.variable
 );

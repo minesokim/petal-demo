@@ -45,11 +45,11 @@ const messages = [
 // complete: filed(3: Linda,Karen,Rachel) = 3
 // Total: 7+6+4+3 = 20 active clients
 const summaryTabs = [
-  { key: "need_you", label: "need you", count: 7, color: "bg-red-500" },
-  { key: "waiting", label: "waiting", count: 6, color: "bg-amber-500" },
-  { key: "in_progress", label: "in progress", count: 4, color: "bg-blue-500" },
-  { key: "complete", label: "done", count: 3, color: "bg-emerald-500" },
-  { key: "todos", label: "to-do", count: 0, color: "bg-violet-500" }, // count set dynamically
+  { key: "need_you", label: "Need You", count: 7, color: "bg-red-500" },
+  { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500" },
+  { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500" },
+  { key: "complete", label: "Done", count: 3, color: "bg-emerald-500" },
+  { key: "todos", label: "To-do", count: 0, color: "bg-violet-500" }, // count set dynamically
 ];
 
 type ActionClient = {
@@ -138,60 +138,57 @@ export default function Page() {
   return (
     <div className="space-y-5">
       {/* ── Header with status bar ── */}
-      <div className="rounded-xl border bg-card px-5 py-4">
-        <h1 className="text-2xl font-bold tracking-tight">Good morning, Antonio</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
+      <div className="rounded-2xl bg-card px-6 py-5 shadow-sm">
+        <h1 className="text-2xl tracking-tight font-display">Good morning, Antonio</h1>
+        <p className="text-muted-foreground text-[13px] mt-1.5 tracking-wide">
           18 days to deadline · 3 of 20 filed · <span className="text-emerald-600 font-medium">$2,850 collected</span> · <span className="text-foreground font-medium">$4,200 outstanding</span> · <span className="text-red-500 font-medium">1 overdue</span>
         </p>
 
-        {/* Status counts — clickable to filter action feed */}
-        <div className="flex items-center gap-5 mt-4">
+        {/* Status pills — clickable to filter action feed */}
+        <div className="flex items-center gap-2 mt-5">
           {summaryTabs.map((tab) => {
             const isActive = activeTab === tab.key;
-            const isHovered = hoveredTab === tab.key;
+            const count = tab.key === "todos" ? pendingTodoCount : tab.count;
             return (
               <motion.button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 onMouseEnter={() => setHoveredTab(tab.key)}
                 onMouseLeave={() => setHoveredTab(null)}
-                className={`flex items-center gap-2 cursor-pointer select-none ${isActive ? "opacity-100" : "opacity-50"}`}
-                animate={{ scale: isHovered || isActive ? 1.05 : 1, opacity: isActive ? 1 : isHovered ? 0.8 : 0.5 }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] cursor-pointer select-none transition-colors ${
+                  isActive
+                    ? "bg-white border text-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:bg-white/60 hover:text-foreground/70"
+                }`}
+                whileTap={{ scale: 0.97 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                <span className={`size-2.5 rounded-full ${tab.color}`} />
-                <span className="font-display text-lg font-semibold tabular-nums">{tab.key === "todos" ? pendingTodoCount : tab.count}</span>
-                <span className={`text-sm ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>{tab.label}</span>
-                {isActive && <span className="size-1 rounded-full bg-foreground/40" />}
+                <span className={`size-2 rounded-full ${tab.color} ${isActive ? "opacity-100" : "opacity-40"}`} />
+                <span className="tabular-nums font-medium">{count}</span>
+                <span>{tab.label}</span>
               </motion.button>
             );
           })}
         </div>
 
-        {/* Segmented progress bar — interactive with spring physics */}
-        <div className="flex gap-1.5 mt-3">
+        {/* Thin rounded progress bar — Apple iCloud style */}
+        <div className="flex gap-0.5 mt-4 rounded-lg overflow-hidden">
           {summaryTabs.map((tab, i) => {
             const getCount = (t: typeof tab) => t.key === "todos" ? pendingTodoCount : t.count;
             const total = summaryTabs.reduce((s, t) => s + getCount(t), 0);
-            const basePct = (getCount(tab) / total) * 100;
-            const isBarHovered = hoveredTab === tab.key;
+            const pct = (getCount(tab) / total) * 100;
             const isActive = activeTab === tab.key;
-            // When a bar is hovered, it grows by 3%, others shrink proportionally
-            const hoverBoost = isBarHovered ? 3 : hoveredTab ? -(3 / (summaryTabs.length - 1)) : 0;
-            const pct = basePct + hoverBoost;
             return (
               <motion.div
                 key={tab.key}
-                className={`h-3.5 rounded-full ${tab.color} cursor-pointer ${isActive ? "opacity-100" : "opacity-50"}`}
+                className={`h-[6px] ${tab.color} cursor-pointer`}
+                style={{ opacity: isActive ? 1 : 0.3 }}
                 initial={{ width: 0 }}
-                animate={{
-                  width: `${pct}%`,
-                  opacity: isActive ? 1 : isBarHovered ? 0.8 : 0.5,
-                }}
+                animate={{ width: `${pct}%`, opacity: isActive ? 1 : hoveredTab === tab.key ? 0.6 : 0.3 }}
                 transition={
-                  isBarHovered || hoveredTab
-                    ? { type: "spring", stiffness: 300, damping: 20, mass: 0.8 }
-                    : { duration: 1.2, delay: 0.1 + i * 0.1, ease: [0.35, 0, 0.15, 1] }
+                  hoveredTab
+                    ? { type: "spring", stiffness: 300, damping: 20 }
+                    : { duration: 1, delay: 0.1 + i * 0.08, ease: [0.35, 0, 0.15, 1] }
                 }
                 onClick={() => setActiveTab(tab.key)}
                 onMouseEnter={() => setHoveredTab(tab.key)}
@@ -310,14 +307,14 @@ export default function Page() {
                       actionClient.initials === c.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
                     );
                     return (
-                      <div key={`${group.label}-${ci}`} className="rounded-xl border p-3.5">
+                      <div key={`${group.label}-${ci}`} className="rounded-lg border p-3.5">
                         <button onClick={() => matchedClientForAvatar && setDetailClient(matchedClientForAvatar)} className="flex w-full items-center gap-3 text-left transition-colors hover:opacity-80">
                           <Avatar className="size-8 shrink-0">
                             {matchedClientForAvatar && <AvatarImage src={matchedClientForAvatar.avatar} alt={actionClient.name} />}
                             <AvatarFallback className="text-[10px]">{actionClient.initials}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold leading-tight">{actionClient.name}</div>
+                            <div className="text-sm font-medium leading-tight">{actionClient.name}</div>
                             <div className="text-muted-foreground text-xs">{actionClient.detail}</div>
                           </div>
                           {actionClient.urgency !== "none" && (
@@ -397,7 +394,7 @@ export default function Page() {
                     "";
                   if (matchedClient) {
                     return (
-                      <div key={ci} className={`rounded-2xl ${urgencyBg}`}>
+                      <div key={ci} className={`rounded-lg ${urgencyBg}`}>
                         <ClientCard client={matchedClient} onOpenDetail={setDetailClient} />
                       </div>
                     );
@@ -409,7 +406,7 @@ export default function Page() {
                     <button
                       key={ci}
                       onClick={() => fallbackClient && setDetailClient(fallbackClient)}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50 ${urgencyBg}`}
+                      className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 ${urgencyBg}`}
                     >
                       <Avatar className="size-9 shrink-0">
                         {fallbackClient && <AvatarImage src={fallbackClient.avatar} alt={actionClient.name} />}
@@ -457,7 +454,7 @@ export default function Page() {
                   <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-tight">{apt.name}</div>
+                  <div className="text-sm font-medium leading-tight">{apt.name}</div>
                   <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
                     {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
                     {apt.time}
@@ -477,7 +474,7 @@ export default function Page() {
             <CardTitle className="flex items-center gap-2 text-sm">
               <MessageSquareIcon className="size-3.5" />
               Messages
-              <Badge variant="secondary" className="ml-1 h-5 rounded-full px-1.5 text-[10px] font-bold">3</Badge>
+              <Badge variant="secondary" className="ml-1 h-5 rounded-full px-1.5 text-[10px] font-medium">3</Badge>
             </CardTitle>
             <CardAction>
               <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
@@ -500,7 +497,7 @@ export default function Page() {
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold leading-tight">{msg.name}</span>
+                    <span className="text-sm font-medium leading-tight">{msg.name}</span>
                     <span className="text-muted-foreground shrink-0 text-[11px]">{msg.time}</span>
                   </div>
                   <p className="truncate text-xs text-muted-foreground">{msg.message}</p>

@@ -46,7 +46,7 @@ export function ClientsFilterPills({ value, onChange, counts }: ClientsFilterPil
               "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
               isActive
                 ? "bg-foreground text-background shadow-sm"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "bg-white border text-muted-foreground hover:text-foreground"
             )}
           >
             {opt.dot && (

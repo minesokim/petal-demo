@@ -56,7 +56,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-xl border">
+    <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-lg border bg-white">
       {/* Conversation list */}
       <div className="w-[320px] shrink-0 border-r flex flex-col">
         <div className="p-3 border-b">

@@ -155,7 +155,7 @@ export default function ClientsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+          <h1 className="text-2xl font-display tracking-tight">Clients</h1>
           <p className="text-muted-foreground text-sm">
             {totalCount} total
             <span className="mx-1.5 text-border">|</span>
@@ -174,7 +174,7 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between gap-3">
         <div className="relative max-w-md flex-1">
           <SearchIcon className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
-          <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-white" />
         </div>
         <div className="flex items-center gap-2">
           {viewMode === "table" && (

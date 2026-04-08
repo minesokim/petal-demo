@@ -510,7 +510,7 @@ export function AIPanel() {
                     <motion.div key={i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.3 }} className="flex items-start gap-2 py-0.5">
                       <span className="mt-[5px] size-1 shrink-0 rounded-full bg-foreground/50" />
                       <p className="text-[12px] leading-relaxed">
-                        <span className="font-semibold text-foreground">{bold.replace(/\*\*/g, "")}</span>
+                        <span className="font-medium text-foreground">{bold.replace(/\*\*/g, "")}</span>
                         {rest.length > 0 && <span className="text-muted-foreground"> - {rest.join(" - ")}</span>}
                       </p>
                     </motion.div>
@@ -546,14 +546,14 @@ export function AIPanel() {
         opacity: isOpen ? 1 : 0,
       }}
     >
-      <div className={`flex h-full flex-col bg-gradient-to-b from-sidebar via-[hsl(48_25%_96%)] to-[hsl(142_20%_94%)] px-3 pt-3 backdrop-blur-xl dark:from-sidebar dark:via-[hsl(48_15%_7%)] dark:to-[hsl(142_15%_7%)] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
+      <div className={`flex h-full flex-col bg-card px-3 pt-3 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
         {/* Header */}
         <div className="flex items-center gap-4 px-4 pb-6 pt-4">
           <Avatar className="size-11 shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-violet-200 via-blue-100 to-pink-200 text-transparent">.</AvatarFallback>
+            <AvatarFallback className="bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100 text-transparent">.</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h2 className="text-[15px] font-semibold leading-tight">Ask Docket</h2>
+            <h2 className="text-[15px] font-medium leading-tight">Ask Docket</h2>
             <p className="text-muted-foreground text-[13px]">Updated just now</p>
           </div>
           <div className="flex items-center gap-0.5">

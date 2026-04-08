@@ -18,7 +18,7 @@ const modes: { value: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
 
 export function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
   return (
-    <div className="inline-flex items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5">
+    <div className="inline-flex items-center gap-0.5 rounded-lg border bg-white p-0.5">
       {modes.map((mode) => {
         const Icon = mode.icon;
         const isActive = value === mode.value;

@@ -160,7 +160,7 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
+          <h1 className="text-2xl font-display tracking-tight">Documents</h1>
           <p className="text-muted-foreground text-sm">Manage documents across all clients</p>
         </div>
         <DocumentStatusWidget />
@@ -313,8 +313,8 @@ export default function DocumentsPage() {
             {firmDocuments.map(doc => (
               <Card key={doc.id} className="cursor-pointer transition-shadow hover:shadow-md">
                 <CardContent className="flex items-center gap-4 py-4">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-lg">
-                    {doc.icon}
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                    <FileText className="size-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{doc.name}</div>

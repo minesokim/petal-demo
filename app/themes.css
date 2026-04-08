@@ -1,6 +1,7 @@
 body {
     @apply overscroll-none bg-transparent antialiased;
-    --text-family: var(--font-inter), sans-serif;
+    --text-family: var(--font-dm-sans), var(--font-lato), -apple-system, BlinkMacSystemFont, sans-serif;
+    --display-family: "P22 Mackinac Pro", Georgia, serif;
 }
 
 /* Theme presets */

@@ -150,11 +150,11 @@ export const checklistItems: ChecklistItem[] = [
 // ============================================================
 
 export const firmDocuments: FirmDocument[] = [
-  { id: "fd1", name: "Engagement Letter Template", type: "engagement_template", icon: "📄", lastEdited: "2026-03-15", description: "Standard engagement letter for new clients" },
-  { id: "fd2", name: "IRC 7216 Consent Form", type: "7216_template", icon: "📄", lastEdited: "2026-02-20", description: "Required taxpayer consent for third-party disclosure" },
-  { id: "fd3", name: "Written Information Security Plan (WISP)", type: "wisp", icon: "🔒", lastEdited: "2026-01-10", description: "IRS Publication 4557 required security plan" },
-  { id: "fd4", name: "Quarterly Estimate Calculator", type: "calculator", icon: "🧮", lastEdited: "2026-03-01", description: "Template for calculating estimated quarterly payments" },
-  { id: "fd5", name: "Form 8867 Due Diligence Checklist", type: "checklist", icon: "✅", lastEdited: "2026-02-15", description: "Paid preparer due diligence checklist for EITC/CTC/AOTC/HOH" },
+  { id: "fd1", name: "Engagement Letter Template", type: "engagement_template", icon: "doc", lastEdited: "2026-03-15", description: "Standard engagement letter for new clients" },
+  { id: "fd2", name: "IRC 7216 Consent Form", type: "7216_template", icon: "doc", lastEdited: "2026-02-20", description: "Required taxpayer consent for third-party disclosure" },
+  { id: "fd3", name: "Written Information Security Plan (WISP)", type: "wisp", icon: "shield", lastEdited: "2026-01-10", description: "IRS Publication 4557 required security plan" },
+  { id: "fd4", name: "Quarterly Estimate Calculator", type: "calculator", icon: "calc", lastEdited: "2026-03-01", description: "Template for calculating estimated quarterly payments" },
+  { id: "fd5", name: "Form 8867 Due Diligence Checklist", type: "checklist", icon: "check", lastEdited: "2026-02-15", description: "Paid preparer due diligence checklist for EITC/CTC/AOTC/HOH" },
 ];
 
 // ============================================================

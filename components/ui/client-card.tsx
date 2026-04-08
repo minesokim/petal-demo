@@ -43,10 +43,10 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   };
 
   return (
-    <div className="rounded-2xl bg-muted/60 p-2.5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-lg bg-white border p-2.5 shadow-sm transition-shadow hover:shadow-md">
       {/* Main card area - clickable to open detail */}
       <div
-        className="cursor-pointer rounded-xl bg-background px-3.5 py-3 shadow-sm"
+        className="cursor-pointer rounded-lg bg-white px-3.5 py-3 shadow-sm"
         onClick={handleCardClick}
       >
         {/* Header row */}
