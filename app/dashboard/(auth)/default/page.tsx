@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   ChevronRightIcon, VideoIcon, PhoneIcon,
-  ClockIcon, SparklesIcon,
+  ClockIcon, BotIcon,
   SendIcon, FileTextIcon, ArrowUpRightIcon, CalendarIcon, MessageSquareIcon, MicIcon
 } from "lucide-react";
 import { ClientCard } from "@/components/ui/client-card";
@@ -144,15 +144,6 @@ export default function Page() {
 
   return (
     <div className="space-y-5">
-      {/* ── Morning Briefing ── */}
-      {showBriefing && (
-        <MorningBriefing
-          briefing={morningBriefing}
-          preparerName="Antonio"
-          onAction={handleInsightAction}
-        />
-      )}
-
       {/* ── Header with status bar ── */}
       <div className="rounded-2xl bg-card px-6 py-5 shadow-sm">
         <h1 className="text-2xl tracking-tight font-display">Good morning, Antonio</h1>
@@ -213,6 +204,18 @@ export default function Page() {
             );
           })}
         </div>
+
+        {/* Morning Briefing - nested in header card */}
+        {showBriefing && (
+          <div className="mt-5 pt-5 border-t border-border/40">
+            <MorningBriefing
+              briefing={morningBriefing}
+              preparerName="Antonio"
+              onAction={handleInsightAction}
+              className="border-0 bg-none rounded-none"
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Action Feed ── */}
@@ -281,7 +284,7 @@ export default function Page() {
                       )}
                       {todo.source === "ai" && (
                         <button onClick={() => askDocket(`Help me with: "${todo.text}"${todo.clientName ? ` for ${todo.clientName}` : ""}`)} className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Ask Docket about this">
-                          <SparklesIcon className="size-2.5" /> AI
+                          <BotIcon className="size-2.5" /> AI
                         </button>
                       )}
                     </div>

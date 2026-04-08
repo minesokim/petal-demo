@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "motion/react"
-import { Sparkles, Calendar, TrendingUp, AlertTriangle } from "lucide-react"
+import { Calendar, TrendingUp, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { MorningBriefingData, InsightAction } from "@/lib/mock-data"
@@ -55,20 +55,13 @@ export function MorningBriefing({
 
       <div className="relative p-5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10">
-              <Sparkles className="size-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Docket Morning Briefing
-              </h2>
-              <p className="text-[10px] text-muted-foreground">
-                {formatBriefingDate(briefing.date)} · {formatBriefingTime()}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+            Today's Briefing
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            {formatBriefingDate(briefing.date)}
+          </p>
         </div>
 
         {/* Greeting and content */}
@@ -147,8 +140,7 @@ export function CompactBriefingCard({ headline, stats, onExpand, className }: Co
       )}
     >
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="size-4 text-primary" />
-        <span className="text-xs font-medium text-primary uppercase tracking-wide">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
           Today's Briefing
         </span>
       </div>

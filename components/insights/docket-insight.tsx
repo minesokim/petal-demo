@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { ChevronDown, Sparkles, AlertTriangle, AlertCircle } from "lucide-react"
+import { ChevronDown, AlertTriangle, AlertCircle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { DocketInsight, InsightSeverity, InsightAction } from "@/lib/mock-data"
@@ -11,31 +11,31 @@ import { ActivityTimeline } from "./activity-timeline"
 
 const severityConfig: Record<InsightSeverity, {
   label: string
-  icon: React.ElementType
+  icon: React.ElementType | null
   borderClass: string
   bgClass: string
   iconClass: string
   labelClass: string
 }> = {
   insight: {
-    label: "Docket Insight",
-    icon: Sparkles,
+    label: "Insight",
+    icon: null,
     borderClass: "border-l-emerald-400",
     bgClass: "bg-emerald-50/50 dark:bg-emerald-950/20",
     iconClass: "text-emerald-600 dark:text-emerald-400",
     labelClass: "text-emerald-700 dark:text-emerald-400",
   },
   concern: {
-    label: "Docket Concern",
-    icon: AlertTriangle,
+    label: "Needs Attention",
+    icon: null,
     borderClass: "border-l-amber-400",
     bgClass: "bg-amber-50/50 dark:bg-amber-950/20",
     iconClass: "text-amber-600 dark:text-amber-400",
     labelClass: "text-amber-700 dark:text-amber-400",
   },
   alert: {
-    label: "Docket Alert",
-    icon: AlertCircle,
+    label: "Action Required",
+    icon: null,
     borderClass: "border-l-red-400",
     bgClass: "bg-red-50/50 dark:bg-red-950/20",
     iconClass: "text-red-600 dark:text-red-400",
@@ -119,7 +119,7 @@ export function DocketInsightCard({
         className="w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex items-center gap-1.5">
-          <Icon className={cn("size-3.5", config.iconClass)} />
+          {Icon && <Icon className={cn("size-3.5", config.iconClass)} />}
           <span className={cn(
             "text-[10px] font-semibold uppercase tracking-wide",
             config.labelClass
@@ -244,7 +244,7 @@ export function CompactInsight({ insight, onExpand, className }: CompactInsightP
         className
       )}
     >
-      <Icon className={cn("size-3.5 shrink-0", config.iconClass)} />
+      {Icon && <Icon className={cn("size-3.5 shrink-0", config.iconClass)} />}
       <span className="text-xs text-foreground/80 line-clamp-1 flex-1">
         {insight.title || insight.content.slice(0, 60) + "..."}
       </span>
