@@ -22,11 +22,19 @@ interface DocumentRowProps {
   doc: MockDocument;
   showNew?: boolean;
   showDate?: boolean;
+  showClassification?: boolean;
 }
 
-export function DocumentRow({ doc, showNew = false, showDate = false }: DocumentRowProps) {
+export function DocumentRow({ doc, showNew = false, showDate = false, showClassification = false }: DocumentRowProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const { showToast } = useToast();
+
+  // Simulate AI auto-classification confidence based on doc type clarity
+  const classificationConfidence = doc.docType.includes("1099") || doc.docType.includes("W-2")
+    ? 98
+    : doc.docCategory === "income" ? 92
+    : doc.docCategory === "identity" ? 95
+    : 85;
 
   return (
     <>
@@ -43,6 +51,14 @@ export function DocumentRow({ doc, showNew = false, showDate = false }: Document
         </div>
         {showNew && !doc.viewedByPreparer && (
           <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 border-0 text-[10px]">New</Badge>
+        )}
+        {showClassification && (
+          <span
+            className="text-[9px] text-muted-foreground"
+            title={`Auto-classified as ${doc.docTypeLabel} with ${classificationConfidence}% confidence`}
+          >
+            AI: {classificationConfidence}%
+          </span>
         )}
         {doc.status === "signed" && (
           <span className="text-muted-foreground text-[11px] font-medium">Signed</span>

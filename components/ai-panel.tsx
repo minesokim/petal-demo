@@ -18,6 +18,11 @@ import { X as XIcon, ChevronDown } from "lucide-react";
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
 /* ------------------------------------------------------------------ */
+type ClientContext = {
+  clientId: string;
+  clientName: string;
+} | null;
+
 type AIPanelContextType = {
   isOpen: boolean;
   isFullPage: boolean;
@@ -28,11 +33,14 @@ type AIPanelContextType = {
   askQuestion: (question: string) => void;
   pendingQuestion: string | null;
   clearPendingQuestion: () => void;
+  clientContext: ClientContext;
+  setClientContext: (ctx: ClientContext) => void;
 };
 
 const AIPanelContext = createContext<AIPanelContextType>({
   isOpen: false, isFullPage: false, toggle: () => {}, open: () => {}, close: () => {},
   toggleFullPage: () => {}, askQuestion: () => {}, pendingQuestion: null, clearPendingQuestion: () => {},
+  clientContext: null, setClientContext: () => {},
 });
 
 export const useAIPanel = () => useContext(AIPanelContext);
@@ -45,6 +53,7 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [clientContext, setClientContext] = useState<ClientContext>(null);
   return (
     <AIPanelContext.Provider value={{
       isOpen,
@@ -56,6 +65,8 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
       askQuestion: (q: string) => { setPendingQuestion(q); setIsOpen(true); },
       pendingQuestion,
       clearPendingQuestion: () => setPendingQuestion(null),
+      clientContext,
+      setClientContext,
     }}>
       {children}
     </AIPanelContext.Provider>
@@ -121,6 +132,21 @@ const allSuggestions = [
   "Which clients are at risk of extension?",
 ];
 
+// Client-specific suggestions (placeholders replaced with actual client name)
+function getClientSpecificSuggestions(clientName: string): string[] {
+  const firstName = clientName.split(" ")[0];
+  return [
+    `What's blocking ${firstName}?`,
+    `What documents is ${firstName} missing?`,
+    `Draft a follow-up message to ${firstName}`,
+    `Show ${firstName}'s timeline`,
+    `Is ${firstName} at risk of extension?`,
+    `What did ${firstName} ask about last?`,
+    `Summarize ${firstName}'s return`,
+    `What's ${firstName}'s payment status?`,
+  ];
+}
+
 // Intent-matched demo responses
 type DemoResponse = {
   steps: ThinkingStep[];
@@ -128,8 +154,167 @@ type DemoResponse = {
   summary: string;
 };
 
-function matchResponse(query: string): DemoResponse {
+// Client-specific response data for demo
+const clientSpecificData: Record<string, {
+  blocking: string;
+  missing: string;
+  timeline: string;
+  risk: string;
+  payment: string;
+  summary: string;
+}> = {
+  c1: { // Marcus Chen
+    blocking: "**Revenue verification** - 40% revenue drop across restaurants needs explanation before filing. Flagged for unusual pattern.",
+    missing: "**All documents received** - Marcus has submitted 11/11 required documents. Ready for preparation.",
+    timeline: "**Mar 15** - Intake submitted\n**Mar 18** - All docs uploaded\n**Mar 22** - Started prep\n**Mar 26** - Flagged revenue question\n**Now** - Awaiting clarification",
+    risk: "**Low risk** - On track if revenue clarification resolved this week. No extension needed.",
+    payment: "**$850 total** - $200 deposit paid Mar 15. Balance $650 due on filing.",
+    summary: "3-restaurant business return. Schedule C with significant revenue drop (40%) flagged. K-1 from real estate partnership. Need confirmation about 3rd location closure before continuing.",
+  },
+  c3: { // DeShawn Williams
+    blocking: "**Multiple blockers** - Never logged into portal, deposit unpaid ($150), missing 5 of 6 documents. New client with no engagement.",
+    missing: "**Missing 5 docs** - W-2 (employer), 1099-NEC (side gig), Driver's license, SSN card, Prior year return. Only received initial intake form.",
+    timeline: "**Mar 16** - Signed up\n**Mar 16** - Deposit invoice sent (unpaid)\n**Mar 16** - Portal invite sent (never opened)\n**12 days** - No activity since",
+    risk: "**High risk (70%)** - New client with zero engagement. Likely needs extension without immediate intervention.",
+    payment: "**$300 total** - $150 deposit unpaid (10 days overdue). Payment required before prep can begin.",
+    summary: "First-time client referred by social media. Basic 1040 with gig income. Zero engagement since signup. Recommend phone call rather than portal nudge.",
+  },
+  c4: { // Thomas & Marie DuBois
+    blocking: "**Waiting on crypto records** - 11 of 14 docs received. Crypto cost basis documentation blocking completion.",
+    missing: "**Missing 3 docs** - Crypto transaction records (Coinbase/Binance), Mining income statements, Cost basis documentation.",
+    timeline: "**Mar 10** - Intake\n**Mar 14** - Initial batch uploaded (8 docs)\n**Mar 19** - Requested crypto records\n**Mar 24** - Reminder sent\n**5 days** - Waiting",
+    risk: "**Moderate (35%)** - Good engagement history. Crypto docs are complex. May need extension if not resolved by Apr 8.",
+    payment: "**$700 total** - $200 deposit paid. Balance $500 due on filing.",
+    summary: "Married filing jointly. W-2s, rental income, and significant crypto activity. Strong communicators but crypto documentation is complex.",
+  },
+  c6: { // Roberto Fuentes
+    blocking: "**Awaiting client signature** - Return completed and sent Mar 25. Roberto viewed it Mar 26 but hasn't signed. 5 days waiting.",
+    missing: "**All documents received** - Full document set submitted. Return is prepared and awaiting signature.",
+    timeline: "**Mar 8** - Intake\n**Mar 12** - Docs complete\n**Mar 20** - Prep complete\n**Mar 25** - Return sent for review\n**Mar 26** - Client viewed\n**5 days** - Waiting for signature",
+    risk: "**Low risk** - Just needs a signature nudge. Return is complete and ready to file.",
+    payment: "**$650 total** - $175 deposit paid. Balance $475 due on signing.",
+    summary: "Self-employed contractor. Schedule C with home office. Return complete, just awaiting signature. Follow up recommended.",
+  },
+  c7: { // Vladimir Petrov
+    blocking: "**Complete non-engagement** - Never logged in, deposit unpaid ($500), 0 of 16 documents. Complex international business return.",
+    missing: "**Missing all 16 docs** - Business financials, international transactions, K-1s, personal documents. No uploads at all.",
+    timeline: "**Mar 20** - Signed up (referral)\n**Mar 20** - Portal invite sent\n**Mar 20** - Deposit invoice sent ($500)\n**0 activity** - Never logged in",
+    risk: "**Almost certain extension (95%)** - Complex import business with no engagement. Extension conversation needed immediately.",
+    payment: "**$1,500 total** - $500 deposit unpaid. High-value client but zero payment activity.",
+    summary: "Petrov Imports - complex international business. First-year client. Needs immediate extension discussion. Schedule a call, portal reminders won't work.",
+  },
+  c12: { // Jasmine Torres
+    blocking: "**Missing 1099s from freelance work** - 4 of 8 docs received but key income documents still outstanding after 4 days.",
+    missing: "**Missing 4 docs** - 1099-NEC (freelance clients x2), 1099-INT (bank), Investment account statements.",
+    timeline: "**Mar 18** - Intake\n**Mar 20** - Initial docs (4)\n**Mar 24** - Reminder sent\n**4 days** - Waiting on 1099s",
+    risk: "**Moderate (40%)** - Active on portal, just needs the 1099s. Deadline achievable with quick follow-up.",
+    payment: "**$400 total** - $100 deposit paid. Balance $300 due on filing.",
+    summary: "Freelance designer with multiple income sources. Good communicator, just needs 1099 reminders.",
+  },
+};
+
+function matchResponse(query: string, clientCtx?: ClientContext): DemoResponse {
   const q = query.toLowerCase();
+
+  // Client-specific queries when context is set
+  if (clientCtx) {
+    const data = clientSpecificData[clientCtx.clientId];
+    const firstName = clientCtx.clientName.split(" ")[0];
+
+    if (data) {
+      // What's blocking / blockers
+      if (q.includes("blocking") || q.includes("blocker") || q.includes("stuck")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Analyzing ${firstName}'s return for blockers.` },
+            { type: "searching", text: "Checking documents, payments, and activity", source: "Client record" },
+            { type: "found", text: "Blocker analysis complete." },
+          ],
+          foundContent: { text: data.blocking },
+          summary: `This is what's holding up ${firstName}'s return.`,
+        };
+      }
+
+      // Missing documents
+      if (q.includes("missing") || q.includes("document")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Checking ${firstName}'s document checklist.` },
+            { type: "searching", text: "Comparing required vs received documents", source: "Document checklist" },
+            { type: "found", text: "Document status retrieved." },
+          ],
+          foundContent: { text: data.missing },
+          summary: `${firstName}'s document status is shown above. Want me to draft a reminder?`,
+        };
+      }
+
+      // Timeline
+      if (q.includes("timeline") || q.includes("history") || q.includes("activity")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Building ${firstName}'s engagement timeline.` },
+            { type: "searching", text: "Retrieving activity log and milestones", source: "Activity history" },
+            { type: "found", text: "Timeline constructed." },
+          ],
+          foundContent: { text: data.timeline },
+          summary: `This is ${firstName}'s journey so far.`,
+        };
+      }
+
+      // Extension risk
+      if (q.includes("risk") || q.includes("extension") || q.includes("deadline")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Assessing ${firstName}'s extension risk.` },
+            { type: "searching", text: "Analyzing completion rate, engagement, and complexity", source: "Risk model" },
+            { type: "found", text: "Risk assessment complete." },
+          ],
+          foundContent: { text: data.risk },
+          summary: `Here's ${firstName}'s deadline outlook.`,
+        };
+      }
+
+      // Payment status
+      if (q.includes("payment") || q.includes("paid") || q.includes("owe") || q.includes("balance")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Looking up ${firstName}'s payment status.` },
+            { type: "searching", text: "Checking deposits, invoices, and balances", source: "Billing records" },
+            { type: "found", text: "Payment status retrieved." },
+          ],
+          foundContent: { text: data.payment },
+          summary: `${firstName}'s billing is shown above.`,
+        };
+      }
+
+      // Summary / overview
+      if (q.includes("summar") || q.includes("overview") || q.includes("about")) {
+        return {
+          steps: [
+            { type: "thinking", text: `Generating ${firstName}'s return summary.` },
+            { type: "searching", text: "Compiling return type, complexity, and status", source: "Client profile" },
+            { type: "found", text: "Summary ready." },
+          ],
+          foundContent: { text: data.summary },
+          summary: `That's ${firstName}'s return at a glance.`,
+        };
+      }
+
+      // Draft message
+      if (q.includes("draft") || q.includes("message") || q.includes("follow")) {
+        const draft = `Hey ${firstName}! Just checking in on your tax return. We're making progress but I wanted to touch base about a few items. Can you log into your portal when you have a moment? I've flagged the specific items we need. Let me know if you have any questions!`;
+        return {
+          steps: [
+            { type: "thinking", text: `Drafting a message for ${firstName}.` },
+            { type: "searching", text: "Analyzing current blockers and tone preferences", source: "Message history" },
+            { type: "found", text: "Draft ready for review." },
+          ],
+          foundContent: { text: `**Draft message for ${firstName}:**\n\n"${draft}"` },
+          summary: "Review and send from your Action Feed. I won't send anything without your approval.",
+        };
+      }
+    }
+  }
 
   // 1. Who needs my attention / urgent
   if (q.includes("attention") || q.includes("urgent") || q.includes("needs me") || q.includes("priority")) {
@@ -313,12 +498,18 @@ function BulletIcon() {
 /* ------------------------------------------------------------------ */
 /*  Cycling Suggestions                                                */
 /* ------------------------------------------------------------------ */
-function CyclingSuggestions({ onSelect }: { onSelect: (q: string) => void }) {
+function CyclingSuggestions({ onSelect, clientContext }: { onSelect: (q: string) => void; clientContext: ClientContext }) {
   const [setIdx, setSetIdx] = useState(0);
+
+  // Use client-specific suggestions when viewing a client, otherwise general suggestions
+  const suggestions = clientContext
+    ? getClientSpecificSuggestions(clientContext.clientName)
+    : allSuggestions;
+
   const setsOf3 = [
-    [allSuggestions[0], allSuggestions[1], allSuggestions[2]],
-    [allSuggestions[3], allSuggestions[4], allSuggestions[5]],
-    [allSuggestions[6], allSuggestions[7], allSuggestions[0]],
+    [suggestions[0], suggestions[1], suggestions[2]],
+    [suggestions[3], suggestions[4], suggestions[5]],
+    [suggestions[6], suggestions[7], suggestions[0]],
   ];
 
   useEffect(() => {
@@ -326,15 +517,25 @@ function CyclingSuggestions({ onSelect }: { onSelect: (q: string) => void }) {
       setSetIdx(prev => (prev + 1) % setsOf3.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [setsOf3.length]);
+
+  // Reset to first set when client context changes
+  useEffect(() => {
+    setSetIdx(0);
+  }, [clientContext?.clientId]);
 
   const currentSet = setsOf3[setIdx];
 
   return (
     <div className="pt-2">
+      {clientContext && (
+        <p className="text-[10px] text-muted-foreground mb-2">
+          Viewing: <span className="font-medium text-foreground">{clientContext.clientName}</span>
+        </p>
+      )}
       <AnimatePresence mode="wait">
         <motion.div
-          key={setIdx}
+          key={`${clientContext?.clientId || 'global'}-${setIdx}`}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
@@ -360,7 +561,7 @@ function CyclingSuggestions({ onSelect }: { onSelect: (q: string) => void }) {
 /*  The Panel                                                          */
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
-  const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion } = useAIPanel();
+  const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion, clientContext } = useAIPanel();
 
   const [messages, setMessages] = useState<Message[]>(demoMessages);
   const [input, setInput] = useState("");
@@ -414,7 +615,7 @@ export function AIPanel() {
     setInput("");
     setIsTyping(true);
 
-    const response = matchResponse(msg);
+    const response = matchResponse(msg, clientContext);
 
     // Phase 1: Show first reasoning step
     setTimeout(() => {
@@ -717,7 +918,7 @@ export function AIPanel() {
               </div>
             )}
             {messages.length <= 2 && !isTyping && (
-              <CyclingSuggestions onSelect={handleSend} />
+              <CyclingSuggestions onSelect={handleSend} clientContext={clientContext} />
             )}
           </div>
         </div>

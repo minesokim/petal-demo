@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Check, X, ChevronUp, ChevronDown, Building2, ArrowUpRight, Calendar } from "lucide-react";
 import { type Client, stageLabels, pendingIntakeContext } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { CompactInsightIndicator } from "@/components/insights";
+import { getOneLineInsightForClient } from "@/lib/insights-mock-data";
 
 function formatCallTime(dateStr: string) {
   const d = new Date(dateStr);
@@ -216,6 +218,9 @@ export function ClientsTableView({
                   Last Active <SortIcon column="lastActive" />
                 </span>
               </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                AI Insight
+              </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">
                 Actions
               </th>
@@ -226,7 +231,7 @@ export function ClientsTableView({
             {pendingClients.length > 0 && (
               <>
                 <tr>
-                  <td colSpan={6} className="bg-zinc-50 dark:bg-zinc-900/20 px-4 py-1.5 border-b">
+                  <td colSpan={7} className="bg-zinc-50 dark:bg-zinc-900/20 px-4 py-1.5 border-b">
                     <div className="flex items-center gap-2">
                       <span className="size-2 rounded-full bg-zinc-400" />
                       <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Pending Review</span>
@@ -246,7 +251,7 @@ export function ClientsTableView({
                 ))}
                 {activeClients.length > 0 && (
                   <tr>
-                    <td colSpan={6} className="bg-muted/20 px-4 py-1.5 border-b">
+                    <td colSpan={7} className="bg-muted/20 px-4 py-1.5 border-b">
                       <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Clients</span>
                     </td>
                   </tr>
@@ -267,7 +272,7 @@ export function ClientsTableView({
             {pendingClients.length === 0 && activeClients.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-12 text-center text-sm text-muted-foreground"
                 >
                   No clients match your filters.
@@ -375,7 +380,7 @@ function ClientRow({
           </td>
 
           {/* Scheduled Call */}
-          <td className="px-4 py-3" colSpan={2}>
+          <td className="px-4 py-3">
             {client.scheduledCall ? (
               <div className="flex items-center gap-1.5">
                 <Calendar className={cn("size-3", isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500")} />
@@ -387,6 +392,15 @@ function ClientRow({
             ) : (
               <span className="text-xs text-muted-foreground">No call scheduled</span>
             )}
+          </td>
+
+          {/* AI Insight for pending */}
+          <td className="px-4 py-3">
+            {(() => {
+              const insight = getOneLineInsightForClient(client.id);
+              if (!insight) return <span className="text-xs text-muted-foreground/50">-</span>;
+              return <CompactInsightIndicator title={insight.title} severity={insight.severity} />;
+            })()}
           </td>
         </>
       ) : (
@@ -455,6 +469,15 @@ function ClientRow({
             >
               {formatLastActive(client.lastPortalLogin)}
             </span>
+          </td>
+
+          {/* AI Insight */}
+          <td className="px-4 py-3">
+            {(() => {
+              const insight = getOneLineInsightForClient(client.id);
+              if (!insight) return <span className="text-xs text-muted-foreground/50">-</span>;
+              return <CompactInsightIndicator title={insight.title} severity={insight.severity} />;
+            })()}
           </td>
         </>
       )}

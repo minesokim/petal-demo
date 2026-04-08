@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, Check, Calendar } from "lucide-react";
 import { type Client, type ReturnStage, stageLabels, pendingIntakeContext } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { InsightDot } from "@/components/insights";
+import { getOneLineInsightForClient } from "@/lib/insights-mock-data";
 
 function formatCallTimeShort(dateStr: string) {
   const d = new Date(dateStr);
@@ -160,6 +162,7 @@ export function ClientsPipelineView({
                   )
                 : 0;
               const isPendingClient = client.clientStatus === "pending" && !acceptedIds.includes(client.id);
+              const clientInsight = getOneLineInsightForClient(client.id);
 
               return (
                 <div
@@ -188,7 +191,14 @@ export function ClientsPipelineView({
                     {isPendingClient && (
                       <Badge variant="outline" className="text-[9px] shrink-0">New</Badge>
                     )}
-                    {(client.urgency === "urgent" ||
+                    {clientInsight && (
+                      <InsightDot
+                        severity={clientInsight.severity}
+                        title={clientInsight.title}
+                        className="shrink-0"
+                      />
+                    )}
+                    {!clientInsight && (client.urgency === "urgent" ||
                       client.urgency === "high") && (
                       <span
                         className={cn(

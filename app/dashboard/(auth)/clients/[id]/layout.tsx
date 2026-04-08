@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,12 +10,25 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, Trash2, UserX } from "lucide-react";
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
+import { useAIPanel } from "@/components/ai-panel";
 
 export default function ClientDetailLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
   const clientId = params.id as string;
   const client = clients.find(c => c.id === clientId);
+  const { setClientContext } = useAIPanel();
+
+  // Set AI panel client context when viewing this client
+  useEffect(() => {
+    if (client) {
+      setClientContext({ clientId: client.id, clientName: client.fullName });
+    }
+    // Clear context when leaving client pages
+    return () => {
+      setClientContext(null);
+    };
+  }, [client?.id, client?.fullName, setClientContext]);
 
   if (!client) {
     return <div className="py-20 text-center text-muted-foreground">Client not found</div>;

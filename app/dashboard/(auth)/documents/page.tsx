@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { DocumentRow } from "@/components/documents/document-row";
 import { MissingDocRow } from "@/components/documents/missing-doc-row";
 import { DocTypeBadge } from "@/components/documents/doc-type-badge";
+import { BulkReminderPanel } from "@/components/documents/bulk-reminder-panel";
 import {
   mockDocuments, checklistItems, firmDocuments,
   getDocumentsByDay, getUnviewedCount, getMissingCount,
@@ -187,7 +188,7 @@ export default function DocumentsPage() {
               <div className="text-muted-foreground mb-1 text-xs font-semibold uppercase tracking-wider">{day}</div>
               <Card>
                 <CardContent className="divide-y p-0">
-                  {docs.map(doc => <DocumentRow key={doc.id} doc={doc} showNew />)}
+                  {docs.map(doc => <DocumentRow key={doc.id} doc={doc} showNew showClassification />)}
                 </CardContent>
               </Card>
             </div>
@@ -195,10 +196,61 @@ export default function DocumentsPage() {
         </TabsContent>
 
         {/* MISSING */}
-        <TabsContent value="missing" className="mt-4">
+        <TabsContent value="missing" className="mt-4 space-y-4">
+          {/* Bulk Reminders Panel */}
+          <BulkReminderPanel />
+
+          {/* AI Summary Header */}
+          {(() => {
+            const criticalDocs = missingItems.filter(i => i.daysSinceRequested >= 7);
+            const attentionDocs = missingItems.filter(i => i.daysSinceRequested >= 3 && i.daysSinceRequested < 7);
+            const uniqueClients = new Set(missingItems.map(i => i.clientId)).size;
+            const blockingReturns = missingItems.filter(i => {
+              const client = clients.find(c => c.id === i.clientId);
+              return client && client.returnStage === "collecting_docs" && i.required;
+            }).length;
+
+            return (
+              <Card className="bg-muted/30 border-dashed">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-red-500" />
+                        <span className="text-sm"><span className="font-semibold">{criticalDocs.length}</span> critical</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-amber-500" />
+                        <span className="text-sm"><span className="font-semibold">{attentionDocs.length}</span> attention</span>
+                      </div>
+                      <Separator orientation="vertical" className="h-4" />
+                      <span className="text-sm text-muted-foreground">
+                        {missingCount} docs from {uniqueClients} clients
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Sorted by urgency
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Priority-sorted missing docs */}
           <Card>
             <CardContent className="divide-y p-0">
-              {missingItems.map(item => <MissingDocRow key={item.id} item={item} />)}
+              {/* Sort by priority: critical (7+ days) > attention (3-6 days) > recent */}
+              {[...missingItems]
+                .sort((a, b) => {
+                  // First by urgency tier
+                  const aUrgency = a.daysSinceRequested >= 7 ? 0 : a.daysSinceRequested >= 3 ? 1 : 2;
+                  const bUrgency = b.daysSinceRequested >= 7 ? 0 : b.daysSinceRequested >= 3 ? 1 : 2;
+                  if (aUrgency !== bUrgency) return aUrgency - bUrgency;
+                  // Then by days since requested (longer = more urgent)
+                  return b.daysSinceRequested - a.daysSinceRequested;
+                })
+                .map(item => <MissingDocRow key={item.id} item={item} />)}
             </CardContent>
           </Card>
         </TabsContent>

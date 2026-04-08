@@ -14,3 +14,8 @@ export {
   CompactBriefingCard,
   SeasonProgress,
 } from "./morning-briefing"
+export {
+  InlineInsight,
+  CompactInsightIndicator,
+  InsightDot,
+} from "./inline-insight"

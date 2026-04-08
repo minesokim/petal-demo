@@ -202,6 +202,139 @@ export const clientInsights: Record<string, DocketInsight> = {
       tone: "professional",
     },
   },
+
+  // Marcus Chen - Concern (revenue anomaly)
+  c1: {
+    id: "insight-c1",
+    clientId: "c1",
+    severity: "concern",
+    category: "anomaly",
+    title: "40% revenue drop - confirm 3rd location closure before filing",
+    content: "Marcus's Schedule C shows $142,000 total revenue across 3 restaurants, down from $238,000 last year (40% drop). His notes say one location closed. Confirm with him that Golden Dragon #3 (Pasadena) actually closed in Q2 before filing - don't want the IRS questioning the income drop without documentation. He has a call scheduled March 30 at 2pm.",
+    timestamp: "2026-03-28T07:30:00",
+    actions: [
+      { id: "confirm-closure", label: "Confirm closure", variant: "primary", action: "open_thread" },
+      { id: "view-return", label: "Review return", variant: "secondary", action: "open_return" },
+    ],
+  },
+
+  // Roberto Fuentes - Concern (client review stale)
+  c6: {
+    id: "insight-c6",
+    clientId: "c6",
+    severity: "concern",
+    category: "review_ready",
+    title: "Client review sent 5 days ago - follow up if no response by Monday",
+    content: "Roberto's 1120S and personal return were sent for review on March 23. He opened the email but hasn't signed off or asked any questions. His trucking depreciation schedules are complex this year with the new equipment. He might have questions but hasn't reached out. Consider a gentle check-in if he doesn't respond by Monday.",
+    timestamp: "2026-03-28T08:00:00",
+    actions: [
+      { id: "send-followup", label: "Send follow-up", variant: "primary", action: "open_thread" },
+      { id: "view-return", label: "View return", variant: "secondary", action: "open_return" },
+    ],
+    draftMessage: {
+      id: "draft-roberto",
+      channel: "email",
+      subject: "Quick check-in on your return",
+      content: "Hi Roberto, I sent your return for review a few days ago and wanted to make sure you had a chance to look it over. The depreciation schedules for the new equipment are detailed on page 4 - let me know if you have any questions about those calculations. Happy to hop on a quick call if that's easier.",
+      tone: "professional",
+    },
+  },
+
+  // Jasmine Torres - Concern (docs stalled)
+  c12: {
+    id: "insight-c12",
+    clientId: "c12",
+    severity: "concern",
+    category: "document_collection",
+    title: "4 of 8 docs - freelance 1099s missing after 15 days",
+    content: "Jasmine has been in collecting docs stage for 15 days with 4 of 8 documents. She's a freelance graphic designer with multiple clients, and we're missing 1099s from 3 of them. She logged in 4 days ago but didn't upload anything. She asked March 26 if she needs to report a $200 one-time logo job (yes). Her 1099s may be scattered across different clients - she might need guidance on which ones to request.",
+    timestamp: "2026-03-28T09:00:00",
+    actions: [
+      { id: "send-checklist", label: "Send 1099 checklist", variant: "primary", action: "send_checklist" },
+      { id: "reply-question", label: "Reply to question", variant: "secondary", action: "open_thread" },
+    ],
+  },
+
+  // Vladimir Petrov - Alert (extension candidate)
+  c13: {
+    id: "insight-c13",
+    clientId: "c13",
+    severity: "alert",
+    category: "deadline",
+    title: "0 engagement since intake - extension conversation needed this week",
+    content: "Vladimir completed intake 14 days ago but has never logged into the portal. 0 of 16 documents uploaded. His import business (Petrov Imports) has complex international transactions that require significant prep time. With 18 days to deadline and zero progress, an extension is almost certain. You have a call scheduled tomorrow (March 29) at 10am. Use that call to discuss the extension and set realistic expectations for the extended deadline.",
+    timestamp: "2026-03-28T06:00:00",
+    actions: [
+      { id: "prep-extension", label: "Prepare Form 4868", variant: "primary", action: "draft_4868" },
+      { id: "view-profile", label: "Review complexity", variant: "secondary", action: "open_client" },
+    ],
+  },
+
+  // Carlos & Elena Mendez - Insight (unresolved question)
+  c15: {
+    id: "insight-c15",
+    clientId: "c15",
+    severity: "insight",
+    category: "general",
+    title: "Paint booth deduction question pending - reply before continuing prep",
+    content: "Elena messaged yesterday asking if they can deduct the new paint booth equipment purchased in December. The answer is yes (Section 179), but they're missing the invoice. Their 1065 partnership return has 13 of 14 docs - the paint booth invoice is the last one. Reply to Elena's question and request the invoice in the same message. Meeting scheduled March 30 for partnership review.",
+    timestamp: "2026-03-28T07:00:00",
+    actions: [
+      { id: "reply-elena", label: "Reply to Elena", variant: "primary", action: "open_thread" },
+      { id: "view-return", label: "Continue prep", variant: "secondary", action: "open_return" },
+    ],
+    draftMessage: {
+      id: "draft-elena",
+      channel: "portal",
+      content: "Hi Elena! Yes, you can absolutely deduct the paint booth under Section 179 - it's a qualifying equipment purchase. To include it, I'll need the purchase invoice showing the date and amount. Can you upload that to the portal? Once I have that, we'll be ready to finalize everything before our Saturday meeting.",
+      tone: "friendly",
+    },
+  },
+
+  // Mei-Lin Wu - Insight (ready for signature)
+  c18: {
+    id: "insight-c18",
+    clientId: "c18",
+    severity: "insight",
+    category: "review_ready",
+    title: "QBI deduction applied - review sent 4 days ago, awaiting sign-off",
+    content: "Mei-Lin's Schedule C return is complete with the 20% QBI deduction applied to her consulting income. Return was sent for review 4 days ago. She logged in once since then but hasn't signed off. Her return is straightforward - $78,000 consulting income, standard deductions, health insurance premium deduction. Expected refund of $1,450.",
+    timestamp: "2026-03-28T08:30:00",
+    actions: [
+      { id: "send-reminder", label: "Send gentle reminder", variant: "primary", action: "send_reminder" },
+      { id: "view-return", label: "Review return", variant: "secondary", action: "open_return" },
+    ],
+  },
+
+  // Sarah Mitchell - Pending intake
+  c21: {
+    id: "insight-c21",
+    clientId: "c21",
+    severity: "insight",
+    category: "general",
+    title: "Nextdoor referral - intro call Saturday, looks straightforward",
+    content: "Sarah found you on Nextdoor and completed intake yesterday. She's a freelance photographer with W-2 from part-time work plus 1099s from photography clients. Deposit paid. Call scheduled for Saturday 10am. Her case looks straightforward - Standard tier with estimated 6 docs. Warm lead who's already engaged.",
+    timestamp: "2026-03-28T10:00:00",
+    actions: [
+      { id: "confirm-call", label: "Send call confirmation", variant: "primary", action: "send_confirmation" },
+      { id: "view-intake", label: "View intake", variant: "secondary", action: "open_intake" },
+    ],
+  },
+
+  // Kevin & Lisa Park - Pending intake
+  c22: {
+    id: "insight-c22",
+    clientId: "c22",
+    severity: "insight",
+    category: "general",
+    title: "David Park's brother - switching from H&R Block, call tomorrow",
+    content: "Kevin and Lisa were referred by David Park (your existing client). They own Park Cleaners with multiple employees and want to switch from H&R Block. Premium tier, 12 docs expected. Call scheduled tomorrow (March 29) at 2pm. They're a warm referral with a business that aligns well with your expertise. Converting them would be a good win.",
+    timestamp: "2026-03-28T09:30:00",
+    actions: [
+      { id: "confirm-call", label: "Send call confirmation", variant: "primary", action: "send_confirmation" },
+      { id: "prep-notes", label: "Prep call notes", variant: "secondary", action: "open_notes" },
+    ],
+  },
 }
 
 // ============================================================
@@ -246,7 +379,7 @@ export function getInsightsByPriority(): {
 export const clientTrackingBadges: Record<string, TrackingBadgeData[]> = {
   c17: [
     { id: "email-opened", label: "Email opened", variant: "success", tooltip: "Opened reminder email 3/22" },
-    { id: "no-login", label: "No portal login 9d", variant: "danger", tooltip: "Last portal login: March 19" },
+    { id: "no-login", label: "No login 9d", variant: "danger", tooltip: "Last portal login: March 19" },
   ],
   c2: [
     { id: "active-today", label: "Active today", variant: "success", tooltip: "Uploaded 1099 at 1:47 AM" },
@@ -276,8 +409,103 @@ export const clientTrackingBadges: Record<string, TrackingBadgeData[]> = {
     { id: "call-today", label: "Call 3pm", variant: "info", tooltip: "Video call scheduled" },
     { id: "docs-missing", label: "2 docs needed", variant: "warning", tooltip: "Payroll & equipment list" },
   ],
+  // New clients
+  c1: [
+    { id: "active-1d", label: "Active 1d ago", variant: "success", tooltip: "Portal login yesterday" },
+    { id: "revenue-drop", label: "Revenue drop", variant: "warning", tooltip: "40% YoY decrease flagged" },
+  ],
+  c6: [
+    { id: "review-5d", label: "Review sent 5d", variant: "warning", tooltip: "Awaiting client sign-off" },
+    { id: "all-docs", label: "All docs \u2713", variant: "success", tooltip: "15/15 documents received" },
+  ],
+  c12: [
+    { id: "stalled-15d", label: "Stalled 15d", variant: "warning", tooltip: "In collecting docs for 15 days" },
+    { id: "docs-progress", label: "4/8 docs", variant: "warning", tooltip: "Freelance 1099s missing" },
+  ],
+  c13: [
+    { id: "never-logged", label: "Never logged in", variant: "danger", tooltip: "Has never opened the portal" },
+    { id: "extension-likely", label: "Extension likely", variant: "danger", tooltip: "0/16 docs, complex business" },
+  ],
+  c15: [
+    { id: "unread-msg", label: "Unread message", variant: "warning", tooltip: "Elena's question unanswered" },
+    { id: "docs-progress", label: "13/14 docs", variant: "success", tooltip: "Paint booth invoice missing" },
+  ],
+  c18: [
+    { id: "review-4d", label: "Review sent 4d", variant: "info", tooltip: "Awaiting client sign-off" },
+    { id: "all-docs", label: "All docs \u2713", variant: "success", tooltip: "All documents received" },
+  ],
+  c21: [
+    { id: "deposit-paid", label: "Deposit paid", variant: "success", tooltip: "Deposit received" },
+    { id: "call-sat", label: "Call Sat 10am", variant: "info", tooltip: "Intro call scheduled" },
+  ],
+  c22: [
+    { id: "deposit-paid", label: "Deposit paid", variant: "success", tooltip: "Deposit received" },
+    { id: "call-tomorrow", label: "Call tomorrow", variant: "info", tooltip: "Call scheduled Mar 29" },
+    { id: "referral", label: "Referral", variant: "success", tooltip: "Referred by David Park" },
+  ],
+  // Filed clients
+  c5: [
+    { id: "filed", label: "Filed \u2713", variant: "success", tooltip: "Filed and accepted" },
+    { id: "paid", label: "Paid \u2713", variant: "success", tooltip: "Full payment received" },
+  ],
+  c10: [
+    { id: "filed", label: "Filed \u2713", variant: "success", tooltip: "Filed and accepted" },
+    { id: "paid", label: "Paid \u2713", variant: "success", tooltip: "Full payment received" },
+  ],
+  c16: [
+    { id: "filed", label: "Filed \u2713", variant: "success", tooltip: "Filed and accepted" },
+    { id: "returning", label: "4th year", variant: "info", tooltip: "Returning client since 2022" },
+  ],
 }
 
 export function getTrackingBadgesForClient(clientId: string): TrackingBadgeData[] {
   return clientTrackingBadges[clientId] || []
+}
+
+// ============================================================
+// ONE-LINER INSIGHTS (for client cards)
+// ============================================================
+
+export interface OneLineInsight {
+  title: string
+  severity: "insight" | "concern" | "alert"
+}
+
+export function getOneLineInsightForClient(clientId: string): OneLineInsight | null {
+  const insight = clientInsights[clientId]
+  if (!insight) return null
+
+  return {
+    title: insight.title,
+    severity: insight.severity,
+  }
+}
+
+// ============================================================
+// FILED CLIENT ADVISORY (collapsed by default)
+// ============================================================
+
+export const filedClientAdvisory: Record<string, {
+  title: string
+  content: string
+}> = {
+  // Linda Nakamura - Etsy growth
+  c5: {
+    title: "Etsy income grew 40% - suggest quarterly estimated payments",
+    content: "Linda's Etsy shop revenue increased from $8,500 to $12,000 this year. If this trend continues, she may owe more than $1,000 at filing next year and should consider making quarterly estimated payments. A quick note about this would be a valuable touchpoint.",
+  },
+  // Karen O'Brien - Simple return, relationship opportunity
+  c10: {
+    title: "Filed successfully - send thank you and next year's checklist",
+    content: "Karen's simple W-2 return was filed and accepted. Consider sending a thank-you message with a reminder to save docs for next year. She's been a returning client - a quick check-in maintains the relationship.",
+  },
+  // Rachel Goldstein - Long-term client
+  c16: {
+    title: "4th year client - thank her for the loyalty",
+    content: "Rachel and her husband have been clients for 4 years. Their return is straightforward (both W-2) but the relationship is valuable. A brief thank-you acknowledging their loyalty could be a nice touch.",
+  },
+}
+
+export function getAdvisoryForFiledClient(clientId: string): { title: string; content: string } | null {
+  return filedClientAdvisory[clientId] || null
 }

@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels, getClientPaymentSummary } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TrackingBadgeGroup, generateClientTrackingBadges } from "@/components/insights";
+import { TrackingBadgeGroup, generateClientTrackingBadges, InlineInsight } from "@/components/insights";
+import { getOneLineInsightForClient, getAdvisoryForFiledClient } from "@/lib/insights-mock-data";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -27,6 +28,13 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
 
   // Generate tracking badges for this client
   const trackingBadges = generateClientTrackingBadges(client);
+
+  // Get one-liner AI insight if available
+  const oneLineInsight = getOneLineInsightForClient(client.id);
+
+  // Get filed client advisory if this is a filed client
+  const filedAdvisory = client.returnStage === "filed" ? getAdvisoryForFiledClient(client.id) : null;
+  const [showAdvisory, setShowAdvisory] = React.useState(false);
 
   const lastActive = client.lastPortalLogin
     ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24))
@@ -91,6 +99,13 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
           </div>
         )}
 
+        {/* AI one-liner insight */}
+        {oneLineInsight && (
+          <div className="mt-2">
+            <InlineInsight title={oneLineInsight.title} severity={oneLineInsight.severity} />
+          </div>
+        )}
+
         {/* Expandable stats - only via arrow click */}
         <AnimatePresence>
           {expanded && (
@@ -149,6 +164,35 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                   {client.notes}
                 </p>
+              )}
+
+              {/* Filed client advisory */}
+              {filedAdvisory && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowAdvisory(!showAdvisory); }}
+                    className="flex items-center gap-1.5 text-[10px] text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <ChevronDown className={`size-3 transition-transform ${showAdvisory ? "rotate-180" : ""}`} />
+                    Advisory opportunity
+                  </button>
+                  <AnimatePresence>
+                    {showAdvisory && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                          {filedAdvisory.title}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </motion.div>
           )}

@@ -90,11 +90,13 @@ const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]>
     ]},
   ],
   in_progress: [
+    { label: "Stuck - needs attention", clients: [
+      { initials: "TD", name: "Thomas & Marie DuBois", detail: "Waiting 5 days for crypto docs - consider escalation", urgency: "amber" },
+      { initials: "CM", name: "Carlos & Elena Mendez", detail: "Unresolved paint booth question - Elena awaiting reply", urgency: "amber" },
+      { initials: "DP", name: "David Park", detail: "Call at 3pm today - still missing 2 docs", urgency: "amber" },
+    ]},
     { label: "In preparation", clients: [
-      { initials: "MC", name: "Marcus Chen", detail: "Schedule C · 3 restaurants · $450 remaining", urgency: "none" },
-      { initials: "TD", name: "Thomas & Marie DuBois", detail: "1040 + crypto · 11 of 14 docs · $450 remaining", urgency: "amber" },
-      { initials: "DP", name: "David Park", detail: "1120S · call at 3:00 PM today · $450 remaining", urgency: "amber" },
-      { initials: "CM", name: "Carlos & Elena Mendez", detail: "1065 partnership · 13 of 14 docs · $450 remaining", urgency: "none" },
+      { initials: "MC", name: "Marcus Chen", detail: "Schedule C · 3 restaurants · confirm closure before filing", urgency: "none" },
     ]},
   ],
   complete: [
