@@ -15,7 +15,9 @@ import {
   TrendingDown, Calculator, Brain, Download
 } from "lucide-react";
 import Link from "next/link";
-import { clients, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
+import { clients, stageLabels, actionItems, getClientPaymentSummary, type InsightAction } from "@/lib/mock-data";
+import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
   extensionPredictions, documentExtractions, estimatedTaxCalcs,
@@ -47,6 +49,12 @@ export default function ClientOverviewPage() {
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
   const currentStage = stageOverride || client.returnStage;
+  const clientInsight = getInsightForClient(client.id);
+  const clientTrackingBadges = getTrackingBadgesForClient(client.id);
+
+  const handleInsightAction = (action: InsightAction) => {
+    showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
+  };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(currentStage);
   const ps = getClientPaymentSummary(client.id);
@@ -80,6 +88,29 @@ export default function ClientOverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Docket Insight - AI Commentary */}
+      {clientInsight && (
+        <DocketInsightCard
+          insight={clientInsight}
+          defaultExpanded={true}
+          onAction={handleInsightAction}
+          onSendMessage={(messageId, channel) => {
+            showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
+          }}
+          onEditMessage={(messageId) => {
+            showToast("info", "Editing draft", `Opening editor for ${messageId}`);
+          }}
+        />
+      )}
+
+      {/* Tracking badges summary */}
+      {clientTrackingBadges.length > 0 && (
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Status</span>
+          <TrackingBadgeGroup badges={clientTrackingBadges} maxVisible={5} />
+        </div>
+      )}
+
       {/* Action items */}
       {(filteredFeedActions.length > 0 || filteredActions.length > 0) && (
         <div className="space-y-4">

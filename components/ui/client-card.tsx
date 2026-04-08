@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels, getClientPaymentSummary } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TrackingBadgeGroup, generateClientTrackingBadges } from "@/components/insights";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -23,6 +24,9 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(client.returnStage);
   const stagePercent = Math.round(((stageIndex + 1) / 7) * 100);
+
+  // Generate tracking badges for this client
+  const trackingBadges = generateClientTrackingBadges(client);
 
   const lastActive = client.lastPortalLogin
     ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24))
@@ -79,6 +83,13 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
             {stageLabels[client.returnStage]}
           </Badge>
         </div>
+
+        {/* Tracking badges */}
+        {trackingBadges.length > 0 && (
+          <div className="mt-2">
+            <TrackingBadgeGroup badges={trackingBadges} maxVisible={3} />
+          </div>
+        )}
 
         {/* Expandable stats - only via arrow click */}
         <AnimatePresence>

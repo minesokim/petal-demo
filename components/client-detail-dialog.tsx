@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions } from "@/lib/mock-data";
+import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
@@ -14,6 +14,8 @@ import {
   feedActions, irsNotices,
   type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
+import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,6 +90,12 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   if (!client) return null;
 
   const currentStage = stageOverride || client.returnStage;
+  const clientInsight = getInsightForClient(client.id);
+  const clientTrackingBadges = getTrackingBadgesForClient(client.id);
+
+  const handleInsightAction = (action: InsightAction) => {
+    showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
+  };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(currentStage);
 
@@ -143,6 +151,12 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </Link>
               </Button>
             </div>
+            {/* Tracking badges */}
+            {clientTrackingBadges.length > 0 && (
+              <div className="mt-2">
+                <TrackingBadgeGroup badges={clientTrackingBadges} maxVisible={4} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,6 +259,21 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
+              {/* Docket Insight - AI Commentary */}
+              {clientInsight && (
+                <DocketInsightCard
+                  insight={clientInsight}
+                  defaultExpanded={true}
+                  onAction={handleInsightAction}
+                  onSendMessage={(messageId, channel) => {
+                    showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
+                  }}
+                  onEditMessage={(messageId) => {
+                    showToast("info", "Editing draft", `Opening editor for ${messageId}`);
+                  }}
+                />
+              )}
+
               {/* Feed actions — filter out signature actions when ERO card handles it */}
               {(() => {
                 const filteredFeed = currentStage === "pay_and_sign"

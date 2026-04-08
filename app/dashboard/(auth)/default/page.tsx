@@ -13,8 +13,10 @@ import {
 import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { clients, actionItems, type Client } from "@/lib/mock-data";
+import { clients, actionItems, type Client, type InsightAction } from "@/lib/mock-data";
 import { initialTodos, type TodoItem } from "@/lib/actions-mock-data";
+import { MorningBriefing, SeasonProgress } from "@/components/insights";
+import { morningBriefing } from "@/lib/insights-mock-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { motion } from "motion/react";
@@ -115,9 +117,14 @@ export default function Page() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
   const [editingDraft, setEditingDraft] = useState<string | null>(null);
+  const [showBriefing, setShowBriefing] = useState(true);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
+
+  const handleInsightAction = (action: InsightAction) => {
+    showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
+  };
 
   const toggleTodo = (id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
   const addTodo = () => {
@@ -137,6 +144,15 @@ export default function Page() {
 
   return (
     <div className="space-y-5">
+      {/* ── Morning Briefing ── */}
+      {showBriefing && (
+        <MorningBriefing
+          briefing={morningBriefing}
+          preparerName="Antonio"
+          onAction={handleInsightAction}
+        />
+      )}
+
       {/* ── Header with status bar ── */}
       <div className="rounded-2xl bg-card px-6 py-5 shadow-sm">
         <h1 className="text-2xl tracking-tight font-display">Good morning, Antonio</h1>
