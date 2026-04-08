@@ -6,32 +6,37 @@ Docket is an AI-native tax practice management platform. This repo (`vazant-dash
 
 **Current state**: Feature-complete UI mockup running on mock data. No real backend yet. All data lives in `lib/mock-data.ts`, `lib/documents-mock-data.ts`, `lib/actions-mock-data.ts`, and `lib/messages-data.ts`.
 
-**Next step**: Connect to Supabase backend. See `docs/PRODUCT_BIBLE.md` for full product context and `.claude/plans/proud-snuggling-teapot.md` for the complete backend architecture plan.
+**Next step**: Connect to Convex backend. See `docs/BACKEND_ARCHITECTURE.md` for the complete backend architecture plan.
 
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router) on Vercel
-- **UI**: shadcn/ui + Tailwind CSS + Radix UI primitives
+- **UI**: shadcn/ui + Tailwind CSS v4 + Radix UI primitives
 - **Animations**: motion/react (Framer Motion)
 - **Forms**: react-hook-form + Zod
 - **Icons**: Lucide React
-- **State**: React useState (no global state library — will use Supabase Realtime)
-- **Planned backend**: Supabase (PostgreSQL + Auth + Storage + Realtime + Edge Functions)
+- **Fonts**: Inter (primary), plus theme-specific alternates via next/font/google
+- **State**: React useState (no global state library — will use Convex reactive queries)
+- **Planned backend**: Convex (reactive database + auth + file storage + scheduled functions)
 - **Planned payments**: Stripe
 - **Planned AI**: GPT-4o-mini (drafts), GPT-4o (compliance), Google Document AI (OCR)
 
 ## Project Structure
 
+> Note: This repo was scaffolded from a dashboard template. Only the paths below are Docket-relevant. Other directories (academy, ecommerce, hotel, etc.) are unused template sections.
+
 ```
 app/dashboard/(auth)/
   default/           — Overview/Dashboard (command center)
-  clients/           — Clients list (Kanban board)
+  clients/           — Clients list (Cards, Table, Pipeline views)
   clients/[id]/      — Client detail layout + sub-pages
     overview/        — AI intelligence, billing, stage actions
     documents/       — Document collection + AI extraction
     messages/        — Client messaging thread
     notes/           — Private preparer notes
+    intake/          — Client intake details
   documents/         — Global document view
+  actions/           — Action feed page
   apps/calendar/     — Calendar
   apps/chat/         — Global messaging
   pages/settings/    — 12 settings sections with sidebar nav
@@ -49,23 +54,42 @@ app/dashboard/(auth)/
     audit/           — Coming soon placeholder
 
 components/
-  ai-panel.tsx       — Ask Docket sidebar
-  time-tracker.tsx   — Floating time tracker
-  client-detail-dialog.tsx — Modal client view
-  ero-signature-dialog.tsx — 8879 signing flow
-  actions/           — Action feed components
-    voice/           — Voice dump dialog
-  documents/         — Document upload/checklist/extraction
-  layout/            — Sidebar, header, notifications
+  ai-panel.tsx              — Ask Docket sidebar
+  time-tracker.tsx          — Floating time tracker
+  client-detail-dialog.tsx  — Modal client view (popup on card/row click)
+  ero-signature-dialog.tsx  — 8879 signing flow
+  docket-command.tsx        — Command palette navigation
+  clients/                  — Client view components
+    view-mode-toggle.tsx    — Cards/Table/Pipeline toggle
+    clients-filter-pills.tsx — Workflow bucket filter pills
+    clients-table-view.tsx  — Table view with sort options
+    clients-pipeline-view.tsx — Kanban pipeline view
+  actions/                  — Action feed components
+    action-card.tsx         — Individual action card
+    action-feed.tsx         — Action feed list
+    action-execution-sheet.tsx — Action execution panel
+    voice/voice-dump-dialog.tsx — Voice recording dialog
+    intelligence/intelligence-panel.tsx — AI intelligence cards
+    todo/todo-voice-panel.tsx — Voice-sourced todo panel
+    batch/batch-panel.tsx   — Batch operations
+  documents/                — Document upload/checklist/extraction
+  messaging/                — Chat/messaging components
+  layout/                   — Sidebar, header, notifications
+  onboarding/               — Onboarding flow components
+  ui/                       — shadcn/ui component library
 
 lib/
-  mock-data.ts       — Core types + 20 clients + actions + payments
-  documents-mock-data.ts — Documents + checklists
-  actions-mock-data.ts   — AI intelligence types + feed actions
-  messages-data.ts       — Chat threads
+  mock-data.ts              — Core types + 20 clients + actions + payments
+  documents-mock-data.ts    — Documents + checklists
+  actions-mock-data.ts      — AI intelligence types + feed actions
+  messages-data.ts          — Chat threads
+  fonts.ts                  — Font definitions (next/font/google)
+  themes.ts                 — Theme preset definitions
+  utils.ts                  — Utility functions
 
 docs/
-  PRODUCT_BIBLE.md   — Complete product context (read this first)
+  PRODUCT_BIBLE.md          — Complete product context (read this first)
+  BACKEND_ARCHITECTURE.md   — Convex backend architecture plan
 ```
 
 ## Key Types
@@ -76,12 +100,14 @@ type ReturnStage = 'new_intake' | 'collecting_docs' | 'ready_to_prep' |
 
 type FilingStatus = 'single' | 'mfj' | 'mfs' | 'hoh' | 'qw'
 
+type ClientStatus = 'pending' | 'active' | 'declined'
+
 type Client = {
   id, fullName, email, phone, filingStatus, returnStage,
   serviceTier, feeAmount, depositPaid, urgency,
   lastActivity, lastPortalLogin, documentsSubmitted, documentsRequired,
   notes, type ('individual' | 'business'), businessName, avatar,
-  clientStatus ('pending' | 'active' | 'declined')
+  clientStatus, scheduledCall, returnSentDate
 }
 ```
 
@@ -94,7 +120,10 @@ type Client = {
 - **Badges**: outline for metadata, filled for status
 - **Buttons**: primary = main action, outline = secondary, ghost = tertiary
 - No emojis in UI unless explicitly requested
+- No em dashes in UI text
 - Subtle, tasteful design — not flashy
+- Intelligence cards differentiate through content not decorative borders
+- Filter pills use workflow buckets (Need You, Waiting, etc.) not pipeline stages
 
 ## AI Safety Rule
 

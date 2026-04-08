@@ -119,7 +119,7 @@ Work is organized by stage, not by deadline. This enables triage: "Who needs me 
 | Feature | What | Why | Backend needs |
 |---|---|---|---|
 | Document Status Summary | X of Y received, progress bar, "Download All" when complete | Quick status check | document_checklist aggregation |
-| Upload Zone | Drag-and-drop file upload | Easy document ingestion | Supabase Storage |
+| Upload Zone | Drag-and-drop file upload | Easy document ingestion | Convex File Storage |
 | Document Checklist | Required vs received by type | Track what's missing | document_checklist table |
 | Auto-Organized Groups | Docs grouped by category (income, deductions, etc.) | Easy browsing | documents.category field |
 | AI Processing | Extraction status per document | See what AI has processed | document_extractions table |
@@ -153,7 +153,7 @@ Work is organized by stage, not by deadline. This enables triage: "Who needs me 
 |---|---|---|---|
 | Conversation List | Sorted by unread + draft status | Prioritize urgent messages | messages grouped by client_id |
 | AI Drafts | Per-conversation draft suggestions | Speed up responses | AI draft generation |
-| Realtime | Live message delivery | Instant communication | Supabase Realtime |
+| Realtime | Live message delivery | Instant communication | Convex reactive queries |
 
 ### Settings (12 Sections)
 
@@ -232,8 +232,8 @@ Antonio's take: "Nothing is really emerging in terms of what we're trying to do"
 - **Deal**: $12K founding partnership with 2% equity, lifetime platform access, no monthly fees
 - **Market**: Medium-scale agencies pay $200-500K for custom portals. Docket targets solo EAs/CPAs at $125-200/month (future pricing).
 - **Distribution**: Antonio's mentor runs an EA training network with "thousands of people." If Antonio succeeds, mentor recommends to network.
-- **Tech stack**: Next.js (Vercel) + Supabase (PostgreSQL) + Stripe + Google Calendar/Meet + AI APIs (GPT-4o, Document AI)
-- **Running cost**: ~$105-155/month for both apps including AI
+- **Tech stack**: Next.js (Vercel) + Convex (reactive backend) + Stripe + Google Calendar/Meet + AI APIs (GPT-4o, Document AI)
+- **Running cost**: ~$80-110/month (Convex Pro $25 + Vercel Pro $40 for 2 apps + AI ~$15-45 + Stripe pass-through)
 
 ---
 
