@@ -84,7 +84,7 @@
   --base-950: oklch(0.140 0.005 36);
   --base-1000: oklch(0.096 0.004 34);
 
-  --background: var(--base-50);
+  --background: var(--color-white);
   --foreground: var(--base-800);
   --card: var(--color-white);
   --card-foreground: var(--base-800);
@@ -278,10 +278,10 @@
     @apply bg-black/20! backdrop-blur-sm;
   }
 
-  /* Sidebar gradient: white top fading to subtle yellow-green brand tint at bottom */
+  /* Sidebar gradient: white with a very subtle warm tint at the bottom */
   [data-slot="sidebar"],
   [data-slot="sidebar"] > div {
     background:
-      linear-gradient(180deg, white 0%, oklch(0.97 0.02 95) 50%, oklch(0.96 0.025 145) 100%) !important;
+      linear-gradient(180deg, white 0%, white 40%, oklch(0.975 0.01 55) 100%) !important;
   }
 }

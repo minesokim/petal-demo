@@ -301,32 +301,36 @@ export function DocketCommand() {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop — invisible click catcher */}
-            <div
-              className="fixed inset-0 z-50 cursor-default"
+            {/* Backdrop — darkened + blurred */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="fixed inset-0 z-50 cursor-default bg-black/25"
               onClick={close}
               onMouseDown={(e) => e.target === e.currentTarget && close()}
             />
 
             {/* Command palette */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: -4 }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -4 }}
-              transition={{ type: "spring", damping: 30, stiffness: 400, mass: 0.8 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200, mass: 1 }}
               className="fixed left-1/2 top-[min(18vh,140px)] z-50 w-full max-w-xl -translate-x-1/2 px-4"
             >
               <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12),0_2px_12px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.5),0_2px_12px_-4px_rgba(0,0,0,0.3)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
                 {/* Input */}
-                <div className="flex items-center gap-3 border-b border-border/30 px-4 py-3">
-                  <Search className="size-4 text-muted-foreground/50 shrink-0" />
+                <div className="flex items-center gap-3 border-b border-border/20 px-5 py-4">
+                  <Search className="size-[18px] text-muted-foreground shrink-0" />
                   <input
                     ref={inputRef}
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setAiMode(false); setAiResponse(null); setSelectedIdx(0); }}
                     onKeyDown={handleKeyDown}
-                    placeholder=""
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
+                    placeholder="Search clients, docs, actions..."
+                    className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/40"
                     autoComplete="off"
                   />
                   <div className="flex items-center gap-1 shrink-0">
@@ -398,19 +402,21 @@ export function DocketCommand() {
                         exit={{ opacity: 0 }}
                         className="p-4"
                       >
-                        <p className="mb-4 text-center text-xs text-muted-foreground/50">
-                          Search clients, docs, actions or ask Docket anything
-                        </p>
-                        <div className="space-y-1.5">
-                          {exampleQueries.map((eq) => (
-                            <button
-                              key={eq}
-                              onClick={() => { setQuery(eq); handleAiQuery(); }}
-                              className="w-full rounded-lg px-3 py-2 text-center text-sm text-muted-foreground/70 transition-colors hover:bg-muted/50 hover:text-foreground"
-                            >
-                              &ldquo;{eq}&rdquo;
-                            </button>
-                          ))}
+                        <div className="px-1">
+                          <p className="mb-3 px-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground/40">
+                            Ask Docket
+                          </p>
+                          <div className="space-y-0.5">
+                            {exampleQueries.map((eq) => (
+                              <button
+                                key={eq}
+                                onClick={() => { setQuery(eq); handleAiQuery(); }}
+                                className="w-full rounded-lg px-3 py-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                              >
+                                {eq}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -548,14 +554,14 @@ export function DocketCommand() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center gap-3 border-t border-border/10 px-4 py-2">
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                <div className="flex items-center gap-3 border-t border-border/20 px-5 py-2.5">
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                     <ArrowUp className="size-2.5" /><ArrowDown className="size-2.5" /> navigate
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                     <CornerDownLeft className="size-2.5" /> open
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/30">
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
                     esc close
                   </span>
                 </div>

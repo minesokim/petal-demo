@@ -546,7 +546,7 @@ export function AIPanel() {
         opacity: isOpen ? 1 : 0,
       }}
     >
-      <div className={`flex h-full flex-col bg-card px-3 pt-3 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
+      <div className={`flex h-full flex-col rounded-l-2xl bg-card px-3 pt-3 shadow-lg backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
         {/* Header */}
         <div className="flex items-center gap-4 px-4 pb-6 pt-4">
           <Avatar className="size-11 shrink-0">
