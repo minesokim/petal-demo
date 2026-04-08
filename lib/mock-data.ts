@@ -11,6 +11,97 @@ export type ActionType = 'missing_docs' | 'stale_client' | 'review_ready' | 'pay
 
 export type ClientStatus = 'pending' | 'active' | 'declined'
 
+// ============================================================
+// DOCKET INSIGHTS - AI Intelligence Layer Types
+// ============================================================
+
+export type InsightSeverity = 'insight' | 'concern' | 'alert'
+
+export type InsightCategory =
+  | 'document_collection'
+  | 'client_engagement'
+  | 'payment'
+  | 'deadline'
+  | 'prep_ready'
+  | 'review_ready'
+  | 'signature_needed'
+  | 'anomaly'
+  | 'general'
+
+export type MessageChannel = 'email' | 'sms' | 'portal'
+
+export type ActivityEventType =
+  | 'email_sent'
+  | 'email_opened'
+  | 'email_clicked'
+  | 'sms_sent'
+  | 'sms_delivered'
+  | 'sms_replied'
+  | 'portal_login'
+  | 'document_uploaded'
+  | 'form_completed'
+  | 'call_logged'
+  | 'payment_received'
+  | 'appointment_scheduled'
+  | 'stage_changed'
+
+export interface ActivityEvent {
+  id: string
+  timestamp: string
+  type: ActivityEventType
+  description: string
+  metadata?: Record<string, unknown>
+}
+
+export interface InsightAction {
+  id: string
+  label: string
+  variant: 'primary' | 'secondary' | 'ghost'
+  action: string // Action identifier for execution
+  metadata?: Record<string, unknown>
+}
+
+export interface DraftMessage {
+  id: string
+  channel: MessageChannel
+  subject?: string // For email
+  content: string
+  tone?: 'friendly' | 'professional' | 'urgent'
+}
+
+export interface DocketInsight {
+  id: string
+  clientId: string
+  severity: InsightSeverity
+  category: InsightCategory
+  title: string
+  content: string // Natural language reasoning
+  timestamp: string
+  actions: InsightAction[]
+  draftMessage?: DraftMessage
+  activityTrail?: ActivityEvent[]
+  isExpanded?: boolean
+  isResolved?: boolean
+}
+
+export interface TrackingBadgeData {
+  id: string
+  label: string
+  variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+  tooltip?: string
+}
+
+export interface MorningBriefingData {
+  id: string
+  date: string
+  greeting: string
+  overnight: string
+  today: string
+  concern?: string
+  pacing: string
+  priorityActions: InsightAction[]
+}
+
 export interface Client {
   id: string
   fullName: string
