@@ -44,6 +44,19 @@ export type ActivityEventType =
   | 'payment_received'
   | 'appointment_scheduled'
   | 'stage_changed'
+  | 'ai_extraction'
+  | 'ai_classification'
+  | 'ai_flag'
+  | 'message_sent'
+  | 'message_received'
+  | 'signature_sent'
+  | 'signature_completed'
+  | 'return_filed'
+  | 'invoice_sent'
+  | 'note_added'
+
+export type ActivityActor = 'antonio' | 'client' | 'ai' | 'system'
+export type ActivityChannel = 'portal' | 'email' | 'sms' | 'voice' | 'system' | null
 
 export interface ActivityEvent {
   id: string
@@ -51,6 +64,9 @@ export interface ActivityEvent {
   type: ActivityEventType
   description: string
   metadata?: Record<string, unknown>
+  actor?: ActivityActor
+  channel?: ActivityChannel
+  detail?: string
 }
 
 export interface InsightAction {

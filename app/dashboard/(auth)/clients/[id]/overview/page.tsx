@@ -31,6 +31,7 @@ import { ActionExecutionSheet } from "@/components/actions/action-execution-shee
 import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
+import { OpenItemsSection } from "@/components/issues/open-items-section";
 
 export default function ClientOverviewPage() {
   const params = useParams();
@@ -327,6 +328,9 @@ export default function ClientOverviewPage() {
           ))}
         </div>
       )}
+
+      {/* Open Items */}
+      <OpenItemsSection clientId={client.id} />
 
       {/* Two-column layout for details */}
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">

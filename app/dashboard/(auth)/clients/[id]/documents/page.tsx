@@ -2,19 +2,15 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { UploadZone } from "@/components/documents/upload-zone";
-import { DocumentChecklist } from "@/components/documents/document-checklist";
-import { DocumentGroup } from "@/components/documents/document-group";
+import { DocumentPanel } from "@/components/documents/doc-panel/document-panel";
 import { clients } from "@/lib/mock-data";
-import { documentExtractions } from "@/lib/actions-mock-data";
 import { getClientChecklist, groupDocumentsByCategory } from "@/lib/documents-mock-data";
-import { DocumentExtractionView } from "@/components/documents/document-extraction-view";
-import { AlertTriangle, Check, CheckCircle, Download, FileText, FolderDown } from "lucide-react";
+import { Check, CheckCircle, FileText, FolderDown } from "lucide-react";
 import { useToast } from "@/components/ui/toast-notification";
 
 export default function ClientDocumentsPage() {
@@ -26,7 +22,6 @@ export default function ClientDocumentsPage() {
 
   const checklist = getClientChecklist(client.id);
   const groups = groupDocumentsByCategory(client.id);
-  const extractions = documentExtractions.filter(e => e.clientId === client.id);
 
   const totalDocs = groups.reduce((sum, g) => sum + g.docs.length, 0);
   const receivedCount = client.documentsSubmitted;
@@ -37,7 +32,7 @@ export default function ClientDocumentsPage() {
   const docPercent = requiredCount > 0 ? Math.round((receivedCount / requiredCount) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Document Status Summary */}
       <Card>
         <CardContent className="py-4">
@@ -80,9 +75,19 @@ export default function ClientDocumentsPage() {
               </div>
             </div>
 
-            {/* Download All button — only when all docs received */}
+            {/* Download All button */}
             {allReceived && totalDocs > 0 && (
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={downloading} onClick={() => { setDownloading(true); showToast("success", `${totalDocs} files downloaded`, `${client.fullName.split(" ")[0]}'s documents`); setTimeout(() => setDownloading(false), 1500); }}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={downloading}
+                onClick={() => {
+                  setDownloading(true);
+                  showToast("success", `${totalDocs} files downloaded`, `${client.fullName.split(" ")[0]}'s documents`);
+                  setTimeout(() => setDownloading(false), 1500);
+                }}
+              >
                 <FolderDown className={`size-3.5 ${downloading ? "animate-bounce" : ""}`} />
                 {downloading ? "Downloading..." : `Download all (${totalDocs})`}
               </Button>
@@ -94,36 +99,8 @@ export default function ClientDocumentsPage() {
       {/* Upload zone */}
       <UploadZone clientName={client.fullName.split(" ")[0]} />
 
-      {/* Document checklist */}
-      {checklist.length > 0 && <DocumentChecklist items={checklist} />}
-
-      {/* Auto-organized groups */}
-      {groups.length > 0 && (
-        <div className="space-y-5">
-          {groups.map(group => (
-            <DocumentGroup key={group.category} label={group.label} docs={group.docs} missing={group.missing} />
-          ))}
-        </div>
-      )}
-
-      {groups.length === 0 && checklist.length === 0 && (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          No documents yet. Upload files or send the intake form to get started.
-        </div>
-      )}
-
-      {/* AI Document Processing - interactive */}
-      {extractions.length > 0 && (
-        <div>
-          <Separator className="my-4" />
-          <div className="mb-3 text-sm font-semibold">AI Document Processing</div>
-          <div className="space-y-3">
-            {extractions.map(extraction => (
-              <DocumentExtractionView key={extraction.id} extraction={extraction} />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Three-column Document Intelligence Panel */}
+      <DocumentPanel clientId={client.id} />
     </div>
   );
 }

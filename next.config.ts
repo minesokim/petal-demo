@@ -24,7 +24,13 @@ const nextConfig: NextConfig = {
         hostname: "**"
       }
     ]
-  }
+  },
+  turbopack: {},
+  webpack: (config) => {
+    // react-pdf requires canvas to be false for SSR
+    config.resolve.alias.canvas = false;
+    return config;
+  },
 };
 
 export default nextConfig;

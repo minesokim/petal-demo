@@ -42,6 +42,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
     { label: "Intake", href: `/dashboard/clients/${clientId}/intake` },
     { label: `Documents`, href: `/dashboard/clients/${clientId}/documents`, badge: docCount },
     { label: "Messages", href: `/dashboard/clients/${clientId}/messages` },
+    { label: "Activity", href: `/dashboard/clients/${clientId}/activity` },
     { label: "Notes", href: `/dashboard/clients/${clientId}/notes` },
   ];
 

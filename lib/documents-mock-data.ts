@@ -24,6 +24,7 @@ export interface MockDocument {
   uploadedAt: string;
   checklistItemId?: string;
   status?: "signed" | "ready_for_review";
+  demoPdfPath?: string; // Path to a demo PDF in /public/docs/
 }
 
 export interface ChecklistItem {
@@ -72,22 +73,22 @@ export const mockDocuments: MockDocument[] = [
   { id: "d106", clientId: "c1", clientName: "Marcus Chen", clientAvatar: "/images/avatars/01.png", fileName: "7216_Consent.pdf", originalFileName: "7216_Consent.pdf", fileSize: "92 KB", docType: "7216", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-18T08:05:00", status: "signed" },
 
   // Priya Sharma (c2) - TikTok creator
-  { id: "d201", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "1099-NEC_TikTok.pdf", originalFileName: "photo_1099.heic", fileSize: "89 KB", docType: "1099_nec", docTypeLabel: "1099", docCategory: "income", uploadedBy: "client", viewedByPreparer: false, uploadedAt: "2026-03-27T14:30:00" },
+  { id: "d201", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "1099-NEC_TikTok.pdf", originalFileName: "photo_1099.heic", fileSize: "89 KB", docType: "1099_nec", docTypeLabel: "1099", docCategory: "income", uploadedBy: "client", viewedByPreparer: false, uploadedAt: "2026-03-27T14:30:00", demoPdfPath: "/docs/1099-NEC_TikTok.pdf" },
   { id: "d202", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "Drivers_License.jpg", originalFileName: "id_photo.jpg", fileSize: "2.1 MB", docType: "id", docTypeLabel: "ID", docCategory: "identity", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-22T09:00:00" },
   { id: "d203", clientId: "c2", clientName: "Priya Sharma", clientAvatar: "/images/avatars/02.png", fileName: "Engagement_Letter_2025.pdf", originalFileName: "Engagement_Letter_2025.pdf", fileSize: "156 KB", docType: "engagement", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-20T08:00:00", status: "signed" },
 
   // James & Sofia Rodriguez (c3) - Pay & Sign - 12/12 docs
-  { id: "d301", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "2025_Federal_Return.pdf", originalFileName: "2025_Federal_Return.pdf", fileSize: "1.8 MB", docType: "return", docTypeLabel: "RET", docCategory: "returns", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-27T16:00:00", status: "ready_for_review" },
-  { id: "d302", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "W-2_James_Rodriguez.pdf", originalFileName: "w2_james.pdf", fileSize: "120 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-15T10:00:00" },
+  { id: "d301", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "2025_Federal_Return.pdf", originalFileName: "2025_Federal_Return.pdf", fileSize: "1.8 MB", docType: "return", docTypeLabel: "RET", docCategory: "returns", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-27T16:00:00", status: "ready_for_review", demoPdfPath: "/docs/2025_Federal_Return.pdf" },
+  { id: "d302", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "W-2_James_Rodriguez.pdf", originalFileName: "w2_james.pdf", fileSize: "120 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-15T10:00:00", demoPdfPath: "/docs/W-2_James_Rodriguez.pdf" },
   { id: "d303", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "W-2_Sofia_Rodriguez.pdf", originalFileName: "w2_sofia.pdf", fileSize: "118 KB", docType: "w2", docTypeLabel: "W2", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-15T10:05:00" },
   { id: "d304", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "1099-INT_Chase_Bank.pdf", originalFileName: "1099_chase.pdf", fileSize: "45 KB", docType: "1099_int", docTypeLabel: "1099", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-16T09:00:00" },
-  { id: "d305", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Rental_Income_Statement.pdf", originalFileName: "rental_income.pdf", fileSize: "234 KB", docType: "expense", docTypeLabel: "EXP", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-16T09:30:00" },
+  { id: "d305", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Rental_Income_Statement.pdf", originalFileName: "rental_income.pdf", fileSize: "234 KB", docType: "expense", docTypeLabel: "EXP", docCategory: "income", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-16T09:30:00", demoPdfPath: "/docs/Rental_Income_Statement.pdf" },
   { id: "d306", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Rental_Expenses.xlsx", originalFileName: "rental_expenses.xlsx", fileSize: "156 KB", docType: "expense", docTypeLabel: "EXP", docCategory: "deductions", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-17T14:00:00" },
   { id: "d307", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Property_Tax_Receipt.pdf", originalFileName: "prop_tax.pdf", fileSize: "89 KB", docType: "expense", docTypeLabel: "EXP", docCategory: "deductions", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-17T14:30:00" },
-  { id: "d308", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Mortgage_Interest_1098.pdf", originalFileName: "1098_mortgage.pdf", fileSize: "67 KB", docType: "1099_int", docTypeLabel: "1099", docCategory: "deductions", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-18T08:00:00" },
+  { id: "d308", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Mortgage_Interest_1098.pdf", originalFileName: "1098_mortgage.pdf", fileSize: "67 KB", docType: "1099_int", docTypeLabel: "1099", docCategory: "deductions", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-18T08:00:00", demoPdfPath: "/docs/Mortgage_Interest_1098.pdf" },
   { id: "d309", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Drivers_License_James.jpg", originalFileName: "id_james.jpg", fileSize: "1.9 MB", docType: "id", docTypeLabel: "ID", docCategory: "identity", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-14T10:00:00" },
   { id: "d310", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Drivers_License_Sofia.jpg", originalFileName: "id_sofia.jpg", fileSize: "1.8 MB", docType: "id", docTypeLabel: "ID", docCategory: "identity", uploadedBy: "client", viewedByPreparer: true, uploadedAt: "2026-03-14T10:05:00" },
-  { id: "d311", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Engagement_Letter_2025.pdf", originalFileName: "Engagement_Letter_2025.pdf", fileSize: "156 KB", docType: "engagement", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-12T08:00:00", status: "signed" },
+  { id: "d311", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "Engagement_Letter_2025.pdf", originalFileName: "Engagement_Letter_2025.pdf", fileSize: "156 KB", docType: "engagement", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-12T08:00:00", status: "signed", demoPdfPath: "/docs/Engagement_Letter_2025.pdf" },
   { id: "d312", clientId: "c3", clientName: "James & Sofia Rodriguez", clientAvatar: "/images/avatars/03.png", fileName: "7216_Consent.pdf", originalFileName: "7216_Consent.pdf", fileSize: "92 KB", docType: "7216", docTypeLabel: "AGR", docCategory: "agreements", uploadedBy: "preparer", viewedByPreparer: true, uploadedAt: "2026-03-12T08:05:00", status: "signed" },
 
   // DeShawn Williams (c4) - Urgent, missing docs
@@ -489,6 +490,38 @@ export function getDocumentsByDay() {
   }
 
   return groups;
+}
+
+export function getDocumentById(docId: string): MockDocument | undefined {
+  return mockDocuments.find(d => d.id === docId);
+}
+
+export function getCategoryCompletionStatus(clientId: string): Record<string, { received: number; required: number }> {
+  const docs = getClientDocuments(clientId);
+  const checklist = getClientChecklist(clientId);
+
+  const categories: Record<string, { received: number; required: number }> = {};
+
+  // Count docs as received per category
+  for (const doc of docs) {
+    if (!categories[doc.docCategory]) {
+      categories[doc.docCategory] = { received: 0, required: 0 };
+    }
+    categories[doc.docCategory].received++;
+    categories[doc.docCategory].required++;
+  }
+
+  // Add missing checklist items to required count
+  for (const item of checklist) {
+    if (!item.received) {
+      if (!categories[item.category]) {
+        categories[item.category] = { received: 0, required: 0 };
+      }
+      categories[item.category].required++;
+    }
+  }
+
+  return categories;
 }
 
 export function groupDocumentsByCategory(clientId: string) {
