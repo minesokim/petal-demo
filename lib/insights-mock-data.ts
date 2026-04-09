@@ -274,8 +274,9 @@ export const clientInsights: Record<string, DocketInsight> = {
     content: "Marcus has 3 restaurant locations under Golden Dragon LLC, but total Schedule C revenue dropped 40% from $238,000 to $142,000. His notes mention one location closed. The Pasadena location (Golden Dragon #3) appears to have closed in Q2 2025 based on the expense records cutting off in June. You need verbal confirmation from Marcus that the closure is permanent before filing, because the IRS will flag a 40% revenue drop on a multi-location Schedule C without explanation.\n\nNew this year: Marcus has a $12,000 1099-NEC from Restaurant Consulting Group. This is new income not present in 2024 and will likely need its own Schedule C or allocation to the existing one. Ask Marcus if this is a separate business activity or related to Golden Dragon.\n\nThe W-2 from Golden Dragon shows wages of $58,000, down from $96,000 last year. This is consistent with the location closure but make sure the wage reduction is proportional to the actual closure timeline, not an error. Equipment disposal of $23,000 from the Riverside location needs special depreciation treatment. Verify whether this was a sale, abandonment, or trade-in, as each has different tax implications.\n\nMarcus has a call scheduled for March 30 at 2pm. Recommend covering: (1) confirm Pasadena closure date and circumstances, (2) consulting income classification, (3) equipment disposal method, (4) review all three P&Ls side by side.",
     timestamp: "2026-03-28T07:30:00",
     actions: [
-      { id: "confirm-closure", label: "Confirm closure", variant: "primary", action: "open_thread" },
-      { id: "view-return", label: "Review return", variant: "secondary", action: "open_return" },
+      { id: "message-marcus", label: "Message Marcus", variant: "primary", action: "open_thread" },
+      { id: "review-p-and-l", label: "Review P&Ls", variant: "secondary", action: "open_return" },
+      { id: "ask-docket", label: "Ask Docket", variant: "ghost", action: "ask_docket" },
     ],
   },
 

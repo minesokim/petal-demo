@@ -20,6 +20,7 @@ import {
 import { getOpenIssues, type ClientIssue } from "@/lib/issues-mock-data";
 import { getInsightForClient } from "@/lib/insights-mock-data";
 import { useAIPanelAsk } from "@/components/ai-panel";
+import { useToast } from "@/components/ui/toast-notification";
 import { motion, AnimatePresence } from "motion/react";
 import dynamic from "next/dynamic";
 
@@ -190,7 +191,7 @@ function SummaryLineItem({ label, source, amount, priorYear, verified, onDocClic
 // ═══════════════════════════════════════════════
 // PREP SUMMARY (center panel)
 // ═══════════════════════════════════════════════
-function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docId: string) => void }) {
+function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDocClick: (docId: string) => void; onAskDocket: (q: string) => void }) {
   const docs = getClientDocuments(client.id);
   const allIntel = getDocumentIntelligence(client.id);
   const insight = getInsightForClient(client.id);
@@ -319,7 +320,15 @@ function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docI
                 className="mt-3 flex flex-wrap gap-2"
               >
                 {insight.actions.map((action, i) => (
-                  <Button key={i} size="sm" variant={i === 0 ? "default" : "outline"} className="h-7 text-xs">
+                  <Button
+                    key={i}
+                    size="sm"
+                    variant={action.variant === "primary" ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      if (action.action === "ask_docket") onAskDocket(`Tell me about ${insight.title} for ${client.fullName}`);
+                    }}
+                  >
                     {action.label}
                   </Button>
                 ))}
@@ -666,6 +675,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showingSummary, setShowingSummary] = useState(true);
   const selectedDoc = selectedDocId ? getDocumentById(selectedDocId) : null;
+  const { showToast } = useToast();
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
 
   // Ask Docket — opens the AI panel with the question pre-filled + client context
@@ -713,7 +723,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             <Badge variant="outline" className="text-[10px] text-muted-foreground">
               <Clock className="size-3 mr-1" /> In preparation for {prepDays}d
             </Badge>
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => showToast("success", "Downloading all documents", `${client.documentsSubmitted} files for ${client.fullName}`)}>
               <Download className="size-3" /> Download All
             </Button>
             <Button variant="ghost" size="icon-sm" onClick={() => onOpenChange(false)}>
@@ -733,7 +743,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
           <AnimatePresence mode="wait">
             {showingSummary ? (
               <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto">
-                <PrepSummary client={client} onDocClick={handleDocSelect} />
+                <PrepSummary client={client} onDocClick={handleDocSelect} onAskDocket={handleAskDocket} />
               </motion.div>
             ) : selectedDoc ? (
               <motion.div key={selectedDoc.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 overflow-hidden">
