@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   X, ChevronRight, ChevronDown, Clock, FileText, Check, CheckCircle2, Eye,
-  AlertTriangle, Send, ArrowLeft, ClipboardList, Download, BotIcon, MessageSquare
+  AlertTriangle, Send, ArrowLeft, ClipboardList, Download, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientPaymentSummary, type Client } from "@/lib/mock-data";
@@ -275,22 +275,35 @@ function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docI
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* AI Preparation Brief */}
+      {/* AI Preparation Brief — matches overview insight style */}
       {insight && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mx-6 mt-6 rounded-xl border bg-card p-4"
+          className="mx-6 mt-6 rounded-lg border bg-card"
         >
-          <div className="flex items-start gap-3">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-50 shrink-0">
-              <BotIcon className="size-4 text-blue-600" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Preparation Brief</div>
-              <p className="text-sm leading-relaxed text-foreground/85">{insight.text}</p>
-            </div>
+          <div className="px-4 py-2.5 flex items-center gap-2">
+            <span className={cn("size-1.5 rounded-full shrink-0",
+              insight.severity === "alert" ? "bg-red-500" : insight.severity === "concern" ? "bg-amber-500" : "bg-emerald-500"
+            )} />
+            <span className={cn("text-[10px] font-semibold uppercase tracking-wide",
+              insight.severity === "alert" ? "text-red-700" : insight.severity === "concern" ? "text-amber-700" : "text-emerald-700"
+            )}>
+              {insight.severity === "alert" ? "Action Required" : insight.severity === "concern" ? "Needs Attention" : "Preparation Notes"}
+            </span>
+          </div>
+          <div className="px-4 pb-4">
+            <p className="text-sm leading-relaxed">{insight.content}</p>
+            {insight.actions && insight.actions.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {insight.actions.map((action, i) => (
+                  <Button key={i} size="sm" variant={i === 0 ? "default" : "outline"} className="h-7 text-xs">
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
       )}
@@ -460,6 +473,7 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
   const intel = selectedDoc ? getIntelligenceForDocument(selectedDoc.id) : null;
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
   const [expandedFlags, setExpandedFlags] = useState<Set<string>>(new Set());
+  const [resolvedFlags, setResolvedFlags] = useState<Set<string>>(new Set());
 
   // Document-specific sidebar
   if (!showingSummary && selectedDoc && intel) {
@@ -519,60 +533,69 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
         </div>
       </div>
 
-      {/* Flags — detailed with expand */}
+      {/* Flags — check/exclamation style */}
       <div className="border-b border-border/30 px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Flags
-            {flags.length > 0 && (
-              <span className="ml-1.5 inline-flex size-4 items-center justify-center rounded-full bg-foreground/10 text-[9px] font-semibold tabular-nums">{flags.length}</span>
-            )}
-          </h4>
+        <div className="flex items-center gap-2 mb-3">
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Flags</h4>
+          {flags.length > 0 && (
+            <span className="text-[10px] text-amber-600 font-medium">{flags.length} open</span>
+          )}
         </div>
-        {flags.length > 0 ? (
-          <div className="space-y-2">
-            {flags.map(flag => {
-              const isExpanded = expandedFlags.has(flag.id);
-              return (
-                <div key={flag.id} className="rounded-lg border bg-card overflow-hidden">
-                  <button
-                    onClick={() => setExpandedFlags(prev => { const n = new Set(prev); n.has(flag.id) ? n.delete(flag.id) : n.add(flag.id); return n; })}
-                    className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
-                  >
-                    <span className={cn("size-1.5 rounded-full shrink-0 mt-1.5",
-                      flag.priority === "critical" || flag.priority === "high" ? "bg-red-500" :
-                      flag.priority === "medium" ? "bg-amber-500" : "bg-muted-foreground/30"
-                    )} />
-                    <span className="flex-1 text-xs font-medium">{flag.title}</span>
-                    <ChevronRight className={cn("size-3 text-muted-foreground/50 transition-transform shrink-0 mt-0.5", isExpanded && "rotate-90")} />
-                  </button>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-3 pb-2.5 space-y-2">
-                          {flag.description && <p className="text-[11px] text-muted-foreground leading-relaxed">{flag.description}</p>}
-                          <div className="flex gap-1.5">
-                            <Button size="sm" variant="outline" className="h-6 text-[10px] px-2">Resolve</Button>
-                            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-muted-foreground" onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
-                              Ask Docket
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
+        <div className="space-y-1">
+          {flags.map(flag => {
+            const isResolved = resolvedFlags.has(flag.id);
+            const isExpanded = expandedFlags.has(flag.id);
+            return (
+              <div key={flag.id} className="overflow-hidden">
+                <button
+                  onClick={() => !isResolved && setExpandedFlags(prev => { const n = new Set(prev); n.has(flag.id) ? n.delete(flag.id) : n.add(flag.id); return n; })}
+                  className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/30"
+                >
+                  {isResolved ? (
+                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className={cn("text-xs font-medium", isResolved && "line-through text-muted-foreground")}>{flag.title}</span>
+                    {flag.description && isExpanded && !isResolved && (
+                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{flag.description}</p>
                     )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-xs text-emerald-600 flex items-center gap-1"><Check className="size-3" /> All flags resolved</p>
-        )}
+                  </div>
+                  {!isResolved && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] px-2 shrink-0 text-muted-foreground"
+                      onClick={(e) => { e.stopPropagation(); setResolvedFlags(prev => new Set([...prev, flag.id])); }}
+                    >
+                      Resolve
+                    </Button>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {isExpanded && !isResolved && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pl-9 pr-2 pb-2">
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-muted-foreground" onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
+                          Ask Docket
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+          {flags.length === 0 && (
+            <p className="text-xs text-emerald-600 flex items-center gap-1 py-1"><CheckCircle2 className="size-3.5" /> All flags resolved</p>
+          )}
+        </div>
       </div>
 
       {/* Payment */}
@@ -698,7 +721,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
           </AnimatePresence>
 
           {/* Right: Sidebar */}
-          <div className="w-[320px] shrink-0 border-l border-border/40 overflow-hidden">
+          <div className="w-[320px] shrink-0 border-l border-border/40 overflow-y-auto">
             <PrepSidebar
               client={client}
               showingSummary={showingSummary}
