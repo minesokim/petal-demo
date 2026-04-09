@@ -506,7 +506,7 @@ export function NavMain() {
                   )}
                   {!!item.isDataBadge && (
                     <SidebarMenuBadge>
-                      <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold leading-none text-white">
+                      <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold text-white leading-[0]">
                         {item.isDataBadge}
                       </span>
                     </SidebarMenuBadge>

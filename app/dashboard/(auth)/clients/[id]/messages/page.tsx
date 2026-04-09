@@ -125,7 +125,7 @@ export default function ClientMessagesPage() {
                 <span className={cn("text-[10px] tabular-nums", isActive ? "text-foreground/50" : "text-muted-foreground/40")}>{count}</span>
               )}
               {unread > 0 && !isActive && (
-                <span className="flex size-[14px] items-center justify-center rounded-full bg-emerald-600 text-[7px] font-bold leading-none text-white">
+                <span className="flex size-[14px] items-center justify-center rounded-full bg-emerald-600 text-[7px] font-bold text-white leading-[0]">
                   {unread}
                 </span>
               )}

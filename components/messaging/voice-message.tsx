@@ -105,98 +105,126 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
         </div>
       )}
 
-      {/* Suggested flags — actionable */}
-      {suggestedItems.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowSuggestedItems(!showSuggestedItems)}
-            className="flex items-center gap-1.5 text-[11px] text-foreground/70 transition-colors hover:text-foreground"
-          >
-            <AlertCircle className="size-3 text-amber-500" />
-            <span className="font-medium">
-              {pendingCount > 0
-                ? `${pendingCount} suggested open item${pendingCount > 1 ? "s" : ""}`
-                : `${acceptedCount} item${acceptedCount > 1 ? "s" : ""} added`
-              }
-            </span>
-            <ChevronDown className={cn("size-3 transition-transform", showSuggestedItems && "rotate-180")} />
-          </button>
-          <AnimatePresence>
-            {showSuggestedItems && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-1.5 space-y-1 rounded-lg border border-border/40 bg-card p-2">
-                  {suggestedItems.map((item, i) => {
-                    const status = itemStatuses[i];
-                    return (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
-                          status === "accepted" && "bg-emerald-50/30 dark:bg-emerald-950/10",
-                          status === "dismissed" && "opacity-40",
-                        )}
-                      >
-                        {/* Status indicator */}
-                        {status === "accepted" ? (
-                          <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" />
-                        ) : status === "dismissed" ? (
-                          <X className="size-3.5 shrink-0 text-muted-foreground/40" />
-                        ) : (
-                          <div className="size-1.5 rounded-full bg-amber-500 shrink-0 ml-1 mr-0.5" />
-                        )}
+      {/* Suggested items — split into flags and to-do */}
+      {suggestedItems.length > 0 && (() => {
+        // Heuristic: items about filing, signing, verifying → flags. Others → to-do.
+        const flagKeywords = ["sign", "8879", "e-file", "file ", "verify", "note ", "section 179"];
+        const flagItems: { text: string; index: number }[] = [];
+        const todoItems: { text: string; index: number }[] = [];
+        suggestedItems.forEach((item, i) => {
+          const lower = item.toLowerCase();
+          if (flagKeywords.some(k => lower.includes(k))) {
+            flagItems.push({ text: item, index: i });
+          } else {
+            todoItems.push({ text: item, index: i });
+          }
+        });
 
-                        {/* Item text */}
-                        <span className={cn(
-                          "flex-1 text-xs",
-                          status === "accepted" && "text-foreground/70",
-                          status === "dismissed" && "text-muted-foreground line-through",
-                          !status && "text-foreground/80",
-                        )}>
-                          {item}
-                        </span>
-
-                        {/* Action buttons */}
-                        {!status && (
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              onClick={(e) => { e.stopPropagation(); acceptItem(i, item); }}
-                              title="Add to flags"
-                            >
-                              <Check className="size-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 text-muted-foreground/50 hover:text-muted-foreground"
-                              onClick={(e) => { e.stopPropagation(); dismissItem(i); }}
-                              title="Dismiss"
-                            >
-                              <X className="size-3" />
-                            </Button>
-                          </div>
-                        )}
-
-                        {status === "accepted" && (
-                          <span className="text-[9px] text-emerald-600 shrink-0">Added</span>
-                        )}
-                      </div>
-                    );
-                  })}
+        const renderItem = (item: { text: string; index: number }) => {
+          const status = itemStatuses[item.index];
+          return (
+            <div
+              key={item.index}
+              className={cn(
+                "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
+                status === "accepted" && "bg-emerald-50/30 dark:bg-emerald-950/10",
+                status === "dismissed" && "opacity-40",
+              )}
+            >
+              {status === "accepted" ? (
+                <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" />
+              ) : status === "dismissed" ? (
+                <X className="size-3.5 shrink-0 text-muted-foreground/40" />
+              ) : (
+                <div className="size-1.5 rounded-full bg-amber-500 shrink-0 ml-1 mr-0.5" />
+              )}
+              <span className={cn(
+                "flex-1 text-xs",
+                status === "accepted" && "text-foreground/70",
+                status === "dismissed" && "text-muted-foreground line-through",
+                !status && "text-foreground/80",
+              )}>
+                {item.text}
+              </span>
+              {!status && (
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                    onClick={(e) => { e.stopPropagation(); acceptItem(item.index, item.text); }}
+                    title="Accept"
+                  >
+                    <Check className="size-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-muted-foreground/50 hover:text-muted-foreground"
+                    onClick={(e) => { e.stopPropagation(); dismissItem(item.index); }}
+                    title="Dismiss"
+                  >
+                    <X className="size-3" />
+                  </Button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+              )}
+              {status === "accepted" && (
+                <span className="text-[9px] text-emerald-600 shrink-0">Added</span>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div>
+            <button
+              onClick={() => setShowSuggestedItems(!showSuggestedItems)}
+              className="flex items-center gap-1.5 text-[11px] text-foreground/70 transition-colors hover:text-foreground"
+            >
+              <AlertCircle className="size-3 text-amber-500" />
+              <span className="font-medium">
+                {pendingCount > 0
+                  ? `${pendingCount} suggested item${pendingCount > 1 ? "s" : ""}`
+                  : `${acceptedCount} item${acceptedCount > 1 ? "s" : ""} added`
+                }
+              </span>
+              <ChevronDown className={cn("size-3 transition-transform", showSuggestedItems && "rotate-180")} />
+            </button>
+            <AnimatePresence>
+              {showSuggestedItems && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-1.5 space-y-3 rounded-lg border border-border/40 bg-card p-3">
+                    {/* Flags section */}
+                    {flagItems.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-medium text-muted-foreground/60 mb-1.5">For return flags</div>
+                        <div className="space-y-0.5">
+                          {flagItems.map(renderItem)}
+                        </div>
+                      </div>
+                    )}
+                    {/* To-do section */}
+                    {todoItems.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-medium text-muted-foreground/60 mb-1.5">For your to-do</div>
+                        <div className="space-y-0.5">
+                          {todoItems.map(renderItem)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })()}
 
       {/* Transcript toggle */}
       {message.voiceTranscript && (

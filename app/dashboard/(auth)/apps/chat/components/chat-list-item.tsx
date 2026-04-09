@@ -39,7 +39,7 @@ export function ChatListItem({ chat, active }: { chat: ChatItemProps; active: bo
             {chat.last_message}
           </span>
           {unreadMessageCount.length > 0 && (
-            <span className="ms-auto flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
+            <span className="ms-auto flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold text-white leading-[0]">
               {unreadMessageCount.length}
             </span>
           )}

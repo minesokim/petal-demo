@@ -809,7 +809,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-medium text-foreground">Messages</span>
-              <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">3</span>
+              <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white leading-[0]">3</span>
             </div>
             <Link href="/dashboard/apps/chat" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
               View all &rarr;
@@ -834,7 +834,7 @@ export default function Page() {
                   <p className="truncate text-[11px] text-muted-foreground mt-0.5">{msg.message}</p>
                 </div>
                 {msg.unreadCount > 0 && (
-                  <span className="flex size-[16px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">
+                  <span className="flex size-[16px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white pt-px">
                     {msg.unreadCount}
                   </span>
                 )}
