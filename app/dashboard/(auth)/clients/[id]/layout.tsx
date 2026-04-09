@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence, LayoutGroup } from "motion/react";
@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, Trash2, UserX } from "lucide-react";
+import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, Trash2, UserX, ClipboardList } from "lucide-react";
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
 import { useAIPanel } from "@/components/ai-panel";
@@ -83,10 +83,11 @@ export default function ClientDetailLayout({ children }: { children: React.React
             </div>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
-          </DropdownMenuTrigger>
+        <div className="flex items-center gap-2" id="client-header-actions">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem><Mail className="mr-2 size-3.5" /> Send message</DropdownMenuItem>
             <DropdownMenuItem><Phone className="mr-2 size-3.5" /> Schedule call</DropdownMenuItem>
@@ -96,6 +97,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
             <DropdownMenuItem className="text-destructive"><UserX className="mr-2 size-3.5" /> Archive client</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       {/* Sub-tabs */}

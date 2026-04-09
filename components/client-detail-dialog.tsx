@@ -14,7 +14,7 @@ import {
   feedActions, irsNotices,
   type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
-import { TrackingBadgeGroup } from "@/components/insights";
+import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
@@ -39,7 +39,7 @@ import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
   CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check,
-  TrendingDown, Calculator, X, Brain, Loader2
+  TrendingDown, Calculator, X, Brain, Loader2, ClipboardList
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -168,7 +168,13 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               <Badge variant="outline">${client.feeAmount}</Badge>
               {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
               {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
-              <Button size="sm" variant="ghost" className="ml-auto h-7 text-xs" asChild>
+              {client.returnStage === "in_preparation" && (
+                <Button size="sm" className="ml-auto gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs">
+                  <ClipboardList className="size-3.5" />
+                  Prep Workspace
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" className={`h-7 text-xs ${client.returnStage !== "in_preparation" ? "ml-auto" : ""}`} asChild>
                 <Link href={`/dashboard/clients/${client.id}/overview`}>
                   Open full page <ArrowUpRight className="ml-1 size-3" />
                 </Link>
@@ -288,6 +294,21 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
+              {/* AI Insight */}
+              {clientInsight && (
+                <DocketInsightCard
+                  insight={clientInsight}
+                  defaultExpanded={true}
+                  onAction={handleInsightAction}
+                  onSendMessage={(messageId, channel) => {
+                    showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
+                  }}
+                  onEditMessage={(messageId) => {
+                    showToast("info", "Editing draft", `Opening editor for ${messageId}`);
+                  }}
+                />
+              )}
+
               {/* Upcoming Call */}
               <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
@@ -1221,7 +1242,7 @@ function BillingTab({ client, sentBilling, setSentBilling }: { client: Client; s
             <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
+            <div className="text-xl tracking-tight"><span className="font-display">${ps.totalPaid}</span> <span className="text-sm font-sans font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
             <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
               {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
             </div>

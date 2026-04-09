@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +13,11 @@ import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
   AlertTriangle, ChevronRight, Shield, Check, X,
-  TrendingDown, Calculator, Brain, Download
+  TrendingDown, Calculator, Brain, Download, ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary, type InsightAction } from "@/lib/mock-data";
-import { TrackingBadgeGroup } from "@/components/insights";
+import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
@@ -96,6 +97,24 @@ export default function ClientOverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Prep Workspace button — portaled into layout header */}
+      <PrepWorkspacePortal visible={currentStage === "in_preparation"} />
+
+      {/* AI Insight */}
+      {clientInsight && (
+        <DocketInsightCard
+          insight={clientInsight}
+          defaultExpanded={true}
+          onAction={handleInsightAction}
+          onSendMessage={(messageId, channel) => {
+            showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
+          }}
+          onEditMessage={(messageId) => {
+            showToast("info", "Editing draft", `Opening editor for ${messageId}`);
+          }}
+        />
+      )}
+
       {/* Upcoming call notification */}
       <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
@@ -652,6 +671,38 @@ function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: 
         );
       })}
     </div>
+  );
+}
+
+// Portal the Prep Workspace button into the layout header
+function PrepWorkspacePortal({ visible }: { visible: boolean }) {
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = document.getElementById("client-header-actions");
+    if (el) setContainer(el);
+  }, []);
+
+  if (!container) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, width: 0 }}
+          animate={{ opacity: 1, scale: 1, width: "auto" }}
+          exit={{ opacity: 0, scale: 0.9, width: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="overflow-hidden"
+        >
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm whitespace-nowrap">
+            <ClipboardList className="size-4" />
+            Prep Workspace
+          </Button>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    container
   );
 }
 

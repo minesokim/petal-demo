@@ -27,7 +27,7 @@ export function BillingCard({ client }: { client: Client }) {
             <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
+            <div className="text-xl tracking-tight"><span className="font-display">${ps.totalPaid}</span> <span className="text-sm font-sans font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
             <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
               {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
             </div>
