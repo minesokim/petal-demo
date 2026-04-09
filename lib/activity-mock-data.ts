@@ -116,3 +116,16 @@ export function getClientActivityAsc(clientId: string): ActivityEvent[] {
 export function getActivityByActor(clientId: string, actor: string): ActivityEvent[] {
   return getClientActivity(clientId).filter(e => e.actor === actor);
 }
+
+export function getAllActivity(): (ActivityEvent & { clientId: string; clientName: string })[] {
+  const { clients } = require("./mock-data");
+  const all: (ActivityEvent & { clientId: string; clientName: string })[] = [];
+  for (const [clientId, events] of Object.entries(activityData)) {
+    const client = clients.find((c: { id: string }) => c.id === clientId);
+    const clientName = client?.fullName || clientId;
+    for (const event of events as ActivityEvent[]) {
+      all.push({ ...event, clientId, clientName });
+    }
+  }
+  return all.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
