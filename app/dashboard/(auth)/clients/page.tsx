@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { ViewModeToggle, type ViewMode } from "@/components/clients/view-mode-toggle";
-import { ClientsFilterPills, type BucketFilter } from "@/components/clients/clients-filter-pills";
+import { ClientsFilterPills, type BucketFilter, PipelineFilterPills, type PipelineFilter } from "@/components/clients/clients-filter-pills";
 import { ClientsTableView, type SortKey, type SortDir } from "@/components/clients/clients-table-view";
 import { ClientsPipelineView } from "@/components/clients/clients-pipeline-view";
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
@@ -43,6 +43,8 @@ export default function ClientsPage() {
   const [activeFilter, setActiveFilter] = useState<BucketFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>("all");
+  const [highlightedColumn, setHighlightedColumn] = useState<string | null>(null);
 
   // Load persisted view mode on mount
   useEffect(() => {
@@ -56,9 +58,10 @@ export default function ClientsPage() {
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
-    // Reset filter when switching to pipeline since columns ARE the filter
     if (mode === "pipeline") {
       setActiveFilter("all");
+    } else {
+      setPipelineFilter("all");
     }
     try {
       localStorage.setItem(VIEW_MODE_KEY, mode);
@@ -95,6 +98,22 @@ export default function ClientsPage() {
     for (const c of searchFiltered) {
       const bucket = getBucket(c);
       counts[bucket]++;
+    }
+    counts.all = searchFiltered.length;
+    return counts;
+  }, [searchFiltered, acceptedIds]);
+
+  // Compute pipeline stage counts for pipeline filter pills
+  const pipelineCounts = useMemo(() => {
+    const counts: Record<PipelineFilter, number> = { all: 0, pending: 0, new_intake: 0, collecting_docs: 0, in_preparation: 0, client_review: 0, pay_and_sign: 0, filed: 0 };
+    for (const c of searchFiltered) {
+      const isPending = c.clientStatus === "pending" && !acceptedIds.includes(c.id);
+      if (isPending) {
+        counts.pending++;
+      } else {
+        const stage = c.returnStage === "ready_to_prep" ? "in_preparation" : c.returnStage;
+        if (stage in counts) counts[stage as PipelineFilter]++;
+      }
     }
     counts.all = searchFiltered.length;
     return counts;
@@ -214,8 +233,14 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Filter pills - hidden in Pipeline view since columns ARE the filter */}
-      {viewMode !== "pipeline" && (
+      {/* Filter pills */}
+      {viewMode === "pipeline" ? (
+        <PipelineFilterPills
+          value={pipelineFilter}
+          onChange={setPipelineFilter}
+          counts={pipelineCounts}
+        />
+      ) : (
         <ClientsFilterPills
           value={activeFilter}
           onChange={setActiveFilter}
@@ -230,22 +255,33 @@ export default function ClientsPage() {
           "flex gap-3 pb-4",
           columnData.length > 3 ? "min-w-max" : ""
         )}>
-          {columnData.map((col) => (
+          {columnData.map((col) => {
+            const isDimmed = highlightedColumn !== null && highlightedColumn !== col.key;
+            return (
             <div key={col.key} className={cn(
               columnData.length > 3
                 ? "w-[280px] shrink-0"
                 : columnData.length === 1
                 ? "w-[320px]"
-                : "w-[280px] shrink-0 sm:w-[320px]"
+                : "w-[280px] shrink-0 sm:w-[320px]",
+              "transition-all duration-300",
+              isDimmed && "opacity-30 blur-[1px]"
             )}>
-              {/* Column header */}
-              <div className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 ${col.headerBg}`}>
+              {/* Column header — clickable to highlight */}
+              <button
+                onClick={() => setHighlightedColumn(highlightedColumn === col.key ? null : col.key)}
+                className={cn(
+                  "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all cursor-pointer",
+                  col.headerBg,
+                  highlightedColumn === col.key && "border border-foreground/15 shadow-sm"
+                )}
+              >
                 <div className="flex items-center gap-2">
                   <span className={`size-2 rounded-full ${col.dot}`} />
                   <span className="text-sm font-semibold">{col.label}</span>
                 </div>
                 <Badge variant="outline" className="text-[10px]">{col.clients.length}</Badge>
-              </div>
+              </button>
 
               {/* Column cards */}
               <div className="space-y-3">
@@ -360,7 +396,8 @@ export default function ClientsPage() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         </DualScrollContainer>
       )}
@@ -385,6 +422,7 @@ export default function ClientsPage() {
           clients={searchFiltered}
           acceptedIds={acceptedIds}
           onOpenDetail={setDetailClient}
+          filterStage={pipelineFilter}
         />
       )}
 

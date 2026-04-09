@@ -267,7 +267,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         <div className="flex-1 overflow-y-auto min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="px-6 pt-2 pb-6">
             <TabsList variant="fill" className="mb-4 w-full">
-              {["overview", "intake", "documents", "messages", "activity", "billing", "notes"].map(tab => (
+              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
                 <TabsTrigger key={tab} value={tab} className="relative">
                   {activeTab === tab && (
                     <motion.span
@@ -687,6 +687,29 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                           )}
                         </div>
                       </div>
+                      {totalDocs > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs gap-1.5 shrink-0"
+                          onClick={() => {
+                            const allDocs = docGroups.flatMap(g => g.docs).filter(d => d.demoPdfPath);
+                            allDocs.forEach((doc, i) => {
+                              setTimeout(() => {
+                                const a = document.createElement("a");
+                                a.href = doc.demoPdfPath!;
+                                a.download = doc.fileName;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }, i * 200);
+                            });
+                            showToast("success", "Downloading documents", `${allDocs.length} files downloading`);
+                          }}
+                        >
+                          <Download className="size-3" /> Download all
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -722,11 +745,6 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             {/* MESSAGES TAB — unified comms */}
             <TabsContent value="messages">
               <DialogMessagesTab client={client} />
-            </TabsContent>
-
-            {/* ACTIVITY TAB */}
-            <TabsContent value="activity">
-              <DialogActivityTab client={client} activityFilter={activityFilter} setActivityFilter={setActivityFilter} />
             </TabsContent>
 
             {/* BILLING TAB */}
@@ -917,11 +935,11 @@ function DialogMessagesTab({ client }: { client: Client }) {
   };
 
   return (
-    <div className="flex flex-col h-full -mb-6">
+    <div className="flex flex-col -mb-6" style={{ minHeight: 'calc(90vh - 220px)' }}>
       <div className="flex-1 min-h-0 overflow-y-auto pb-3">
         <UnifiedTimeline messages={thread} client={client} />
       </div>
-      <div className="shrink-0 border-t pt-2 pb-6 bg-background space-y-2">
+      <div className="shrink-0 border-t pt-2 pb-6 bg-background space-y-2 mt-auto">
         <ChannelSelector value={composeChannel} onChange={setComposeChannel} suggestSms={suggestSms} />
         <div className="flex items-center gap-2">
           <input

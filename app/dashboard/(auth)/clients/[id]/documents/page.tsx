@@ -97,7 +97,7 @@ export default function ClientDocumentsPage() {
               </div>
             </div>
 
-            {allReceived && totalDocs > 0 && (
+            {totalDocs > 0 && (
               <Button
                 size="sm"
                 variant="outline"
@@ -105,7 +105,18 @@ export default function ClientDocumentsPage() {
                 disabled={downloading}
                 onClick={() => {
                   setDownloading(true);
-                  showToast("success", `${totalDocs} files downloaded`);
+                  const downloadable = groups.flatMap(g => g.docs).filter(d => d.demoPdfPath);
+                  downloadable.forEach((doc, i) => {
+                    setTimeout(() => {
+                      const a = document.createElement("a");
+                      a.href = doc.demoPdfPath!;
+                      a.download = doc.fileName;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }, i * 200);
+                  });
+                  showToast("success", "Downloading documents", `${downloadable.length} files downloading`);
                   setTimeout(() => setDownloading(false), 1500);
                 }}
               >

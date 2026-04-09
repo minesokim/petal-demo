@@ -101,7 +101,7 @@ function ViewerDocTree({ clientId, selectedDocId, onSelect }: {
               className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted/60"
             >
               <ChevronRight className={cn("size-3 text-muted-foreground/50 transition-transform", isOpen && "rotate-90")} />
-              <span className="flex-1 font-medium text-foreground/80">{group.label}</span>
+              <span className="flex-1 font-medium text-foreground">{group.label}</span>
               <span className="text-[9px] tabular-nums text-muted-foreground/50">
                 {group.docs.length}
               </span>
@@ -115,12 +115,12 @@ function ViewerDocTree({ clientId, selectedDocId, onSelect }: {
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
                       selectedDocId === doc.id
-                        ? "bg-primary/5 text-foreground"
-                        : "text-foreground/70 hover:bg-muted/40"
+                        ? "bg-primary/5 text-foreground font-medium"
+                        : "text-foreground hover:bg-muted/40"
                     )}
                   >
                     <DocStatusIcon doc={doc} />
-                    <span className="flex-1 truncate text-[11px] leading-tight">
+                    <span className="flex-1 truncate text-xs leading-tight">
                       {doc.fileName.replace(/_/g, " ").replace(/\.[^.]+$/, "")}
                     </span>
                   </button>

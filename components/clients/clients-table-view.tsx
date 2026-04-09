@@ -47,16 +47,19 @@ const stageOrder: Record<string, number> = {
   filed: 6,
 };
 
-function getUrgencyColor(urgency: string) {
-  switch (urgency) {
-    case "urgent":
-      return "bg-red-500";
-    case "high":
-      return "bg-amber-500";
-    case "normal":
-      return "bg-blue-500";
-    case "low":
-      return "bg-emerald-500";
+function getStageColor(stage: string) {
+  switch (stage) {
+    case "new_intake":
+    case "ready_to_prep":
+    case "pay_and_sign":
+      return "bg-red-500";       // Need You
+    case "collecting_docs":
+    case "client_review":
+      return "bg-amber-500";     // Waiting
+    case "in_preparation":
+      return "bg-blue-500";      // In Progress
+    case "filed":
+      return "bg-emerald-500";   // Done
     default:
       return "bg-zinc-400";
   }
@@ -319,7 +322,7 @@ function ClientRow({
         <div
           className={cn(
             "absolute left-0 top-0 h-full w-1 rounded-r",
-            isPending ? "bg-zinc-400" : getUrgencyColor(client.urgency)
+            isPending ? "bg-zinc-400" : getStageColor(client.returnStage)
           )}
         />
         <div className="flex items-center gap-3 pl-1">

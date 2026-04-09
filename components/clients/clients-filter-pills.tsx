@@ -72,3 +72,70 @@ export function ClientsFilterPills({ value, onChange, counts }: ClientsFilterPil
     </div>
   );
 }
+
+// ── Pipeline filter pills ──
+
+export type PipelineFilter = "all" | "pending" | "new_intake" | "collecting_docs" | "in_preparation" | "client_review" | "pay_and_sign" | "filed";
+
+const pipelineFilterOptions: { key: PipelineFilter; label: string; dot: string }[] = [
+  { key: "all", label: "All", dot: "" },
+  { key: "pending", label: "Pending Review", dot: "bg-rose-400" },
+  { key: "new_intake", label: "New Intake", dot: "bg-zinc-400" },
+  { key: "collecting_docs", label: "Collecting Docs", dot: "bg-amber-500" },
+  { key: "in_preparation", label: "In Preparation", dot: "bg-blue-500" },
+  { key: "client_review", label: "Client Review", dot: "bg-purple-500" },
+  { key: "pay_and_sign", label: "Pay & Sign", dot: "bg-orange-500" },
+  { key: "filed", label: "Filed", dot: "bg-emerald-500" },
+];
+
+interface PipelineFilterPillsProps {
+  value: PipelineFilter;
+  onChange: (filter: PipelineFilter) => void;
+  counts: Record<PipelineFilter, number>;
+}
+
+export function PipelineFilterPills({ value, onChange, counts }: PipelineFilterPillsProps) {
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+      {pipelineFilterOptions.map((opt) => {
+        const count = opt.key === "all"
+          ? Object.values(counts).reduce((sum, c) => sum + c, 0) - (counts.all || 0)
+          : counts[opt.key];
+        const isActive = value === opt.key;
+
+        if (opt.key !== "all" && count === 0) return null;
+
+        return (
+          <button
+            key={opt.key}
+            onClick={() => onChange(opt.key)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+              isActive
+                ? "bg-foreground text-background shadow-sm"
+                : "bg-white border text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {opt.dot && (
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  isActive ? "bg-background/70" : opt.dot
+                )}
+              />
+            )}
+            {opt.label}
+            <span
+              className={cn(
+                "font-mono tabular-nums text-[10px]",
+                isActive ? "text-background/60" : "text-muted-foreground/60"
+              )}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

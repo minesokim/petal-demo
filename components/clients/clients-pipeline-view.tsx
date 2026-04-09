@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -99,18 +99,20 @@ interface ClientsPipelineViewProps {
   clients: Client[];
   acceptedIds: string[];
   onOpenDetail: (client: Client) => void;
+  filterStage?: string;
 }
 
 export function ClientsPipelineView({
   clients,
   acceptedIds,
   onOpenDetail,
+  filterStage = "all",
 }: ClientsPipelineViewProps) {
   // Group clients by pipeline stage.
   // Pending clients get their own column at the start.
   // ready_to_prep clients are folded into in_preparation for a cleaner pipeline.
   const columns = useMemo(() => {
-    return pipelineStages.map((stage) => ({
+    const allCols = pipelineStages.map((stage) => ({
       ...stage,
       clients: clients.filter((c) => {
         const isPending =
@@ -131,18 +133,31 @@ export function ClientsPipelineView({
         return c.returnStage === stage.key;
       }),
     }));
-  }, [clients, acceptedIds]);
+    if (filterStage && filterStage !== "all") {
+      return allCols.filter(col => col.key === filterStage);
+    }
+    return allCols;
+  }, [clients, acceptedIds, filterStage]);
+
+  const [highlightedCol, setHighlightedCol] = useState<string | null>(null);
 
   return (
     <DualScrollContainer>
     <div className="flex gap-3 min-w-max pb-4">
-      {columns.map((col) => (
-        <div key={col.key} className="w-[240px] shrink-0">
-          {/* Column header */}
-          <div
+      {columns.map((col) => {
+        const isDimmed = highlightedCol !== null && highlightedCol !== col.key;
+        return (
+        <div key={col.key} className={cn(
+          "w-[240px] shrink-0 transition-all duration-300",
+          isDimmed && "opacity-30 blur-[1px]"
+        )}>
+          {/* Column header — clickable to highlight */}
+          <button
+            onClick={() => setHighlightedCol(highlightedCol === col.key ? null : col.key)}
             className={cn(
-              "mb-3 flex items-center justify-between rounded-lg px-3 py-2",
-              col.headerBg
+              "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all cursor-pointer",
+              col.headerBg,
+              highlightedCol === col.key && "border border-foreground/15 shadow-sm"
             )}
           >
             <div className="flex items-center gap-2">
@@ -152,7 +167,7 @@ export function ClientsPipelineView({
             <Badge variant="outline" className="text-[10px]">
               {col.clients.length}
             </Badge>
-          </div>
+          </button>
 
           {/* Column cards */}
           <div className="space-y-2">
@@ -283,7 +298,8 @@ export function ClientsPipelineView({
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
     </DualScrollContainer>
   );

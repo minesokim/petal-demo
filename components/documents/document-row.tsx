@@ -52,6 +52,23 @@ export function DocumentRow({ doc, showNew = false, showDate = false, showClassi
       {doc.status === "ready_for_review" && (
         <Badge variant="outline" className="text-[10px]">Review</Badge>
       )}
+      {doc.demoPdfPath && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const a = document.createElement("a");
+            a.href = doc.demoPdfPath!;
+            a.download = doc.fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+          className="shrink-0 rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+          title="Download"
+        >
+          <Download className="size-3.5" />
+        </button>
+      )}
       <ChevronRight className="text-muted-foreground/40 size-4 shrink-0" />
     </div>
   );
