@@ -118,6 +118,15 @@ export interface MorningBriefingData {
   priorityActions: InsightAction[]
 }
 
+export interface IntelligenceBriefItem {
+  id: string
+  priority: 'high' | 'medium' | 'notable' | 'fyi'
+  content: string
+  implication?: string
+  clientId?: string
+  deepDiveQuery?: string
+}
+
 export interface Client {
   id: string
   fullName: string

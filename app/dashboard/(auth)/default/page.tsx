@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { clients, actionItems, type Client, type InsightAction } from "@/lib/mock-data";
 import { initialTodos, type TodoItem } from "@/lib/actions-mock-data";
 import { MorningBriefing } from "@/components/insights";
-import { morningBriefing } from "@/lib/insights-mock-data";
+import { morningBriefing, intelligenceBrief } from "@/lib/insights-mock-data";
+import type { IntelligenceBriefItem } from "@/lib/mock-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { motion } from "motion/react";
@@ -51,7 +52,7 @@ const summaryTabs = [
   { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500" },
   { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500" },
   { key: "complete", label: "Done", count: 3, color: "bg-emerald-500" },
-  { key: "todos", label: "To-do", count: 0, color: "bg-violet-500" }, // count set dynamically
+  { key: "todos", label: "Open Items", count: 0, color: "bg-violet-500" }, // count set dynamically
 ];
 
 type ActionClient = {
@@ -111,7 +112,6 @@ const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]>
 export default function Page() {
   const [activeTab, setActiveTab] = useState("need_you");
   const [viewMode, setViewMode] = useState<"clients" | "actions">("actions");
-  const [voiceOpen, setVoiceOpen] = useState(false);
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<typeof todayAppointments[0] | null>(null);
   const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
@@ -119,7 +119,6 @@ export default function Page() {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
   const [editingDraft, setEditingDraft] = useState<string | null>(null);
-  const [showBriefing, setShowBriefing] = useState(true);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
@@ -145,104 +144,172 @@ export default function Page() {
   };
 
   return (
-    <div className="space-y-5">
-      {/* ── Header with status bar ── */}
-      <div className="rounded-2xl bg-card px-6 py-5 shadow-sm">
-        <h1 className="text-2xl tracking-tight font-display">Good morning, Antonio</h1>
-        <p className="text-muted-foreground text-[13px] mt-1.5 tracking-wide">
-          18 days to deadline · 3 of 20 filed · <span className="text-emerald-600 font-medium">$2,850 collected</span> · <span className="text-foreground font-medium">$4,200 outstanding</span> · <span className="text-red-500 font-medium">1 overdue</span>
-        </p>
+    <div className="space-y-4">
+      {/* ── Section 1: Morning Brief ── */}
+      <motion.div
+        className="rounded-2xl bg-card px-7 py-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        {/* Timestamp */}
+        <motion.p
+          className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          Saturday, March 28 · 7:42 AM
+        </motion.p>
 
-        {/* Status pills — clickable to filter action feed */}
-        <div className="flex items-center gap-2 mt-5">
-          {summaryTabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            const count = tab.key === "todos" ? pendingTodoCount : tab.count;
+        {/* Greeting */}
+        <motion.h1
+          className="text-[28px] tracking-[-0.02em] font-display mt-3 text-foreground"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+        >
+          Good morning, Antonio
+        </motion.h1>
+
+        {/* Stat row — simple label/value pairs, no boxes */}
+        <motion.div
+          className="flex items-baseline gap-6 mt-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+        >
+          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Deadline</span><span className="text-sm text-foreground">18 days</span></div>
+          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Filed</span><span className="text-sm text-foreground">3 of 20</span></div>
+          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Collected</span><span className="text-sm text-emerald-600">$2,850</span></div>
+          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Outstanding</span><span className="text-sm text-foreground">$4,200</span></div>
+          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Overdue</span><span className="text-sm text-red-500">1</span></div>
+        </motion.div>
+
+        {/* Editorial intro */}
+        <motion.p
+          className="text-[15px] text-muted-foreground mt-6 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+        >
+          Five things worth knowing before your 10 o&apos;clock with Sarah.
+        </motion.p>
+
+        {/* Brief items — pure prose, one left border accent each */}
+        <div className="mt-6 space-y-1">
+          {intelligenceBrief.map((item, index) => {
+            const borderColor = {
+              high: "border-red-400/70",
+              medium: "border-amber-400/70",
+              notable: "border-teal-400/70",
+              fyi: "border-zinc-300/70 dark:border-zinc-600/50",
+            }[item.priority];
+
             return (
               <motion.button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                onMouseEnter={() => setHoveredTab(tab.key)}
-                onMouseLeave={() => setHoveredTab(null)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] cursor-pointer select-none transition-colors ${
-                  isActive
-                    ? "bg-white border text-foreground font-medium shadow-sm"
-                    : "text-muted-foreground hover:bg-white/60 hover:text-foreground/70"
-                }`}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                key={item.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                whileHover={{
+                  x: 4,
+                  backgroundColor: "rgba(255,255,255,0.7)",
+                  boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+                  transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
+                }}
+                onClick={() => {
+                  if (item.deepDiveQuery) {
+                    askDocket(item.deepDiveQuery);
+                  }
+                }}
+                className={`group/brief block w-full text-left border-l-[2px] ${borderColor} pl-5 py-4 rounded-r-lg cursor-pointer`}
+                style={{ backgroundColor: "transparent", transition: "background-color 0.35s ease" }}
               >
-                <span className={`size-2 rounded-full ${tab.color} ${isActive ? "opacity-100" : "opacity-40"}`} />
-                <span className="tabular-nums font-medium">{count}</span>
-                <span>{tab.label}</span>
+                <p className="text-[13.5px] leading-[1.75] text-foreground/85">
+                  {item.content}
+                </p>
+                {item.implication && (
+                  <p className="text-[12px] text-muted-foreground/60 mt-2 leading-relaxed transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/brief:text-muted-foreground group-hover/brief:translate-x-1">
+                    &rarr; {item.implication}
+                  </p>
+                )}
               </motion.button>
             );
           })}
         </div>
 
-        {/* Thin rounded progress bar — Apple iCloud style */}
-        <div className="flex gap-0.5 mt-4 rounded-lg overflow-hidden">
-          {summaryTabs.map((tab, i) => {
-            const getCount = (t: typeof tab) => t.key === "todos" ? pendingTodoCount : t.count;
-            const total = summaryTabs.reduce((s, t) => s + getCount(t), 0);
-            const pct = (getCount(tab) / total) * 100;
-            const isActive = activeTab === tab.key;
-            return (
-              <motion.div
-                key={tab.key}
-                className={`h-[6px] ${tab.color} cursor-pointer`}
-                style={{ opacity: isActive ? 1 : 0.3 }}
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%`, opacity: isActive ? 1 : hoveredTab === tab.key ? 0.6 : 0.3 }}
-                transition={
-                  hoveredTab
-                    ? { type: "spring", stiffness: 300, damping: 20 }
-                    : { duration: 1, delay: 0.1 + i * 0.08, ease: [0.35, 0, 0.15, 1] }
-                }
-                onClick={() => setActiveTab(tab.key)}
-                onMouseEnter={() => setHoveredTab(tab.key)}
-                onMouseLeave={() => setHoveredTab(null)}
-              />
-            );
-          })}
+        {/* Footer */}
+        <motion.p
+          className="mt-6 text-[10px] text-muted-foreground/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 1 }}
+        >
+          Based on 20 clients, 142 documents, 34 messages, and 3 prior-year returns
+        </motion.p>
+      </motion.div>
+
+      {/* ── Section 2: Pipeline + Action Feed (merged) ── */}
+      <Card className="overflow-hidden">
+        {/* Pipeline pills + progress bar */}
+        <div className="px-5 pt-4 pb-0">
+          <div className="flex items-center gap-2">
+            {summaryTabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const count = tab.key === "todos" ? pendingTodoCount : tab.count;
+              return (
+                <motion.button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  onMouseEnter={() => setHoveredTab(tab.key)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] cursor-pointer select-none transition-colors ${
+                    isActive
+                      ? "bg-white border text-foreground font-medium shadow-sm"
+                      : "text-muted-foreground hover:bg-white/60 hover:text-foreground/70"
+                  }`}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                >
+                  <span className={`size-2 rounded-full ${tab.color} ${isActive ? "opacity-100" : "opacity-40"}`} />
+                  <span className="tabular-nums font-medium">{count}</span>
+                  <span>{tab.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-0.5 mt-3 rounded-lg overflow-hidden">
+            {summaryTabs.map((tab, i) => {
+              const getCount = (t: typeof tab) => t.key === "todos" ? pendingTodoCount : t.count;
+              const total = summaryTabs.reduce((s, t) => s + getCount(t), 0);
+              const pct = (getCount(tab) / total) * 100;
+              const isActive = activeTab === tab.key;
+              return (
+                <motion.div
+                  key={tab.key}
+                  className={`h-[6px] ${tab.color} cursor-pointer`}
+                  style={{ opacity: isActive ? 1 : 0.3 }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%`, opacity: isActive ? 1 : hoveredTab === tab.key ? 0.6 : 0.3 }}
+                  transition={
+                    hoveredTab
+                      ? { type: "spring", stiffness: 300, damping: 20 }
+                      : { duration: 1, delay: 0.1 + i * 0.08, ease: [0.35, 0, 0.15, 1] }
+                  }
+                  onClick={() => setActiveTab(tab.key)}
+                  onMouseEnter={() => setHoveredTab(tab.key)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        {/* Morning Briefing - nested in header card */}
-        {showBriefing && (
-          <div className="mt-5 pt-5 border-t border-border/40">
-            <MorningBriefing
-              briefing={morningBriefing}
-              preparerName="Antonio"
-              onAction={handleInsightAction}
-              className="border-0 bg-none rounded-none"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* ── Action Feed ── */}
-      <Card className="overflow-hidden">
         {/* Section header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <div className="px-5 pt-4 pb-2">
           <h3 className="text-sm font-semibold capitalize">{summaryTabs.find(t => t.key === activeTab)?.label}</h3>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="h-7 gap-1.5 text-[11px]" onClick={() => setVoiceOpen(true)}>
-              <MicIcon className="size-3" /> Voice
-            </Button>
-            {activeTab !== "todos" && (
-              <div className="flex rounded-lg border">
-                {(["actions", "clients"] as const).map((mode, i, arr) => (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`px-3 py-1 text-[11px] font-medium transition-colors ${viewMode === mode ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"} ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""}`}
-                  >
-                    {mode === "actions" ? "Actions" : "Clients"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Content */}
@@ -312,7 +379,7 @@ export default function Page() {
                 </div>
               )}
             </div>
-          ) : viewMode === "actions" ? (
+          ) : (
             <div className="space-y-3">
               {(actionGroups[activeTab] || []).map((group) => (
                 <div key={group.label}>
@@ -394,53 +461,6 @@ export default function Page() {
                   })}
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="mt-2 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {(() => {
-                const allClientsInTab = (actionGroups[activeTab] || []).flatMap(g => g.clients);
-                const uniqueClients = allClientsInTab.reduce((acc, ac) => {
-                  if (!acc.find(c => c.initials === ac.initials)) acc.push(ac);
-                  return acc;
-                }, [] as typeof allClientsInTab);
-                return uniqueClients.map((actionClient, ci) => {
-                  const matchedClient = clients.find(c =>
-                    c.fullName.includes(actionClient.name.split(" ")[0]) ||
-                    actionClient.initials === c.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-                  );
-                  const urgencyBg =
-                    actionClient.urgency === "red" ? "bg-red-50 dark:bg-red-950/20" :
-                    actionClient.urgency === "amber" ? "bg-amber-50 dark:bg-amber-950/20" :
-                    actionClient.urgency === "green" ? "bg-emerald-50 dark:bg-emerald-950/20" :
-                    "";
-                  if (matchedClient) {
-                    return (
-                      <div key={ci} className={`rounded-lg ${urgencyBg}`}>
-                        <ClientCard client={matchedClient} onOpenDetail={setDetailClient} />
-                      </div>
-                    );
-                  }
-                  const fallbackClient = clients.find(c =>
-                    c.fullName.toLowerCase().includes(actionClient.name.split(" ")[0].toLowerCase())
-                  );
-                  return (
-                    <button
-                      key={ci}
-                      onClick={() => fallbackClient && setDetailClient(fallbackClient)}
-                      className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 ${urgencyBg}`}
-                    >
-                      <Avatar className="size-9 shrink-0">
-                        {fallbackClient && <AvatarImage src={fallbackClient.avatar} alt={actionClient.name} />}
-                        <AvatarFallback className="text-xs">{actionClient.initials}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold">{actionClient.name}</div>
-                        <div className="text-muted-foreground text-xs">{actionClient.detail}</div>
-                      </div>
-                    </button>
-                  );
-                });
-              })()}
             </div>
           )}
         </CardContent>
@@ -534,8 +554,6 @@ export default function Page() {
         </Card>
       </div>
 
-      {/* Voice Notes Dialog */}
-      <VoiceDumpDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
 
       <ClientDetailDialog
         client={detailClient}

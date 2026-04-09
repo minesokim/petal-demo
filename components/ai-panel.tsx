@@ -213,8 +213,73 @@ const clientSpecificData: Record<string, {
   },
 };
 
+const deepDiveResponses: Record<string, DemoResponse> = {
+  priya: {
+    steps: [
+      { type: "thinking", text: "Analyzing intake vs 1099-NEC" },
+      { type: "searching", text: "Cross-referencing platform data", source: "Priya Sharma" },
+      { type: "found", text: "Analysis complete" },
+    ],
+    foundContent: {
+      text: "**Income discrepancy: $34,200 actual vs $20,000 estimated**\n\nThe $14,200 gap between Priya\u2019s TikTok 1099-NEC and her intake estimate is significant but not unusual for creator-economy clients. Here\u2019s the full picture.\n\n**Why the gap exists**\n\nThe most likely explanation is simple underestimation. TikTok pays creators monthly through its Creator Fund plus ad revenue sharing. Most creators track their big payouts but miss the accumulation of smaller monthly deposits. If Priya started monetizing in March 2025 and saw growth through the year, her mental estimate would anchor on early months when income was lower.\n\nThe second possibility is a second platform. About 60% of TikTok creators with $30K+ income also earn from YouTube Shorts, Instagram Reels, Patreon, or brand sponsorships. If she has a 1099-K from PayPal, Stripe, or Venmo that she hasn\u2019t mentioned, that\u2019s additional unreported income.\n\nThe third possibility is brand partnerships. Sponsored content payments often come through talent agencies like Viral Nation or Creator.co, not through TikTok directly. These show up on separate 1099-NEC forms from the agency, not from TikTok.\n\n**Tax math at $34,200 self-employment income**\n\nSelf-employment tax (15.3% on 92.35%): $4,835. Federal income tax at her bracket (assuming single, standard deduction): approximately $2,400. California state tax: approximately $1,200. Total estimated liability: $8,400 to $9,000.\n\nIf she made zero estimated payments in 2025, she\u2019ll owe the full amount plus an underpayment penalty. The safe harbor rule requires paying either 100% of prior year tax or 90% of current year. Since this is her first year with significant SE income, she likely had no prior year SE tax, meaning she had no safe harbor protection. Penalty is roughly 8% annualized on the underpayment.\n\n**If there\u2019s a second platform**\n\nEvery additional $10K in unreported 1099 income adds roughly $2,500 to her total tax bill. If she has $15K in brand deal income she hasn\u2019t mentioned, her total liability jumps from $9K to roughly $13,000. That changes the conversation significantly.\n\n**Business deductions to explore**\n\nBefore you start prepping, ask about deductions that could offset the higher income. Common creator deductions: ring light, camera equipment, phone (business % only), internet (home office %), editing software subscriptions (Adobe, CapCut Pro), props and products used in content, and any travel for content creation. If she\u2019s spending $5K\u2013$8K on legitimate business expenses, that brings her SE income down to $26K\u2013$29K and reduces her tax bill by $1,500\u2013$2,000.\n\n**Questions to ask Priya**\n\n\u201CDid you earn income from any platforms besides TikTok? YouTube, Instagram, brand deals?\u201D\n\n\u201CDid you receive any 1099-K from PayPal, Stripe, or Venmo?\u201D\n\n\u201CDid you make any estimated tax payments in 2025?\u201D\n\n\u201CWhat business expenses did you have? Equipment, software, internet, phone?\u201D\n\n\u201CDo you have a dedicated workspace at home?\u201D\n\n**2026 quarterly estimates**\n\nRegardless of the outcome, you\u2019ll need to set up quarterly estimated payments for 2026. If her income stays around $34K, quarterly payments of $2,100\u2013$2,250 will keep her in safe harbor. If she\u2019s growing, budget $2,500/quarter. Recommend she set aside 30% of every payment she receives.",
+    },
+    summary: "Start by asking about other platforms and 1099-Ks. Then explore business deductions before prepping. Set up 2026 quarterly estimates regardless. Her total liability is $8,400\u2013$13,000 depending on whether there\u2019s a second income stream.",
+  },
+  carlos: {
+    steps: [
+      { type: "thinking", text: "Analyzing deduction history and equipment rules" },
+      { type: "searching", text: "Pulling Schedule C, Section 179, QBI data", source: "Carlos Mendez" },
+      { type: "found", text: "Analysis complete" },
+    ],
+    foundContent: {
+      text: "**Paint booth deduction \u2014 Section 179 vs MACRS analysis**\n\nCarlos\u2019s auto body shop had $38K in deductions last year. A commercial paint booth runs $15K\u2013$40K depending on size and filtration.\n\n**Section 179 (immediate deduction)**\n\nFull cost deductible in year of purchase (up to $1,220,000 limit for 2025). Must be placed in service before Dec 31, 2025. Business use must be over 50%. A $30K booth would roughly double his total deductions to approximately $68K.\n\n**MACRS (depreciation over time)**\n\nPaint booth is 7-year property under MACRS. Year 1 deduction with bonus depreciation: 60% = $18K on a $30K booth. Better if he expects lower income next year.\n\n**Recommendation: Section 179.** Carlos\u2019s business is stable. Take the full deduction now.\n\n**Return complexity impact**\n\nCurrent tier: Standard ($350). With equipment purchase plus depreciation schedule: Complex ($500). Fee increase: $150.\n\n**QBI consideration**\n\nIf total deductions push his taxable income below the QBI threshold ($191,950 for MFJ), he keeps the full 20% QBI deduction. This is actually favorable \u2014 the paint booth helps both his tax liability and his QBI eligibility.\n\n**Documentation needed**\n\nPurchase invoice with date. Placed-in-service date. Business use percentage (likely 100% for a paint booth). Financing terms if applicable.",
+    },
+    summary: "Section 179 is the clear winner. Confirm the purchase date and get the invoice. Return moves to Complex tier ($500). The QBI math works in his favor.",
+  },
+  filingPace: {
+    steps: [
+      { type: "thinking", text: "Comparing filing pace to prior year" },
+      { type: "searching", text: "Analyzing pipeline and revenue impact", source: "20 clients" },
+      { type: "found", text: "Pace analysis ready" },
+    ],
+    foundContent: {
+      text: "**Filing pace: 3/20 filed vs 5/20 last year at this date**\n\nYou\u2019re 2 returns behind pace. Here\u2019s the breakdown.\n\n**Ready to file today (2)**\n\nJames & Sofia Rodriguez \u2014 paid, signed, needs ERO signature. $500 fee. Aisha Johnson \u2014 paid, signed, needs ERO signature. $350 fee. Combined: $850 in revenue, approximately 5 minutes of work.\n\n**Ready to prep (2)**\n\nMiguel Sandoval \u2014 9/9 docs, all complete. Schedule C plus S-Corp. $500 fee. Anthony Russo \u2014 9/9 docs, cap gains calc needed. $350 fee.\n\n**Extension risk ($450 revenue at stake)**\n\nThomas DuBois \u2014 11/14 docs, missing 3 crypto records. If not in by Apr 5, file extension.\n\n**10-day filing plan**\n\n1. Today: Sign Rodriguez + Johnson = 5 filed, back on pace.\n2. This week: Prep Miguel + Anthony = 2 more in pipeline.\n3. By Apr 5: Get Thomas\u2019s crypto docs or file extension.\n4. By Apr 10: File Miguel + Anthony = 7 filed (ahead of last year).\n\n**Revenue projection**\n\nIf you file 4 more by Apr 15: $5,550 collected (79% of total). If Thomas extends: $450 shifts to October.",
+    },
+    summary: "Sign Rodriguez and Johnson right now \u2014 $850 and 2 filings in under 5 minutes. You\u2019ll be back on pace immediately.",
+  },
+  rodriguez: {
+    steps: [
+      { type: "thinking", text: "Analyzing bracket shift and NIIT impact" },
+      { type: "searching", text: "Pulling W-2 data, thresholds, rental income", source: "Rodriguez family" },
+      { type: "found", text: "Tax impact analysis complete" },
+    ],
+    foundContent: {
+      text: "**Rodriguez bracket analysis: $167K to $285K combined income**\n\n**What changed**\n\n2024: James W-2 ($87K Riverside County) plus Sofia part-time ($80K) = $167K AGI. 2025: James W-2 ($87K) plus Sofia W-2 ($97K Living Robotics) plus rental income ($18K) = $285K AGI.\n\n**Bracket impact**\n\n2024: 22% bracket (MFJ $89,451\u2013$190,750). 2025: 24% bracket (MFJ $190,751\u2013$364,200). Marginal rate increase: 2 percentage points on approximately $94K of income.\n\n**Net Investment Income Tax (NIIT)**\n\nThreshold: $250,000 for MFJ. Their AGI ($285K) exceeds by $35K. NIIT = 3.8% on lesser of net investment income or excess AGI. Rental income ($18K) is subject = $684 additional tax. This is new \u2014 they\u2019ve never owed NIIT before.\n\n**Refund comparison**\n\n2024 refund: $2,180. 2025 estimated refund: $800\u2013$1,200 (depending on withholding). Drop: approximately $1,000\u2013$1,400 less than last year.\n\n**How to frame it for the client**\n\n\u201CGreat news \u2014 Sofia\u2019s new role significantly increased your household income. The trade-off is a higher bracket and a new investment income tax on your rental. Your refund will be smaller than last year, but that\u2019s because you earned $118K more.\u201D\n\n**Planning opportunities**\n\nMax out both 401(k)s ($23,500 each) to reduce AGI below NIIT threshold. Review rental depreciation schedule \u2014 cost segregation study could help. Consider Roth IRA (income limit $230K for full, $240K phase-out \u2014 they\u2019re over).",
+    },
+    summary: "Refund drops approximately $1,200 because of the bracket jump and new NIIT on rental income. Frame it as good news (more income) with a tax planning conversation about maxing 401(k)s.",
+  },
+  referral: {
+    steps: [
+      { type: "thinking", text: "Analyzing creator referral pipeline" },
+      { type: "searching", text: "Checking intake data and segment potential", source: "Ashley Kim, Priya Sharma" },
+      { type: "found", text: "Referral analysis complete" },
+    ],
+    foundContent: {
+      text: "**Creator-economy referral analysis**\n\n**Current pipeline**\n\nPriya Sharma (TikTok, $34K income) \u2014 active, 4/7 docs. Ashley Kim (OnlyFans, income TBD) \u2014 referred by Priya, no engagement yet.\n\n**Creator client profile**\n\nTypical 1099-NEC income: $20K\u2013$150K. Multiple platforms means multiple 1099s. High deduction potential: equipment, home office, internet, software subscriptions, content creation expenses. Most need estimated tax payment setup. Usually young, mobile-first, want fast communication.\n\n**Pricing for creator returns**\n\nSimple (single platform, under $50K): Standard tier ($350). Complex (multi-platform, over $50K, business entity): Complex tier ($500). Priya is borderline \u2014 if second platform exists, she\u2019s Complex.\n\n**Referral economics**\n\nCreator networks are tight \u2014 one good experience leads to 2\u20133 referrals. If Priya refers 2 more at $350\u2013$500 each: $700\u2013$1,000 additional revenue. Lifetime value (3-year retention): $1,050\u2013$1,500 per creator client. 5-client creator niche = $5K\u2013$7.5K annual recurring revenue.\n\n**Recommendation**\n\nPrioritize Priya\u2019s return for speed, not just correctness. A 48-hour turnaround after docs are complete would be remarkable in her world. She\u2019ll post about it.",
+    },
+    summary: "One happy creator client can build a $5K+ annual niche. Priya is the entry point \u2014 prioritize her turnaround speed.",
+  },
+};
+
 function matchResponse(query: string, clientCtx?: ClientContext): DemoResponse {
   const q = query.toLowerCase();
+
+  // Intelligence brief deep dives — highest priority, check first
+  if (q.includes("deep dive") && q.includes("priya")) return deepDiveResponses.priya;
+  if (q.includes("deep dive") && q.includes("carlos")) return deepDiveResponses.carlos;
+  if (q.includes("filing pace") || (q.includes("analyze") && q.includes("pace"))) return deepDiveResponses.filingPace;
+  if (q.includes("deep dive") && q.includes("rodriguez")) return deepDiveResponses.rodriguez;
+  if (q.includes("referral") || (q.includes("deep dive") && q.includes("ashley"))) return deepDiveResponses.referral;
 
   // Client-specific queries when context is set
   if (clientCtx) {
@@ -457,6 +522,79 @@ function matchResponse(query: string, clientCtx?: ClientContext): DemoResponse {
     };
   }
 
+  // (Deep dive responses handled by early returns at top of function)
+
+  // Old deep dive block — now unreachable, kept as dead code for reference
+  if (false) {
+    return {
+      steps: [
+        { type: "thinking" as const, text: "Analyzing intake estimate vs 1099-NEC" },
+        { type: "searching" as const, text: "Cross-referencing platform data and payment history", source: "Priya Sharma" },
+        { type: "found" as const, text: "Analysis complete" },
+      ],
+      foundContent: {
+        text: "**Income discrepancy: $34,200 actual vs $20,000 estimated**\n\nThe $14,200 gap between Priya\u2019s TikTok 1099-NEC and her intake estimate is significant but not unusual for creator-economy clients. Here\u2019s the full picture.\n\n**Why the gap exists**\n\nThe most likely explanation is simple underestimation. TikTok pays creators monthly through its Creator Fund plus ad revenue sharing. Most creators track their big payouts but miss the accumulation of smaller monthly deposits. If Priya started monetizing in March 2025 and saw growth through the year, her mental estimate would anchor on early months when income was lower.\n\nThe second possibility is a second platform. About 60% of TikTok creators with $30K+ income also earn from YouTube Shorts, Instagram Reels, Patreon, or brand sponsorships. If she has a 1099-K from PayPal, Stripe, or Venmo that she hasn\u2019t mentioned, that\u2019s additional unreported income.\n\nThe third possibility is brand partnerships. Sponsored content payments often come through talent agencies like Viral Nation or Creator.co, not through TikTok directly. These show up on separate 1099-NEC forms from the agency, not from TikTok.\n\n**Tax math at $34,200 self-employment income**\n\nSelf-employment tax (15.3% on 92.35%): $4,835. Federal income tax at her bracket (assuming single, standard deduction): approximately $2,400. California state tax: approximately $1,200. Total estimated liability: $8,400 to $9,000.\n\nIf she made zero estimated payments in 2025, she\u2019ll owe the full amount plus an underpayment penalty. The safe harbor rule requires paying either 100% of prior year tax or 90% of current year. Since this is her first year with significant SE income, she likely had no prior year SE tax, meaning she had no safe harbor protection. Penalty is roughly 8% annualized on the underpayment.\n\n**If there\u2019s a second platform**\n\nEvery additional $10K in unreported 1099 income adds roughly $2,500 to her total tax bill. If she has $15K in brand deal income she hasn\u2019t mentioned, her total liability jumps from $9K to roughly $13,000. That changes the conversation significantly.\n\n**Business deductions to explore**\n\nBefore you start prepping, ask about deductions that could offset the higher income. Common creator deductions: ring light, camera equipment, phone (business % only), internet (home office %), editing software subscriptions (Adobe, CapCut Pro), props and products used in content, and any travel for content creation. If she\u2019s spending $5K-$8K on legitimate business expenses, that brings her SE income down to $26K-$29K and reduces her tax bill by $1,500-$2,000.\n\n**Questions to ask Priya**\n\n\u201CDid you earn income from any platforms besides TikTok? YouTube, Instagram, brand deals?\u201D\n\n\u201CDid you receive any 1099-K from PayPal, Stripe, or Venmo?\u201D\n\n\u201CDid you make any estimated tax payments in 2025?\u201D\n\n\u201CWhat business expenses did you have? Equipment, software, internet, phone?\u201D\n\n\u201CDo you have a dedicated workspace at home?\u201D\n\n**2026 quarterly estimates**\n\nRegardless of the outcome, you\u2019ll need to set up quarterly estimated payments for 2026. If her income stays around $34K, quarterly payments of $2,100-$2,250 will keep her in safe harbor. If she\u2019s growing, budget $2,500/quarter. Recommend she set aside 30% of every payment she receives.",
+      },
+      summary: "Start by asking about other platforms and 1099-Ks. Then explore business deductions before prepping. Set up 2026 quarterly estimates regardless. Her total liability is $8,400-$13,000 depending on whether there\u2019s a second income stream.",
+    };
+  }
+
+  if (q.includes("deep dive") && q.includes("carlos")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Analyzing Carlos's deduction history and paint booth scenario." },
+        { type: "searching", text: "Pulling Schedule C data, equipment rules, QBI thresholds", source: "Carlos & Elena Mendez (c15)" },
+        { type: "found", text: "Section 179 analysis complete." },
+      ],
+      foundContent: {
+        text: "**Paint booth deduction \u2014 Section 179 vs MACRS analysis**\n\nCarlos\u2019s auto body shop had $38K in deductions last year. A commercial paint booth runs $15K\u2013$40K depending on size and filtration.\n\n**Section 179 (immediate deduction):**\n\u2022 Full cost deductible in year of purchase (up to $1,220,000 limit for 2025)\n\u2022 Must be placed in service before Dec 31, 2025\n\u2022 Business use must be >50%\n\u2022 A $30K booth would roughly double his total deductions to ~$68K\n\n**MACRS (depreciation over time):**\n\u2022 Paint booth = 7-year property under MACRS\n\u2022 Year 1 deduction with bonus depreciation: 60% = $18K on a $30K booth\n\u2022 Better if he expects lower income next year\n\n**Recommendation: Section 179** \u2014 Carlos\u2019s business is stable. Take the full deduction now.\n\n**Return complexity impact:**\n\u2022 Current tier: Standard ($350)\n\u2022 With equipment purchase + depreciation schedule: Complex ($500)\n\u2022 Fee increase: $150\n\n**QBI consideration:**\n\u2022 If total deductions push his taxable income below the QBI threshold ($191,950 for MFJ), he keeps the full 20% QBI deduction\n\u2022 This is actually favorable \u2014 the paint booth helps both his tax liability AND his QBI eligibility\n\n**Documentation needed:**\n\u2022 Purchase invoice with date\n\u2022 Placed-in-service date\n\u2022 Business use percentage (likely 100% for a paint booth)\n\u2022 Financing terms if applicable",
+      },
+      summary: "Section 179 is the clear winner here. Confirm the purchase date and get the invoice. His return moves to Complex tier ($500). The QBI math actually works in his favor.",
+    };
+  }
+
+  if (q.includes("filing pace") || (q.includes("analyze") && q.includes("pace"))) {
+    return {
+      steps: [
+        { type: "thinking", text: "Comparing current filing pace to prior year benchmarks." },
+        { type: "searching", text: "Analyzing pipeline stages, ready-to-file returns, revenue impact", source: "20 clients, prior year data" },
+        { type: "found", text: "Pace analysis and filing plan ready." },
+      ],
+      foundContent: {
+        text: "**Filing pace: 3/20 filed vs 5/20 last year at this date**\n\nYou\u2019re 2 returns behind pace. Here\u2019s the breakdown:\n\n**Ready to file today (2):**\n\u2022 James & Sofia Rodriguez \u2014 paid, signed, needs ERO signature. $500 fee.\n\u2022 Aisha Johnson \u2014 paid, signed, needs ERO signature. $350 fee.\n\u2022 Combined: $850 in revenue, ~5 minutes of work.\n\n**Ready to prep (2):**\n\u2022 Miguel Sandoval \u2014 9/9 docs, all complete. Schedule C + S-Corp. $500 fee.\n\u2022 Anthony Russo \u2014 9/9 docs, cap gains calc needed. $350 fee.\n\n**Extension risk ($450 revenue at stake):**\n\u2022 Thomas DuBois \u2014 11/14 docs, missing 3 crypto records. If not in by Apr 5, file extension.\n\n**10-day filing plan:**\n1. **Today:** Sign Rodriguez + Johnson = 5 filed, back on pace\n2. **This week:** Prep Miguel + Anthony = 2 more in pipeline\n3. **By Apr 5:** Get Thomas\u2019s crypto docs or file extension\n4. **By Apr 10:** File Miguel + Anthony = 7 filed (ahead of last year)\n\n**Revenue projection:**\n\u2022 If you file 4 more by Apr 15: $5,550 collected (79% of total)\n\u2022 If Thomas extends: $450 shifts to October",
+      },
+      summary: "Sign Rodriguez and Johnson right now \u2014 that\u2019s $850 and 2 filings in under 5 minutes. You\u2019ll be back on pace immediately.",
+    };
+  }
+
+  if (q.includes("deep dive") && q.includes("rodriguez")) {
+    return {
+      steps: [
+        { type: "thinking", text: "Analyzing Rodriguez family tax bracket shift." },
+        { type: "searching", text: "Pulling W-2 data, bracket thresholds, NIIT rules, rental income", source: "James & Sofia Rodriguez (c1)" },
+        { type: "found", text: "Tax impact analysis complete." },
+      ],
+      foundContent: {
+        text: "**Rodriguez bracket analysis: $167K \u2192 $285K combined income**\n\n**What changed:**\n\u2022 2024: James W-2 ($87K Riverside County) + Sofia part-time ($80K) = $167K AGI\n\u2022 2025: James W-2 ($87K) + Sofia W-2 ($97K Living Robotics) + rental income ($18K) = $285K AGI\n\n**Bracket impact:**\n\u2022 2024: 22% bracket (MFJ $89,451\u2013$190,750)\n\u2022 2025: 24% bracket (MFJ $190,751\u2013$364,200)\n\u2022 Marginal rate increase: 2 percentage points on ~$94K of income\n\n**Net Investment Income Tax (NIIT):**\n\u2022 Threshold: $250,000 for MFJ\n\u2022 Their AGI ($285K) exceeds by $35K\n\u2022 NIIT = 3.8% on lesser of net investment income or excess AGI\n\u2022 Rental income ($18K) is subject = $684 additional tax\n\u2022 **This is new** \u2014 they\u2019ve never owed NIIT before\n\n**Refund comparison:**\n\u2022 2024 refund: $2,180\n\u2022 2025 estimated refund: $800\u2013$1,200 (depending on withholding)\n\u2022 Drop: ~$1,000\u2013$1,400 less than last year\n\n**How to frame it for the client:**\n\u201CGreat news \u2014 Sofia\u2019s new role significantly increased your household income. The trade-off is a higher bracket and a new investment income tax on your rental. Your refund will be smaller than last year, but that\u2019s because you earned $118K more.\u201D\n\n**Planning opportunities:**\n\u2022 Max out both 401(k)s ($23,500 each) to reduce AGI below NIIT threshold\n\u2022 Review rental depreciation schedule \u2014 cost segregation study could help\n\u2022 Consider Roth IRA (income limit $230K for full, $240K phase-out \u2014 they\u2019re over)",
+      },
+      summary: "The refund drops ~$1,200 because of the bracket jump and new NIIT on rental income. Frame it as good news (more income) with a tax planning conversation about maxing 401(k)s.",
+    };
+  }
+
+  if (q.includes("referral") || (q.includes("deep dive") && q.includes("ashley"))) {
+    return {
+      steps: [
+        { type: "thinking", text: "Analyzing creator-economy referral pipeline." },
+        { type: "searching", text: "Checking intake data, referral source, client segment potential", source: "Ashley Kim, Priya Sharma" },
+        { type: "found", text: "Referral analysis complete." },
+      ],
+      foundContent: {
+        text: "**Creator-economy referral analysis**\n\n**Current pipeline:**\n\u2022 Priya Sharma (TikTok, $34K income) \u2014 active, 4/7 docs\n\u2022 Ashley Kim (OnlyFans, income TBD) \u2014 referred by Priya, no engagement yet\n\n**Creator client profile:**\n\u2022 Typical 1099-NEC income: $20K\u2013$150K\n\u2022 Multiple platforms = multiple 1099s\n\u2022 High deduction potential: equipment, home office, internet, software subscriptions, content creation expenses\n\u2022 Most need estimated tax payment setup\n\u2022 Usually young, mobile-first, want fast communication\n\n**Pricing for creator returns:**\n\u2022 Simple (single platform, <$50K): Standard tier ($350)\n\u2022 Complex (multi-platform, >$50K, business entity): Complex tier ($500)\n\u2022 Priya is borderline \u2014 if second platform exists, she\u2019s Complex\n\n**Referral economics:**\n\u2022 Creator networks are tight \u2014 one good experience = 2\u20133 referrals\n\u2022 If Priya refers 2 more at $350\u2013$500 each: $700\u2013$1,000 additional revenue\n\u2022 Lifetime value (3-year retention): $1,050\u2013$1,500 per creator client\n\u2022 5-client creator niche = $5K\u2013$7.5K annual recurring revenue\n\n**Recommendation:**\nPrioritize Priya\u2019s return for speed, not just correctness. A 48-hour turnaround after docs are complete would be remarkable in her world. She\u2019ll post about it.",
+      },
+      summary: "One happy creator client can build a $5K+ annual niche. Priya is the entry point \u2014 prioritize her turnaround speed.",
+    };
+  }
+
   // Fallback — still helpful, not a dead end
   return {
     steps: [
@@ -624,7 +762,6 @@ export function AIPanel() {
         ...prev,
         { id: aiMsgId, role: "assistant", content: "", steps: [response.steps[0]] },
       ]);
-      setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
     }, 800);
 
     // Phase 2: Add searching step
@@ -648,17 +785,16 @@ export function AIPanel() {
         foundContent: response.foundContent,
         summary: response.summary,
       } : m));
-      setExpandedThinking(prev => ({ ...prev, [aiMsgId]: true }));
     }, 3400);
   };
 
-  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({ "2": true });
+  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
 
   const renderMessages = () => messages.map((msg) => (
     <div key={msg.id}>
       {msg.role === "user" ? (
-        <div className="rounded-xl border border-white/15 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-md dark:bg-white/5">
-          <p className="text-foreground text-[13px] leading-snug">{msg.content}</p>
+        <div className="rounded-xl border border-white/15 bg-white/40 px-5 py-3.5 shadow-sm backdrop-blur-md dark:bg-white/5 transition-all duration-500" style={{ fontSize: isFullPage ? '14.5px' : '13px' }}>
+          <p className="text-foreground leading-[1.6]">{msg.content}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -679,23 +815,18 @@ export function AIPanel() {
           )}
 
           {expandedThinking[msg.id] && msg.steps && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} transition={{ duration: 0.3 }} className="ml-3 space-y-1.5 overflow-hidden border-l border-border/50 pl-3">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} transition={{ duration: 0.25 }} className="ml-4 space-y-1 overflow-hidden border-l border-border/40 pl-3 py-1">
               {msg.steps.map((step, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1, duration: 0.3 }} className="flex items-start gap-2">
-                  <div className="mt-1 shrink-0">
-                    {step.type === "thinking" && <ThinkingIcon />}
-                    {step.type === "searching" && <SearchingIcon />}
-                    {step.type === "found" && <div className="flex size-[18px] items-center justify-center"><div className="size-2 rounded-full bg-emerald-500" /></div>}
+                <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.08, duration: 0.25 }} className="flex items-center gap-2 py-0.5">
+                  <div className="shrink-0">
+                    {step.type === "thinking" && <div className="size-1.5 rounded-full bg-muted-foreground/30" />}
+                    {step.type === "searching" && <SearchIcon size={12} className="text-muted-foreground/40" />}
+                    {step.type === "found" && <div className="size-1.5 rounded-full bg-emerald-500/50" />}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-muted-foreground text-[11px] leading-relaxed">{step.text}</p>
-                    {step.source && (
-                      <span className="mt-1 inline-flex items-center gap-1 rounded bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        <FileTextIcon size={10} />
-                        {step.source}
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-muted-foreground/70 text-[11px] leading-snug">{step.text}</p>
+                  {step.source && (
+                    <span className="text-[10px] text-muted-foreground/40">{step.source}</span>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
@@ -703,28 +834,53 @@ export function AIPanel() {
 
           {/* Found content - formatted with bold/bullets, animated in */}
           {msg.foundContent && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-1 pl-1">
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+              className="pl-0.5 transition-all duration-500"
+              style={{ fontSize: isFullPage ? '14.5px' : '13px', lineHeight: '1.75' }}
+            >
+              <div className="space-y-[1em]">
               {msg.foundContent.text.split("\n\n").map((block, i) => {
                 if (block.startsWith("**")) {
                   const [bold, ...rest] = block.split(" - ");
+                  const cleanBold = bold.replace(/\*\*/g, "");
+                  // Section header (no dash separator, just bold text)
+                  if (rest.length === 0 || cleanBold.length > 40) {
+                    return (
+                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04, duration: 0.4 }} className="pt-[0.3em]">
+                        <p className="font-bold text-foreground" style={{ fontSize: isFullPage ? '15.5px' : '14px' }}>{cleanBold}</p>
+                      </motion.div>
+                    );
+                  }
                   return (
-                    <motion.div key={i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.3 }} className="flex items-start gap-2 py-0.5">
-                      <span className="mt-[5px] size-1 shrink-0 rounded-full bg-foreground/50" />
-                      <p className="text-[12px] leading-relaxed">
-                        <span className="font-medium text-foreground">{bold.replace(/\*\*/g, "")}</span>
-                        {rest.length > 0 && <span className="text-muted-foreground"> - {rest.join(" - ")}</span>}
+                    <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04, duration: 0.4 }} className="flex items-start gap-2">
+                      <span className="mt-[0.55em] size-1 shrink-0 rounded-full bg-foreground/40" />
+                      <p>
+                        <span className="font-semibold text-foreground">{cleanBold}</span>
+                        <span className="text-foreground/80"> {rest.join(" - ")}</span>
                       </p>
                     </motion.div>
                   );
                 }
-                return <motion.p key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }} className="text-[12px] text-muted-foreground leading-relaxed">{block}</motion.p>;
+                return <motion.p key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04, duration: 0.4 }} className="text-foreground/80">{block}</motion.p>;
               })}
+              </div>
             </motion.div>
           )}
 
           {/* Summary - animated in last */}
           {msg.summary && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.4 }} className="text-foreground text-[12px] font-medium leading-relaxed">{msg.summary}</motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="text-foreground font-semibold leading-relaxed pt-3 transition-all duration-500"
+              style={{ fontSize: isFullPage ? '15px' : '13.5px' }}
+            >
+              {msg.summary}
+            </motion.p>
           )}
 
           {/* Action icons - smaller */}
@@ -769,7 +925,7 @@ export function AIPanel() {
 
         {/* Scrollable messages - overscroll-contain prevents scroll bleed to main content */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className={`space-y-8 pb-6 transition-all duration-500 ${isFullPage ? "mx-auto max-w-2xl px-6" : "px-4"}`}>
+          <div className={`pb-6 transition-all duration-500 ${isFullPage ? "mx-auto max-w-3xl px-8 space-y-10" : "px-4 space-y-8"}`}>
             {renderMessages()}
 
             {/* Voice Results Card */}
@@ -924,7 +1080,7 @@ export function AIPanel() {
         </div>
 
         {/* Input - fixed at bottom, outside scroll */}
-        <div className={`shrink-0 pb-5 pt-4 transition-all duration-500 ${isFullPage ? "mx-auto w-full max-w-2xl px-6" : "px-4"}`}>
+        <div className={`shrink-0 pb-5 pt-4 transition-all duration-500 ${isFullPage ? "mx-auto w-full max-w-3xl px-8" : "px-4"}`}>
           <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-md dark:bg-white/5">
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Ask about clients, documents, deadlines..." className="flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground" />
             <button onClick={() => handleSend()} disabled={!input.trim()} className="shrink-0 text-muted-foreground transition-colors hover:text-foreground disabled:text-muted-foreground/30"><SendIcon size={18} /></button>

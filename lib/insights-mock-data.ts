@@ -7,7 +7,55 @@ import type {
   MorningBriefingData,
   TrackingBadgeData,
   ActivityEvent,
+  IntelligenceBriefItem,
 } from "./mock-data"
+
+// ============================================================
+// INTELLIGENCE BRIEF — Senior partner morning debrief
+// ============================================================
+
+export const intelligenceBrief: IntelligenceBriefItem[] = [
+  {
+    id: "brief-1",
+    priority: "high",
+    clientId: "c2",
+    content: "Priya\u2019s TikTok 1099 came in at $34,200 but she estimated around $20K in her intake. That\u2019s a $14K gap. Either she had a much bigger year than she realized or there\u2019s a second platform she hasn\u2019t mentioned. Worth asking before you start prepping.",
+    implication: "If there\u2019s a second 1099, her estimated tax payments are likely short. Could trigger underpayment penalty.",
+    deepDiveQuery: "Deep dive on Priya Sharma's income discrepancy. Her TikTok 1099-NEC shows $34,200 but her intake estimated $20K. Walk me through: What are the likely explanations? Could there be a second platform (YouTube, Instagram, Patreon)? If the $34K is accurate, what does that mean for her estimated tax payments? Would she owe an underpayment penalty under the safe harbor rules? What questions should I ask her before I start prepping?",
+  },
+  {
+    id: "brief-2",
+    priority: "high",
+    clientId: "c15",
+    content: "Carlos asked about a paint booth deduction yesterday. His Schedule C last year showed $38K in total business deductions. A new paint booth runs $15\u2013$40K. If he purchased one, that\u2019s a Section 179 deduction that could cut his liability in half. This might need to be a Complex return, not Standard.",
+    implication: "His fee would go from $350 to $500. Confirm the purchase before his call on Thursday.",
+    deepDiveQuery: "Deep dive on Carlos Mendez's paint booth deduction. His Schedule C showed $38K in deductions last year. A commercial paint booth costs $15K-$40K. Walk me through: Section 179 vs MACRS depreciation for this equipment. What\u2019s the optimal deduction strategy? Does this push his return from Standard to Complex tier? What documentation do I need from him (invoice, placed-in-service date, business use %)? What are the QBI implications if his deductions spike?",
+  },
+  {
+    id: "brief-3",
+    priority: "medium",
+    clientId: "c8",
+    content: "You\u2019ve filed 3 of 20. Last year at this point you\u2019d filed 5. The real risk is Thomas DuBois: 11 of 14 docs in, but the missing 3 are all crypto. If those don\u2019t come in by this weekend, he\u2019s an extension, and that\u2019s $450 in revenue that shifts to October.",
+    implication: "Rodriguez and Johnson are both ready to file today. Sign both and you\u2019re back on pace.",
+    deepDiveQuery: "Analyze my filing pace and extension risk. I\u2019ve filed 3 of 20, behind last year\u2019s 5 at this point. Break down: Which clients are ready to file right now? What\u2019s my revenue at risk if Thomas DuBois extends (he\u2019s missing 3 crypto docs)? Give me a priority-ordered filing plan for the next 10 days that gets me back on pace. Factor in which returns are simplest to close first.",
+  },
+  {
+    id: "brief-4",
+    priority: "notable",
+    clientId: "c1",
+    content: "Sofia Rodriguez started at Living Robotics this year. That\u2019s $97K new W-2 income on top of James\u2019s $87K at Riverside County. Combined income jumped from $167K to $285K, pushing them into the 24% bracket. Likely triggers Net Investment Income Tax on their rental income for the first time. Refund will be lower than last year.",
+    implication: "Flag this when they review so they aren\u2019t surprised by the smaller refund.",
+    deepDiveQuery: "Deep dive on Rodriguez family tax situation. Their combined income jumped from $167K to $285K due to Sofia\u2019s new job at Living Robotics ($97K). Walk me through: What bracket changes does this trigger? Will they owe Net Investment Income Tax on their rental income (Schedule E) for the first time? What was their refund last year vs estimated this year? How should I frame this for the client review so they understand why the refund dropped? Any planning opportunities (retirement contributions, rental depreciation)?",
+  },
+  {
+    id: "brief-5",
+    priority: "fyi",
+    clientId: "c20",
+    content: "Ashley Kim\u2019s intake says OnlyFans income, referred by Priya. No deposit yet, never logged in. If Priya\u2019s experience goes well, Ashley follows. A fast turnaround on Priya\u2019s return has a multiplier effect on referrals from that creator network.",
+    implication: "Priya is worth prioritizing not just for her fee but for the downstream revenue.",
+    deepDiveQuery: "Analyze the referral opportunity from Priya Sharma's creator network. Ashley Kim was referred by Priya and has OnlyFans income. Walk me through: What\u2019s the typical profile of creator-economy clients (1099 complexity, estimated payments, business deductions)? If I deliver a great experience for Priya, what\u2019s the realistic referral pipeline? How should I price creator returns given the Schedule C complexity? What\u2019s the lifetime value calculation for building out this niche?",
+  },
+]
 
 // ============================================================
 // MORNING BRIEFING
