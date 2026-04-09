@@ -1019,38 +1019,47 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     // Reasoning placeholder
                     if (msg.text === "__reasoning__") {
                       return (
-                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-                            <span>Analyzing {firstName}'s documents...</span>
-                          </div>
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Check className="size-3 text-emerald-500" />
-                            <span>Reviewed {client.documentsSubmitted} documents</span>
-                          </motion.div>
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0 }} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Check className="size-3 text-emerald-500" />
-                            <span>Checked flags and anomalies</span>
-                          </motion.div>
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Check className="size-3 text-emerald-500" />
-                            <span>Compared with prior year</span>
-                          </motion.div>
+                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-2">
+                          <button className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="size-1.5 rounded-full bg-foreground" />
+                            <span>Reasoned over 3 steps</span>
+                            <ChevronDown className="size-3" />
+                          </button>
                         </motion.div>
                       );
                     }
-                    // User message
+                    // User message — gray pill like the reference
                     if (msg.role === "user") {
                       return (
-                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="ml-8 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs leading-relaxed">
-                          {msg.text}
+                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end">
+                          <div className="rounded-full bg-muted px-4 py-2 text-xs text-foreground max-w-[85%]">
+                            {msg.text}
+                          </div>
                         </motion.div>
                       );
                     }
                     // AI response with rich formatting
+                    const isLastAssistant = i === docketMessages.length - 1 || docketMessages.slice(i + 1).every(m => m.role === "user");
                     return (
-                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mr-2 mb-4">
+                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-4">
                         <FormattedInsightText text={msg.text} />
+                        {/* Suggestion pills after the last AI response */}
+                        {isLastAssistant && msg.text.length > 50 && (
+                          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4 pt-3 border-t border-border/30">
+                            <div className="text-[10px] text-muted-foreground mb-2">Viewing: {client.fullName}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                `What's blocking ${firstName}?`,
+                                "Explain the revenue drop",
+                                `Draft a follow-up message to ${firstName}`,
+                              ].map((s, si) => (
+                                <button key={si} onClick={() => simulateDocketResponse(s)} className="rounded-full border px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
                       </motion.div>
                     );
                   })}
