@@ -96,7 +96,7 @@ export function DocumentViewerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[92vh] max-w-[90vw] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-[100vh] w-[100vw] max-w-[100vw] rounded-none border-0 flex-col gap-0 overflow-hidden p-0 sm:rounded-none">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -151,7 +151,7 @@ export function DocumentViewerDialog({
           </div>
 
           {/* Right: Extracted data */}
-          <div className="w-[380px] shrink-0 flex flex-col overflow-y-auto">
+          <div className="w-[420px] shrink-0 flex flex-col overflow-y-auto">
             {intel ? (
               <>
                 {/* Summary */}
