@@ -168,22 +168,12 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               <Badge variant="outline">${client.feeAmount}</Badge>
               {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
               {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
-              <AnimatePresence>
-                {currentStage === "in_preparation" && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, width: 0 }}
-                    animate={{ opacity: 1, scale: 1, width: "auto" }}
-                    exit={{ opacity: 0, scale: 0.9, width: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="overflow-hidden ml-auto"
-                  >
-                    <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs whitespace-nowrap">
-                      <ClipboardList className="size-3.5" />
-                      Prep Workspace
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {currentStage === "in_preparation" && (
+                <Button size="sm" className="ml-auto gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs whitespace-nowrap">
+                  <ClipboardList className="size-3.5" />
+                  Prep Workspace
+                </Button>
+              )}
               <Button size="sm" variant="ghost" className={`h-7 text-xs ${currentStage !== "in_preparation" ? "ml-auto" : ""}`} asChild>
                 <Link href={`/dashboard/clients/${client.id}/overview`}>
                   Open full page <ArrowUpRight className="ml-1 size-3" />

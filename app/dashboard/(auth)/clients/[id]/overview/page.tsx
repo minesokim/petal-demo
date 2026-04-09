@@ -34,6 +34,7 @@ import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
+import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { BillingCard } from "@/components/billing/billing-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ export default function ClientOverviewPage() {
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
+  const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
@@ -98,7 +100,7 @@ export default function ClientOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Prep Workspace button — portaled into layout header */}
-      <PrepWorkspacePortal visible={currentStage === "in_preparation"} />
+      <PrepWorkspacePortal visible={currentStage === "in_preparation"} onOpen={() => setPrepWorkspaceOpen(true)} />
 
       {/* AI Insight */}
       {clientInsight && (
@@ -477,6 +479,15 @@ export default function ClientOverviewPage() {
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(open) => !open && setSelectedExtraction(null)} />
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
+      <PrepWorkspaceModal
+        client={client}
+        open={prepWorkspaceOpen}
+        onOpenChange={setPrepWorkspaceOpen}
+        onCompletePrep={() => {
+          setPrepWorkspaceOpen(false);
+          setCompletePrepOpen(true);
+        }}
+      />
     </div>
   );
 }
@@ -675,8 +686,9 @@ function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: 
 }
 
 // Portal the Prep Workspace button into the layout header
-function PrepWorkspacePortal({ visible }: { visible: boolean }) {
+function PrepWorkspacePortal({ visible, onOpen }: { visible: boolean; onOpen: () => void }) {
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const wasVisibleOnMount = useState(() => visible)[0]; // capture initial value
 
   useEffect(() => {
     const el = document.getElementById("client-header-actions");
@@ -685,17 +697,22 @@ function PrepWorkspacePortal({ visible }: { visible: boolean }) {
 
   if (!container) return null;
 
+  // If already visible on mount, render without animation
+  // If it becomes visible after mount (Begin Prep clicked), animate in
   return createPortal(
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, width: 0 }}
+          initial={wasVisibleOnMount ? false : { opacity: 0, scale: 0.9, width: 0 }}
           animate={{ opacity: 1, scale: 1, width: "auto" }}
           exit={{ opacity: 0, scale: 0.9, width: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="overflow-hidden"
         >
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm whitespace-nowrap">
+          <Button
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm whitespace-nowrap"
+            onClick={onOpen}
+          >
             <ClipboardList className="size-4" />
             Prep Workspace
           </Button>
