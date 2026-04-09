@@ -275,8 +275,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     timestamp: "2026-03-28T07:30:00",
     actions: [
       { id: "message-marcus", label: "Message Marcus", variant: "primary", action: "open_thread" },
-      { id: "review-p-and-l", label: "Review P&Ls", variant: "secondary", action: "open_return" },
-      { id: "ask-docket", label: "Ask Docket", variant: "ghost", action: "ask_docket" },
+      { id: "ask-docket", label: "Ask Docket", variant: "secondary", action: "ask_docket" },
     ],
   },
 

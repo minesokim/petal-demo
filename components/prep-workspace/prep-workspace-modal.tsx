@@ -599,7 +599,7 @@ function DocPreview({ doc }: { doc: MockDocument }) {
 // ═══════════════════════════════════════════════
 function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAskDocket }: {
   client: Client; showingSummary: boolean; selectedDoc: MockDocument | null;
-  onCompletePrep: () => void; onAskDocket: (question: string) => void;
+  onCompletePrep: () => void; onAskDocket: (question?: string) => void;
 }) {
   const flags = getOpenIssues(client.id);
   const ps = getClientPaymentSummary(client.id);
@@ -773,7 +773,7 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
 
       {/* Ask Docket */}
       <div className="border-b border-border/30 px-5 py-4">
-        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskDocket(`What should I know before prepping ${client.fullName}'s return?`)}>
+        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskDocket()}>
           <MessageSquare className="size-3.5" /> Ask Docket
         </Button>
       </div>
