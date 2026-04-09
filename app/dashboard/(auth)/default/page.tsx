@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,7 +286,7 @@ export default function Page() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          Saturday, March 28 · 7:42 AM
+          {format(new Date(), "EEEE, MMMM d · h:mm a")}
         </motion.p>
 
         {/* Greeting */}
@@ -295,7 +296,7 @@ export default function Page() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
         >
-          Good morning, Antonio
+          {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"}, Antonio
         </motion.h1>
 
         {/* Stat row */}

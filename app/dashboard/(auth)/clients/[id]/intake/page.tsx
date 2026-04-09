@@ -26,7 +26,25 @@ const INTAKE_DATA: Record<string, {
   depositAmount: number;
   slot: string;
 }> = {
-  c1: { // James & Sofia Rodriguez
+  c1: { // Marcus Chen
+    submittedAt: "2026-03-18T09:00:00",
+    service: "Premium Return",
+    filing: "Married Filing Jointly",
+    spouse: { name: "Lisa Chen", dob: "11/02/1987", ssn: "***-**-3210", occupation: "Office Manager" },
+    personal: { name: "Marcus Chen", dob: "05/18/1984", ssn: "***-**-6543", phone: "(951) 555-0142", email: "marcus.chen@gmail.com", occupation: "Restaurant Owner", address: "456 Garfield Ave, Alhambra, CA 91801" },
+    states: ["California"],
+    priorYear: "Filed with Antonio last year",
+    dependents: [],
+    income: ["W-2 Employee", "Self-Employed / 1099"],
+    selfEmployment: { business: "Golden Dragon LLC", entity: "LLC", revenue: "$142,000", homeOffice: false, vehicle: true },
+    taxQuestions: ["Restaurant depreciation", "Equipment disposal"],
+    deductions: ["Business expenses", "Vehicle expenses"],
+    refund: "Direct deposit",
+    lifeEvents: ["Closed a business location"],
+    depositAmount: 50,
+    slot: "Thu, Mar 20 · 10:00 AM · Video",
+  },
+  c3: { // James & Sofia Rodriguez
     submittedAt: "2026-03-20T10:30:00",
     service: "Complex Return",
     filing: "Married Filing Jointly",
@@ -80,7 +98,7 @@ const INTAKE_DATA: Record<string, {
     depositAmount: 50,
     slot: "Tue, Mar 19 · 10:00 AM · Video",
   },
-  c3: { // Tyrone Mitchell
+  c17: { // Tyrone Mitchell
     submittedAt: "2026-03-15T11:20:00",
     service: "Standard Return",
     filing: "Single",

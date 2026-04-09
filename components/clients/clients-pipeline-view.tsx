@@ -93,6 +93,12 @@ const pipelineStages: {
     dot: "bg-emerald-500",
     headerBg: "bg-emerald-50 dark:bg-emerald-950/30",
   },
+  {
+    key: "extended",
+    label: "Extended (Oct 15)",
+    dot: "bg-orange-500",
+    headerBg: "bg-orange-50 dark:bg-orange-950/30",
+  },
 ];
 
 interface ClientsPipelineViewProps {

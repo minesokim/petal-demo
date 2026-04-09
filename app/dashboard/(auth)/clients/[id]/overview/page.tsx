@@ -52,6 +52,7 @@ export default function ClientOverviewPage() {
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
   const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
+  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
@@ -339,8 +340,29 @@ export default function ClientOverviewPage() {
             <DeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
           ))}
           {/* Extensions */}
-          {clientExtensions.map(a => (
-            <div key={a.id} className="rounded-xl border p-4">
+          {currentStage === "extended" ? (
+            <div className="rounded-xl border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-orange-500" />
+                  <span className="text-sm font-semibold">Extended to October 15, 2026</span>
+                </div>
+                <Badge className="bg-orange-100 text-orange-700">Extended</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Form 4868 filed. {client.fullName.split(" ")[0]} has until October 15 to complete filing.
+                {(() => {
+                  const daysLeft = Math.floor((new Date("2026-10-15").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  return daysLeft > 0 ? ` ${daysLeft} days remaining.` : " Deadline passed.";
+                })()}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" variant="outline" className="text-xs h-7">Resume document collection</Button>
+                <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => askDocket(`What's the status of ${client.fullName}'s extension?`)}>Ask Docket</Button>
+              </div>
+            </div>
+          ) : clientExtensions.map(a => (
+            <div key={a.id} className="rounded-xl border bg-card p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="size-4 text-amber-500" />
@@ -356,6 +378,11 @@ export default function ClientOverviewPage() {
                   </div>
                 ))}
               </div>
+              {a.probability >= 70 && (
+                <Button className="mt-3 w-full" onClick={() => setExtensionDialogOpen(true)}>
+                  <FileText className="size-3.5" /> File Extension (Form 4868)
+                </Button>
+              )}
             </div>
           ))}
           {/* Estimated Tax */}
@@ -488,6 +515,58 @@ export default function ClientOverviewPage() {
           setCompletePrepOpen(true);
         }}
       />
+
+      {/* File Extension Dialog */}
+      <Dialog open={extensionDialogOpen} onOpenChange={setExtensionDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-bold">File Extension</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Form 4868 will extend {client.fullName}'s deadline to October 15, 2026.
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Extension details</div>
+              <div className="flex items-center gap-2 text-xs">
+                <Check className="size-3.5 text-emerald-600" />
+                <span>Form 4868 — Automatic Extension of Time</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Clock className="size-3.5 text-orange-500" />
+                <span>New deadline: October 15, 2026</span>
+              </div>
+              {clientExtensions.length > 0 && clientExtensions[0]!.factors.map((f, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="size-3 text-amber-500 shrink-0 mt-0.5" />
+                  <span>{f}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setExtensionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                onClick={() => {
+                  setExtensionDialogOpen(false);
+                  setTransitioning(true);
+                  setTimeout(() => {
+                    setStageOverride("extended");
+                    setTransitioning(false);
+                    showToast("success", "Extension filed", `${client.fullName.split(" ")[0]}'s deadline extended to October 15, 2026.`);
+                  }, 1500);
+                }}
+              >
+                <FileText className="size-3.5" /> File Extension
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -661,6 +740,11 @@ function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: 
       actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
       actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
       actions.push({ icon: <Download className="size-3.5" />, label: "Download Return", key: "download", onClick: () => { if (onDownload) onDownload(); } });
+      break;
+    case "extended":
+      actions.push({ icon: <FileText className="size-3.5" />, label: "Request Docs", key: "docs", sentLabel: "Requested", primary: true, onClick: () => sendAction("docs", "Document request sent") });
+      actions.push({ icon: <MessageSquare className="size-3.5" />, label: "Message", key: "message", onClick: navToMessages });
+      actions.push({ icon: <Calendar className="size-3.5" />, label: "Schedule", key: "schedule", onClick: navToCalendar });
       break;
   }
 

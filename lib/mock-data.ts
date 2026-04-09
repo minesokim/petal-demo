@@ -4,7 +4,7 @@
 // ============================================================
 
 export type FilingStatus = 'single' | 'mfj' | 'mfs' | 'hoh' | 'qw'
-export type ReturnStage = 'new_intake' | 'collecting_docs' | 'ready_to_prep' | 'in_preparation' | 'client_review' | 'pay_and_sign' | 'filed'
+export type ReturnStage = 'new_intake' | 'collecting_docs' | 'ready_to_prep' | 'in_preparation' | 'client_review' | 'pay_and_sign' | 'filed' | 'extended'
 export type DocumentStatus = 'received' | 'pending' | 'missing' | 'processing'
 export type UrgencyLevel = 'urgent' | 'high' | 'normal' | 'low'
 export type ActionType = 'missing_docs' | 'stale_client' | 'review_ready' | 'payment_due' | 'signature_needed' | 'appointment_today' | 'ai_draft' | 'follow_up'
@@ -152,6 +152,9 @@ export interface Client {
   clientStatus?: ClientStatus
   scheduledCall?: string
   returnSentDate?: string
+  extensionDeadline?: string
+  extensionFiledDate?: string
+  extensionReason?: string
 }
 
 export interface Document {
@@ -228,7 +231,7 @@ export interface PaymentRecord {
 export const clients: Client[] = [
   { id: 'c1', fullName: 'Marcus Chen', email: 'marcus.chen@gmail.com', phone: '(951) 555-0142', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T14:30:00', lastPortalLogin: '2026-03-27T09:15:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Restaurant owner. Needs Schedule C + SE tax. Has 3 locations.', type: 'business', businessName: 'Golden Dragon LLC', avatar: '/images/avatars/01.png' },
   { id: 'c2', fullName: 'Priya Sharma', email: 'priya.sharma@outlook.com', phone: '(951) 555-0198', filingStatus: 'single', returnStage: 'collecting_docs', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'high', lastActivity: '2026-03-25T11:00:00', lastPortalLogin: '2026-03-22T16:30:00', documentsSubmitted: 3, documentsRequired: 7, notes: 'TikTok creator. Multiple 1099-NECs. First year filing with us.', type: 'individual', avatar: '/images/avatars/02.png' },
-  { id: 'c3', fullName: 'James & Sofia Rodriguez', email: 'jrodriguez@yahoo.com', phone: '(909) 555-0176', filingStatus: 'mfj', returnStage: 'pay_and_sign', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T07:45:00', documentsSubmitted: 12, documentsRequired: 12, notes: 'Rental property income. 2 dependents. Been with us 3 years.', type: 'individual', avatar: '/images/avatars/03.png' },
+  { id: 'c3', fullName: 'James & Sofia Rodriguez', email: 'jrodriguez@yahoo.com', phone: '(909) 555-0176', filingStatus: 'mfj', returnStage: 'pay_and_sign', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T07:45:00', documentsSubmitted: 13, documentsRequired: 13, notes: 'Rental property income. 2 dependents. Been with us 3 years.', type: 'individual', avatar: '/images/avatars/03.png' },
   { id: 'c4', fullName: 'DeShawn Williams', email: 'deshawn.w@gmail.com', phone: '(951) 555-0134', filingStatus: 'hoh', returnStage: 'collecting_docs', serviceTier: 'Basic', feeAmount: 150, depositPaid: false, urgency: 'urgent', lastActivity: '2026-03-18T09:30:00', lastPortalLogin: null, documentsSubmitted: 1, documentsRequired: 6, notes: 'New client. Head of household with 2 kids. Needs to upload W-2 still.', type: 'individual', avatar: '/images/avatars/04.png' },
   { id: 'c5', fullName: 'Linda Nakamura', email: 'linda.n@proton.me', phone: '(626) 555-0155', filingStatus: 'single', returnStage: 'filed', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'low', lastActivity: '2026-03-15T10:00:00', lastPortalLogin: '2026-03-15T10:00:00', documentsSubmitted: 7, documentsRequired: 7, notes: 'W-2 employee + small Etsy shop. Filed and accepted.', type: 'individual', avatar: '/images/avatars/05.png' },
   { id: 'c6', fullName: 'Roberto Fuentes', email: 'roberto@fuentestrucking.com', phone: '(909) 555-0188', filingStatus: 'mfj', returnStage: 'client_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-26T11:20:00', documentsSubmitted: 15, documentsRequired: 15, notes: 'Trucking company. 1120S + personal. Complex depreciation schedules.', type: 'business', businessName: 'Fuentes Transport Inc', avatar: '/images/avatars/06.png', returnSentDate: '2026-03-25' },
@@ -455,6 +458,7 @@ export const stageLabels: Record<ReturnStage, string> = {
   client_review: 'Client Review',
   pay_and_sign: 'Pay & Sign',
   filed: 'Filed',
+  extended: 'Extended',
 }
 
 export const stageColors: Record<ReturnStage, string> = {
@@ -465,6 +469,7 @@ export const stageColors: Record<ReturnStage, string> = {
   client_review: 'bg-warm-light text-warm',
   pay_and_sign: 'bg-accent-light text-accent',
   filed: 'bg-accent text-white',
+  extended: 'bg-orange-100 text-orange-700',
 }
 
 export const urgencyColors: Record<UrgencyLevel, string> = {

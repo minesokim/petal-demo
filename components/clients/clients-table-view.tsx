@@ -45,6 +45,7 @@ const stageOrder: Record<string, number> = {
   client_review: 4,
   pay_and_sign: 5,
   filed: 6,
+  extended: 7,
 };
 
 function getStageColor(stage: string) {
@@ -60,6 +61,8 @@ function getStageColor(stage: string) {
       return "bg-blue-500";      // In Progress
     case "filed":
       return "bg-emerald-500";   // Done
+    case "extended":
+      return "bg-orange-500";    // Extended
     default:
       return "bg-zinc-400";
   }
