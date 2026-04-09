@@ -1019,7 +1019,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     // Reasoning placeholder
                     if (msg.text === "__reasoning__") {
                       return (
-                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-2">
+                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-2 mb-4">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
                             <span>Analyzing {firstName}'s documents...</span>
@@ -1042,7 +1042,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     // User message — gray pill like the reference
                     if (msg.role === "user") {
                       return (
-                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end mb-4">
+                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end mb-6">
                           <div className={cn("rounded-full bg-muted px-4 py-2 text-foreground max-w-[85%]", docketFullscreen ? "text-sm" : "text-xs")}>
                             {msg.text}
                           </div>
@@ -1052,7 +1052,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     // AI response with rich formatting
                     const isLastAssistant = i === docketMessages.length - 1 || docketMessages.slice(i + 1).every(m => m.role === "user");
                     return (
-                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-4">
+                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-6">
                         <FormattedInsightText text={msg.text} />
                         {/* Suggestion pills after the last AI response */}
                         {isLastAssistant && msg.text.length > 50 && (
