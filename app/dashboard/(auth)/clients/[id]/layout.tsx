@@ -114,7 +114,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
                 <motion.span
                   layoutId="active-client-tab"
                   className="absolute inset-0 rounded-t-md bg-muted"
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
                 />
               )}
               <span className="relative z-10">
@@ -135,7 +135,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
           className="pt-6"
         >
           {children}

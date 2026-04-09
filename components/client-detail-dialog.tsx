@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
@@ -86,6 +86,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [assignedTier, setAssignedTier] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -131,7 +132,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl p-0">
+      <DialogContent className="h-[90vh] max-h-[90vh] overflow-hidden sm:max-w-3xl p-0 flex flex-col">
         {/* Header */}
         <div className="flex items-start gap-4 border-b px-6 py-4">
           <Avatar className="size-14">
@@ -251,15 +252,21 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         )}
 
         {/* Tabbed content */}
-        <div className="overflow-y-auto" style={{ maxHeight: client.clientStatus === "pending" ? "calc(90vh - 340px)" : "calc(90vh - 120px)" }}>
-          <Tabs defaultValue="overview" className="px-6 pt-2 pb-6">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="px-6 pt-2 pb-6">
             <TabsList variant="fill" className="mb-4 w-full">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="intake">Intake</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="messages">Messages</TabsTrigger>
-              <TabsTrigger value="billing">Billing</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
+                <TabsTrigger key={tab} value={tab} className="relative">
+                  {activeTab === tab && (
+                    <motion.span
+                      layoutId="active-dialog-tab"
+                      className="absolute inset-0 rounded-t-md bg-muted"
+                      transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
+                    />
+                  )}
+                  <span className="relative z-10 capitalize">{tab}</span>
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             {/* OVERVIEW TAB */}
@@ -778,14 +785,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
             {/* NOTES TAB */}
             <TabsContent value="notes" className="space-y-3">
-              {notes.length > 0 ? notes.map(n => (
-                <div key={n.id} className="rounded-xl border p-3">
-                  <p className="text-sm leading-relaxed">{n.content}</p>
-                  <div className="mt-2 text-xs text-muted-foreground">{new Date(n.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
-                </div>
-              )) : (
-                <div className="py-8 text-center text-sm text-muted-foreground">No notes yet.</div>
-              )}
+              <ClientNotesTab clientId={client.id} initialNotes={notes} />
             </TabsContent>
           </Tabs>
         </div>
@@ -795,6 +795,119 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
       {selectedAction && <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedAction(null); }} />}
     </Dialog>
+  );
+}
+
+// Notes tab with add + edit
+function ClientNotesTab({ clientId, initialNotes }: { clientId: string; initialNotes: { id: string; content: string; createdAt: string; updatedAt: string }[] }) {
+  const [notes, setNotes] = useState(initialNotes);
+  const [newNote, setNewNote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const addNote = () => {
+    if (!newNote.trim()) return;
+    const now = new Date().toISOString();
+    setNotes(prev => [{
+      id: `n-${Date.now()}`,
+      content: newNote.trim(),
+      createdAt: now,
+      updatedAt: now,
+    }, ...prev]);
+    setNewNote("");
+  };
+
+  const startEdit = (note: typeof notes[0]) => {
+    setEditingId(note.id);
+    setEditContent(note.content);
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    setNotes(prev => prev.map(n => n.id === editingId ? { ...n, content: editContent, updatedAt: new Date().toISOString() } : n));
+    setEditingId(null);
+    setEditContent("");
+  };
+
+  const deleteNote = (id: string) => {
+    setNotes(prev => prev.filter(n => n.id !== id));
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Compose area */}
+      <div className="rounded-lg border bg-card">
+        <textarea
+          ref={textareaRef}
+          value={newNote}
+          onChange={e => setNewNote(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              addNote();
+            }
+          }}
+          placeholder="Add a note..."
+          className="w-full resize-none bg-transparent px-3.5 pt-3 pb-1 text-sm leading-relaxed outline-none placeholder:text-muted-foreground/50 min-h-[72px]"
+        />
+        <div className="flex items-center justify-between px-3.5 pb-2.5">
+          <span className="text-[10px] text-muted-foreground/40">
+            {newNote.trim() ? `${String.fromCodePoint(8984)}+Enter to save` : "Private to you"}
+          </span>
+          {newNote.trim() && (
+            <Button size="sm" className="h-7 text-xs" onClick={addNote}>
+              Save note
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Existing notes */}
+      {notes.map(n => (
+        <div key={n.id} className="group rounded-lg border p-3.5">
+          {editingId === n.id ? (
+            <div>
+              <textarea
+                value={editContent}
+                onChange={e => setEditContent(e.target.value)}
+                className="w-full resize-none bg-transparent text-sm leading-relaxed outline-none min-h-[60px]"
+                autoFocus
+              />
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" className="h-6 text-[10px]" onClick={saveEdit}>Save</Button>
+                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditingId(null)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{n.content}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(n.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {n.createdAt !== n.updatedAt && " (edited)"}
+                </span>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground" onClick={() => startEdit(n)}>
+                    <Pen className="size-2.5 mr-1" /> Edit
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground" onClick={() => deleteNote(n.id)}>
+                    <X className="size-2.5 mr-1" /> Delete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+
+      {notes.length === 0 && !newNote && (
+        <div className="py-6 text-center">
+          <p className="text-sm text-muted-foreground">No notes yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Notes are private and only visible to you</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -892,36 +1005,42 @@ function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId
   }
 
   return (
-    <div className="space-y-3">
-      {thread.map(msg => (
-        <div key={msg.id} className={`flex ${msg.sender === "client" ? "justify-start" : "justify-end"}`}>
-          {msg.sender === "client" && (
-            <Avatar className="mr-2 size-6 shrink-0 mt-1">
-              <AvatarImage src={clientAvatar} alt={clientName} />
-              <AvatarFallback className="text-[8px]">{clientName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-            </Avatar>
-          )}
-          <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${msg.sender === "client" ? "border bg-muted/50" : "bg-primary text-primary-foreground"}`}>
-            <p className="text-xs leading-relaxed">{msg.content}</p>
-            <div className={`mt-0.5 text-[9px] ${msg.sender === "client" ? "text-muted-foreground" : "text-primary-foreground/60"}`}>{msg.time}</div>
+    <div className="flex flex-col h-full -mb-6">
+      {/* Scrollable messages */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pb-3">
+        {thread.map(msg => (
+          <div key={msg.id} className={`flex ${msg.sender === "client" ? "justify-start" : "justify-end"}`}>
+            {msg.sender === "client" && (
+              <Avatar className="mr-2 size-6 shrink-0 mt-1">
+                <AvatarImage src={clientAvatar} alt={clientName} />
+                <AvatarFallback className="text-[8px]">{clientName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+              </Avatar>
+            )}
+            <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${msg.sender === "client" ? "border bg-muted/50" : "bg-primary text-primary-foreground"}`}>
+              <p className="text-xs leading-relaxed">{msg.content}</p>
+              <div className={`mt-0.5 text-[9px] ${msg.sender === "client" ? "text-muted-foreground" : "text-primary-foreground/60"}`}>{msg.time}</div>
+            </div>
           </div>
-        </div>
-      ))}
-      {/* AI Draft */}
-      {drafts.length > 0 && (
-        <AIDraftCard
-          draft={drafts[0]}
-          onSend={sendMsg}
-          onEdit={(text) => { setInput(text); drafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id]))); }}
-          onDismiss={() => setDismissedDrafts(prev => new Set([...prev, drafts[0].id]))}
+        ))}
+        {/* AI Draft */}
+        {drafts.length > 0 && (
+          <AIDraftCard
+            draft={drafts[0]}
+            onSend={sendMsg}
+            onEdit={(text) => { setInput(text); drafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id]))); }}
+            onDismiss={() => setDismissedDrafts(prev => new Set([...prev, drafts[0].id]))}
+          />
+        )}
+      </div>
+      {/* Input pinned to bottom */}
+      <div className="shrink-0 border-t pt-3 pb-6 bg-background">
+        <MessageInput
+          placeholder={`Message ${clientName.split(" ")[0]}...`}
+          value={input}
+          onChange={setInput}
+          onSend={(text) => { sendMsg(text); setInput(""); }}
         />
-      )}
-      <MessageInput
-        placeholder={`Message ${clientName.split(" ")[0]}...`}
-        value={input}
-        onChange={setInput}
-        onSend={(text) => { sendMsg(text); setInput(""); }}
-      />
+      </div>
     </div>
   );
 }
