@@ -271,28 +271,38 @@ export default function ChatPage() {
         )}
 
         {/* Channel filter tabs */}
-        <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-border/30 shrink-0">
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-border/30 shrink-0">
           {(["all", "portal", "email", "sms", "voice", "video"] as ViewFilter[]).map((filter) => {
             const count = channelCounts[filter] || 0;
             const isActive = viewFilter === filter;
             const icons: Record<string, React.ElementType> = {
               all: MessageSquare, portal: MessageSquare, email: Mail, sms: Smartphone, voice: PhoneCall, video: Video,
             };
+            const labels: Record<string, string> = {
+              all: "All", portal: "Portal", email: "Email", sms: "SMS", voice: "Calls", video: "Video",
+            };
             const Icon = icons[filter];
+            // Unread: client messages from last 48 hours in this channel
+            const unread = filter !== "all" ? thread.filter(m => m.sender === "client" && m.channel === filter && new Date(m.timestamp).getTime() > new Date("2026-03-28T00:00:00").getTime()).length : 0;
             return (
               <button
                 key={filter}
                 onClick={() => setViewFilter(filter)}
                 className={cn(
-                  "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all",
-                  isActive ? "bg-foreground/5 text-foreground" : "text-muted-foreground hover:text-foreground/70",
+                  "relative flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all",
+                  isActive ? "bg-foreground/5 text-foreground" : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/20",
                   count === 0 && filter !== "all" && "opacity-30"
                 )}
               >
-                <Icon className="size-3" />
-                {filter === "all" ? "All" : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                <Icon className="size-3.5" />
+                {labels[filter]}
                 {count > 0 && filter !== "all" && (
-                  <span className="text-[9px] tabular-nums opacity-60">{count}</span>
+                  <span className={cn("text-[10px] tabular-nums", isActive ? "text-foreground/50" : "text-muted-foreground/40")}>{count}</span>
+                )}
+                {unread > 0 && !isActive && (
+                  <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">
+                    {unread}
+                  </span>
                 )}
               </button>
             );

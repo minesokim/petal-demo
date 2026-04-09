@@ -2,20 +2,39 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { PhoneCall, Video, ChevronDown, Clock, CheckCircle2, ArrowRight, AlertCircle } from "lucide-react";
+import { PhoneCall, Video, ChevronDown, Clock, CheckCircle2, ArrowRight, AlertCircle, Check, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-notification";
 import type { UnifiedMessage } from "@/lib/comms-mock-data";
 
 interface VoiceMessageProps {
   message: UnifiedMessage;
 }
 
+type SuggestedItemStatus = "pending" | "accepted" | "dismissed";
+
 export function VoiceMessage({ message }: VoiceMessageProps) {
   const [showTranscript, setShowTranscript] = useState(false);
-  const [showSuggestedItems, setShowSuggestedItems] = useState(false);
+  const [showSuggestedItems, setShowSuggestedItems] = useState(true);
+  const [itemStatuses, setItemStatuses] = useState<Record<number, SuggestedItemStatus>>({});
+  const { showToast } = useToast();
   const isVideo = message.channel === "video";
   const platform = message.videoPlatform;
+
+  const acceptItem = (index: number, text: string) => {
+    setItemStatuses(prev => ({ ...prev, [index]: "accepted" }));
+    showToast("success", "Added to Open Items", text);
+  };
+
+  const dismissItem = (index: number) => {
+    setItemStatuses(prev => ({ ...prev, [index]: "dismissed" }));
+  };
+
+  const suggestedItems = message.videoSuggestedItems || [];
+  const pendingCount = suggestedItems.filter((_, i) => !itemStatuses[i]).length;
+  const acceptedCount = suggestedItems.filter((_, i) => itemStatuses[i] === "accepted").length;
 
   return (
     <div className="space-y-3">
@@ -86,15 +105,20 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
         </div>
       )}
 
-      {/* Suggested Open Items (video calls) */}
-      {message.videoSuggestedItems && message.videoSuggestedItems.length > 0 && (
+      {/* Suggested Open Items — actionable */}
+      {suggestedItems.length > 0 && (
         <div>
           <button
             onClick={() => setShowSuggestedItems(!showSuggestedItems)}
-            className="flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 text-[11px] text-foreground/70 transition-colors hover:text-foreground"
           >
-            <AlertCircle className="size-3" />
-            <span>{message.videoSuggestedItems.length} suggested open items</span>
+            <AlertCircle className="size-3 text-amber-500" />
+            <span className="font-medium">
+              {pendingCount > 0
+                ? `${pendingCount} suggested open item${pendingCount > 1 ? "s" : ""}`
+                : `${acceptedCount} item${acceptedCount > 1 ? "s" : ""} added`
+              }
+            </span>
             <ChevronDown className={cn("size-3 transition-transform", showSuggestedItems && "rotate-180")} />
           </button>
           <AnimatePresence>
@@ -106,14 +130,68 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
                 transition={{ duration: 0.15 }}
                 className="overflow-hidden"
               >
-                <ul className="mt-1.5 space-y-1 rounded-lg bg-muted/30 p-2.5">
-                  {message.videoSuggestedItems.map((item, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
-                      <div className="mt-1 size-1 rounded-full bg-amber-500 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-1.5 space-y-1 rounded-lg border border-border/40 bg-card p-2">
+                  {suggestedItems.map((item, i) => {
+                    const status = itemStatuses[i];
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors",
+                          status === "accepted" && "bg-emerald-50/30 dark:bg-emerald-950/10",
+                          status === "dismissed" && "opacity-40",
+                        )}
+                      >
+                        {/* Status indicator */}
+                        {status === "accepted" ? (
+                          <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" />
+                        ) : status === "dismissed" ? (
+                          <X className="size-3.5 shrink-0 text-muted-foreground/40" />
+                        ) : (
+                          <div className="size-1.5 rounded-full bg-amber-500 shrink-0 ml-1 mr-0.5" />
+                        )}
+
+                        {/* Item text */}
+                        <span className={cn(
+                          "flex-1 text-xs",
+                          status === "accepted" && "text-foreground/70",
+                          status === "dismissed" && "text-muted-foreground line-through",
+                          !status && "text-foreground/80",
+                        )}>
+                          {item}
+                        </span>
+
+                        {/* Action buttons */}
+                        {!status && (
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              onClick={(e) => { e.stopPropagation(); acceptItem(i, item); }}
+                              title="Add to Open Items"
+                            >
+                              <Check className="size-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-muted-foreground/50 hover:text-muted-foreground"
+                              onClick={(e) => { e.stopPropagation(); dismissItem(i); }}
+                              title="Dismiss"
+                            >
+                              <X className="size-3" />
+                            </Button>
+                          </div>
+                        )}
+
+                        {status === "accepted" && (
+                          <span className="text-[9px] text-emerald-600 shrink-0">Added</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

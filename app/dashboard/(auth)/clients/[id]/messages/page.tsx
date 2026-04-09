@@ -54,6 +54,18 @@ export default function ClientMessagesPage() {
     return counts;
   }, [thread]);
 
+  // Unread counts per channel — client messages from the last 48 hours
+  const unreadByChannel = useMemo(() => {
+    const cutoff = new Date("2026-03-28T00:00:00").getTime();
+    const unreads: Record<string, number> = { portal: 0, email: 0, sms: 0, voice: 0, video: 0 };
+    for (const m of thread) {
+      if (m.sender === "client" && new Date(m.timestamp).getTime() > cutoff) {
+        if (m.channel in unreads) unreads[m.channel]++;
+      }
+    }
+    return unreads;
+  }, [thread]);
+
   // Determine compose channel from the active filter tab
   const activeTab = filterTabs.find(t => t.value === viewFilter);
   const composeChannel: ComposableChannel = activeTab?.composable || "portal";
@@ -87,25 +99,32 @@ export default function ClientMessagesPage() {
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 320px)" }}>
       {/* Channel tabs — filter + sets compose channel */}
-      <div className="shrink-0 flex items-center gap-0.5 border-b border-border/40 pb-2 mb-3">
+      <div className="shrink-0 flex items-center gap-1 border-b border-border/40 pb-3 mb-3">
         {filterTabs.map(tab => {
           const Icon = tab.icon;
           const count = channelCounts[tab.value] || 0;
           const isActive = viewFilter === tab.value;
+          const unread = tab.value !== "all" ? (unreadByChannel[tab.value] || 0) : 0;
           return (
             <button
               key={tab.value}
               onClick={() => setViewFilter(tab.value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+                "relative flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
                 isActive ? "bg-foreground/5 text-foreground" : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/30",
                 count === 0 && tab.value !== "all" && "opacity-30"
               )}
             >
-              <Icon className="size-3" />
+              <Icon className="size-3.5" />
               {tab.label}
               {count > 0 && tab.value !== "all" && (
-                <span className={cn("text-[9px] tabular-nums", isActive ? "text-foreground/60" : "text-muted-foreground/50")}>{count}</span>
+                <span className={cn("text-[10px] tabular-nums", isActive ? "text-foreground/50" : "text-muted-foreground/40")}>{count}</span>
+              )}
+              {/* Unread indicator */}
+              {unread > 0 && !isActive && (
+                <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">
+                  {unread}
+                </span>
               )}
             </button>
           );
