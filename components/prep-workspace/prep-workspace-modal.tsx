@@ -34,6 +34,62 @@ function parseAmount(val: string): number {
   return parseFloat(val.replace(/[$,]/g, "")) || 0;
 }
 
+// ── Rich text formatter for AI content ──
+function FormattedInsightText({ text }: { text: string }) {
+  const paragraphs = text.split("\n\n");
+
+  const formatLine = (line: string, key: number) => {
+    // Check for numbered list items like "(1) something"
+    const numberedMatch = line.match(/^\((\d+)\)\s+(.+)$/);
+    if (numberedMatch) {
+      return (
+        <div key={key} className="flex gap-2 pl-1">
+          <span className="text-muted-foreground font-medium shrink-0">{numberedMatch[1]}.</span>
+          <span>{highlightEntities(numberedMatch[2]!)}</span>
+        </div>
+      );
+    }
+    return <span key={key}>{highlightEntities(line)}</span>;
+  };
+
+  const highlightEntities = (text: string) => {
+    // Split on amounts, percentages, and known entity patterns
+    const parts = text.split(/(\$[\d,]+(?:\.\d{2})?|\d+%|Golden Dragon LLC|Golden Dragon(?:\s+#\d)?|Marcus|Schedule [A-Z]|Form \d{4}[A-Z]?|1099-[A-Z]+|W-2|Q[1-4] \d{4}|March \d+|Restaurant Consulting Group|Pasadena|Riverside|IRS)/g);
+    return parts.map((part, i) => {
+      if (/^\$[\d,]+/.test(part)) return <span key={i} className="font-bold tabular-nums text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
+      if (/^\d+%$/.test(part)) return <span key={i} className="font-bold tabular-nums text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
+      if (/^Golden Dragon LLC$/.test(part)) return <span key={i} className="font-bold text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
+      if (/^(Golden Dragon|Marcus|Restaurant Consulting Group|Pasadena|Riverside|IRS)/.test(part)) return <span key={i} className="font-semibold text-foreground bg-muted/40 rounded px-0.5">{part}</span>;
+      if (/^(Schedule [A-Z]|Form \d|1099-|W-2|Q[1-4])/.test(part)) return <span key={i} className="font-medium text-foreground/90 bg-muted/50 rounded px-1 py-0.5">{part}</span>;
+      if (/^March \d+/.test(part)) return <span key={i} className="font-medium text-foreground bg-muted/40 rounded px-0.5">{part}</span>;
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  return (
+    <div className="text-sm leading-relaxed text-foreground/75 space-y-3">
+      {paragraphs.map((para, i) => {
+        // Check if paragraph contains numbered items
+        const lines = para.split(/(?=\(\d+\))/);
+        if (lines.length > 1 && lines.some(l => l.match(/^\(\d+\)/))) {
+          // Has numbered items — split into intro + list
+          const intro = lines[0]!.match(/^\(\d+\)/) ? null : lines[0];
+          const items = lines.filter(l => l.match(/^\(\d+\)/));
+          return (
+            <div key={i}>
+              {intro && <p className="mb-2">{highlightEntities(intro.trim())}</p>}
+              <div className="space-y-1">
+                {items.map((item, j) => formatLine(item.trim(), j))}
+              </div>
+            </div>
+          );
+        }
+        return <p key={i}>{highlightEntities(para)}</p>;
+      })}
+    </div>
+  );
+}
+
 // ── Doc status icon ──
 function DocStatusIcon({ doc }: { doc: MockDocument }) {
   if (doc.status === "signed") return <CheckCircle2 className="size-3 text-emerald-500" />;
@@ -113,12 +169,12 @@ function DocTree({ clientId, selectedDocId, onSelect, onSummary, showingSummary 
 // ═══════════════════════════════════════════════
 // PREP SUMMARY LINE ITEM
 // ═══════════════════════════════════════════════
-function SummaryLineItem({ label, source, amount, priorYear, verified, onDocClick, flagType, docTypeBadge, allFields }: {
+function SummaryLineItem({ label, source, amount, priorYear, verified, onToggleVerified, onDocClick, flagType, docTypeBadge, allFields }: {
   label: string; source: string; amount: string; priorYear?: string;
-  verified?: boolean; onDocClick?: () => void; flagType?: "info" | "warning" | "error";
+  verified?: boolean; onToggleVerified?: () => void; onDocClick?: () => void; flagType?: "info" | "warning" | "error";
   docTypeBadge?: string; allFields?: { label: string; value: string }[];
 }) {
-  const [isVerified, setIsVerified] = useState(verified ?? false);
+  const isVerified = verified ?? false;
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -145,7 +201,7 @@ function SummaryLineItem({ label, source, amount, priorYear, verified, onDocClic
           )}
         </div>
         <button
-          onClick={(e) => { e.stopPropagation(); setIsVerified(!isVerified); }}
+          onClick={(e) => { e.stopPropagation(); onToggleVerified?.(); }}
           className={cn("flex size-6 items-center justify-center rounded-full transition-all shrink-0",
             isVerified ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground/50 hover:bg-muted/80"
           )}
@@ -196,6 +252,8 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
   const allIntel = getDocumentIntelligence(client.id);
   const insight = getInsightForClient(client.id);
   const ps = getClientPaymentSummary(client.id);
+  const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
+  const toggleVerified = (key: string) => setVerifiedItems(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const checklist = getClientChecklist(client.id);
 
   // Categorize docs
@@ -304,14 +362,13 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
             >
               {insight.title}
             </motion.h3>
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.4 }}
-              className="text-sm leading-relaxed"
             >
-              {insight.content}
-            </motion.p>
+              <FormattedInsightText text={insight.content} />
+            </motion.div>
             {insight.actions && insight.actions.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
@@ -359,14 +416,28 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
                   flagType={item.flagType}
                   docTypeBadge={item.docTypeBadge}
                   allFields={item.allFields}
+                  verified={verifiedItems.has(`income-${i}`)}
+                  onToggleVerified={() => toggleVerified(`income-${i}`)}
                   onDocClick={() => onDocClick(item.docId)}
                 />
               ))}
             </div>
-            <div className="flex items-center justify-between mt-3 px-4 py-2 rounded-lg bg-emerald-50/50">
-              <span className="text-sm font-medium text-emerald-700">Total Gross Income</span>
-              <span className="text-sm font-bold tabular-nums text-emerald-700">${totalIncome.toLocaleString()}</span>
-            </div>
+            <AnimatePresence>
+              {incomeItems.length > 0 && incomeItems.every((_, i) => verifiedItems.has(`income-${i}`)) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginTop: 12 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-emerald-50/50 border border-emerald-200/50">
+                    <span className="text-sm font-medium text-emerald-700">Total Gross Income</span>
+                    <span className="font-display text-base tabular-nums text-emerald-700">${totalIncome.toLocaleString()}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
@@ -781,136 +852,102 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             )}
           </AnimatePresence>
 
-          {/* Right: Sidebar or Docket Chat */}
-          <div className="w-[360px] shrink-0 border-l border-border/40 flex flex-col overflow-hidden">
-            <AnimatePresence mode="wait">
-              {docketOpen ? (
-                <motion.div
-                  key="docket"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col h-full"
-                >
-                  {/* Docket header */}
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="size-3.5 text-muted-foreground" />
-                      <span className="text-xs font-semibold">Ask Docket</span>
-                      <span className="text-[10px] text-muted-foreground">· {client.fullName}</span>
+          {/* Right: Sidebar (always visible) */}
+          <div className="w-[280px] shrink-0 border-l border-border/40 overflow-y-auto">
+            <PrepSidebar
+              client={client}
+              showingSummary={showingSummary}
+              selectedDoc={selectedDoc}
+              onCompletePrep={onCompletePrep}
+              onAskDocket={handleAskDocket}
+            />
+          </div>
+
+          {/* Docket Chat (attached side panel) */}
+          <AnimatePresence>
+            {docketOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 340, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="shrink-0 border-l border-border/40 flex flex-col overflow-hidden"
+              >
+                {/* Docket header */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="size-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold">Ask Docket</span>
+                  </div>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setDocketOpen(false)}>
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                  {docketMessages.length === 0 && !docketTyping && (
+                    <div className="py-6 text-center">
+                      <p className="text-xs text-muted-foreground mb-3">Ask about {client.fullName.split(" ")[0]}'s return</p>
+                      <div className="space-y-1.5">
+                        {[
+                          `What's blocking ${client.fullName.split(" ")[0]}?`,
+                          "Explain the revenue drop",
+                          "Summarize all flags",
+                        ].map((suggestion, i) => (
+                          <button
+                            key={i}
+                            onClick={() => simulateDocketResponse(suggestion)}
+                            className="block w-full text-left rounded-lg border px-3 py-2 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <Button variant="ghost" size="icon-sm" onClick={() => setDocketOpen(false)}>
-                      <X className="size-3.5" />
+                  )}
+                  {docketMessages.map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn(
+                        "text-xs leading-relaxed",
+                        msg.role === "user"
+                          ? "ml-6 rounded-lg bg-primary text-primary-foreground px-3 py-2"
+                          : "mr-2 text-foreground/85 whitespace-pre-line"
+                      )}
+                    >
+                      {msg.text}
+                    </motion.div>
+                  ))}
+                  {docketTyping && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                      <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                      Thinking...
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="border-t px-3 py-2.5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={docketInput}
+                      onChange={e => setDocketInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}
+                      placeholder="Ask about this return..."
+                      className="flex-1 rounded-lg border bg-background px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    <Button size="icon" className="size-7 shrink-0" disabled={!docketInput.trim()} onClick={() => { if (docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}>
+                      <Send className="size-3" />
                     </Button>
                   </div>
-
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                    {docketMessages.length === 0 && !docketTyping && (
-                      <div className="py-8 text-center">
-                        <MessageSquare className="size-6 text-muted-foreground/30 mx-auto mb-2" />
-                        <p className="text-xs text-muted-foreground">Ask anything about {client.fullName.split(" ")[0]}'s return</p>
-                        <div className="mt-3 space-y-1.5">
-                          {[
-                            `What's blocking ${client.fullName.split(" ")[0]}'s return?`,
-                            "Explain the revenue drop",
-                            "Summarize all flags",
-                          ].map((suggestion, i) => (
-                            <button
-                              key={i}
-                              onClick={() => simulateDocketResponse(suggestion)}
-                              className="block w-full text-left rounded-lg border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {docketMessages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className={cn(
-                          "text-xs leading-relaxed",
-                          msg.role === "user"
-                            ? "ml-8 rounded-lg bg-primary text-primary-foreground px-3 py-2"
-                            : "mr-4 text-foreground/85 whitespace-pre-line"
-                        )}
-                      >
-                        {msg.text}
-                      </motion.div>
-                    ))}
-                    {docketTyping && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex items-center gap-2 text-xs text-muted-foreground py-2"
-                      >
-                        <motion.div
-                          className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                        />
-                        Thinking...
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Input */}
-                  <div className="border-t px-3 py-2.5 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <input
-                        value={docketInput}
-                        onChange={e => setDocketInput(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter" && docketInput.trim()) {
-                            simulateDocketResponse(docketInput.trim());
-                            setDocketInput("");
-                          }
-                        }}
-                        placeholder="Ask about this return..."
-                        className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-ring"
-                      />
-                      <Button
-                        size="icon"
-                        className="size-8 shrink-0"
-                        disabled={!docketInput.trim()}
-                        onClick={() => {
-                          if (docketInput.trim()) {
-                            simulateDocketResponse(docketInput.trim());
-                            setDocketInput("");
-                          }
-                        }}
-                      >
-                        <Send className="size-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="sidebar"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex-1 overflow-y-auto"
-                >
-                  <PrepSidebar
-                    client={client}
-                    showingSummary={showingSummary}
-                    selectedDoc={selectedDoc}
-                    onCompletePrep={onCompletePrep}
-                    onAskDocket={handleAskDocket}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </DialogContent>
     </Dialog>
