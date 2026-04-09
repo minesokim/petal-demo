@@ -321,7 +321,7 @@ function ClientRow({
       <td className="relative px-4 py-3">
         <div
           className={cn(
-            "absolute left-0 top-0 h-full w-1 rounded-r",
+            "absolute left-0 top-0 bottom-0 w-[2.5px] rounded-r opacity-60",
             isPending ? "bg-zinc-400" : getStageColor(client.returnStage)
           )}
         />

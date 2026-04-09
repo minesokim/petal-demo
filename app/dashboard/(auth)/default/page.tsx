@@ -361,17 +361,27 @@ export default function Page() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                     className="overflow-hidden"
                   >
                   <div className="mt-3 pl-0">
-                    <p className="text-[14px] leading-[1.8] text-foreground/75">
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.3 }}
+                      className="text-[14px] leading-[1.8] text-foreground/75"
+                    >
                       {item.content}
-                    </p>
+                    </motion.p>
 
                     {/* Filing pace — line graph */}
                     {item.id === "brief-3" && (
-                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.55 }}
+                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[11px] font-medium text-foreground/60">Filing pace</span>
                           <span className="text-[10px] text-muted-foreground">18 days to deadline</span>
@@ -416,12 +426,17 @@ export default function Page() {
                           </div>
                           <span className="text-[10px] text-red-500/60 ml-auto">2 returns behind pace</span>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {/* Rodriguez income — horizontal comparison */}
                     {item.id === "brief-4" && (
-                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.55 }}
+                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
+                      >
                         <div className="flex items-center justify-between mb-4">
                           <span className="text-[11px] font-medium text-foreground/60">Household income</span>
                           <span className="text-[10px] text-blue-500/70 font-medium">&rarr; 24% bracket + NIIT</span>
@@ -453,12 +468,17 @@ export default function Page() {
                           <span className="text-[10px] text-muted-foreground/40">&middot;</span>
                           <span className="text-[10px] text-red-400/60">New: NIIT on rental</span>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {/* Referral potential for Ashley */}
                     {item.id === "brief-5" && (
-                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.6 }}
+                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[11px] font-medium text-foreground/60">Referral potential</span>
                           <span className="text-[10px] text-violet-500/70 font-medium">Creator niche</span>
@@ -477,13 +497,18 @@ export default function Page() {
                             <span className="text-[10px] text-muted-foreground block mt-0.5">Network (3-yr value)</span>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {item.implication && (
-                      <p className="text-[12.5px] text-muted-foreground mt-3 leading-relaxed">
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4, delay: 0.7 }}
+                        className="text-[12.5px] text-muted-foreground mt-3 leading-relaxed"
+                      >
                         &rarr; {item.implication}
-                      </p>
+                      </motion.p>
                     )}
 
                     {/* Reference + deep dive */}

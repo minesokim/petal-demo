@@ -34,7 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [isTablet]);
 
   return (
-    <Sidebar collapsible="icon" {...props} className="font-[family-name:var(--font-ibm-plex-sans)]">
+    <Sidebar collapsible="icon" {...props} className="font-[family-name:var(--font-geist)]">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

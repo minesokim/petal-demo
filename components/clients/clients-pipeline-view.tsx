@@ -155,14 +155,13 @@ export function ClientsPipelineView({
           <button
             onClick={() => setHighlightedCol(highlightedCol === col.key ? null : col.key)}
             className={cn(
-              "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all cursor-pointer",
-              col.headerBg,
-              highlightedCol === col.key && "border border-foreground/15 shadow-sm"
+              "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
+              highlightedCol === col.key && "border-border/60 shadow-sm"
             )}
           >
             <div className="flex items-center gap-2">
-              <span className={cn("size-2 rounded-full", col.dot)} />
-              <span className="text-sm font-semibold">{col.label}</span>
+              <span className={cn("size-1.5 rounded-full", col.dot)} />
+              <span className="text-[13px] font-medium text-foreground">{col.label}</span>
             </div>
             <Badge variant="outline" className="text-[10px]">
               {col.clients.length}
@@ -198,7 +197,7 @@ export function ClientsPipelineView({
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium truncate leading-tight font-display">
+                      <p className="text-xs font-medium truncate leading-tight">
                         {client.fullName}
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate leading-tight">

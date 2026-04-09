@@ -480,17 +480,17 @@ export function NavMain() {
                   ) : (
                     <SidebarMenuButton
                       className={cn(
-                        "hover:bg-[#e8e4dc]/50 hover:text-foreground",
+                        "hover:bg-[#e8e4dc]/50 text-foreground/70 [&>svg]:text-foreground/70",
                         pathname === item.href
-                          ? "bg-[#e8e4dc]/70 font-medium text-foreground [&>svg]:text-foreground"
-                          : "text-muted-foreground [&>svg]:text-muted-foreground/70"
+                          ? "bg-[#e8e4dc]/70 font-medium"
+                          : ""
                       )}
                       isActive={false}
                       tooltip={item.title}
                       asChild>
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                         {item.icon && <item.icon />}
-                        <span>{item.title}</span>
+                        <span className="ml-0.5">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   )}

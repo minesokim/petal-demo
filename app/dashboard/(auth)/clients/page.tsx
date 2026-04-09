@@ -131,11 +131,11 @@ export default function ClientsPage() {
   const activeCount = totalCount - pendingCount;
 
   const columns = [
-    { key: "pending", label: "Pending", dot: "bg-zinc-400", bg: "bg-zinc-50 dark:bg-zinc-900/20", headerBg: "bg-zinc-100 dark:bg-zinc-900/30" },
-    { key: "need_you", label: "Need You", dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-950/20", headerBg: "bg-red-50 dark:bg-red-950/30" },
-    { key: "waiting", label: "Waiting", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20", headerBg: "bg-amber-50 dark:bg-amber-950/30" },
-    { key: "in_progress", label: "In Progress", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50 dark:bg-blue-950/30" },
-    { key: "done", label: "Done", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20", headerBg: "bg-emerald-50 dark:bg-emerald-950/30" },
+    { key: "pending", label: "Pending", dot: "bg-zinc-400", bg: "bg-zinc-50 dark:bg-zinc-900/20", headerBg: "bg-zinc-50/60" },
+    { key: "need_you", label: "Need You", dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-950/20", headerBg: "bg-red-50/50" },
+    { key: "waiting", label: "Waiting", dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20", headerBg: "bg-amber-50/50" },
+    { key: "in_progress", label: "In Progress", dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", headerBg: "bg-blue-50/50" },
+    { key: "done", label: "Done", dot: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20", headerBg: "bg-emerald-50/50" },
   ];
 
   const columnData = columns.map(col => ({
@@ -271,16 +271,15 @@ export default function ClientsPage() {
               <button
                 onClick={() => setHighlightedColumn(highlightedColumn === col.key ? null : col.key)}
                 className={cn(
-                  "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all cursor-pointer",
-                  col.headerBg,
-                  highlightedColumn === col.key && "border border-foreground/15 shadow-sm"
+                  "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
+                  highlightedColumn === col.key && "border-border/60 shadow-sm"
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`size-2 rounded-full ${col.dot}`} />
-                  <span className="text-sm font-semibold">{col.label}</span>
+                  <span className={`size-1.5 rounded-full ${col.dot}`} />
+                  <span className="text-[13px] font-medium text-foreground">{col.label}</span>
                 </div>
-                <Badge variant="outline" className="text-[10px]">{col.clients.length}</Badge>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{col.clients.length}</span>
               </button>
 
               {/* Column cards */}
@@ -305,7 +304,7 @@ export default function ClientsPage() {
                           <AvatarFallback className="text-xs">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold font-display">{client.fullName}</div>
+                          <div className="text-sm font-semibold">{client.fullName}</div>
                           <div className="text-xs text-muted-foreground">
                             {client.businessName || `${client.serviceTier} - $${client.feeAmount}`}
                           </div>

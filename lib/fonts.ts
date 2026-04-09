@@ -16,7 +16,8 @@ import {
   Manrope,
   Cormorant,
   Libre_Franklin,
-  IBM_Plex_Sans
+  IBM_Plex_Sans,
+  Albert_Sans
 } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +96,12 @@ const libreFranklin = Libre_Franklin({
   variable: "--font-libre-franklin"
 });
 
+const albertSans = Albert_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-albert-sans"
+});
+
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
@@ -137,5 +144,6 @@ export const fontVariables = cn(
   cormorant.variable,
   libreFranklin.variable,
   ibmPlexSans.variable,
+  albertSans.variable,
   lato.variable
 );
