@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   X, ChevronRight, ChevronDown, Clock, FileText, Check, CheckCircle2, Eye,
-  AlertTriangle, Send, ArrowLeft, ClipboardList, Download, MessageSquare
+  AlertTriangle, AlertCircle, Send, ArrowLeft, ClipboardList, Download, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientPaymentSummary, type Client } from "@/lib/mock-data";
@@ -275,12 +275,12 @@ function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docI
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* AI Preparation Brief — matches overview insight style */}
+      {/* AI Preparation Brief */}
       {insight && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
           className="mx-6 mt-6 rounded-lg border bg-card"
         >
           <div className="px-4 py-2.5 flex items-center gap-2">
@@ -294,15 +294,35 @@ function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docI
             </span>
           </div>
           <div className="px-4 pb-4">
-            <p className="text-sm leading-relaxed">{insight.content}</p>
+            <motion.h3
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.3 }}
+              className="font-display text-base tracking-tight mb-2"
+            >
+              {insight.title}
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="text-sm leading-relaxed"
+            >
+              {insight.content}
+            </motion.p>
             {insight.actions && insight.actions.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, duration: 0.3 }}
+                className="mt-3 flex flex-wrap gap-2"
+              >
                 {insight.actions.map((action, i) => (
                   <Button key={i} size="sm" variant={i === 0 ? "default" : "outline"} className="h-7 text-xs">
                     {action.label}
                   </Button>
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
         </motion.div>
@@ -554,7 +574,7 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                   {isResolved ? (
                     <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
                   ) : (
-                    <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                    <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1 min-w-0">
                     <span className={cn("text-xs font-medium", isResolved && "line-through text-muted-foreground")}>{flag.title}</span>
