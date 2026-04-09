@@ -35,6 +35,7 @@ import { OpenItemsSection } from "@/components/issues/open-items-section";
 import { getScheduledCallsForClient, type ScheduledCall } from "@/lib/comms-mock-data";
 import { format as formatDate, parseISO } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export default function ClientOverviewPage() {
   const params = useParams();
