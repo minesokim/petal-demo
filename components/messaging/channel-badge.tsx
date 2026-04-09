@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { MessageSquare, Mail, Smartphone, PhoneCall } from "lucide-react";
+import { MessageSquare, Mail, Smartphone, PhoneCall, Video } from "lucide-react";
 import type { CommChannel } from "@/lib/comms-mock-data";
 
 const channelConfig: Record<CommChannel, { icon: React.ElementType; label: string; className: string }> = {
@@ -24,6 +24,11 @@ const channelConfig: Record<CommChannel, { icon: React.ElementType; label: strin
     icon: PhoneCall,
     label: "Voice",
     className: "text-violet-600 dark:text-violet-400",
+  },
+  video: {
+    icon: Video,
+    label: "Video",
+    className: "text-blue-600 dark:text-blue-400",
   },
 };
 

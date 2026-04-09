@@ -104,7 +104,7 @@ export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
               }
 
               const isClient = msg.sender === "client";
-              const isVoice = msg.channel === "voice";
+              const isVoice = msg.channel === "voice" || msg.channel === "video";
               const isEmail = msg.channel === "email";
 
               return (

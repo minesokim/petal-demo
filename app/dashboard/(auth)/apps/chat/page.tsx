@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Search, Phone, FileText, Calendar, DollarSign, Clock,
   Bot, ChevronRight, MessageSquare, Mail, Smartphone,
-  PhoneCall, Image as ImageIcon,
+  PhoneCall, Video, Send, Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { clients } from "@/lib/mock-data";
@@ -20,7 +20,7 @@ import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { ChannelBadge } from "@/components/messaging/channel-badge";
 import { EmailMessage } from "@/components/messaging/email-message";
 import { VoiceMessage } from "@/components/messaging/voice-message";
-import { ChannelSelector } from "@/components/messaging/channel-selector";
+// Channel is derived from active filter tab — no separate selector needed
 import { format, parseISO, isToday, isYesterday } from "date-fns";
 
 // ── Types ──
@@ -86,6 +86,7 @@ function ChannelIcon({ channel }: { channel: CommChannel }) {
     case "email": return <Mail className="size-2.5 text-blue-500/70" />;
     case "sms": return <Smartphone className="size-2.5 text-emerald-500/70" />;
     case "voice": return <PhoneCall className="size-2.5 text-violet-500/70" />;
+    case "video": return <Video className="size-2.5 text-blue-500/70" />;
     default: return null;
   }
 }
@@ -108,7 +109,6 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [input, setInput] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
-  const [composeChannel, setComposeChannel] = useState<ComposableChannel>("portal");
   const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
   const [localMessages, setLocalMessages] = useState<Record<string, UnifiedMessage[]>>({});
   const [dismissedDrafts, setDismissedDrafts] = useState<Set<string>>(new Set());
@@ -129,18 +129,19 @@ export default function ChatPage() {
 
   // Channel counts for current conversation
   const channelCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: thread.length, portal: 0, email: 0, sms: 0, voice: 0 };
+    const counts: Record<string, number> = { all: thread.length, portal: 0, email: 0, sms: 0, voice: 0, video: 0 };
     for (const m of thread) {
       if (m.channel in counts) counts[m.channel]++;
     }
     return counts;
   }, [thread]);
 
-  // Suggest SMS
-  const suggestSms = selected
-    ? !selected.client.lastPortalLogin ||
-      (Date.now() - new Date(selected.client.lastPortalLogin).getTime()) / 86400000 > 7
-    : false;
+  // Derive compose channel from active filter tab
+  const composeChannel: ComposableChannel =
+    viewFilter === "portal" ? "portal" :
+    viewFilter === "email" ? "email" :
+    viewFilter === "sms" ? "sms" : "portal";
+  const canCompose = viewFilter === "all" || viewFilter === "portal" || viewFilter === "email" || viewFilter === "sms";
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -271,11 +272,11 @@ export default function ChatPage() {
 
         {/* Channel filter tabs */}
         <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-border/30 shrink-0">
-          {(["all", "portal", "email", "sms", "voice"] as ViewFilter[]).map((filter) => {
+          {(["all", "portal", "email", "sms", "voice", "video"] as ViewFilter[]).map((filter) => {
             const count = channelCounts[filter] || 0;
             const isActive = viewFilter === filter;
             const icons: Record<string, React.ElementType> = {
-              all: MessageSquare, portal: MessageSquare, email: Mail, sms: Smartphone, voice: PhoneCall,
+              all: MessageSquare, portal: MessageSquare, email: Mail, sms: Smartphone, voice: PhoneCall, video: Video,
             };
             const Icon = icons[filter];
             return (
@@ -335,7 +336,7 @@ export default function ChatPage() {
               }
 
               const isClient = msg.sender === "client";
-              const isVoice = msg.channel === "voice";
+              const isVoice = msg.channel === "voice" || msg.channel === "video";
               const isEmail = msg.channel === "email";
 
               return (
@@ -420,12 +421,15 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Compose area */}
+        {/* Compose area — channel derived from active filter tab */}
         <div className="shrink-0 border-t px-4 py-2.5 space-y-2">
-          <div className="flex items-center gap-2">
-            <ChannelSelector value={composeChannel} onChange={setComposeChannel} suggestSms={suggestSms} />
-          </div>
-          {composeChannel === "email" && (
+          {canCompose && viewFilter !== "all" && (
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span>Sending via</span>
+              <span className="font-medium capitalize">{composeChannel}</span>
+            </div>
+          )}
+          {canCompose && composeChannel === "email" && (
             <input
               value={emailSubject}
               onChange={(e) => setEmailSubject(e.target.value)}
@@ -433,24 +437,28 @@ export default function ChatPage() {
               className="w-full rounded-lg border bg-background px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground/50"
             />
           )}
-          <div className="flex items-center gap-2">
-            <input
-              placeholder={
-                composeChannel === "email"
-                  ? "Compose email..."
-                  : composeChannel === "sms"
-                    ? "Type a text..."
-                    : `Message ${selected?.client.fullName.split(" ")[0] || ""}...`
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none"
-            />
-            <Button size="icon" className="size-9 shrink-0" onClick={sendMessage} disabled={!input.trim()}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-            </Button>
-          </div>
+          {canCompose ? (
+            <div className="flex items-center gap-2">
+              <input
+                placeholder={
+                  composeChannel === "email" ? "Compose email..." :
+                  composeChannel === "sms" ? "Type a text..." :
+                  `Message ${selected?.client.fullName.split(" ")[0] || ""}...`
+                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none"
+              />
+              <Button size="icon" className="size-9 shrink-0" onClick={sendMessage} disabled={!input.trim()}>
+                <Send className="size-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground py-1">
+              {viewFilter === "voice" ? "Voice calls are logged automatically" : "Video calls are recorded from Zoom/Google Meet"}
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 // DOCKET UNIFIED COMMS — Multi-channel message data
 // ============================================================
 
-export type CommChannel = "portal" | "email" | "sms" | "voice";
+export type CommChannel = "portal" | "email" | "sms" | "voice" | "video";
 
 export interface EmailAttachment {
   id: string;
@@ -20,13 +20,19 @@ export interface UnifiedMessage {
   timestamp: string; // ISO 8601
   // Email-specific
   emailSubject?: string;
-  emailAttachments?: EmailAttachment[];
-  // Voice-specific
+  // Attachments — can come from any channel (portal upload, email, SMS photo)
+  attachments?: EmailAttachment[];
+  emailAttachments?: EmailAttachment[]; // legacy alias
+  // Voice/Video call specific
   voiceDuration?: string; // "12:34"
   voiceAiSummary?: string;
   voiceTranscript?: string;
   voiceKeyPoints?: string[];
   voiceActionItems?: string[];
+  // Video-specific
+  videoPlatform?: "zoom" | "google_meet";
+  videoRecordingUrl?: string;
+  videoSuggestedItems?: string[]; // AI-suggested open items from the call
   // System card (same pattern as before)
   systemCard?: { type: string; title: string; description: string; action?: string };
 }
@@ -44,7 +50,8 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
     { id: "u2-4", sender: "preparer", channel: "portal", content: "Yes, all income needs to be reported even if you don't receive a 1099 for it. We'll include it on your Schedule C.", timestamp: "2026-03-27T15:10:00" },
     { id: "u2-5", sender: "client", channel: "email", content: "Hey Antonio, I found another 1099 from a brand deal I forgot about. Attaching it here — it's from Revolve. Let me know if you need anything else!", emailSubject: "Found another 1099", emailAttachments: [{ id: "att-201", fileName: "1099-NEC_Revolve.pdf", fileSize: "92 KB", docType: "1099_nec" }], timestamp: "2026-03-28T09:15:00" },
     { id: "u2-6", sender: "system", channel: "portal", content: "", timestamp: "2026-03-28T09:15:00", systemCard: { type: "status", title: "Return Status", description: "3 of 7 documents received. Once complete, preparation takes 3–5 business days.", action: "View Status" } },
-    { id: "u2-7", sender: "client", channel: "portal", content: "Thanks Antonio!", timestamp: "2026-03-28T10:20:00" },
+    { id: "u2-7", sender: "client", channel: "portal", content: "Just uploaded my TikTok 1099 through the portal!", timestamp: "2026-03-28T10:20:00", attachments: [{ id: "att-202", fileName: "1099-NEC_TikTok.pdf", fileSize: "89 KB", docType: "1099_nec" }] },
+    { id: "u2-8", sender: "client", channel: "sms", content: "Antonio, found my bank statement for the business account. Took a pic, hope its clear enough", timestamp: "2026-03-29T08:45:00", attachments: [{ id: "att-203", fileName: "Chase_Business_Statement.jpg", fileSize: "3.2 MB" }] },
   ],
 
   // James & Sofia Rodriguez (c3) — portal + voice call
@@ -54,6 +61,7 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
     { id: "u3-3", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-26T14:00:00", voiceDuration: "8:42", voiceAiSummary: "Antonio walked James through the completed return. Discussed rental income reporting on Schedule E, the mortgage interest deduction, and the $340 interest from Chase. James confirmed all numbers looked correct. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Return walkthrough completed — all figures confirmed", "Rental income of $24,000 on Schedule E reviewed", "Mortgage interest deduction of $18,200 verified", "Total refund: $3,840 federal, $420 state"], voiceActionItems: ["Sofia needs to sign 8879 by end of day", "Antonio to e-file once both signatures received"], voiceTranscript: "Antonio: Hey James, thanks for hopping on. I wanted to walk you through your return before you sign.\n\nJames: Sounds good, we're excited to get this filed.\n\nAntonio: So starting with income — your W-2 from Riverside County shows $72,400, and Sofia's from the school district is $54,200. Plus the $340 interest from Chase and $24,000 in rental income from Palm Ave.\n\nJames: That all sounds right. The rental has been steady at $2,000 a month.\n\nAntonio: Perfect. On deductions, your mortgage interest was $18,200, property taxes $4,800, and the rental expenses came to $8,400. You're looking at a federal refund of $3,840.\n\nJames: That's great! Sofia will sign tonight — she's at school right now.\n\nAntonio: Perfect, once I have both signatures I'll e-file same day." },
     { id: "u3-4", sender: "client", channel: "portal", content: "We're ready to sign whenever you are!", timestamp: "2026-03-27T07:45:00" },
     { id: "u3-5", sender: "system", channel: "portal", content: "", timestamp: "2026-03-27T07:45:00", systemCard: { type: "signature", title: "E-Signature Ready", description: "Form 8879 is ready for signature. Both James and Sofia need to sign.", action: "Sign Now" } },
+    { id: "u3-6", sender: "preparer", channel: "video", content: "", timestamp: "2026-03-26T14:00:00", videoPlatform: "google_meet", voiceDuration: "18:30", voiceAiSummary: "Return walkthrough with James via Google Meet. Reviewed all income sources (W-2s, rental, interest), itemized deductions (mortgage, property tax), and the expected refund of $3,840 federal. James confirmed all figures. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Combined W-2 income: $126,600 (James $72,400 + Sofia $54,200)", "Rental net income: $15,600 on Schedule E", "Itemized deductions: $23,000 (mortgage + property tax)", "Federal refund: $3,840", "State (CA): $420 refund"], voiceActionItems: ["Sofia to sign 8879 by end of day", "Antonio to e-file once both signatures received", "Discuss estimated payments for rental income next year"], voiceTranscript: "Antonio: James, thanks for jumping on. I wanted to walk you through the return before signing.\n\nJames: Sounds good. Sofia is at work but she'll sign tonight.\n\nAntonio: Perfect. So your combined W-2 income is $126,600. Rental income from Palm Ave is $24,000 gross, $15,600 net after expenses. Plus $340 interest from Chase.\n\nJames: That all sounds right.\n\nAntonio: Deductions — you're itemizing at $23,000. Mortgage interest $14,200, property taxes $9,310 across both properties. You're looking at a $3,840 federal refund.\n\nJames: That's great. Better than last year.\n\nAntonio: Once Sofia signs tonight, I'll e-file first thing tomorrow.", videoSuggestedItems: ["E-file Rodriguez return after both 8879 signatures", "Discuss estimated payments for rental income", "Send Rodriguez family a copy of the filed return"] },
   ],
 
   // DeShawn Williams (c4) — portal + SMS (stale client, needs nudging)
@@ -64,6 +72,8 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
     { id: "u4-4", sender: "preparer", channel: "sms", content: "Hey DeShawn, just checking in. We still need your W-2 and deposit to get started on your return. April 15 deadline is 18 days away. Any questions I can help with?", timestamp: "2026-03-25T10:30:00" },
     { id: "u4-5", sender: "client", channel: "sms", content: "Sorry been swamped at work. Will try this weekend", timestamp: "2026-03-26T12:15:00" },
     { id: "u4-6", sender: "system", channel: "portal", content: "", timestamp: "2026-03-26T12:15:00", systemCard: { type: "payment", title: "Deposit Required", description: "$150 deposit required to begin preparing your return.", action: "Pay Now" } },
+    { id: "u4-7", sender: "client", channel: "sms", content: "hey antonio finally got my w2. sending a pic", timestamp: "2026-03-29T19:30:00", attachments: [{ id: "att-401", fileName: "W2_photo.jpg", fileSize: "4.1 MB", docType: "w2" }] },
+    { id: "u4-8", sender: "preparer", channel: "sms", content: "Got it DeShawn! I can see the W-2. Let me process it. Can you also send your SSN card photo when you get a chance?", timestamp: "2026-03-29T20:00:00" },
   ],
 
   // David Park (c11) — portal + email + voice (complex S-Corp)
@@ -75,6 +85,7 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
     { id: "u11-5", sender: "client", channel: "portal", content: "Can we push the call to 3pm instead of 2? Got a patient emergency.", timestamp: "2026-03-27T08:15:00" },
     { id: "u11-6", sender: "preparer", channel: "portal", content: "Of course. Moved to 3pm. Hope everything is okay!", timestamp: "2026-03-27T08:30:00" },
     { id: "u11-7", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-27T15:00:00", voiceDuration: "22:15", voiceAiSummary: "Detailed review of Park Family Dental S-Corp return. Discussed officer compensation ($185K), new dental chair purchase ($45K — Section 179 eligible), and payroll discrepancy in Q3. David confirmed the Q3 variance was due to a temp hygienist. Equipment depreciation schedule will be emailed separately.", voiceKeyPoints: ["Officer salary $185K confirmed as reasonable comp", "New dental chair $45K qualifies for Section 179", "Q3 payroll variance: temp hygienist (not permanent hire)", "Equipment depreciation schedule coming via email", "Estimated tax liability discussed — no surprises"], voiceActionItems: ["David to send equipment depreciation schedule", "Antonio to finalize 1120S once schedule received", "Schedule review call after filing for estimated payments discussion"], voiceTranscript: "Antonio: David, thanks for making time. Let's go through the S-Corp return.\n\nDavid: Sure, I've been looking forward to reviewing everything.\n\nAntonio: So your officer salary is $185,000, up from $170K last year. That's well within reasonable comp for your practice size.\n\nDavid: Right, we adjusted it based on the revenue increase.\n\nAntonio: The big item is the new dental chair — $45,000. Great news, it qualifies for Section 179 immediate expensing. Full deduction this year.\n\nDavid: That's what I was hoping. That should help offset the income increase.\n\nAntonio: Exactly. Now, I noticed a payroll bump in Q3 — about $12,000 higher than other quarters. Can you explain that?\n\nDavid: Oh yes, we had a temp hygienist covering for Sarah's maternity leave. That was August through October.\n\nAntonio: Perfect, that explains it. I'll note that. Last thing — I still need the equipment depreciation schedule. The P&L had a depreciation line but no detail.\n\nDavid: I'll get that from our accountant and email it over this week." },
+    { id: "u11-8", sender: "preparer", channel: "video", content: "", timestamp: "2026-04-02T14:00:00", videoPlatform: "zoom", voiceDuration: "34:20", voiceAiSummary: "Follow-up video call to review finalized 1120S and discuss estimated tax payments for 2026. David shared his screen to walk through the equipment depreciation schedule. Confirmed Section 179 election for dental chair. Discussed Q1 estimated payment of $12,400 and set up quarterly reminders.", voiceKeyPoints: ["1120S finalized — all numbers confirmed by David", "Equipment depreciation schedule reviewed on screen share", "Section 179 election confirmed for $45K dental chair", "Q1 2026 estimated payment: $12,400 due April 15", "Quarterly payment schedule set: $12,400 per quarter", "David wants Antonio to handle estimated payment vouchers"], voiceActionItems: ["Antonio to e-file 1120S today", "Prepare Form 1040-ES vouchers for David", "Schedule mid-year check-in for August", "Send David the quarterly payment calendar"], voiceTranscript: "Antonio: David, good to see you. Let me share my screen — I've got your finalized 1120S ready.\n\nDavid: Great, I've got the depreciation schedule pulled up too.\n\nAntonio: Perfect. So the bottom line — your S-Corp net income after the Section 179 deduction on the dental chair is $142,000. Your officer salary stays at $185K.\n\nDavid: That Section 179 made a big difference.\n\nAntonio: Absolutely. Saved about $11,000 in tax. Now let's talk estimated payments for 2026. Based on this year's numbers, I'm recommending $12,400 per quarter.\n\nDavid: That sounds manageable. Can you set up the vouchers for me?\n\nAntonio: Of course. I'll send the 1040-ES vouchers with the due dates. First one is April 15.", videoSuggestedItems: ["E-file 1120S for Park Family Dental PC", "Prepare 1040-ES vouchers ($12,400/quarter)", "Send David quarterly payment calendar", "Schedule August mid-year check-in"] },
   ],
 
   // Marcus Chen (c1) — portal + email
