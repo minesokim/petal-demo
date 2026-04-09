@@ -1,97 +1,241 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Search, Phone, MoreHorizontal, FileText,
-  Calendar, DollarSign, Clock, Bot, ChevronRight,
-  Sparkles, Image as ImageIcon
+  Search, Phone, FileText, Calendar, DollarSign, Clock,
+  Bot, ChevronRight, MessageSquare, Mail, Smartphone,
+  PhoneCall, Image as ImageIcon,
 } from "lucide-react";
-import { clients } from "@/lib/mock-data";
-import { threads as sharedThreads, getClientDrafts, type ChatMessage } from "@/lib/messages-data";
-import { AIDraftCard } from "@/components/messaging/ai-draft-card";
-import { MessageInput } from "@/components/messaging/message-input";
 import Link from "next/link";
+import { clients } from "@/lib/mock-data";
+import {
+  unifiedThreads, getUnifiedThread,
+  type UnifiedMessage, type CommChannel,
+} from "@/lib/comms-mock-data";
+import { getClientDrafts } from "@/lib/messages-data";
+import { AIDraftCard } from "@/components/messaging/ai-draft-card";
+import { ChannelBadge } from "@/components/messaging/channel-badge";
+import { EmailMessage } from "@/components/messaging/email-message";
+import { VoiceMessage } from "@/components/messaging/voice-message";
+import { ChannelSelector } from "@/components/messaging/channel-selector";
+import { format, parseISO, isToday, isYesterday } from "date-fns";
 
-// Build conversation list from shared threads
-const conversationList = Object.entries(sharedThreads).map(([clientId, msgs]) => {
-  const client = clients.find(c => c.id === clientId);
-  if (!client) return null;
-  const lastMsg = msgs[msgs.length - 1];
-  const lastContent = lastMsg.systemCard ? lastMsg.systemCard.title : lastMsg.content;
-  const hasDraft = getClientDrafts(clientId).length > 0;
-  const unreadCount = clientId === "c2" ? 2 : clientId === "c3" ? 3 : clientId === "c11" ? 1 : clientId === "c15" ? 2 : 0;
-  return { clientId, client, lastMessage: lastContent, lastTime: lastMsg.time, unread: unreadCount > 0, unreadCount, hasDraft, messages: msgs };
-}).filter(Boolean).sort((a, b) => {
-  if (a!.unread !== b!.unread) return a!.unread ? -1 : 1;
-  if (a!.hasDraft !== b!.hasDraft) return a!.hasDraft ? -1 : 1;
-  return 0;
-}) as NonNullable<(typeof conversationList)[0]>[];
+// ── Types ──
+type ViewFilter = "all" | CommChannel;
+type ComposableChannel = Exclude<CommChannel, "voice">;
 
-export default function Page() {
+// ── Build conversation list from unified threads ──
+function buildConversationList() {
+  return Object.entries(unifiedThreads)
+    .map(([clientId, msgs]) => {
+      const client = clients.find((c) => c.id === clientId);
+      if (!client || msgs.length === 0) return null;
+      const lastMsg = msgs[msgs.length - 1];
+      const lastContent = lastMsg.systemCard
+        ? lastMsg.systemCard.title
+        : lastMsg.emailSubject
+          ? lastMsg.emailSubject
+          : lastMsg.voiceDuration
+            ? `Voice call (${lastMsg.voiceDuration})`
+            : lastMsg.content;
+      const hasDraft = getClientDrafts(clientId).length > 0;
+      const unreadCount =
+        clientId === "c2" ? 2 : clientId === "c3" ? 3 : clientId === "c11" ? 1 : clientId === "c15" ? 2 : 0;
+      // Collect unique channels used in this thread
+      const channels = [...new Set(msgs.filter(m => m.sender !== "system").map((m) => m.channel))];
+      return {
+        clientId,
+        client,
+        lastMessage: lastContent,
+        lastTime: lastMsg.timestamp,
+        lastChannel: lastMsg.channel,
+        channels,
+        unread: unreadCount > 0,
+        unreadCount,
+        hasDraft,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a!.unread !== b!.unread) return a!.unread ? -1 : 1;
+      if (a!.hasDraft !== b!.hasDraft) return a!.hasDraft ? -1 : 1;
+      return new Date(b!.lastTime).getTime() - new Date(a!.lastTime).getTime();
+    }) as NonNullable<ReturnType<typeof buildConversationList>[0]>[];
+}
+
+function formatConvoTime(timestamp: string): string {
+  const date = parseISO(timestamp);
+  if (isToday(date)) return format(date, "h:mm a");
+  if (isYesterday(date)) return "Yesterday";
+  return format(date, "MMM d");
+}
+
+function formatMsgTime(timestamp: string): string {
+  const date = parseISO(timestamp);
+  if (isToday(date)) return format(date, "h:mm a");
+  if (isYesterday(date)) return "Yesterday " + format(date, "h:mm a");
+  return format(date, "MMM d, h:mm a");
+}
+
+// ── Channel icon for sidebar ──
+function ChannelIcon({ channel }: { channel: CommChannel }) {
+  switch (channel) {
+    case "email": return <Mail className="size-2.5 text-blue-500/70" />;
+    case "sms": return <Smartphone className="size-2.5 text-emerald-500/70" />;
+    case "voice": return <PhoneCall className="size-2.5 text-violet-500/70" />;
+    default: return null;
+  }
+}
+
+// ── System card icon ──
+function SystemCardIcon({ type }: { type: string }) {
+  switch (type) {
+    case "status": return <Clock className="size-3 text-primary" />;
+    case "signature": return <FileText className="size-3 text-blue-600" />;
+    case "payment": return <DollarSign className="size-3 text-amber-600" />;
+    case "appointment": return <Calendar className="size-3 text-violet-600" />;
+    default: return <Bot className="size-3 text-muted-foreground" />;
+  }
+}
+
+// ── Main Page ──
+export default function ChatPage() {
+  const conversationList = useMemo(() => buildConversationList(), []);
   const [selectedId, setSelectedId] = useState(conversationList[0]?.clientId || "c2");
   const [searchQuery, setSearchQuery] = useState("");
   const [input, setInput] = useState("");
-  const [localThreads, setLocalThreads] = useState<Record<string, ChatMessage[]>>(sharedThreads);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [composeChannel, setComposeChannel] = useState<ComposableChannel>("portal");
+  const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [localMessages, setLocalMessages] = useState<Record<string, UnifiedMessage[]>>({});
   const [dismissedDrafts, setDismissedDrafts] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const selected = conversationList.find(c => c.clientId === selectedId);
-  const thread = localThreads[selectedId] || [];
-  const pendingDrafts = getClientDrafts(selectedId).filter(d => !dismissedDrafts.has(d.id));
+  const selected = conversationList.find((c) => c.clientId === selectedId);
+  const baseThread = getUnifiedThread(selectedId);
+  const thread = [...baseThread, ...(localMessages[selectedId] || [])];
+  const pendingDrafts = getClientDrafts(selectedId).filter((d) => !dismissedDrafts.has(d.id));
 
-  const filtered = conversationList.filter(c =>
+  // Filter conversations by search
+  const filteredConvos = conversationList.filter((c) =>
     c.client.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const sendMessage = (text: string) => {
-    const newMsg: ChatMessage = { id: `sent-${Date.now()}`, sender: "preparer", content: text, time: "Just now" };
-    setLocalThreads(prev => ({ ...prev, [selectedId]: [...(prev[selectedId] || []), newMsg] }));
-    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+  // Filter messages by channel
+  const filteredThread = viewFilter === "all" ? thread : thread.filter((m) => m.channel === viewFilter);
+
+  // Channel counts for current conversation
+  const channelCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: thread.length, portal: 0, email: 0, sms: 0, voice: 0 };
+    for (const m of thread) {
+      if (m.channel in counts) counts[m.channel]++;
+    }
+    return counts;
+  }, [thread]);
+
+  // Suggest SMS
+  const suggestSms = selected
+    ? !selected.client.lastPortalLogin ||
+      (Date.now() - new Date(selected.client.lastPortalLogin).getTime()) / 86400000 > 7
+    : false;
+
+  const sendMessage = () => {
+    if (!input.trim()) return;
+    const newMsg: UnifiedMessage = {
+      id: `sent-${Date.now()}`,
+      sender: "preparer",
+      channel: composeChannel,
+      content: input,
+      timestamp: new Date().toISOString(),
+      ...(composeChannel === "email" && emailSubject ? { emailSubject } : {}),
+    };
+    setLocalMessages((prev) => ({
+      ...prev,
+      [selectedId]: [...(prev[selectedId] || []), newMsg],
+    }));
+    setInput("");
+    setEmailSubject("");
+    pendingDrafts.forEach((d) => setDismissedDrafts((prev) => new Set([...prev, d.id])));
   };
 
   const editDraft = (text: string) => {
     setInput(text);
-    pendingDrafts.forEach(d => setDismissedDrafts(prev => new Set([...prev, d.id])));
+    pendingDrafts.forEach((d) => setDismissedDrafts((prev) => new Set([...prev, d.id])));
   };
 
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [thread.length, selectedId]);
+
   return (
-    <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-lg border bg-white">
-      {/* Conversation list */}
-      <div className="w-[320px] shrink-0 border-r flex flex-col">
+    <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-lg border bg-card">
+      {/* ── Left: Conversation List ── */}
+      <div className="w-[300px] shrink-0 border-r flex flex-col">
+        {/* Search */}
         <div className="p-3 border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input placeholder="Search conversations..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full rounded-lg border bg-background pl-9 pr-3 py-2 text-sm outline-none" />
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border bg-background pl-9 pr-3 py-1.5 text-sm outline-none"
+            />
           </div>
         </div>
+
+        {/* Conversation items */}
         <div className="flex-1 overflow-y-auto">
-          {filtered.map(convo => (
+          {filteredConvos.map((convo) => (
             <button
               key={convo.clientId}
-              onClick={() => setSelectedId(convo.clientId)}
-              className={`w-full flex items-start gap-3 p-3 text-left border-b transition-colors ${selectedId === convo.clientId ? "bg-muted/50" : "hover:bg-muted/30"}`}
+              onClick={() => { setSelectedId(convo.clientId); setViewFilter("all"); }}
+              className={cn(
+                "w-full flex items-start gap-2.5 px-3 py-2.5 text-left border-b border-border/30 transition-colors",
+                selectedId === convo.clientId ? "bg-muted/50" : "hover:bg-muted/20"
+              )}
             >
-              <Avatar className="size-10 shrink-0">
-                <AvatarImage src={convo.client.avatar} alt={convo.client.fullName} />
-                <AvatarFallback className="text-xs">{convo.client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+              <Avatar className="size-9 shrink-0">
+                <AvatarImage src={convo.client.avatar} />
+                <AvatarFallback className="text-[10px]">
+                  {convo.client.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm truncate ${convo.unread ? "font-semibold" : "font-medium"}`}>{convo.client.fullName}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{convo.lastTime}</span>
+                  <span className={cn("text-sm truncate", convo.unread ? "font-semibold" : "font-medium")}>
+                    {convo.client.fullName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                    {formatConvoTime(convo.lastTime)}
+                  </span>
                 </div>
-                <p className={`text-xs truncate ${convo.unread ? "text-foreground font-medium" : "text-muted-foreground"}`}>{convo.lastMessage}</p>
-                {convo.hasDraft && !dismissedDrafts.has(getClientDrafts(convo.clientId)[0]?.id || "") && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <div className="size-1.5 rounded-full bg-foreground/30" />
-                    <span className="text-[10px] text-muted-foreground font-medium">Draft ready</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {/* Channel indicator for last message */}
+                  <ChannelIcon channel={convo.lastChannel} />
+                  <p className={cn("text-xs truncate", convo.unread ? "text-foreground" : "text-muted-foreground")}>
+                    {convo.lastMessage}
+                  </p>
+                </div>
+                {/* Channel pills row */}
+                {convo.channels.length > 1 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    {convo.channels.map((ch) => (
+                      <span key={ch} className="rounded bg-muted/60 px-1 py-0.5 text-[8px] text-muted-foreground">
+                        {ch}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
               {convo.unreadCount > 0 && (
-                <span className="mt-2 flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
+                <span className="mt-1.5 flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
                   {convo.unreadCount}
                 </span>
               )}
@@ -100,107 +244,213 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col">
+      {/* ── Right: Chat Area ── */}
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         {selected && (
-          <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
             <div className="flex items-center gap-3">
-              <Avatar className="size-9">
-                <AvatarImage src={selected.client.avatar} alt={selected.client.fullName} />
-                <AvatarFallback className="text-xs">{selected.client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+              <Avatar className="size-8">
+                <AvatarImage src={selected.client.avatar} />
+                <AvatarFallback className="text-[10px]">
+                  {selected.client.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </AvatarFallback>
               </Avatar>
               <div>
                 <div className="text-sm font-semibold">{selected.client.fullName}</div>
-                <div className="text-xs text-muted-foreground">{selected.client.serviceTier} Client</div>
+                <div className="text-[10px] text-muted-foreground">{selected.client.serviceTier}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="size-8" asChild>
-                <Link href={`/dashboard/clients/${selectedId}/overview`}><ChevronRight className="size-4" /></Link>
-              </Button>
-              <Button variant="ghost" size="icon" className="size-8"><Phone className="size-4" /></Button>
-            </div>
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" asChild>
+              <Link href={`/dashboard/clients/${selectedId}/overview`}>
+                Open profile <ChevronRight className="size-3" />
+              </Link>
+            </Button>
           </div>
         )}
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {thread.map(msg => {
-            if (msg.sender === "system" && msg.systemCard) {
-              return (
-                <div key={msg.id} className="flex justify-start">
-                  <div className="ml-9 max-w-[320px] rounded-2xl border bg-muted/30 p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="flex size-5 items-center justify-center rounded bg-primary/10">
-                        {msg.systemCard.type === "status" && <Clock className="size-3 text-primary" />}
-                        {msg.systemCard.type === "payment" && <DollarSign className="size-3 text-primary" />}
-                        {msg.systemCard.type === "signature" && <FileText className="size-3 text-primary" />}
-                        {msg.systemCard.type === "appointment" && <Calendar className="size-3 text-primary" />}
-                      </div>
-                      <span className="text-xs font-semibold">{msg.systemCard.title}</span>
-                      <Badge variant="outline" className="ml-auto text-[9px]"><Bot className="mr-0.5 size-2" /> Auto</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{msg.systemCard.description}</p>
-                    {msg.systemCard.action && (
-                      <button className="mt-2 text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
-                        {msg.systemCard.action} <ChevronRight className="size-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-
-            if (msg.sender === "system" && !msg.systemCard) {
-              return <div key={msg.id} className="text-center"><span className="text-[11px] text-muted-foreground italic">{msg.content}</span></div>;
-            }
-
-            const isClient = msg.sender === "client";
+        {/* Channel filter tabs */}
+        <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-border/30 shrink-0">
+          {(["all", "portal", "email", "sms", "voice"] as ViewFilter[]).map((filter) => {
+            const count = channelCounts[filter] || 0;
+            const isActive = viewFilter === filter;
+            const icons: Record<string, React.ElementType> = {
+              all: MessageSquare, portal: MessageSquare, email: Mail, sms: Smartphone, voice: PhoneCall,
+            };
+            const Icon = icons[filter];
             return (
-              <div key={msg.id} className={`flex ${isClient ? "justify-start" : "justify-end"}`}>
-                {isClient && selected && (
-                  <Avatar className="mr-2 size-7 shrink-0 mt-1">
-                    <AvatarImage src={selected.client.avatar} alt={selected.client.fullName} />
-                    <AvatarFallback className="text-[9px]">{selected.client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                  </Avatar>
+              <button
+                key={filter}
+                onClick={() => setViewFilter(filter)}
+                className={cn(
+                  "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all",
+                  isActive ? "bg-foreground/5 text-foreground" : "text-muted-foreground hover:text-foreground/70",
+                  count === 0 && filter !== "all" && "opacity-30"
                 )}
-                <div className={`max-w-[65%] rounded-2xl px-4 py-3 ${isClient ? "border bg-muted/50" : "bg-primary text-primary-foreground"}`}>
-                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                  {msg.attachment && (
-                    <div className={`mt-2 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${isClient ? "border-border" : "border-primary-foreground/20"}`}>
-                      {msg.attachment.type === "image" ? <ImageIcon className="size-3" /> : <FileText className="size-3" />}
-                      <span className="truncate">{msg.attachment.name}</span>
-                      <span className="text-[10px] opacity-60">{msg.attachment.size}</span>
-                    </div>
-                  )}
-                  <div className={`mt-1 text-[10px] ${isClient ? "text-muted-foreground" : "text-primary-foreground/60"}`}>{msg.time}</div>
-                </div>
-              </div>
+              >
+                <Icon className="size-3" />
+                {filter === "all" ? "All" : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                {count > 0 && filter !== "all" && (
+                  <span className="text-[9px] tabular-nums opacity-60">{count}</span>
+                )}
+              </button>
             );
           })}
         </div>
 
-        {/* AI Draft Suggestion */}
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+          {filteredThread.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">
+                {viewFilter === "all" ? "No messages yet." : `No ${viewFilter} messages.`}
+              </p>
+            </div>
+          ) : (
+            filteredThread.map((msg) => {
+              // System card
+              if (msg.sender === "system" && msg.systemCard) {
+                return (
+                  <div key={msg.id} className="flex justify-start">
+                    <div className="ml-9 max-w-[380px] rounded-xl border bg-muted/20 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="flex size-5 items-center justify-center rounded bg-primary/10">
+                          <SystemCardIcon type={msg.systemCard.type} />
+                        </div>
+                        <span className="text-xs font-semibold">{msg.systemCard.title}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{msg.systemCard.description}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // System text
+              if (msg.sender === "system") {
+                return (
+                  <div key={msg.id} className="text-center">
+                    <span className="text-[10px] text-muted-foreground">{msg.content}</span>
+                  </div>
+                );
+              }
+
+              const isClient = msg.sender === "client";
+              const isVoice = msg.channel === "voice";
+              const isEmail = msg.channel === "email";
+
+              return (
+                <div key={msg.id} className={cn("flex gap-2", isClient ? "justify-start" : "justify-end")}>
+                  {isClient && selected && (
+                    <Avatar className="size-7 shrink-0 mt-1">
+                      <AvatarImage src={selected.client.avatar} />
+                      <AvatarFallback className="text-[9px]">
+                        {selected.client.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className={cn("max-w-[70%] space-y-1", !isClient && "items-end")}>
+                    {/* Channel + time row */}
+                    <div className={cn("flex items-center gap-1.5", !isClient && "justify-end")}>
+                      {msg.channel !== "portal" && <ChannelBadge channel={msg.channel} />}
+                      <span className="text-[10px] text-muted-foreground/50">{formatMsgTime(msg.timestamp)}</span>
+                    </div>
+                    {/* Message bubble */}
+                    <div
+                      className={cn(
+                        "rounded-2xl",
+                        isVoice
+                          ? "rounded-xl border bg-card px-4 py-3"
+                          : isEmail
+                            ? "rounded-xl border bg-card px-4 py-3"
+                            : isClient
+                              ? "bg-muted/50 px-3.5 py-2.5"
+                              : "bg-primary text-primary-foreground px-3.5 py-2.5"
+                      )}
+                    >
+                      {isVoice ? (
+                        <VoiceMessage message={msg} />
+                      ) : isEmail ? (
+                        <EmailMessage message={msg} />
+                      ) : (
+                        <>
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                          {msg.emailAttachments && msg.emailAttachments.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {msg.emailAttachments.map((att) => (
+                                <div key={att.id} className="flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs">
+                                  <FileText className="size-3" />
+                                  <span className="truncate">{att.fileName}</span>
+                                  <span className="text-[10px] opacity-60">{att.fileSize}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* AI Draft */}
         {pendingDrafts.length > 0 && (
-          <div className="px-3 pt-2">
+          <div className="px-4 pt-2 shrink-0">
             <AIDraftCard
               draft={pendingDrafts[0]}
-              onSend={sendMessage}
+              onSend={(text) => {
+                const newMsg: UnifiedMessage = {
+                  id: `draft-${Date.now()}`,
+                  sender: "preparer",
+                  channel: "portal",
+                  content: text,
+                  timestamp: new Date().toISOString(),
+                };
+                setLocalMessages((prev) => ({
+                  ...prev,
+                  [selectedId]: [...(prev[selectedId] || []), newMsg],
+                }));
+                setDismissedDrafts((prev) => new Set([...prev, pendingDrafts[0].id]));
+              }}
               onEdit={editDraft}
-              onDismiss={() => setDismissedDrafts(prev => new Set([...prev, pendingDrafts[0].id]))}
+              onDismiss={() => setDismissedDrafts((prev) => new Set([...prev, pendingDrafts[0].id]))}
             />
           </div>
         )}
 
-        {/* Input */}
-        <div className="p-3 border-t">
-          <MessageInput
-            placeholder={selected ? `Message ${selected.client.fullName.split(" ")[0]}...` : "Select a conversation..."}
-            value={input}
-            onChange={setInput}
-            onSend={(text) => { sendMessage(text); setInput(""); }}
-          />
+        {/* Compose area */}
+        <div className="shrink-0 border-t px-4 py-2.5 space-y-2">
+          <div className="flex items-center gap-2">
+            <ChannelSelector value={composeChannel} onChange={setComposeChannel} suggestSms={suggestSms} />
+          </div>
+          {composeChannel === "email" && (
+            <input
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              placeholder="Subject..."
+              className="w-full rounded-lg border bg-background px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground/50"
+            />
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              placeholder={
+                composeChannel === "email"
+                  ? "Compose email..."
+                  : composeChannel === "sms"
+                    ? "Type a text..."
+                    : `Message ${selected?.client.fullName.split(" ")[0] || ""}...`
+              }
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none"
+            />
+            <Button size="icon" className="size-9 shrink-0" onClick={sendMessage} disabled={!input.trim()}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
