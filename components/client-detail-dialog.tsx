@@ -17,6 +17,7 @@ import {
 import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
+import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory, getSmartChecklist, getDocumentIntelligence, getClientDocuments, getIntelligenceForDocument } from "@/lib/documents-mock-data";
@@ -97,6 +98,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
+  const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [assignedTier, setAssignedTier] = useState("");
@@ -169,7 +171,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
               {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
               {currentStage === "in_preparation" && (
-                <Button size="sm" className="ml-auto gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs whitespace-nowrap">
+                <Button size="sm" className="ml-auto gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs whitespace-nowrap" onClick={() => setPrepWorkspaceOpen(true)}>
                   <ClipboardList className="size-3.5" />
                   Prep Workspace
                 </Button>
@@ -761,6 +763,15 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         clientId={client.id}
         open={viewerOpen}
         onOpenChange={setViewerOpen}
+      />
+      <PrepWorkspaceModal
+        client={client}
+        open={prepWorkspaceOpen}
+        onOpenChange={setPrepWorkspaceOpen}
+        onCompletePrep={() => {
+          setPrepWorkspaceOpen(false);
+          setCompletePrepOpen(true);
+        }}
       />
     </Dialog>
   );
