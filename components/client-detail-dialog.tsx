@@ -747,20 +747,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
       {selectedAction && <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedAction(null); }} />}
       <DocumentViewerDialog
         document={viewerDoc}
+        clientId={client.id}
         open={viewerOpen}
         onOpenChange={setViewerOpen}
-        hasPrev={viewerDoc ? clientDocs.findIndex(d => d.id === viewerDoc.id) > 0 : false}
-        hasNext={viewerDoc ? clientDocs.findIndex(d => d.id === viewerDoc.id) < clientDocs.length - 1 : false}
-        onPrev={() => {
-          if (!viewerDoc) return;
-          const idx = clientDocs.findIndex(d => d.id === viewerDoc.id);
-          if (idx > 0) setViewerDoc(clientDocs[idx - 1]);
-        }}
-        onNext={() => {
-          if (!viewerDoc) return;
-          const idx = clientDocs.findIndex(d => d.id === viewerDoc.id);
-          if (idx < clientDocs.length - 1) setViewerDoc(clientDocs[idx + 1]);
-        }}
       />
     </Dialog>
   );

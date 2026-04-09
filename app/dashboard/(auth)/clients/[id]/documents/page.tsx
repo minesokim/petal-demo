@@ -133,16 +133,9 @@ export default function ClientDocumentsPage() {
       {/* Document Viewer Dialog — opens when clicking a document */}
       <DocumentViewerDialog
         document={viewerDoc}
+        clientId={client.id}
         open={viewerOpen}
         onOpenChange={setViewerOpen}
-        hasPrev={currentDocIndex > 0}
-        hasNext={currentDocIndex < allDocs.length - 1}
-        onPrev={() => {
-          if (currentDocIndex > 0) setViewerDoc(allDocs[currentDocIndex - 1]);
-        }}
-        onNext={() => {
-          if (currentDocIndex < allDocs.length - 1) setViewerDoc(allDocs[currentDocIndex + 1]);
-        }}
       />
     </div>
   );
