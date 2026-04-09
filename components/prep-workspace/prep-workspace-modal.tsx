@@ -19,6 +19,7 @@ import {
 } from "@/lib/documents-mock-data";
 import { getOpenIssues, type ClientIssue } from "@/lib/issues-mock-data";
 import { getInsightForClient } from "@/lib/insights-mock-data";
+import { useAIPanelAsk } from "@/components/ai-panel";
 import { motion, AnimatePresence } from "motion/react";
 import dynamic from "next/dynamic";
 
@@ -534,28 +535,60 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
             const isResolved = resolvedFlags.has(flag.id);
             const isExpanded = expandedFlags.has(flag.id);
             return (
-              <div key={flag.id} className="overflow-hidden">
+              <motion.div
+                key={flag.id}
+                layout
+                className="overflow-hidden"
+              >
                 {/* Header row */}
                 <button
                   onClick={() => !isResolved && setExpandedFlags(prev => { const n = new Set(prev); n.has(flag.id) ? n.delete(flag.id) : n.add(flag.id); return n; })}
                   className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/30"
                 >
-                  {isResolved ? (
-                    <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
-                  ) : (
-                    <AlertCircle className="size-3.5 text-red-500 shrink-0" />
-                  )}
-                  <span className={cn("flex-1 text-xs font-medium", isResolved && "line-through text-muted-foreground")}>{flag.title}</span>
-                  {!isResolved && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-[10px] px-2 shrink-0 text-muted-foreground"
-                      onClick={(e) => { e.stopPropagation(); setResolvedFlags(prev => new Set([...prev, flag.id])); }}
-                    >
-                      Resolve
-                    </Button>
-                  )}
+                  <motion.div
+                    key={isResolved ? "resolved" : "open"}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  >
+                    {isResolved ? (
+                      <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle className="size-3.5 text-red-500 shrink-0" />
+                    )}
+                  </motion.div>
+                  <motion.span
+                    animate={{ opacity: isResolved ? 0.5 : 1 }}
+                    transition={{ duration: 0.3 }}
+                    className={cn("flex-1 text-xs font-medium transition-all duration-300", isResolved && "line-through text-muted-foreground")}
+                  >
+                    {flag.title}
+                  </motion.span>
+                  <AnimatePresence mode="wait">
+                    {isResolved ? (
+                      <motion.div key="undo" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] px-2 shrink-0 text-muted-foreground"
+                          onClick={(e) => { e.stopPropagation(); setResolvedFlags(prev => { const n = new Set(prev); n.delete(flag.id); return n; }); }}
+                        >
+                          Undo
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div key="resolve" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] px-2 shrink-0 text-muted-foreground"
+                          onClick={(e) => { e.stopPropagation(); setResolvedFlags(prev => new Set([...prev, flag.id])); }}
+                        >
+                          Resolve
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </button>
                 {/* Expanded detail */}
                 <AnimatePresence>
@@ -568,17 +601,14 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                     >
                       <div className="pl-9 pr-2 pb-2.5 space-y-2">
                         {flag.description && <p className="text-[11px] text-muted-foreground leading-relaxed">{flag.description}</p>}
-                        <button
-                          onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}
-                          className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                        >
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
                           Ask Docket
-                        </button>
+                        </Button>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
           {flags.length === 0 && (
@@ -638,11 +668,11 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
   const selectedDoc = selectedDocId ? getDocumentById(selectedDocId) : null;
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
 
-  // Ask Docket handler — opens the AI panel with the question
+  // Ask Docket — opens the AI panel with the question pre-filled + client context
+  let askDocket = (_q: string) => {};
+  try { askDocket = useAIPanelAsk(); } catch {}
   const handleAskDocket = (question: string) => {
-    // In production, this would open the AI panel with the question pre-filled
-    // For now, we'll just log it
-    console.log("Ask Docket:", question);
+    askDocket(question);
   };
 
   const handleDocSelect = (docId: string) => { setSelectedDocId(docId); setShowingSummary(false); };
