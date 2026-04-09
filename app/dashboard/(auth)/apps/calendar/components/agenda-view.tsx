@@ -9,7 +9,7 @@ import { Calendar } from "lucide-react";
 interface AgendaViewProps {
   currentDate: Date;
   events: CalendarEvent[];
-  onEventSelect: (event: CalendarEvent) => void;
+  onEventSelect: (event: CalendarEvent, e?: React.MouseEvent) => void;
 }
 
 export function AgendaView({ currentDate, events, onEventSelect }: AgendaViewProps) {
@@ -22,7 +22,7 @@ export function AgendaView({ currentDate, events, onEventSelect }: AgendaViewPro
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
     console.log("Agenda view event clicked:", event);
-    onEventSelect(event);
+    onEventSelect(event, e);
   };
 
   // Check if there are any days with events

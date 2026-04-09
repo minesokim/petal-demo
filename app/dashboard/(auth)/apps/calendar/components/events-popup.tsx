@@ -11,7 +11,7 @@ interface EventsPopupProps {
   events: CalendarEvent[];
   position: { top: number; left: number };
   onClose: () => void;
-  onEventSelect: (event: CalendarEvent) => void;
+  onEventSelect: (event: CalendarEvent, e?: React.MouseEvent) => void;
 }
 
 export function EventsPopup({ date, events, position, onClose, onEventSelect }: EventsPopupProps) {

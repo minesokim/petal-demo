@@ -25,6 +25,7 @@ import {
   CalendarView,
   DayView,
   EventDialog,
+  EventDetailPopover,
   EventGap,
   EventHeight,
   MonthView,
@@ -62,6 +63,8 @@ export function EventCalendar({
   const [view, setView] = useState<CalendarView>(initialView);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [popoverEvent, setPopoverEvent] = useState<CalendarEvent | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Add keyboard shortcuts for view switching
   useEffect(() => {
@@ -130,10 +133,12 @@ export function EventCalendar({
     setCurrentDate(new Date());
   };
 
-  const handleEventSelect = (event: CalendarEvent) => {
-    console.log("Event selected:", event); // Debug log
-    setSelectedEvent(event);
-    setIsEventDialogOpen(true);
+  const handleEventSelect = (event: CalendarEvent, e?: React.MouseEvent) => {
+    // Show detail popover instead of edit dialog
+    if (e) {
+      setPopoverPos({ x: e.clientX, y: e.clientY });
+    }
+    setPopoverEvent(event);
   };
 
   const handleEventCreate = (startTime: Date) => {
@@ -253,7 +258,7 @@ export function EventCalendar({
 
   return (
     <div
-      className="flex min-h-[calc(100vh-var(--header-height)-3rem)] flex-col rounded-lg border bg-white has-data-[slot=month-view]:flex-1"
+      className="flex flex-col bg-white has-data-[slot=month-view]:flex-1"
       style={
         {
           "--event-height": `${EventHeight}px`,
@@ -357,6 +362,24 @@ export function EventCalendar({
             />
           )}
         </div>
+
+        {/* Detail popover — shown on event click */}
+        {popoverEvent && (
+          <EventDetailPopover
+            event={popoverEvent}
+            position={popoverPos}
+            onClose={() => setPopoverEvent(null)}
+            onEdit={() => {
+              setSelectedEvent(popoverEvent);
+              setPopoverEvent(null);
+              setIsEventDialogOpen(true);
+            }}
+            onDelete={() => {
+              handleEventDelete(popoverEvent.id);
+              setPopoverEvent(null);
+            }}
+          />
+        )}
 
         <EventDialog
           event={selectedEvent}

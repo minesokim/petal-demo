@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { addDays, setHours, setMinutes, subDays, format, isToday, isTomorrow, isAfter } from "date-fns";
+import { addDays, setHours, setMinutes, subDays, format, isToday, isTomorrow, isAfter, differenceInMinutes } from "date-fns";
 
 import { EventCalendar, type CalendarEvent } from "./";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Video, Phone, Clock, MapPin, FileText, ChevronRight, X, Calendar } from "lucide-react";
+import { Video, Phone, PhoneCall, Clock, MapPin, FileText, ChevronRight, X, Calendar, ExternalLink, User } from "lucide-react";
+import { clients } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 
@@ -137,6 +138,181 @@ function getClientId(title: string): string | null {
   return null;
 }
 
+function getClientName(title: string): string {
+  // Extract client name (everything before the dash/topic)
+  const dashIdx = title.indexOf(" - ");
+  return dashIdx > 0 ? title.substring(0, dashIdx) : title;
+}
+
+function getEventTopic(title: string): string {
+  const dashIdx = title.indexOf(" - ");
+  return dashIdx > 0 ? title.substring(dashIdx + 3) : "";
+}
+
+const eventColorMap: Record<string, string> = {
+  sky: "bg-sky-500",
+  amber: "bg-amber-500",
+  violet: "bg-violet-500",
+  rose: "bg-rose-500",
+  emerald: "bg-emerald-500",
+  orange: "bg-orange-500",
+};
+
+const eventColorTextMap: Record<string, string> = {
+  sky: "text-sky-600",
+  amber: "text-amber-600",
+  violet: "text-violet-600",
+  rose: "text-rose-600",
+  emerald: "text-emerald-600",
+  orange: "text-orange-600",
+};
+
+function UpcomingEventCard({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
+  const duration = differenceInMinutes(new Date(event.end), new Date(event.start));
+  const colorDot = eventColorMap[event.color || "sky"] || "bg-sky-500";
+  const isVideo = event.location?.includes("Meet");
+
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full rounded-lg px-3 py-2.5 text-left transition-all duration-200 hover:bg-muted/60 hover:shadow-sm"
+    >
+      <div className="flex items-start gap-2.5">
+        <div className={`mt-1.5 size-1.5 shrink-0 rounded-full ${colorDot}`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-bold tracking-tight truncate">
+            {getClientName(event.title)}
+          </div>
+          {getEventTopic(event.title) && (
+            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+              {getEventTopic(event.title)}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              {format(new Date(event.start), "h:mm a")}
+            </span>
+            <span className="text-[10px] text-muted-foreground/40">·</span>
+            <span className="text-[10px] text-muted-foreground">
+              {duration}m
+            </span>
+            {event.location && (
+              <>
+                <span className="text-[10px] text-muted-foreground/40">·</span>
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  {isVideo ? <Video className="size-2.5" /> : <Phone className="size-2.5" />}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <ChevronRight className="size-3.5 text-muted-foreground/30 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </button>
+  );
+}
+
+function EventDetailPanel({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
+  const clientId = getClientId(event.title);
+  const client = clientId ? clients.find(c => c.id === clientId) : null;
+  const clientName = getClientName(event.title);
+  const topic = getEventTopic(event.title);
+  const isVideo = event.location?.includes("Meet");
+  const isPhone = event.location?.includes("Phone") || event.location?.includes("call");
+  const duration = differenceInMinutes(new Date(event.end), new Date(event.start));
+  const colorAccent = eventColorTextMap[event.color || "sky"] || "text-sky-600";
+
+  return (
+    <motion.div
+      key="detail"
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 12 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="flex-1 overflow-y-auto"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Event details</span>
+        <button
+          onClick={onClose}
+          className="flex items-center justify-center size-6 rounded-md hover:bg-muted/50 transition-colors"
+        >
+          <X className="size-3.5 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        {/* Client name + topic */}
+        <div>
+          <h3 className="text-base font-bold tracking-tight">{clientName}</h3>
+          {topic && (
+            <p className={`text-xs mt-0.5 ${colorAccent}`}>{topic}</p>
+          )}
+        </div>
+
+        {/* Time block */}
+        <div className="rounded-lg bg-muted/30 px-3 py-2.5 space-y-1">
+          <div className="flex items-center gap-2 text-xs">
+            <Calendar className="size-3.5 text-muted-foreground" />
+            <span>{format(new Date(event.start), "EEEE, MMMM d")}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Clock className="size-3.5" />
+            <span className="tabular-nums">
+              {format(new Date(event.start), "h:mm a")} - {format(new Date(event.end), "h:mm a")}
+            </span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>{duration}m</span>
+          </div>
+          {event.location && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {isVideo ? <Video className="size-3.5" /> : <Phone className="size-3.5" />}
+              <span>{event.location}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
+        {event.description && (
+          <div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">Notes</div>
+            <p className="text-[13px] leading-relaxed text-foreground/70">{event.description}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="space-y-2 pt-1">
+          {isVideo && (
+            <Button size="sm" className="w-full text-xs h-8">
+              <Video className="size-3.5" />
+              Join Google Meet
+            </Button>
+          )}
+
+          {isPhone && client?.phone && (
+            <Button size="sm" className="w-full text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
+              <PhoneCall className="size-3.5" />
+              Call {client.phone}
+            </Button>
+          )}
+
+          {clientId && (
+            <Link
+              href={`/dashboard/clients/${clientId}/overview`}
+              className="flex items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-muted/30"
+            >
+              <User className="size-3.5 text-muted-foreground" />
+              <span className="flex-1">View client profile</span>
+              <ExternalLink className="size-3 text-muted-foreground/50" />
+            </Link>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function EventCalendarApp() {
   const [events, setEvents] = useState<CalendarEvent[]>(taxEvents);
   const [selectedSidebarEvent, setSelectedSidebarEvent] = useState<CalendarEvent | null>(null);
@@ -172,9 +348,12 @@ export default function EventCalendarApp() {
     grouped[label].push(event);
   }
 
+  // Count upcoming by date group
+  const todayCount = upcoming.filter(e => isToday(new Date(e.start))).length;
+
   return (
-    <div className="flex bg-white rounded-lg">
-      {/* Calendar - original component untouched */}
+    <div className="flex rounded-xl overflow-hidden">
+      {/* Calendar */}
       <div className="flex-1 min-w-0">
         <EventCalendar
           events={events}
@@ -185,115 +364,58 @@ export default function EventCalendarApp() {
         />
       </div>
 
-      {/* Right sidebar - upcoming events + detail panel */}
-      <div className="w-[300px] shrink-0 border-l flex flex-col sticky top-0 h-screen overflow-hidden">
+      {/* Right sidebar */}
+      <div className="w-[280px] shrink-0 border-l bg-white flex flex-col self-stretch overflow-hidden">
         <AnimatePresence mode="wait">
           {selectedSidebarEvent ? (
-            /* Event detail view */
-            <motion.div
-              key="detail"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1 overflow-y-auto p-4"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-semibold">Event Details</span>
-                <Button variant="ghost" size="icon" className="size-7" onClick={() => setSelectedSidebarEvent(null)}>
-                  <X className="size-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold">{selectedSidebarEvent.title}</h3>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="size-3.5" />
-                    {format(new Date(selectedSidebarEvent.start), "EEEE, MMM d")}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="size-3.5" />
-                    {format(new Date(selectedSidebarEvent.start), "h:mm a")} - {format(new Date(selectedSidebarEvent.end), "h:mm a")}
-                  </div>
-                  {selectedSidebarEvent.location && (
-                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                      {selectedSidebarEvent.location.includes("Meet") ? <Video className="size-3.5" /> : <Phone className="size-3.5" />}
-                      {selectedSidebarEvent.location}
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {selectedSidebarEvent.description && (
-                  <div>
-                    <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Notes</div>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{selectedSidebarEvent.description}</p>
-                  </div>
-                )}
-
-                {/* Link to client if applicable */}
-                {getClientId(selectedSidebarEvent.title) && (
-                  <>
-                    <Separator />
-                    <Link
-                      href={`/dashboard/clients/${getClientId(selectedSidebarEvent.title)}/overview`}
-                      className="flex items-center gap-2 rounded-lg border bg-white p-3 text-sm font-medium transition-colors hover:bg-muted/50"
-                    >
-                      <FileText className="size-4 text-muted-foreground" />
-                      <span className="flex-1">View client profile</span>
-                      <ChevronRight className="size-4 text-muted-foreground" />
-                    </Link>
-                  </>
-                )}
-
-                {selectedSidebarEvent.location?.includes("Meet") && (
-                  <Button className="w-full" size="sm">
-                    <Video className="size-3.5" /> Join Google Meet
-                  </Button>
-                )}
-              </div>
-            </motion.div>
+            <EventDetailPanel
+              event={selectedSidebarEvent}
+              onClose={() => setSelectedSidebarEvent(null)}
+            />
           ) : (
-            /* Upcoming events list */
             <motion.div
               key="list"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 overflow-y-auto p-4"
+              className="flex-1 overflow-y-auto"
             >
-              <div className="text-sm font-semibold mb-3">Upcoming</div>
-              {Object.entries(grouped).map(([dateLabel, evts]) => (
-                <div key={dateLabel} className="mb-4">
-                  <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{dateLabel}</div>
-                  <div className="space-y-2">
-                    {evts.map(event => (
-                      <button
-                        key={event.id}
-                        onClick={() => setSelectedSidebarEvent(event)}
-                        className="w-full rounded-lg border bg-white p-3 text-left transition-colors hover:bg-muted/50"
-                      >
-                        <div className="text-xs font-semibold">{event.title}</div>
-                        <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <Clock className="size-3" />
-                          {format(new Date(event.start), "h:mm a")} - {format(new Date(event.end), "h:mm a")}
-                        </div>
-                        {event.location && (
-                          <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-                            {event.location.includes("Meet") ? <Video className="size-3" /> : <Phone className="size-3" />}
-                            {event.location}
-                          </div>
-                        )}
-                      </button>
-                    ))}
+              {/* Sidebar header */}
+              <div className="px-5 pt-5 pb-3">
+                <h3 className="font-display text-base tracking-tight">Upcoming</h3>
+                {todayCount > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {todayCount} event{todayCount !== 1 ? "s" : ""} today
+                  </p>
+                )}
+              </div>
+
+              {/* Grouped event list */}
+              <div className="px-2 pb-4">
+                {Object.entries(grouped).map(([dateLabel, evts], idx) => (
+                  <div key={dateLabel}>
+                    {idx > 0 && <div className="mx-3 my-2 border-t border-border/50" />}
+                    <div className="mb-1 px-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {dateLabel}
+                    </div>
+                    <div className="space-y-0.5">
+                      {evts.map(event => (
+                        <UpcomingEventCard
+                          key={event.id}
+                          event={event}
+                          onClick={() => setSelectedSidebarEvent(event)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {upcoming.length === 0 && (
-                <div className="py-8 text-center text-sm text-muted-foreground">No upcoming events</div>
-              )}
+                ))}
+                {upcoming.length === 0 && (
+                  <div className="py-12 text-center">
+                    <Calendar className="size-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">No upcoming events</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

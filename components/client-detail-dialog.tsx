@@ -14,7 +14,9 @@ import {
   feedActions, irsNotices,
   type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
-import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { TrackingBadgeGroup } from "@/components/insights";
+import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
+import { BillingCard } from "@/components/billing/billing-card";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory, getSmartChecklist, getDocumentIntelligence, getClientDocuments, getIntelligenceForDocument } from "@/lib/documents-mock-data";
@@ -93,6 +95,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const { showToast } = useToast();
   const [sentCalc, setSentCalc] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
+  const [completePrepOpen, setCompletePrepOpen] = useState(false);
+  const [returnSummary, setReturnSummary] = useState("");
+  const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [assignedTier, setAssignedTier] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
@@ -283,23 +288,11 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
-              {/* Docket Insight - AI Commentary */}
-              {clientInsight && (
-                <DocketInsightCard
-                  insight={clientInsight}
-                  defaultExpanded={true}
-                  onAction={handleInsightAction}
-                  onSendMessage={(messageId, channel) => {
-                    showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
-                  }}
-                  onEditMessage={(messageId) => {
-                    showToast("info", "Editing draft", `Opening editor for ${messageId}`);
-                  }}
-                />
-              )}
+              {/* Upcoming Call */}
+              <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
               {/* Flags */}
-              <OpenItemsSection clientId={client.id} />
+              <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
 
               {/* Ready to Prep / Transition — animated (synced with full page) */}
               <AnimatePresence mode="wait">
@@ -382,6 +375,83 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
+              {/* Complete Preparation for in_preparation clients */}
+              {(currentStage === "in_preparation") && !transitioning && (
+                <div className="rounded-xl border p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-blue-50">
+                      <FileText className="size-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">In preparation</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Resolve all flags, then complete preparation to send for review.
+                      </div>
+                      <div className="mt-2">
+                        {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
+                          <div className="flex items-center gap-1 text-[10px] text-amber-600"><AlertTriangle className="size-3" /> Open flags need resolution</div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> All flags resolved</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="mt-3 w-full" onClick={() => setCompletePrepOpen(true)}>
+                    <CheckCircle className="size-3.5" /> Complete Preparation
+                  </Button>
+                </div>
+              )}
+
+              {/* Complete Preparation Dialog */}
+              <Dialog open={completePrepOpen} onOpenChange={setCompletePrepOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-base font-bold">Complete preparation</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{client.fullName}'s return will be sent for client review.</p>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-2">
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Flags</div>
+                      {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
+                        <div className="flex items-center gap-2 text-xs text-amber-600">
+                          <AlertTriangle className="size-3.5" />
+                          <span>There are unresolved flags. You can still proceed.</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-emerald-600">
+                          <Check className="size-3.5" />
+                          <span>All flags resolved</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium">Return summary <span className="text-muted-foreground font-normal">(optional)</span></label>
+                      <textarea
+                        value={returnSummary}
+                        onChange={e => setReturnSummary(e.target.value)}
+                        placeholder="e.g. $2,180 refund, same as last year."
+                        className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed resize-none outline-none focus:ring-1 focus:ring-ring"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" className="flex-1" onClick={() => setCompletePrepOpen(false)}>Cancel</Button>
+                      <Button className="flex-1" onClick={() => {
+                        setCompletePrepOpen(false);
+                        setTransitioning(true);
+                        setTimeout(() => {
+                          setStageOverride("client_review");
+                          setTransitioning(false);
+                          showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
+                        }, 1500);
+                      }}>
+                        <Send className="size-3.5" /> Send for Review
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               {/* ERO Signature for pay_and_sign clients */}
               {currentStage === "pay_and_sign" && (
                 <div className="rounded-xl border p-4">
@@ -403,6 +473,21 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
+
+              {/* Intelligence Cards — synced with full page */}
+              {hasIntel && (
+                <div className="space-y-3">
+                  {clientAnomalies.filter(a => a.status === "pending").map(a => (
+                    <DialogAnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
+                  ))}
+                  {clientDeductions.filter(a => a.status === "pending").map(a => (
+                    <DialogDeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+                  ))}
+                </div>
+              )}
+
+              {/* Billing */}
+              <BillingCard client={client} />
 
               {/* Quick stats */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -1139,7 +1224,7 @@ function BillingTab({ client, sentBilling, setSentBilling }: { client: Client; s
             <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
           </div>
           <div className="text-right">
-            <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
+            <div className="text-xl font-bold tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
             <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
               {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
             </div>
@@ -1301,6 +1386,77 @@ function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () 
           </Button>
         );
       })}
+    </div>
+  );
+}
+
+// ── Intelligence Cards (synced with full page) ──
+function DialogAnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
+  const [status, setStatus] = useState(alert.status);
+  const { showToast } = useToast();
+  if (status !== "pending") return null;
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
+        <div className="flex-1">
+          <div className="text-sm font-semibold">{alert.metric}</div>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="rounded-lg border p-2.5 text-center">
+          <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
+          <div className="text-[10px] text-muted-foreground">2024</div>
+        </div>
+        <div className="rounded-lg border p-2.5 text-center">
+          <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
+          <div className="text-[10px] text-muted-foreground">2025</div>
+        </div>
+        <div className="rounded-lg border p-2.5 text-center">
+          <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
+          <div className="text-[10px] text-muted-foreground">Change</div>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{alert.aiExplanation}</p>
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setStatus("flagged"); onFlag?.(alert.metric, alert.aiExplanation); showToast("success", "Added to flags", `${alert.metric} has been flagged for review.`); }}>
+          Flag for review
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setStatus("proceeded"); showToast("info", "Proceeded", "Marked as reviewed."); }}>Proceed</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
+          Ask Docket
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DialogDeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+  const [status, setStatus] = useState(suggestion.status);
+  if (status !== "pending") return null;
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-emerald-500" />
+          <div>
+            <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{suggestion.section} &middot; Est. savings: <span className="text-emerald-600 font-medium">${suggestion.estimatedSavings.toLocaleString()}</span></div>
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{suggestion.basis}</p>
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("applied")}>
+          <Check className="size-3 mr-1" /> Apply
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
+          Dismiss
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
+          Ask Docket
+        </Button>
+      </div>
     </div>
   );
 }

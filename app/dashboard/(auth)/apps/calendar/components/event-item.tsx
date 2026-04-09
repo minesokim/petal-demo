@@ -59,7 +59,7 @@ function EventWrapper({
   return (
     <button
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 flex size-full overflow-hidden px-1 text-left font-medium backdrop-blur-md transition outline-none select-none focus-visible:ring-[3px] data-dragging:cursor-grabbing data-dragging:shadow-lg data-past-event:line-through sm:px-2",
+        "focus-visible:border-ring focus-visible:ring-ring/50 flex size-full overflow-hidden px-1.5 text-left font-medium transition outline-none select-none focus-visible:ring-[3px] data-dragging:cursor-grabbing data-dragging:shadow-lg data-past-event:line-through data-past-event:opacity-60 sm:px-2",
         getEventColorClasses(event.color),
         getBorderRadiusClasses(isFirstDay, isLastDay),
         className
@@ -193,15 +193,15 @@ export function EventItem({
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}>
         {durationMinutes < 45 ? (
-          <div className="truncate">
+          <div className="truncate font-bold">
             {event.title}{" "}
             {showTime && (
-              <span className="opacity-70">{formatTimeWithOptionalMinutes(displayStart)}</span>
+              <span className="font-normal opacity-70">{formatTimeWithOptionalMinutes(displayStart)}</span>
             )}
           </div>
         ) : (
           <>
-            <div className="truncate font-medium">{event.title}</div>
+            <div className="truncate font-bold">{event.title}</div>
             {showTime && (
               <div className="truncate font-normal opacity-70 sm:text-[11px]">{getEventTime()}</div>
             )}

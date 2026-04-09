@@ -10,19 +10,19 @@ export function getEventColorClasses(color?: EventColor | string): string {
 
   switch (eventColor) {
     case "sky":
-      return "bg-sky-200/50 hover:bg-sky-200/40 text-sky-950/80 dark:bg-sky-400/25 dark:hover:bg-sky-400/20 dark:text-sky-200 shadow-sky-700/8";
+      return "bg-sky-100/80 hover:bg-sky-200/80 hover:shadow-sm text-sky-950 dark:bg-sky-400/20 dark:text-sky-200";
     case "amber":
-      return "bg-amber-200/50 hover:bg-amber-200/40 text-amber-950/80 dark:bg-amber-400/25 dark:hover:bg-amber-400/20 dark:text-amber-200 shadow-amber-700/8";
+      return "bg-amber-100/80 hover:bg-amber-200/80 hover:shadow-sm text-amber-950 dark:bg-amber-400/20 dark:text-amber-200";
     case "violet":
-      return "bg-violet-200/50 hover:bg-violet-200/40 text-violet-950/80 dark:bg-violet-400/25 dark:hover:bg-violet-400/20 dark:text-violet-200 shadow-violet-700/8";
+      return "bg-violet-100/80 hover:bg-violet-200/80 hover:shadow-sm text-violet-950 dark:bg-violet-400/20 dark:text-violet-200";
     case "rose":
-      return "bg-rose-200/50 hover:bg-rose-200/40 text-rose-950/80 dark:bg-rose-400/25 dark:hover:bg-rose-400/20 dark:text-rose-200 shadow-rose-700/8";
+      return "bg-rose-100/80 hover:bg-rose-200/80 hover:shadow-sm text-rose-950 dark:bg-rose-400/20 dark:text-rose-200";
     case "emerald":
-      return "bg-emerald-200/50 hover:bg-emerald-200/40 text-emerald-950/80 dark:bg-emerald-400/25 dark:hover:bg-emerald-400/20 dark:text-emerald-200 shadow-emerald-700/8";
+      return "bg-emerald-100/80 hover:bg-emerald-200/80 hover:shadow-sm text-emerald-950 dark:bg-emerald-400/20 dark:text-emerald-200";
     case "orange":
-      return "bg-orange-200/50 hover:bg-orange-200/40 text-orange-950/80 dark:bg-orange-400/25 dark:hover:bg-orange-400/20 dark:text-orange-200 shadow-orange-700/8";
+      return "bg-orange-100/80 hover:bg-orange-200/80 hover:shadow-sm text-orange-950 dark:bg-orange-400/20 dark:text-orange-200";
     default:
-      return "bg-sky-200/50 hover:bg-sky-200/40 text-sky-950/80 dark:bg-sky-400/25 dark:hover:bg-sky-400/20 dark:text-sky-200 shadow-sky-700/8";
+      return "bg-sky-100/80 hover:bg-sky-200/80 hover:shadow-sm text-sky-950 dark:bg-sky-400/20 dark:text-sky-200";
   }
 }
 
@@ -31,11 +31,11 @@ export function getEventColorClasses(color?: EventColor | string): string {
  */
 export function getBorderRadiusClasses(isFirstDay: boolean, isLastDay: boolean): string {
   if (isFirstDay && isLastDay) {
-    return "rounded"; // Both ends rounded
+    return "rounded-lg"; // Both ends rounded
   } else if (isFirstDay) {
-    return "rounded-l rounded-r-none"; // Only left end rounded
+    return "rounded-l-lg rounded-r-none"; // Only left end rounded
   } else if (isLastDay) {
-    return "rounded-r rounded-l-none"; // Only right end rounded
+    return "rounded-r-lg rounded-l-none"; // Only right end rounded
   } else {
     return "rounded-none"; // No rounded corners
   }

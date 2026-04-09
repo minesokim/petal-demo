@@ -33,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 interface MonthViewProps {
   currentDate: Date;
   events: CalendarEvent[];
-  onEventSelect: (event: CalendarEvent) => void;
+  onEventSelect: (event: CalendarEvent, e?: React.MouseEvent) => void;
   onEventCreate: (startTime: Date) => void;
 }
 
@@ -71,7 +71,7 @@ export function MonthView({ currentDate, events, onEventSelect, onEventCreate }:
 
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
-    onEventSelect(event);
+    onEventSelect(event, e);
   };
 
   const [isMounted, setIsMounted] = useState(false);

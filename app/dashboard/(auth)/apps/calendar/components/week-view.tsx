@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 interface WeekViewProps {
   currentDate: Date;
   events: CalendarEvent[];
-  onEventSelect: (event: CalendarEvent) => void;
+  onEventSelect: (event: CalendarEvent, e?: React.MouseEvent) => void;
   onEventCreate: (startTime: Date) => void;
 }
 
@@ -123,7 +123,8 @@ export function WeekView({ currentDate, events, onEventSelect, onEventCreate }: 
       const dayStart = startOfDay(day);
 
       // Track columns for overlapping events
-      const columns: { event: CalendarEvent; end: Date }[][] = [];
+      const columns: { event: CalendarEvent; end: Date; adjustedStart: Date; adjustedEnd: Date }[][] = [];
+      const eventColumnMap = new Map<string, number>();
 
       sortedEvents.forEach((event) => {
         const eventStart = new Date(event.start);
@@ -141,7 +142,8 @@ export function WeekView({ currentDate, events, onEventSelect, onEventCreate }: 
         const top = (startHour - StartHour) * WeekCellsHeight;
         const height = (endHour - startHour) * WeekCellsHeight;
 
-        // Find a column for this event
+        // Find a column for this event — use exclusive endpoint check
+        // so events that touch (end === start) don't count as overlapping
         let columnIndex = 0;
         let placed = false;
 
@@ -151,15 +153,10 @@ export function WeekView({ currentDate, events, onEventSelect, onEventCreate }: 
             columns[columnIndex] = col;
             placed = true;
           } else {
-            const overlaps = col.some((c) =>
-              areIntervalsOverlapping(
-                { start: adjustedStart, end: adjustedEnd },
-                {
-                  start: new Date(c.event.start),
-                  end: new Date(c.event.end)
-                }
-              )
-            );
+            const overlaps = col.some((c) => {
+              // Exclusive: events that merely touch at endpoints are NOT overlapping
+              return adjustedStart < c.adjustedEnd && adjustedEnd > c.adjustedStart;
+            });
             if (!overlaps) {
               placed = true;
             } else {
@@ -171,20 +168,36 @@ export function WeekView({ currentDate, events, onEventSelect, onEventCreate }: 
         // Ensure column is initialized before pushing
         const currentColumn = columns[columnIndex] || [];
         columns[columnIndex] = currentColumn;
-        currentColumn.push({ event, end: adjustedEnd });
-
-        // Calculate width and left position based on number of columns
-        const width = columnIndex === 0 ? 1 : 0.9;
-        const left = columnIndex === 0 ? 0 : columnIndex * 0.1;
+        currentColumn.push({ event, end: adjustedEnd, adjustedStart, adjustedEnd });
+        eventColumnMap.set(event.id, columnIndex);
 
         positionedEvents.push({
           event,
           top,
           height,
-          left,
-          width,
-          zIndex: 10 + columnIndex // Higher columns get higher z-index
+          left: 0,
+          width: 1,
+          zIndex: 10 + columnIndex
         });
+      });
+
+      // Calculate width per event based on how many columns overlap at THAT event's time
+      positionedEvents.forEach((pe) => {
+        const colIdx = eventColumnMap.get(pe.event.id) || 0;
+        const peStart = new Date(pe.event.start);
+        const peEnd = new Date(pe.event.end);
+
+        // Count how many columns have events overlapping with this one
+        let maxCols = 1;
+        for (let c = 0; c < columns.length; c++) {
+          const hasOverlap = columns[c]?.some(ce =>
+            peStart < ce.adjustedEnd && peEnd > ce.adjustedStart
+          );
+          if (hasOverlap) maxCols = c + 1;
+        }
+
+        pe.left = colIdx / maxCols;
+        pe.width = 1 / maxCols;
       });
 
       return positionedEvents;
@@ -195,7 +208,7 @@ export function WeekView({ currentDate, events, onEventSelect, onEventCreate }: 
 
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
-    onEventSelect(event);
+    onEventSelect(event, e);
   };
 
   const showAllDaySection = allDayEvents.length > 0;

@@ -6,6 +6,7 @@ export { DayView } from "./day-view";
 export { DraggableEvent } from "./draggable-event";
 export { DroppableCell } from "./droppable-cell";
 export { EventDialog } from "./event-dialog";
+export { EventDetailPopover } from "./event-detail-popover";
 export { EventItem } from "./event-item";
 export { EventsPopup } from "./events-popup";
 export { EventCalendar } from "./event-calendar";

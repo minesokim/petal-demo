@@ -11,19 +11,21 @@ import { AnimatePresence, motion } from "motion/react";
 
 interface OpenItemsSectionProps {
   clientId: string;
+  additionalItems?: ClientIssue[];
 }
 
-export function OpenItemsSection({ clientId }: OpenItemsSectionProps) {
+export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSectionProps) {
   const initialOpen = getOpenIssues(clientId);
   const initialResolved = getResolvedIssues(clientId);
 
   const [openItems, setOpenItems] = useState<ClientIssue[]>(initialOpen);
+  const allOpen = [...openItems, ...additionalItems];
   const [resolvedItems, setResolvedItems] = useState<ClientIssue[]>(initialResolved);
   const [showResolved, setShowResolved] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
-  if (openItems.length === 0 && resolvedItems.length === 0) return null;
+  if (allOpen.length === 0 && resolvedItems.length === 0) return null;
 
   const handleResolve = (id: string, note: string) => {
     const item = openItems.find((i) => i.id === id);
@@ -59,9 +61,9 @@ export function OpenItemsSection({ clientId }: OpenItemsSectionProps) {
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 text-red-500" />
             <h3 className="text-sm font-semibold">Flags</h3>
-            {openItems.length > 0 && (
+            {allOpen.length > 0 && (
               <span className="flex size-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
-                {openItems.length}
+                {allOpen.length}
               </span>
             )}
           </div>
@@ -109,9 +111,9 @@ export function OpenItemsSection({ clientId }: OpenItemsSectionProps) {
         </AnimatePresence>
 
         {/* Open items */}
-        {openItems.length > 0 ? (
+        {allOpen.length > 0 ? (
           <div className="divide-y divide-border/40">
-            {openItems.map((issue) => (
+            {allOpen.map((issue) => (
               <IssueRow key={issue.id} issue={issue} onResolve={handleResolve} />
             ))}
           </div>

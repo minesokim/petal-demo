@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 interface DayViewProps {
   currentDate: Date;
   events: CalendarEvent[];
-  onEventSelect: (event: CalendarEvent) => void;
+  onEventSelect: (event: CalendarEvent, e?: React.MouseEvent) => void;
   onEventCreate: (startTime: Date) => void;
 }
 
@@ -167,7 +167,7 @@ export function DayView({ currentDate, events, onEventSelect, onEventCreate }: D
 
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
-    onEventSelect(event);
+    onEventSelect(event, e);
   };
 
   const showAllDaySection = allDayEvents.length > 0;

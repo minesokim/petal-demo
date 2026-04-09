@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary, type InsightAction } from "@/lib/mock-data";
-import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
@@ -32,8 +32,8 @@ import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
-import { getScheduledCallsForClient, type ScheduledCall } from "@/lib/comms-mock-data";
-import { format as formatDate, parseISO } from "date-fns";
+import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
+import { BillingCard } from "@/components/billing/billing-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +47,9 @@ export default function ClientOverviewPage() {
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
+  const [completePrepOpen, setCompletePrepOpen] = useState(false);
+  const [returnSummary, setReturnSummary] = useState("");
+  const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
@@ -93,26 +96,11 @@ export default function ClientOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Docket Insight - AI Commentary */}
-      {clientInsight && (
-        <DocketInsightCard
-          insight={clientInsight}
-          defaultExpanded={true}
-          onAction={handleInsightAction}
-          onSendMessage={(messageId, channel) => {
-            showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
-          }}
-          onEditMessage={(messageId) => {
-            showToast("info", "Editing draft", `Opening editor for ${messageId}`);
-          }}
-        />
-      )}
-
       {/* Upcoming call notification */}
       <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
       {/* Flags */}
-      <OpenItemsSection clientId={client.id} />
+      <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
 
       {/* Ready to Prep / Transition — animated */}
       <AnimatePresence mode="wait">
@@ -200,6 +188,99 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
+      {/* Complete Preparation for in_preparation clients */}
+      {(currentStage === "in_preparation") && !transitioning && (
+        <div className="rounded-xl border p-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-blue-50">
+              <FileText className="size-4 text-blue-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">In preparation</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Resolve all flags, then complete preparation to send {client.fullName.split(" ")[0]} their return for review.
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
+                  <div className="flex items-center gap-1 text-[10px] text-amber-600"><AlertTriangle className="size-3" /> Open flags need resolution</div>
+                ) : (
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> All flags resolved</div>
+                )}
+              </div>
+            </div>
+          </div>
+          <Button
+            className="mt-3 w-full"
+            onClick={() => setCompletePrepOpen(true)}
+          >
+            <CheckCircle className="size-3.5" /> Complete Preparation
+          </Button>
+        </div>
+      )}
+
+      {/* Complete Preparation Dialog */}
+      <Dialog open={completePrepOpen} onOpenChange={setCompletePrepOpen}>
+        <DialogContent className="sm:max-w-md">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-bold">Complete preparation</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {client.fullName}'s return will be sent for client review.
+              </p>
+            </div>
+
+            {/* Flags status */}
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Flags</div>
+              {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
+                <div className="flex items-center gap-2 text-xs text-amber-600">
+                  <AlertTriangle className="size-3.5" />
+                  <span>There are unresolved flags. You can still proceed.</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-emerald-600">
+                  <Check className="size-3.5" />
+                  <span>All flags resolved</span>
+                </div>
+              )}
+            </div>
+
+            {/* Return summary */}
+            <div>
+              <label className="text-xs font-medium">Return summary <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <textarea
+                value={returnSummary}
+                onChange={e => setReturnSummary(e.target.value)}
+                placeholder="e.g. $2,180 refund, same as last year. Schedule C net income $76K."
+                className="mt-1.5 w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed resize-none outline-none focus:ring-1 focus:ring-ring"
+                rows={2}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setCompletePrepOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  setCompletePrepOpen(false);
+                  setTransitioning(true);
+                  setTimeout(() => {
+                    setStageOverride("client_review");
+                    setTransitioning(false);
+                    showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
+                  }, 1500);
+                }}
+              >
+                <Send className="size-3.5" /> Send for Review
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ERO Signature for pay_and_sign clients */}
       {currentStage === "pay_and_sign" && (
         <div className="rounded-xl border p-4">
@@ -224,51 +305,13 @@ export default function ClientOverviewPage() {
       {/* Docket Insight */}
       {hasIntel && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Brain className="size-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Insight</span>
-            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium text-muted-foreground">Preview</Badge>
-          </div>
-
-          {/* Document Extractions */}
-          {clientExtractions.length > 0 && (
-            <div className="rounded-xl border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                  <FileText className="size-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">Extracted Documents</div>
-                  <div className="text-[11px] text-muted-foreground">Review fields, then push to OLT</div>
-                </div>
-              </div>
-              {clientExtractions.map(de => (
-                <button key={de.id} onClick={() => setSelectedExtraction(de)} className="flex w-full items-center gap-4 rounded-xl border bg-card p-3.5 text-left transition-all hover:shadow-md hover:border-primary/30">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
-                    <FileText className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{de.documentType}</span>
-                      <Badge variant={de.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{de.overallConfidence}%</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {de.fields.length} fields extracted · {de.fields.filter(f => f.needsReview).length} need review
-                    </div>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Compliance */}
           {clientCompliance.map(a => (
             <ComplianceCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
           ))}
           {/* Anomalies */}
           {clientAnomalies.map(a => (
-            <AnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+            <AnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
           ))}
           {/* Deductions */}
           {clientDeductions.map(a => (
@@ -322,88 +365,8 @@ export default function ClientOverviewPage() {
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">
         {/* Left column — billing + intel overflow */}
         <div className="space-y-5">
-          {/* Billing */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Billing</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">{client.serviceTier} Return</div>
-                  <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-display text-xl tabular-nums tracking-tight">${ps.totalPaid} <span className="text-sm font-normal text-muted-foreground">/ ${ps.totalFee}</span></div>
-                  <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-                    {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
-                  </div>
-                </div>
-              </div>
-              <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg border p-2.5 flex items-center justify-between">
-                  <div><div className="text-xs font-medium">Deposit</div><div className="text-[11px] text-muted-foreground">${ps.deposit?.amount || 50}</div></div>
-                  {ps.deposit?.status === "paid" ? (
-                    <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-                  ) : ps.deposit?.status === "overdue" ? (
-                    <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
-                  ) : <Badge variant="secondary" className="text-[10px]">Pending</Badge>}
-                </div>
-                {ps.balance && ps.balance.status !== "not_applicable" && (
-                  <div className="rounded-lg border p-2.5 flex items-center justify-between">
-                    <div><div className="text-xs font-medium">Balance</div><div className="text-[11px] text-muted-foreground">${ps.balance.amount}</div></div>
-                    {ps.balance.status === "paid" ? (
-                      <Badge className="bg-emerald-100 text-emerald-700 text-[10px] dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-                    ) : ps.balance.status === "sent" ? (
-                      <Badge variant="secondary" className="text-[10px]">Invoice sent</Badge>
-                    ) : <Badge variant="outline" className="text-[10px]">Not invoiced</Badge>}
-                  </div>
-                )}
-              </div>
-
-              {(() => {
-                const events: { date: string; label: string; type: string }[] = [];
-                if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit — $${ps.deposit.amount}`, type: "paid" });
-                if (ps.deposit?.sentDate && ps.deposit.status !== "paid") events.push({ date: ps.deposit.sentDate, label: `Deposit invoice — $${ps.deposit.amount}`, type: ps.deposit.status === "overdue" ? "overdue" : "sent" });
-                if (ps.balance?.paidDate) events.push({ date: ps.balance.paidDate, label: `Balance — $${ps.balance.amount}`, type: "paid" });
-                if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
-                events.sort((a, b) => a.date.localeCompare(b.date));
-                if (events.length === 0) return null;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Payment Timeline</div>
-                    {events.map((e, i) => (
-                      <div key={i} className="flex items-center gap-3 text-xs">
-                        <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
-                        <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                        <span>{e.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {!ps.fullyPaid && (
-                <div className="flex flex-wrap gap-2">
-                  {ps.deposit?.status === "overdue" && (
-                    sentBilling === "reminder"
-                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Reminder sent</div>
-                      : <Button size="sm" onClick={() => setSentBilling("reminder")}><Send className="size-3.5" /> Send reminder</Button>
-                  )}
-                  {ps.balance?.status === "pending" && (
-                    sentBilling === "invoice"
-                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice sent</div>
-                      : <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}><DollarSign className="size-3.5" /> Send invoice</Button>
-                  )}
-                  {ps.balance?.status === "sent" && (
-                    sentBilling === "resend"
-                      ? <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 animate-in fade-in slide-in-from-bottom-1 duration-300"><Check className="size-3.5" /> Invoice resent</div>
-                      : <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}><Send className="size-3.5" /> Resend invoice</Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Billing — uses shared BillingCard */}
+          <BillingCard client={client} />
 
           {/* Intake snapshot — compact */}
           <Card>
@@ -504,7 +467,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-lg border p-4">
+    <div className="rounded-lg border bg-card p-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="min-w-0 flex-1">
@@ -532,11 +495,12 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
 }
 
 // TIER 2: ATTENTION
-function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
   const [status, setStatus] = useState(alert.status);
+  const { showToast } = useToast();
   if (status !== "pending") return null;
   return (
-    <div className="rounded-lg border p-4">
+    <div className="rounded-lg border bg-card p-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
         <div className="flex-1">
@@ -559,10 +523,10 @@ function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomaly
       </div>
       <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{alert.aiExplanation}</p>
       <div className="mt-3 flex items-center gap-2">
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus("flagged")}>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setStatus("flagged"); onFlag?.(alert.metric, alert.aiExplanation); showToast("success", "Added to flags", `${alert.metric} has been flagged for review.`); }}>
           Flag for review
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>Proceed</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setStatus("proceeded"); showToast("info", "Proceeded", "Marked as reviewed."); }}>Proceed</Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
           Ask Docket
         </Button>
@@ -576,7 +540,7 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-lg border p-4">
+    <div className="rounded-lg border bg-card p-4">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 size-2 shrink-0 rounded-full bg-emerald-500" />
@@ -681,87 +645,3 @@ function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: 
   );
 }
 
-// ── Upcoming Call Banner for Overview ──
-function UpcomingCallBanner({ clientId, clientName }: { clientId: string; clientName: string }) {
-  const calls = getScheduledCallsForClient(clientId);
-  const [dismissed, setDismissed] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-
-  if (calls.length === 0 || dismissed) return null;
-  const call = calls[0];
-
-  const startTime = parseISO(call.scheduledAt);
-
-  return (
-    <>
-      <div
-        onClick={() => setShowDetail(true)}
-        className="flex items-center gap-4 rounded-xl border bg-card p-4 cursor-pointer transition-colors hover:bg-muted/30"
-      >
-        <div className={cn(
-          "flex size-10 items-center justify-center rounded-xl",
-          call.platform === "zoom" ? "bg-blue-50 dark:bg-blue-950/30" : "bg-emerald-50 dark:bg-emerald-950/30"
-        )}>
-          <Calendar className={cn("size-5", call.platform === "zoom" ? "text-blue-600" : "text-emerald-600")} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium">Upcoming: {call.subject}</div>
-          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-            <span>{formatDate(startTime, "EEEE, MMMM d")}</span>
-            <span>&middot;</span>
-            <span>{formatDate(startTime, "h:mm a")}</span>
-            <span>&middot;</span>
-            <span>{call.duration} min</span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium">
-              {call.platform === "zoom" ? "Zoom" : "Google Meet"}
-            </span>
-          </div>
-        </div>
-        <Button
-          size="sm"
-          className="h-8 gap-1.5 px-4 text-xs shrink-0"
-          onClick={(e) => { e.stopPropagation(); window.open(call.meetingUrl, "_blank"); }}
-        >
-          <ExternalLink className="size-3.5" /> Join
-        </Button>
-        <button
-          onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
-          className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
-
-      {showDetail && (
-        <Dialog open={showDetail} onOpenChange={setShowDetail}>
-          <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-            <div className={cn(
-              "px-6 pt-6 pb-4",
-              call.platform === "zoom" ? "bg-blue-50/50 dark:bg-blue-950/20" : "bg-emerald-50/50 dark:bg-emerald-950/20"
-            )}>
-              <h2 className="text-base font-semibold">{call.subject}</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">with {clientName}</p>
-            </div>
-            <div className="px-6 py-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="size-4 text-muted-foreground" />
-                <div>
-                  <div className="text-sm font-medium">{formatDate(startTime, "EEEE, MMMM d, yyyy")}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatDate(startTime, "h:mm a")} – {formatDate(new Date(startTime.getTime() + call.duration * 60000), "h:mm a")}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button className="flex-1 gap-2" onClick={() => window.open(call.meetingUrl, "_blank")}>
-                  <ExternalLink className="size-4" /> Join Call
-                </Button>
-                <Button variant="outline" onClick={() => setShowDetail(false)}>Close</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
-  );
-}
