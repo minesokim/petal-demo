@@ -397,7 +397,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className="text-base font-bold tracking-tight mb-2"
+              className="text-lg font-bold tracking-tight mb-2"
             >
               {insight.title}
             </motion.h3>
@@ -992,7 +992,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                 </div>
 
                 {/* Messages */}
-                <div className={cn("flex-1 overflow-y-auto py-3 space-y-3", docketFullscreen ? "px-8 mx-auto max-w-2xl" : "px-4")}>
+                <div className={cn("flex-1 overflow-y-auto space-y-4", docketFullscreen ? "px-6 py-6 mx-auto max-w-3xl" : "px-4 py-3")}>
                   {docketMessages.length === 0 && !docketTyping && (
                     <div className="py-6 text-center">
                       <p className="text-xs text-muted-foreground mb-3">Ask about {client.fullName.split(" ")[0]}'s return</p>
@@ -1019,20 +1019,31 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     // Reasoning placeholder
                     if (msg.text === "__reasoning__") {
                       return (
-                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-2">
-                          <button className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="size-1.5 rounded-full bg-foreground" />
-                            <span>Reasoned over 3 steps</span>
-                            <ChevronDown className="size-3" />
-                          </button>
+                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-2">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                            <span>Analyzing {firstName}'s documents...</span>
+                          </div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Reviewed {client.documentsSubmitted} documents</span>
+                          </motion.div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Checked flags and anomalies</span>
+                          </motion.div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Compared with prior year</span>
+                          </motion.div>
                         </motion.div>
                       );
                     }
                     // User message — gray pill like the reference
                     if (msg.role === "user") {
                       return (
-                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end">
-                          <div className="rounded-full bg-muted px-4 py-2 text-xs text-foreground max-w-[85%]">
+                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end mb-4">
+                          <div className={cn("rounded-full bg-muted px-4 py-2 text-foreground max-w-[85%]", docketFullscreen ? "text-sm" : "text-xs")}>
                             {msg.text}
                           </div>
                         </motion.div>
@@ -1066,17 +1077,17 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                 </div>
 
                 {/* Input */}
-                <div className="border-t px-3 py-2.5 shrink-0">
+                <div className={cn("border-t shrink-0", docketFullscreen ? "px-6 py-3 mx-auto max-w-3xl w-full" : "px-3 py-2.5")}>
                   <div className="flex items-center gap-2">
                     <input
                       value={docketInput}
                       onChange={e => setDocketInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}
-                      placeholder="Ask about this return..."
-                      className="flex-1 rounded-lg border bg-background px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                      placeholder={docketFullscreen ? `Ask about ${firstName}'s return...` : "Ask about this return..."}
+                      className={cn("flex-1 rounded-lg border bg-background outline-none focus:ring-1 focus:ring-ring", docketFullscreen ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-xs")}
                     />
-                    <Button size="icon" className="size-7 shrink-0" disabled={!docketInput.trim()} onClick={() => { if (docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}>
-                      <Send className="size-3" />
+                    <Button size="icon" className={cn("shrink-0", docketFullscreen ? "size-9" : "size-7")} disabled={!docketInput.trim()} onClick={() => { if (docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}>
+                      <Send className={docketFullscreen ? "size-4" : "size-3"} />
                     </Button>
                   </div>
                 </div>

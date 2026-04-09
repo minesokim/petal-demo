@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -17,7 +17,8 @@ import {
 // Configure worker via CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 4;
 
 interface PdfViewerInnerProps {
   pdfPath: string;
@@ -26,10 +27,15 @@ interface PdfViewerInnerProps {
 export default function PdfViewerInner({ pdfPath }: PdfViewerInnerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState(1);
-  const [zoomIndex, setZoomIndex] = useState(2);
+  const [scale, setScale] = useState(1);
   const [error, setError] = useState(false);
 
-  const scale = ZOOM_LEVELS[zoomIndex];
+  // Pan state
+  const [isPanning, setIsPanning] = useState(false);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const panStart = useRef({ x: 0, y: 0 });
+  const panStartOffset = useRef({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -42,9 +48,38 @@ export default function PdfViewerInner({ pdfPath }: PdfViewerInnerProps) {
     setError(true);
   }, []);
 
-  const zoomIn = () => setZoomIndex((i) => Math.min(i + 1, ZOOM_LEVELS.length - 1));
-  const zoomOut = () => setZoomIndex((i) => Math.max(i - 1, 0));
-  const resetZoom = () => setZoomIndex(2);
+  const zoomIn = () => setScale(s => Math.min(s * 1.25, MAX_SCALE));
+  const zoomOut = () => setScale(s => Math.max(s / 1.25, MIN_SCALE));
+  const resetZoom = () => { setScale(1); setPanOffset({ x: 0, y: 0 }); };
+
+  // Scroll wheel = zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setScale(s => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s * delta)));
+  }, []);
+
+  // Mouse drag = pan
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return; // left click only
+    setIsPanning(true);
+    panStart.current = { x: e.clientX, y: e.clientY };
+    panStartOffset.current = { ...panOffset };
+  }, [panOffset]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    setPanOffset({
+      x: panStartOffset.current.x + dx,
+      y: panStartOffset.current.y + dy,
+    });
+  }, [isPanning]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -73,7 +108,7 @@ export default function PdfViewerInner({ pdfPath }: PdfViewerInnerProps) {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-xs" onClick={zoomOut} disabled={zoomIndex <= 0}>
+          <Button variant="ghost" size="icon-xs" onClick={zoomOut}>
             <ZoomOut className="size-3.5" />
           </Button>
           <button
@@ -82,21 +117,36 @@ export default function PdfViewerInner({ pdfPath }: PdfViewerInnerProps) {
           >
             {Math.round(scale * 100)}%
           </button>
-          <Button variant="ghost" size="icon-xs" onClick={zoomIn} disabled={zoomIndex >= ZOOM_LEVELS.length - 1}>
+          <Button variant="ghost" size="icon-xs" onClick={zoomIn}>
             <ZoomIn className="size-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* PDF content */}
-      <div className="flex-1 overflow-auto bg-muted/10 p-4">
+      {/* PDF content — scroll to zoom, drag to pan */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-hidden bg-muted/10"
+        style={{ cursor: isPanning ? "grabbing" : "grab" }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {error ? (
           <div className="flex h-full flex-col items-center justify-center gap-2">
             <FileText className="size-8 text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">Failed to load PDF</p>
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div
+            className="flex h-full items-center justify-center p-4"
+            style={{
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+              transition: isPanning ? "none" : "transform 0.1s ease-out",
+            }}
+          >
             <Document
               file={pdfPath}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -111,9 +161,9 @@ export default function PdfViewerInner({ pdfPath }: PdfViewerInnerProps) {
               <Page
                 pageNumber={pageNumber}
                 scale={scale}
-                className="rounded bg-white shadow-md"
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
+                className="rounded bg-white shadow-md select-none"
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
               />
             </Document>
           </div>
