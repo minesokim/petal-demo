@@ -11,7 +11,12 @@ import {
   Kumbh_Sans,
   Outfit,
   DM_Sans,
-  Lato
+  Lato,
+  Sora,
+  Manrope,
+  Cormorant,
+  Libre_Franklin,
+  IBM_Plex_Sans
 } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +83,36 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans"
 });
 
+const cormorant = Cormorant({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-cormorant"
+});
+
+const libreFranklin = Libre_Franklin({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-libre-franklin"
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-ibm-plex-sans"
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-manrope"
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sora"
+});
+
 const lato = Lato({
   subsets: ["latin"],
   weight: ["300", "400", "700"],
@@ -97,5 +132,10 @@ export const fontVariables = cn(
   kumbh_sans.variable,
   outfit.variable,
   dmSans.variable,
+  sora.variable,
+  manrope.variable,
+  cormorant.variable,
+  libreFranklin.variable,
+  ibmPlexSans.variable,
   lato.variable
 );

@@ -121,10 +121,13 @@ export interface MorningBriefingData {
 export interface IntelligenceBriefItem {
   id: string
   priority: 'high' | 'medium' | 'notable' | 'fyi'
+  title: string
   content: string
   implication?: string
   clientId?: string
   deepDiveQuery?: string
+  refs?: string[]
+  urgent?: boolean
 }
 
 export interface Client {

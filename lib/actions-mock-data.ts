@@ -472,14 +472,14 @@ export const initialTodos: TodoItem[] = [
   // Manual
   { id: "t2", text: "Call David Park at 3:00 PM", done: false, source: "manual", createdAt: "2026-03-28T07:30:00", clientId: "c11", clientName: "David Park" },
   { id: "t5", text: "Follow up with Vladimir about extension", done: false, source: "manual", createdAt: "2026-03-27T16:00:00", clientId: "c13", clientName: "Vladimir Petrov" },
-  // Voice dump items (from this morning's recording)
-  { id: "t8", text: "Check in with DeShawn about his W-2 upload", done: false, source: "voice", createdAt: "2026-03-28T09:15:00", clientId: "c4", clientName: "DeShawn Williams" },
-  { id: "t9", text: "Call Maria at 7 PM tonight", done: false, source: "voice", createdAt: "2026-03-28T09:15:00" },
-  { id: "t10", text: "Follow up with Tyrone about mileage log", done: false, source: "voice", createdAt: "2026-03-28T09:15:00", clientId: "c17", clientName: "Tyrone Mitchell" },
+  // Manual items
+  { id: "t8", text: "Check in with DeShawn about his W-2 upload", done: false, source: "manual", createdAt: "2026-03-28T09:15:00", clientId: "c4", clientName: "DeShawn Williams" },
+  { id: "t9", text: "Call Maria at 7 PM tonight", done: false, source: "manual", createdAt: "2026-03-28T09:15:00" },
+  { id: "t10", text: "Follow up with Tyrone about mileage log", done: false, source: "manual", createdAt: "2026-03-28T09:15:00", clientId: "c17", clientName: "Tyrone Mitchell" },
   // Completed
   { id: "t6", text: "Process Rodriguez 8879 e-signature", done: true, source: "ai", createdAt: "2026-03-27T14:00:00", clientId: "c3", clientName: "James & Sofia Rodriguez" },
   { id: "t7", text: "Send Ashley Kim intake reminder", done: true, source: "ai", createdAt: "2026-03-27T10:00:00", clientId: "c7", clientName: "Ashley Kim" },
-  { id: "t11", text: "Pick up lunch for the team", done: true, source: "voice", createdAt: "2026-03-28T09:15:00" },
+  { id: "t11", text: "Pick up lunch for the team", done: true, source: "manual", createdAt: "2026-03-28T09:15:00" },
 ];
 
 // --- Missing Documents Checklist (for document-request demo) ---

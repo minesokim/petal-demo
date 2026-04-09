@@ -67,7 +67,7 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
             <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold leading-tight truncate">{client.fullName}</h3>
+            <h3 className="text-sm font-semibold leading-tight truncate font-display">{client.fullName}</h3>
             <p className="text-xs text-muted-foreground leading-tight truncate">
               {client.businessName || `${client.serviceTier} · $${client.feeAmount}`}
             </p>

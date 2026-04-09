@@ -111,7 +111,7 @@ export default function ClientOverviewPage() {
       {/* Upcoming call notification */}
       <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
-      {/* Open Items (replaces old Actions section) */}
+      {/* Flags */}
       <OpenItemsSection clientId={client.id} />
 
       {/* Ready to Prep / Transition — animated */}

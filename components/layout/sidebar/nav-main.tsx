@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -478,8 +479,13 @@ export function NavMain() {
                     </>
                   ) : (
                     <SidebarMenuButton
-                      className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
-                      isActive={pathname === item.href}
+                      className={cn(
+                        "hover:bg-[#e8e4dc]/50 hover:text-foreground",
+                        pathname === item.href
+                          ? "bg-[#e8e4dc]/70 font-medium text-foreground [&>svg]:text-foreground"
+                          : "text-muted-foreground [&>svg]:text-muted-foreground/70"
+                      )}
+                      isActive={false}
                       tooltip={item.title}
                       asChild>
                       <Link href={item.href} target={item.newTab ? "_blank" : ""}>
@@ -499,17 +505,11 @@ export function NavMain() {
                     </SidebarMenuBadge>
                   )}
                   {!!item.isDataBadge && (
-                    item.title === "Messages" ? (
-                      <SidebarMenuBadge>
-                        <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold leading-none text-white">
-                          {item.isDataBadge}
-                        </span>
-                      </SidebarMenuBadge>
-                    ) : (
-                      <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
+                    <SidebarMenuBadge>
+                      <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold leading-none text-white">
                         {item.isDataBadge}
-                      </SidebarMenuBadge>
-                    )
+                      </span>
+                    </SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
               ))}

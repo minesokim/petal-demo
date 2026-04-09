@@ -778,13 +778,37 @@ export function AIPanel() {
       } : m));
     }, 2600);
 
-    // Phase 4: Add the actual answer
+    // Phase 4: Stream answer word by word (fast)
     setTimeout(() => {
+      const fullText = response.foundContent.text;
+      const words = fullText.split(/(\s+)/);
+      const wordsPerTick = 3;
+      const tickInterval = 25;
+      let tickIndex = 0;
+
+      // Start with empty content visible
       setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
         ...m,
-        foundContent: response.foundContent,
-        summary: response.summary,
+        foundContent: { text: "" },
       } : m));
+
+      const timer = setInterval(() => {
+        tickIndex++;
+        const wordCount = tickIndex * wordsPerTick;
+        if (wordCount >= words.length) {
+          clearInterval(timer);
+          setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
+            ...m,
+            foundContent: response.foundContent,
+            summary: response.summary,
+          } : m));
+          return;
+        }
+        setMessages((prev) => prev.map(m => m.id === aiMsgId ? {
+          ...m,
+          foundContent: { text: words.slice(0, wordCount).join("") },
+        } : m));
+      }, tickInterval);
     }, 3400);
   };
 

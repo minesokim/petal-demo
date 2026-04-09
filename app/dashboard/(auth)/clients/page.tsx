@@ -305,7 +305,7 @@ export default function ClientsPage() {
                           <AvatarFallback className="text-xs">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold">{client.fullName}</div>
+                          <div className="text-sm font-semibold font-display">{client.fullName}</div>
                           <div className="text-xs text-muted-foreground">
                             {client.businessName || `${client.serviceTier} - $${client.feeAmount}`}
                           </div>

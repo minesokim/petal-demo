@@ -57,8 +57,8 @@ export function OpenItemsSection({ clientId }: OpenItemsSectionProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="size-4 text-foreground/70" />
-            <h3 className="text-sm font-semibold">Open Items</h3>
+            <AlertCircle className="size-4 text-red-500" />
+            <h3 className="text-sm font-semibold">Flags</h3>
             {openItems.length > 0 && (
               <span className="flex size-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
                 {openItems.length}
@@ -117,7 +117,7 @@ export function OpenItemsSection({ clientId }: OpenItemsSectionProps) {
           </div>
         ) : (
           <p className="py-4 text-center text-xs text-muted-foreground">
-            No open items — all clear
+            No flags — all clear
           </p>
         )}
 

@@ -153,7 +153,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           </Avatar>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <DialogTitle className="text-lg">{client.fullName}</DialogTitle>
+              <DialogTitle className="text-lg font-display">{client.fullName}</DialogTitle>
               {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
             </div>
             {client.businessName && <p className="text-sm text-muted-foreground">{client.businessName}</p>}
@@ -298,7 +298,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 />
               )}
 
-              {/* Open Items */}
+              {/* Flags */}
               <OpenItemsSection clientId={client.id} />
 
               {/* Ready to Prep / Transition — animated (synced with full page) */}
@@ -403,116 +403,6 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* Docket Insight */}
-              {hasIntel && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Brain className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Insight</span>
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium text-muted-foreground">Preview</Badge>
-                  </div>
-
-                  {/* Document Extractions — OCR to OLT */}
-                  {clientExtractions.length > 0 && (
-                    <div className="rounded-xl border bg-card p-4 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                          <FileText className="size-4 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold">Extracted Documents</div>
-                          <div className="text-[11px] text-muted-foreground">Review fields, then push to OLT</div>
-                        </div>
-                      </div>
-                      {clientExtractions.map(de => (
-                        <button key={de.id} onClick={() => setSelectedExtraction(de)} className="flex w-full items-center gap-4 rounded-xl border bg-card p-3.5 text-left transition-all hover:shadow-md hover:border-primary/30">
-                          <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
-                            <FileText className="size-5 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">{de.documentType}</span>
-                              <Badge variant={de.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{de.overallConfidence}%</Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {de.fields.length} fields extracted · {de.fields.filter(f => f.needsReview).length} need review
-                            </div>
-                          </div>
-                          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Compliance Alerts */}
-                  {clientCompliance.map(a => (
-                    <InlineComplianceCard key={a.id} alert={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
-                  ))}
-
-                  {/* YoY Anomalies */}
-                  {clientAnomalies.map(a => (
-                    <InlineAnomalyCard key={a.id} alert={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
-                  ))}
-
-                  {/* Deduction Suggestions */}
-                  {clientDeductions.map(a => (
-                    <InlineDeductionCard key={a.id} suggestion={a} onAskDocket={(q) => { onOpenChange(false); setTimeout(() => askDocket(q), 300); }} clientName={client.fullName} />
-                  ))}
-
-                  {/* Extension Predictions */}
-                  {clientExtensions.map(a => (
-                    <div key={a.id} className="rounded-xl border p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock className="size-4 text-amber-500" />
-                          <span className="text-sm font-semibold">Extension likelihood</span>
-                        </div>
-                        <span className="font-display text-2xl tabular-nums tracking-tight">{a.probability}%</span>
-                      </div>
-                      <Progress value={a.probability} className="mt-3 h-2" indicatorColor={a.probability >= 80 ? "bg-red-500" : "bg-amber-500"} />
-                      <div className="mt-3 space-y-1">
-                        {a.factors.map((f, i) => (
-                          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" />
-                            {f}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Estimated Tax Calculations */}
-                  {clientEstimatedTax.map(calc => (
-                    <div key={calc.id} className="rounded-xl border p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Calculator className="size-4 text-primary" />
-                          <span className="text-sm font-semibold">2026 quarterly estimates</span>
-                        </div>
-                        <span className="font-display text-xl tabular-nums tracking-tight">${calc.totalEstimated.toLocaleString()}</span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-4 gap-2">
-                        {(["q1", "q2", "q3", "q4"] as const).map(q => (
-                          <div key={q} className="rounded-lg border p-2 text-center">
-                            <div className="font-display text-sm tabular-nums">${calc.quarterlyAmounts[q].toLocaleString()}</div>
-                            <div className="text-[10px] text-muted-foreground">{q.toUpperCase()}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
-                      <Button size="sm" className="mt-3" onClick={() => setSentCalc(true)} disabled={sentCalc}>
-                        <Calculator className="size-3.5" /> {sentCalc ? "Sent!" : "Send to client"}
-                      </Button>
-                    </div>
-                  ))}
-
-                  {/* IRS Notices */}
-                  {clientIrsNotices.map(n => (
-                    <InlineIrsNoticeCard key={n.id} notice={n} />
-                  ))}
-
-                </div>
-              )}
 
               {/* Quick stats */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground">

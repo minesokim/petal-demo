@@ -20,9 +20,9 @@ import { morningBriefing, intelligenceBrief } from "@/lib/insights-mock-data";
 import type { IntelligenceBriefItem } from "@/lib/mock-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { IntelligencePanel } from "@/components/actions/intelligence/intelligence-panel";
 import { BatchPanel } from "@/components/actions/batch/batch-panel";
 import { VoiceDumpDialog } from "@/components/actions/voice/voice-dump-dialog";
@@ -48,11 +48,11 @@ const messages = [
 // complete: filed(3: Linda,Karen,Rachel) = 3
 // Total: 7+6+4+3 = 20 active clients
 const summaryTabs = [
-  { key: "need_you", label: "Need You", count: 7, color: "bg-red-500" },
-  { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500" },
-  { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500" },
-  { key: "complete", label: "Done", count: 3, color: "bg-emerald-500" },
-  { key: "todos", label: "Open Items", count: 0, color: "bg-violet-500" }, // count set dynamically
+  { key: "need_you", label: "Need You", count: 7, color: "bg-red-500", cssColor: "#ef4444", circleClass: "bg-red-500/12 border-red-400/30 text-red-600" },
+  { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500", cssColor: "#f59e0b", circleClass: "bg-amber-500/12 border-amber-400/30 text-amber-600" },
+  { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500", cssColor: "#3b82f6", circleClass: "bg-blue-500/12 border-blue-400/30 text-blue-600" },
+  { key: "complete", label: "Done", count: 3, color: "bg-emerald-500", cssColor: "#10b981", circleClass: "bg-emerald-500/12 border-emerald-400/30 text-emerald-600" },
+  { key: "todos", label: "To-do", count: 0, color: "bg-violet-500", cssColor: "#8b5cf6", circleClass: "bg-violet-500/12 border-violet-400/30 text-violet-600" },
 ];
 
 type ActionClient = {
@@ -109,6 +109,119 @@ const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]>
   ],
 };
 
+// ── Hand-drawn organic circle SVG ──
+function OrganicCircle({ color, size = 32 }: { color: string; size?: number }) {
+  // Hand-drawn wobbly circle path — intentionally imperfect
+  const path = "M20.5,4 C28,3.5 35,8 36.5,16 C38,24 33,33 24,36 C15,39 6,34 4,25 C2,16 7,6 16,4.5 C18,4.2 19.5,4 20.5,4 Z";
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className="absolute inset-0">
+      <path
+        d={path}
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        strokeDasharray="120"
+        strokeDashoffset="120"
+        style={{ animation: "draw-circle 400ms ease-out forwards" }}
+      />
+      <style>{`@keyframes draw-circle { to { stroke-dashoffset: 0; } }`}</style>
+    </svg>
+  );
+}
+
+// ── Pipeline Strip with organic circles + animated underline ──
+function PipelineStrip({ tabs, activeTab, pendingTodoCount, onTabChange }: {
+  tabs: typeof summaryTabs;
+  activeTab: string;
+  pendingTodoCount: number;
+  onTabChange: (key: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+  const [underline, setUnderline] = useState({ left: 0, width: 0, color: tabs[0].cssColor });
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const updateUnderline = useCallback((key: string) => {
+    const label = labelRefs.current[key];
+    const container = containerRef.current;
+    if (!label || !container) return;
+    const containerRect = container.getBoundingClientRect();
+    const labelRect = label.getBoundingClientRect();
+    const tab = tabs.find(t => t.key === key);
+    setUnderline({
+      left: labelRect.left - containerRect.left,
+      width: labelRect.width,
+      color: tab?.cssColor || tabs[0].cssColor,
+    });
+  }, [tabs]);
+
+  useEffect(() => {
+    const target = hoveredKey || activeTab;
+    if (!mounted) {
+      const timer = setTimeout(() => { updateUnderline(target); setMounted(true); }, 150);
+      return () => clearTimeout(timer);
+    }
+    updateUnderline(target);
+  }, [activeTab, hoveredKey, mounted, updateUnderline]);
+
+  useEffect(() => {
+    const onResize = () => updateUnderline(hoveredKey || activeTab);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeTab, hoveredKey, updateUnderline]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex items-center gap-6"
+      onMouseLeave={() => setHoveredKey(null)}
+    >
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.key;
+        const count = tab.key === "todos" ? pendingTodoCount : tab.count;
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onTabChange(tab.key)}
+            onMouseEnter={() => setHoveredKey(tab.key)}
+            className="flex items-center gap-2 cursor-pointer select-none pb-px"
+          >
+            {/* Number */}
+            <span className={`text-[17px] font-semibold tabular-nums transition-colors duration-200 ${isActive ? "" : "text-muted-foreground/50"}`} style={{ color: isActive ? tab.cssColor : undefined }}>
+              {count}
+            </span>
+            {/* Label */}
+            <span
+              ref={el => { labelRefs.current[tab.key] = el; }}
+              className={`text-[15px] transition-colors duration-200 ${
+                isActive ? "text-foreground font-medium" : "text-muted-foreground/60"
+              }`}
+            >
+              {tab.label}
+            </span>
+          </button>
+        );
+      })}
+
+      {/* Animated underline — lightsaber draw from left */}
+      <div
+        className="absolute bottom-0 h-[2px] rounded-full"
+        style={{
+          left: underline.left,
+          width: underline.width,
+          backgroundColor: underline.color,
+          transform: mounted ? "scaleX(1)" : "scaleX(0)",
+          transformOrigin: "left",
+          transition: "left 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), transform 450ms cubic-bezier(0.0, 0, 0.2, 1)",
+        }}
+      />
+    </div>
+  );
+}
+
 export default function Page() {
   const [activeTab, setActiveTab] = useState("need_you");
   const [viewMode, setViewMode] = useState<"clients" | "actions">("actions");
@@ -116,9 +229,12 @@ export default function Page() {
   const [selectedAppointment, setSelectedAppointment] = useState<typeof todayAppointments[0] | null>(null);
   const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
   const [newTodoText, setNewTodoText] = useState("");
-  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
   const [editingDraft, setEditingDraft] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [openInsightId, setOpenInsightId] = useState<string | null>("brief-1");
+  const [newTodoClient, setNewTodoClient] = useState<string>("");
+  const [showClientPicker, setShowClientPicker] = useState(false);
   const { showToast } = useToast();
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
@@ -130,8 +246,18 @@ export default function Page() {
   const toggleTodo = (id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
   const addTodo = () => {
     if (!newTodoText.trim()) return;
-    setTodos(prev => [{ id: `t-${Date.now()}`, text: newTodoText.trim(), done: false, source: "manual", createdAt: new Date().toISOString() }, ...prev]);
+    const matchedClient = newTodoClient ? clients.find(c => c.id === newTodoClient) : null;
+    setTodos(prev => [{
+      id: `t-${Date.now()}`,
+      text: newTodoText.trim(),
+      done: false,
+      source: "manual" as const,
+      createdAt: new Date().toISOString(),
+      ...(matchedClient && { clientId: matchedClient.id, clientName: matchedClient.fullName }),
+    }, ...prev]);
     setNewTodoText("");
+    setNewTodoClient("");
+    setShowClientPicker(false);
   };
   const pendingTodoCount = todos.filter(t => !t.done).length;
 
@@ -145,16 +271,16 @@ export default function Page() {
 
   return (
     <div className="space-y-4">
-      {/* ── Section 1: Morning Brief ── */}
+      {/* ── Section 1: Morning Intelligence ── */}
       <motion.div
-        className="rounded-2xl bg-card px-7 py-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+        className="rounded-[20px_20px_20px_6px] bg-card border border-border/40 px-7 py-6 shadow-sm"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {/* Timestamp */}
         <motion.p
-          className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50"
+          className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -172,220 +298,378 @@ export default function Page() {
           Good morning, Antonio
         </motion.h1>
 
-        {/* Stat row — simple label/value pairs, no boxes */}
+        {/* Stat row */}
         <motion.div
-          className="flex items-baseline gap-6 mt-3"
+          className="flex items-baseline gap-7 mt-4 pb-5 border-b border-border/30"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.25 }}
         >
-          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Deadline</span><span className="text-sm text-foreground">18 days</span></div>
-          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Filed</span><span className="text-sm text-foreground">3 of 20</span></div>
-          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Collected</span><span className="text-sm text-emerald-600">$2,850</span></div>
-          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Outstanding</span><span className="text-sm text-foreground">$4,200</span></div>
-          <div><span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 block">Overdue</span><span className="text-sm text-red-500">1</span></div>
+          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Deadline</span><span className="text-[15px] font-semibold text-foreground">18 days</span></div>
+          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Filed</span><span className="text-[15px] font-semibold text-foreground">3 of 20</span></div>
+          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Collected</span><span className="text-[15px] font-semibold text-emerald-600">$2,850</span></div>
+          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Outstanding</span><span className="text-[15px] font-semibold text-foreground">$4,200</span></div>
+          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Overdue</span><span className="text-[15px] font-semibold text-red-500">1</span></div>
         </motion.div>
 
         {/* Editorial intro */}
         <motion.p
-          className="text-[15px] text-muted-foreground mt-6 leading-relaxed"
+          className="text-[14.5px] text-muted-foreground/70 mt-5 mb-5 pb-5 border-b border-border/20 leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.35 }}
         >
-          Five things worth knowing before your 10 o&apos;clock with Sarah.
+          Two returns are ready to file right now. Priya&apos;s 1099 doesn&apos;t match her intake. And the Rodriguez refund is going to be smaller than they expect.
         </motion.p>
 
-        {/* Brief items — pure prose, one left border accent each */}
-        <div className="mt-6 space-y-1">
+        {/* Insight compartments — collapsible, expanded by default */}
+        <div>
           {intelligenceBrief.map((item, index) => {
-            const borderColor = {
-              high: "border-red-400/70",
-              medium: "border-amber-400/70",
-              notable: "border-teal-400/70",
-              fyi: "border-zinc-300/70 dark:border-zinc-600/50",
-            }[item.priority];
+            const isOpen = openInsightId === item.id;
 
             return (
-              <motion.button
+              <motion.div
                 key={item.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                whileHover={{
-                  x: 4,
-                  backgroundColor: "rgba(255,255,255,0.7)",
-                  boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
-                  transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
-                }}
-                onClick={() => {
-                  if (item.deepDiveQuery) {
-                    askDocket(item.deepDiveQuery);
-                  }
-                }}
-                className={`group/brief block w-full text-left border-l-[2px] ${borderColor} pl-5 py-4 rounded-r-lg cursor-pointer`}
-                style={{ backgroundColor: "transparent", transition: "background-color 0.35s ease" }}
+                transition={{ duration: 0.5, delay: 0.4 + index * 0.08 }}
+                className={`py-4 ${index < intelligenceBrief.length - 1 ? "border-b border-border/50" : ""}`}
               >
-                <p className="text-[13.5px] leading-[1.75] text-foreground/85">
-                  {item.content}
-                </p>
-                {item.implication && (
-                  <p className="text-[12px] text-muted-foreground/60 mt-2 leading-relaxed transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/brief:text-muted-foreground group-hover/brief:translate-x-1">
-                    &rarr; {item.implication}
-                  </p>
+                {/* Title row — click to toggle (accordion) */}
+                <button
+                  onClick={() => setOpenInsightId(isOpen ? null : item.id)}
+                  className="flex w-full items-center gap-2.5 text-left group/title rounded-lg px-3 py-2 -mx-3 transition-all duration-200 hover:bg-muted/40"
+                >
+                  {item.urgent && (
+                    <span className="size-[7px] rounded-full bg-red-500 shrink-0" />
+                  )}
+                  <span className="flex-1 text-[17px] font-semibold text-foreground group-hover/title:text-foreground/70 transition-colors font-display">
+                    {item.title}
+                  </span>
+                  <svg
+                    width={10} height={10} viewBox="0 0 10 10"
+                    className={`shrink-0 text-muted-foreground/30 transition-all duration-200 group-hover/title:text-muted-foreground/60 ${isOpen ? "rotate-90" : ""}`}
+                  >
+                    <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" fill="none" strokeWidth="1.3" strokeLinecap="round" />
+                  </svg>
+                </button>
+
+                {/* Body — smooth expand/collapse */}
+                <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="overflow-hidden"
+                  >
+                  <div className="mt-3 pl-0">
+                    <p className="text-[14px] leading-[1.8] text-foreground/75">
+                      {item.content}
+                    </p>
+
+                    {/* Filing pace — line graph */}
+                    {item.id === "brief-3" && (
+                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-medium text-foreground/60">Filing pace</span>
+                          <span className="text-[10px] text-muted-foreground">18 days to deadline</span>
+                        </div>
+                        <svg width="100%" height={220} viewBox="0 0 480 220" className="block">
+                          {/* Grid lines */}
+                          {[0, 1, 2, 3, 4].map(i => (
+                            <line key={i} x1={45} y1={20 + i * 44} x2={465} y2={20 + i * 44} stroke="currentColor" strokeWidth="0.5" className="text-border/30" />
+                          ))}
+                          {/* Y-axis labels */}
+                          {[20, 15, 10, 5, 0].map((v, i) => (
+                            <text key={v} x={36} y={25 + i * 44} textAnchor="end" className="fill-muted-foreground/40" fontSize="11">{v}</text>
+                          ))}
+                          {/* X-axis labels */}
+                          {["Jan", "Feb", "Mar", "Apr"].map((m, i) => (
+                            <text key={m} x={45 + i * 140} y={210} textAnchor="start" className="fill-muted-foreground/40" fontSize="11">{m}</text>
+                          ))}
+                          {/* Last year line — full season */}
+                          <polyline
+                            points="45,196 115,172 185,148 255,124 325,100 395,56 465,20"
+                            fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                            className="text-muted-foreground/20"
+                          />
+                          {/* This year line — partial */}
+                          <polyline
+                            points="45,196 115,185 185,176 255,170"
+                            fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"
+                          />
+                          <circle cx={255} cy={170} r={4.5} fill="#ef4444" opacity="0.8" />
+                          {/* Annotation */}
+                          <text x={267} y={166} className="fill-red-500/70" fontSize="11" fontWeight="500">3 filed</text>
+                          <text x={465} y={16} textAnchor="end" className="fill-muted-foreground/30" fontSize="11">18 filed</text>
+                        </svg>
+                        <div className="flex items-center gap-5 mt-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-[2px] bg-red-500/60 rounded" />
+                            <span className="text-[10px] text-foreground/60">2026</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-[2px] bg-muted-foreground/20 rounded" />
+                            <span className="text-[10px] text-muted-foreground/40">2025</span>
+                          </div>
+                          <span className="text-[10px] text-red-500/60 ml-auto">2 returns behind pace</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rodriguez income — horizontal comparison */}
+                    {item.id === "brief-4" && (
+                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[11px] font-medium text-foreground/60">Household income</span>
+                          <span className="text-[10px] text-blue-500/70 font-medium">&rarr; 24% bracket + NIIT</span>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[11px] text-muted-foreground/60">2024</span>
+                              <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">$167K</span>
+                            </div>
+                            <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
+                              <div className="h-full rounded-full bg-blue-400/30" style={{ width: "59%" }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[11px] text-foreground/70 font-medium">2025</span>
+                              <span className="text-[12px] font-semibold text-blue-600 tabular-nums">$285K</span>
+                            </div>
+                            <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
+                              <div className="h-full rounded-full bg-blue-500/60" style={{ width: "100%" }} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3">
+                          <span className="text-[10px] text-blue-500/60">+$118K</span>
+                          <span className="text-[10px] text-muted-foreground/40">&middot;</span>
+                          <span className="text-[10px] text-muted-foreground/50">22% &rarr; 24% bracket</span>
+                          <span className="text-[10px] text-muted-foreground/40">&middot;</span>
+                          <span className="text-[10px] text-red-400/60">New: NIIT on rental</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Referral potential for Ashley */}
+                    {item.id === "brief-5" && (
+                      <div className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[11px] font-medium text-foreground/60">Referral potential</span>
+                          <span className="text-[10px] text-violet-500/70 font-medium">Creator niche</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <span className="text-[20px] font-semibold text-foreground tabular-nums">$350</span>
+                            <span className="text-[10px] text-muted-foreground block mt-0.5">Priya&apos;s fee</span>
+                          </div>
+                          <div>
+                            <span className="text-[20px] font-semibold text-foreground/50 tabular-nums">$350</span>
+                            <span className="text-[10px] text-muted-foreground block mt-0.5">Ashley (if converts)</span>
+                          </div>
+                          <div>
+                            <span className="text-[20px] font-semibold text-violet-500 tabular-nums">$5K+</span>
+                            <span className="text-[10px] text-muted-foreground block mt-0.5">Network (3-yr value)</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.implication && (
+                      <p className="text-[12.5px] text-muted-foreground mt-3 leading-relaxed">
+                        &rarr; {item.implication}
+                      </p>
+                    )}
+
+                    {/* Reference + deep dive */}
+                    <div className="flex items-center gap-3 mt-4">
+                      {item.refs && item.refs.length > 0 && (
+                        <span className="text-[11px] text-muted-foreground/50">
+                          {item.refs.join(" · ")}
+                        </span>
+                      )}
+                      {item.deepDiveQuery && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1.5"
+                          onClick={(e) => { e.stopPropagation(); askDocket(item.deepDiveQuery!); }}
+                        >
+                          Ask Docket <ArrowUpRightIcon className="size-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  </motion.div>
                 )}
-              </motion.button>
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>
 
         {/* Footer */}
-        <motion.p
-          className="mt-6 text-[10px] text-muted-foreground/40"
+        <motion.div
+          className="mt-4 pt-4 border-t border-border/20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 1 }}
         >
-          Based on 20 clients, 142 documents, 34 messages, and 3 prior-year returns
-        </motion.p>
+          <p className="text-[10px] text-muted-foreground/40">
+            20 clients · 142 documents · 34 messages · 3 prior-year returns
+          </p>
+        </motion.div>
       </motion.div>
 
-      {/* ── Section 2: Pipeline + Action Feed (merged) ── */}
-      <Card className="overflow-hidden">
-        {/* Pipeline pills + progress bar */}
-        <div className="px-5 pt-4 pb-0">
-          <div className="flex items-center gap-2">
-            {summaryTabs.map((tab) => {
-              const isActive = activeTab === tab.key;
-              const count = tab.key === "todos" ? pendingTodoCount : tab.count;
-              return (
-                <motion.button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  onMouseEnter={() => setHoveredTab(tab.key)}
-                  onMouseLeave={() => setHoveredTab(null)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] cursor-pointer select-none transition-colors ${
-                    isActive
-                      ? "bg-white border text-foreground font-medium shadow-sm"
-                      : "text-muted-foreground hover:bg-white/60 hover:text-foreground/70"
-                  }`}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                >
-                  <span className={`size-2 rounded-full ${tab.color} ${isActive ? "opacity-100" : "opacity-40"}`} />
-                  <span className="tabular-nums font-medium">{count}</span>
-                  <span>{tab.label}</span>
-                </motion.button>
-              );
-            })}
-          </div>
+      {/* ── Section 2: Actions + Sidebar ── */}
+      <div className="flex gap-6 mt-10">
+      {/* Left: Pipeline + Action Feed (70%) */}
+      <div className="flex-[7] min-w-0 space-y-5">
+        {/* Pipeline — organic circles with animated underline */}
+        <PipelineStrip
+          tabs={summaryTabs}
+          activeTab={activeTab}
+          pendingTodoCount={pendingTodoCount}
+          onTabChange={setActiveTab}
+        />
 
-          <div className="flex gap-0.5 mt-3 rounded-lg overflow-hidden">
-            {summaryTabs.map((tab, i) => {
-              const getCount = (t: typeof tab) => t.key === "todos" ? pendingTodoCount : t.count;
-              const total = summaryTabs.reduce((s, t) => s + getCount(t), 0);
-              const pct = (getCount(tab) / total) * 100;
-              const isActive = activeTab === tab.key;
-              return (
-                <motion.div
-                  key={tab.key}
-                  className={`h-[6px] ${tab.color} cursor-pointer`}
-                  style={{ opacity: isActive ? 1 : 0.3 }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%`, opacity: isActive ? 1 : hoveredTab === tab.key ? 0.6 : 0.3 }}
-                  transition={
-                    hoveredTab
-                      ? { type: "spring", stiffness: 300, damping: 20 }
-                      : { duration: 1, delay: 0.1 + i * 0.08, ease: [0.35, 0, 0.15, 1] }
-                  }
-                  onClick={() => setActiveTab(tab.key)}
-                  onMouseEnter={() => setHoveredTab(tab.key)}
-                  onMouseLeave={() => setHoveredTab(null)}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Section header */}
-        <div className="px-5 pt-4 pb-2">
-          <h3 className="text-sm font-semibold capitalize">{summaryTabs.find(t => t.key === activeTab)?.label}</h3>
-        </div>
+        {/* Section heading — editorial, not dashboard */}
+        <h3 className="text-[19px] font-medium text-foreground tracking-tight font-display">
+          {summaryTabs.find(t => t.key === activeTab)?.label}
+        </h3>
 
         {/* Content */}
-        <CardContent className="pt-0 pb-4">
+        <div>
           {activeTab === "todos" ? (
-            /* ── To-do list ── */
-            <div className="space-y-1">
-              {/* Add task input */}
-              <div className="flex items-center gap-2 pb-2">
-                <Input
-                  placeholder="Add a task..."
-                  value={newTodoText}
-                  onChange={e => setNewTodoText(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addTodo()}
-                  className="h-9 text-sm"
-                />
-                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={addTodo} disabled={!newTodoText.trim()}>
-                  Add
-                </Button>
+            /* ── To-do — journal style ── */
+            <div className="space-y-0">
+              {/* Add task — at the top */}
+              <div className="py-[10px]">
+                <div className="flex items-start gap-3">
+                  <div className="mt-[3px] shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/20" strokeDasharray="2 2" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      placeholder="Add a task..."
+                      value={newTodoText}
+                      onChange={e => { setNewTodoText(e.target.value); if (e.target.value.trim() && !showClientPicker) setShowClientPicker(true); }}
+                      onKeyDown={e => e.key === "Enter" && addTodo()}
+                      onFocus={() => { if (newTodoText.trim()) setShowClientPicker(true); }}
+                      className="w-full text-[14px] text-foreground/85 bg-transparent outline-none placeholder:text-muted-foreground/30 border-b border-transparent focus:border-border/40 transition-colors pb-0.5"
+                    />
+                    {showClientPicker && newTodoText.trim() && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="mt-2 flex items-center gap-2"
+                      >
+                        <span className="text-[11px] text-muted-foreground/50">for</span>
+                        <select
+                          value={newTodoClient}
+                          onChange={e => setNewTodoClient(e.target.value)}
+                          className="text-[12px] text-muted-foreground bg-transparent border-b border-border/30 outline-none py-0.5 pr-4 cursor-pointer"
+                        >
+                          <option value="">no client</option>
+                          {clients.filter(c => c.clientStatus !== "declined").map(c => (
+                            <option key={c.id} value={c.id}>{c.fullName}</option>
+                          ))}
+                        </select>
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Pending items */}
-              {todos.filter(t => !t.done).map(todo => (
-                <div key={todo.id} className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50">
-                  <Checkbox checked={todo.done} onCheckedChange={() => toggleTodo(todo.id)} className="mt-0.5 cursor-pointer" />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-sm leading-snug">{todo.text}</span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {todo.clientName && (
-                        <button onClick={() => {
-                          const c = clients.find(cl => cl.id === todo.clientId);
-                          if (c) setDetailClient(c);
-                        }}>
-                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 cursor-pointer hover:bg-muted">{todo.clientName.split(" ")[0]}</Badge>
-                        </button>
-                      )}
-                      {todo.source === "voice" && (
-                        <button onClick={() => askDocket(`Help me with: "${todo.text}"${todo.clientName ? ` for ${todo.clientName}` : ""}`)} className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Ask Docket about this">
-                          <MicIcon className="size-2.5" /> Voice
-                        </button>
-                      )}
-                      {todo.source === "ai" && (
-                        <button onClick={() => askDocket(`Help me with: "${todo.text}"${todo.clientName ? ` for ${todo.clientName}` : ""}`)} className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Ask Docket about this">
-                          <BotIcon className="size-2.5" /> AI
-                        </button>
+              {todos.filter(t => !t.done).map(todo => {
+                const sourceLabel = todo.source === "ai" ? "flagged by Docket" : null;
+                const nameInText = todo.clientName && todo.text.toLowerCase().includes(todo.clientName.split(" ")[0].toLowerCase());
+                return (
+                  <motion.div
+                    key={todo.id}
+                    layout
+                    initial={{ opacity: 1 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-start gap-3 py-[10px] group"
+                  >
+                    {/* Open circle — animated fill on click */}
+                    <button
+                      onClick={() => toggleTodo(todo.id)}
+                      className="mt-[3px] shrink-0 cursor-pointer"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors duration-200 group-hover:text-muted-foreground" />
+                      </svg>
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[14px] leading-relaxed text-foreground/85">{todo.text}</span>
+                      {(sourceLabel || (todo.clientName && !nameInText)) && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {todo.clientName && !nameInText && (
+                            <button
+                              onClick={() => { const c = clients.find(cl => cl.id === todo.clientId); if (c) setDetailClient(c); }}
+                              className="text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors"
+                            >
+                              {todo.clientName}
+                            </button>
+                          )}
+                          {sourceLabel && (todo.clientName && !nameInText) && <span className="text-muted-foreground/30 text-[10px]">&middot;</span>}
+                          {sourceLabel && <span className="text-[11px] text-muted-foreground/40">{sourceLabel}</span>}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </motion.div>
+                );
+              })}
 
-              {/* Completed items */}
+              {/* Completed — open by default */}
               {todos.filter(t => t.done).length > 0 && (
-                <div className="pt-2">
-                  <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Completed</div>
-                  {todos.filter(t => t.done).map(todo => (
-                    <label key={todo.id} className="flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted/50 cursor-pointer opacity-50">
-                      <Checkbox checked={todo.done} onCheckedChange={() => toggleTodo(todo.id)} className="mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm leading-snug line-through">{todo.text}</span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {todo.clientName && <Badge variant="outline" className="text-[9px] h-4 px-1.5">{todo.clientName.split(" ")[0]}</Badge>}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
+                <div className="pt-4">
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="text-[12px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                  >
+                    Completed ({todos.filter(t => t.done).length}) {showCompleted ? "" : ""}
+                  </button>
+                  {showCompleted && (
+                    <div className="mt-2 space-y-0">
+                      {todos.filter(t => t.done).map(todo => (
+                        <motion.div
+                          key={todo.id}
+                          layout
+                          className="flex items-start gap-3 py-[8px] group cursor-pointer"
+                          onClick={() => toggleTodo(todo.id)}
+                        >
+                          <div className="mt-[3px] shrink-0">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                              <circle cx="7" cy="7" r="5.5" fill="currentColor" className="text-muted-foreground/25 transition-colors duration-200 group-hover:text-muted-foreground/40" />
+                            </svg>
+                          </div>
+                          <span className="text-[14px] leading-relaxed text-muted-foreground/40 line-through">{todo.text}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {(actionGroups[activeTab] || []).map((group) => (
                 <div key={group.label}>
-                  <div className="px-1 pt-3 pb-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</span>
+                  <div className="px-1 pt-2 pb-2.5">
+                    <span className="text-[12px] text-muted-foreground/60">{group.label}</span>
                   </div>
+                  <div className="space-y-2">
                   {group.clients.map((actionClient, ci) => {
                     const matchedAction = actionItems.find(a =>
                       !a.isResolved && a.clientName.includes(actionClient.name.split(" ")[0])
@@ -394,39 +678,34 @@ export default function Page() {
                       c.fullName.includes(actionClient.name.split(" ")[0]) ||
                       actionClient.initials === c.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
                     );
+                    const accentBg = actionClient.urgency === "red" ? "bg-red-300/60" : actionClient.urgency === "amber" ? "bg-amber-300/60" : actionClient.urgency === "green" ? "bg-emerald-300/60" : "";
                     return (
-                      <div key={`${group.label}-${ci}`} className="rounded-lg border p-3.5">
-                        <button onClick={() => matchedClientForAvatar && setDetailClient(matchedClientForAvatar)} className="flex w-full items-center gap-3 text-left transition-colors hover:opacity-80">
-                          <Avatar className="size-8 shrink-0">
+                      <div key={`${group.label}-${ci}`} className="relative rounded-xl border border-border/40 p-4 transition-all duration-200 hover:bg-muted/40 hover:border-border/70 hover:shadow-sm">
+                        {accentBg && <div className={`absolute left-0 top-3 bottom-3 w-[2.5px] rounded-full ${accentBg}`} />}
+                        <button onClick={() => matchedClientForAvatar && setDetailClient(matchedClientForAvatar)} className="flex w-full items-center gap-3 text-left">
+                          <Avatar className="size-9 shrink-0">
                             {matchedClientForAvatar && <AvatarImage src={matchedClientForAvatar.avatar} alt={actionClient.name} />}
                             <AvatarFallback className="text-[10px]">{actionClient.initials}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium leading-tight">{actionClient.name}</div>
-                            <div className="text-muted-foreground text-xs">{actionClient.detail}</div>
+                            <div className="text-[15px] font-medium leading-tight font-display">{actionClient.name}</div>
+                            <div className="text-muted-foreground text-[12.5px] mt-0.5">{actionClient.detail}</div>
                           </div>
-                          {actionClient.urgency !== "none" && (
-                            <span className={`size-2 shrink-0 rounded-full ${
-                              actionClient.urgency === "red" ? "bg-red-500" :
-                              actionClient.urgency === "amber" ? "bg-amber-500" :
-                              "bg-emerald-500"
-                            }`} />
-                          )}
                         </button>
                         {matchedAction?.aiDraft && (
-                          <div className="mt-2.5 ml-11">
+                          <div className="mt-3 ml-11">
                             {sentDrafts.has(matchedAction.id) ? (
                               <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: 4 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex items-center gap-2 text-xs font-medium text-emerald-600"
                               >
                                 <motion.svg
-                                  width="14" height="14" viewBox="0 0 14 14" fill="none"
+                                  width="12" height="12" viewBox="0 0 14 14" fill="none"
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.15 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.1 }}
                                 >
                                   <path d="M3 7L5.5 9.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 </motion.svg>
@@ -442,13 +721,13 @@ export default function Page() {
                                     autoFocus
                                   />
                                 ) : (
-                                  <p className="text-xs leading-relaxed text-muted-foreground">{matchedAction.aiDraft}</p>
+                                  <p className="text-[12.5px] leading-[1.7] text-muted-foreground">{matchedAction.aiDraft}</p>
                                 )}
-                                <div className="mt-2 flex gap-2">
-                                  <Button size="sm" className="h-7 text-xs" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); showToast("sent", `Message sent to ${actionClient.name.split(" ")[0]}`, "Delivered via portal and email"); }}>
+                                <div className="mt-2.5 flex gap-2">
+                                  <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); showToast("sent", `Message sent to ${actionClient.name.split(" ")[0]}`, "Delivered via portal and email"); }}>
                                     <SendIcon className="size-3" /> {editingDraft === matchedAction.id ? "Send edited" : "Send as Antonio"}
                                   </Button>
-                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingDraft(editingDraft === matchedAction.id ? null : matchedAction.id)}>
+                                  <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground" onClick={() => setEditingDraft(editingDraft === matchedAction.id ? null : matchedAction.id)}>
                                     <FileTextIcon className="size-3" /> {editingDraft === matchedAction.id ? "Cancel" : "Edit"}
                                   </Button>
                                 </div>
@@ -459,101 +738,87 @@ export default function Page() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* ── Today + Messages ── */}
-      <div className="grid gap-4 xl:grid-cols-5">
-        {/* Today's Schedule */}
-        <Card className="xl:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <CalendarIcon className="size-3.5" />
-              Today
-            </CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                <Link href="/dashboard/apps/calendar">
-                  Calendar <ChevronRightIcon className="size-3" />
-                </Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
+      {/* Right: Today + Messages (30%) */}
+      <div className="flex-[3] flex flex-col gap-5 min-w-0 pt-1 border-l border-border/30 pl-6">
+        {/* Today */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[13px] font-medium text-foreground">Today</span>
+            <Link href="/dashboard/apps/calendar" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+              Calendar &rarr;
+            </Link>
+          </div>
+          <div className="space-y-2">
             {todayAppointments.map((apt) => (
               <button
                 key={apt.name}
                 onClick={() => setSelectedAppointment(apt)}
-                className="bg-muted/50 flex w-full items-center gap-3 rounded-lg p-2.5 text-left transition-colors hover:bg-muted"
+                className="flex w-full items-center gap-3 rounded-xl border border-border/40 p-3 text-left transition-all duration-200 hover:bg-muted/40 hover:border-border/70 hover:shadow-sm"
               >
-                <Avatar className="size-8 shrink-0">
+                <Avatar className="size-7 shrink-0">
                   <AvatarImage src={apt.avatar} alt={apt.name} />
-                  <AvatarFallback className="text-[10px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                  <AvatarFallback className="text-[9px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium leading-tight">{apt.name}</div>
-                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                    {apt.type === "video" ? <VideoIcon className="size-3" /> : <PhoneIcon className="size-3" />}
+                  <div className="text-[12.5px] font-medium leading-tight">{apt.name}</div>
+                  <div className="text-muted-foreground flex items-center gap-1 text-[11px] mt-0.5">
+                    {apt.type === "video" ? <VideoIcon className="size-2.5" /> : <PhoneIcon className="size-2.5" />}
                     {apt.time}
-                    <span className="text-muted-foreground/60">·</span>
-                    {apt.note}
                   </div>
                 </div>
-                <ChevronRightIcon className="size-3.5 text-muted-foreground shrink-0" />
               </button>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Messages */}
-        <Card className="xl:col-span-3">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <MessageSquareIcon className="size-3.5" />
-              Messages
-              <span className="ml-1.5 flex size-[18px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">3</span>
-            </CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                <Link href="/dashboard/apps/chat">
-                  View all <ChevronRightIcon className="size-3" />
-                </Link>
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-0.5 pt-0">
+        <div className="border-t border-border/30 pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-medium text-foreground">Messages</span>
+              <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">3</span>
+            </div>
+            <Link href="/dashboard/apps/chat" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+              View all &rarr;
+            </Link>
+          </div>
+          <div className="space-y-1">
             {messages.map((msg, i) => (
               <Link
                 key={i}
                 href="/dashboard/apps/chat"
-                className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50"
+                className="flex items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-muted/40 hover:shadow-sm"
               >
-                <Avatar className="size-8 shrink-0">
+                <Avatar className="size-7 shrink-0">
                   <AvatarImage src={msg.avatar} alt={msg.name} />
-                  <AvatarFallback className="text-[10px]">{msg.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                  <AvatarFallback className="text-[9px]">{msg.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium leading-tight">{msg.name}</span>
-                    <span className="text-muted-foreground shrink-0 text-[11px]">{msg.time}</span>
+                    <span className="text-[12.5px] font-medium leading-tight">{msg.name}</span>
+                    <span className="text-muted-foreground/50 shrink-0 text-[10px]">{msg.time}</span>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{msg.message}</p>
+                  <p className="truncate text-[11px] text-muted-foreground mt-0.5">{msg.message}</p>
                 </div>
                 {msg.unreadCount > 0 && (
-                  <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
+                  <span className="flex size-[16px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white">
                     {msg.unreadCount}
                   </span>
                 )}
               </Link>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
-
+      </div>
 
       <ClientDetailDialog
         client={detailClient}

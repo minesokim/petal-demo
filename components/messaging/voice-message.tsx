@@ -25,7 +25,7 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
 
   const acceptItem = (index: number, text: string) => {
     setItemStatuses(prev => ({ ...prev, [index]: "accepted" }));
-    showToast("success", "Added to Open Items", text);
+    showToast("success", "Added to flags", text);
   };
 
   const dismissItem = (index: number) => {
@@ -105,7 +105,7 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
         </div>
       )}
 
-      {/* Suggested Open Items — actionable */}
+      {/* Suggested flags — actionable */}
       {suggestedItems.length > 0 && (
         <div>
           <button
@@ -169,7 +169,7 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
                               variant="ghost"
                               className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                               onClick={(e) => { e.stopPropagation(); acceptItem(i, item); }}
-                              title="Add to Open Items"
+                              title="Add to flags"
                             >
                               <Check className="size-3.5" />
                             </Button>

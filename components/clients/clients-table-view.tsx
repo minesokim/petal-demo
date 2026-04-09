@@ -334,7 +334,7 @@ function ClientRow({
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium truncate">
+              <span className="text-sm font-medium truncate font-display">
                 {client.fullName}
               </span>
               {client.type === "business" && (

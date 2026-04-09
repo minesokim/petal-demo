@@ -198,7 +198,7 @@ export function ClientsPipelineView({
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium truncate leading-tight">
+                      <p className="text-xs font-medium truncate leading-tight font-display">
                         {client.fullName}
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate leading-tight">
