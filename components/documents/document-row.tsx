@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ChevronRight, Download } from "lucide-react";
+import { Download, ChevronRight } from "lucide-react";
 import { DocTypeBadge } from "./doc-type-badge";
-import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { type MockDocument } from "@/lib/documents-mock-data";
+import { getIntelligenceForDocument } from "@/lib/documents-mock-data";
 import { useToast } from "@/components/ui/toast-notification";
 
 function timeAgo(date: string) {
@@ -23,64 +21,38 @@ interface DocumentRowProps {
   showNew?: boolean;
   showDate?: boolean;
   showClassification?: boolean;
+  onOpen?: (doc: MockDocument) => void;
 }
 
-export function DocumentRow({ doc, showNew = false, showDate = false, showClassification = false }: DocumentRowProps) {
-  const [previewOpen, setPreviewOpen] = useState(false);
+export function DocumentRow({ doc, showNew = false, showDate = false, showClassification = false, onOpen }: DocumentRowProps) {
   const { showToast } = useToast();
-
-  // Simulate AI auto-classification confidence based on doc type clarity
-  const classificationConfidence = doc.docType.includes("1099") || doc.docType.includes("W-2")
-    ? 98
-    : doc.docCategory === "income" ? 92
-    : doc.docCategory === "identity" ? 95
-    : 85;
+  const intel = getIntelligenceForDocument(doc.id);
 
   return (
-    <>
-      <div
-        onClick={() => setPreviewOpen(true)}
-        className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
-      >
-        <DocTypeBadge type={doc.docTypeLabel} />
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-medium">{doc.fileName}</div>
-          <div className="text-muted-foreground text-xs">
-            {doc.clientName} &middot; {doc.fileSize} &middot; {showDate ? new Date(doc.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : timeAgo(doc.uploadedAt)}
-          </div>
+    <div
+      onClick={() => onOpen?.(doc)}
+      className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+    >
+      <DocTypeBadge type={doc.docTypeLabel} />
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-medium">{doc.fileName.replace(/_/g, " ").replace(/\.[^.]+$/, "")}</div>
+        <div className="text-muted-foreground text-xs">
+          {doc.fileSize} &middot; {showDate ? new Date(doc.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : timeAgo(doc.uploadedAt)}
+          {intel && (
+            <span className="text-foreground/50"> &middot; {intel.keyDataPoints.length} fields extracted</span>
+          )}
         </div>
-        {showNew && !doc.viewedByPreparer && (
-          <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 border-0 text-[10px]">New</Badge>
-        )}
-        {showClassification && (
-          <span
-            className="text-[9px] text-muted-foreground"
-            title={`Auto-classified as ${doc.docTypeLabel} with ${classificationConfidence}% confidence`}
-          >
-            AI: {classificationConfidence}%
-          </span>
-        )}
-        {doc.status === "signed" && (
-          <span className="text-muted-foreground text-[11px] font-medium">Signed</span>
-        )}
-        {doc.status === "ready_for_review" && (
-          <Badge variant="outline" className="text-[10px]">Ready for review</Badge>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); showToast("success", `${doc.fileName} downloaded`); }}
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          title="Quick download"
-        >
-          <Download className="size-3.5" />
-        </button>
-        <ChevronRight className="text-muted-foreground size-4 shrink-0" />
       </div>
-
-      <DocumentPreviewDialog
-        document={doc}
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-      />
-    </>
+      {showNew && !doc.viewedByPreparer && (
+        <div className="size-2 rounded-full bg-blue-500 shrink-0" />
+      )}
+      {doc.status === "signed" && (
+        <span className="text-muted-foreground text-[11px]">Signed</span>
+      )}
+      {doc.status === "ready_for_review" && (
+        <Badge variant="outline" className="text-[10px]">Review</Badge>
+      )}
+      <ChevronRight className="text-muted-foreground/40 size-4 shrink-0" />
+    </div>
   );
 }
