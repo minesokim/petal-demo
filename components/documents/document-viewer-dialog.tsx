@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -156,17 +156,20 @@ export function DocumentViewerDialog({
 }: DocumentViewerDialogProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(initialDoc?.id || null);
   const [showPriorYear, setShowPriorYear] = useState(false);
+  const lastInitialDocId = useRef<string | null>(null);
 
-  // Update selectedDocId when a new document is passed in
-  const effectiveDocId = selectedDocId || initialDoc?.id || null;
-  const doc = effectiveDocId ? getDocumentById(effectiveDocId) : initialDoc;
+  // Only reset when a NEW initial doc is passed in (not on every render)
+  useEffect(() => {
+    if (initialDoc && initialDoc.id !== lastInitialDocId.current) {
+      lastInitialDocId.current = initialDoc.id;
+      setSelectedDocId(initialDoc.id);
+      setShowPriorYear(false);
+    }
+  }, [initialDoc?.id]);
+
+  const doc = selectedDocId ? getDocumentById(selectedDocId) : initialDoc;
   const resolvedClientId = clientId || doc?.clientId || "";
   const intel = doc ? getIntelligenceForDocument(doc.id) : null;
-
-  // Reset selection when dialog opens with a new doc
-  if (initialDoc && initialDoc.id !== selectedDocId && open) {
-    setSelectedDocId(initialDoc.id);
-  }
 
   if (!doc) return null;
 
