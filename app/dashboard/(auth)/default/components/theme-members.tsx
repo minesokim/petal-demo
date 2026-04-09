@@ -44,7 +44,7 @@ const members = [
   {
     id: 1,
     name: "Toby Belhome",
-    email: "contact@bundui.io",
+    email: "antonio@docket.tax",
     avatar: `/images/avatars/01.png`,
     role_id: 1
   },

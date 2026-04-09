@@ -15,7 +15,7 @@ import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { clients, actionItems, type Client, type InsightAction } from "@/lib/mock-data";
 import { initialTodos, type TodoItem } from "@/lib/actions-mock-data";
-import { MorningBriefing, SeasonProgress } from "@/components/insights";
+import { MorningBriefing } from "@/components/insights";
 import { morningBriefing } from "@/lib/insights-mock-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -36,9 +36,9 @@ const todayAppointments = [
 ];
 
 const messages = [
-  { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM", unread: true },
-  { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm instead of 2?", time: "8:15 AM", unread: true },
-  { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday", unread: true },
+  { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM", unreadCount: 2 },
+  { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm instead of 2?", time: "8:15 AM", unreadCount: 1 },
+  { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday", unreadCount: 3 },
 ];
 
 // need_you: ERO sign(2: Rodriguez,Aisha) + new_intake(3: Vladimir,Ashley,Fatima) + ready_to_prep(2: Miguel,Anthony) = 7
@@ -495,7 +495,7 @@ export default function Page() {
             <CardTitle className="flex items-center gap-2 text-sm">
               <MessageSquareIcon className="size-3.5" />
               Messages
-              <Badge variant="secondary" className="ml-1 h-5 rounded-full px-1.5 text-[10px] font-medium">3</Badge>
+              <span className="ml-1.5 flex size-[18px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">3</span>
             </CardTitle>
             <CardAction>
               <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
@@ -523,7 +523,11 @@ export default function Page() {
                   </div>
                   <p className="truncate text-xs text-muted-foreground">{msg.message}</p>
                 </div>
-                {msg.unread && <span className="size-2 shrink-0 rounded-full bg-blue-500" />}
+                {msg.unreadCount > 0 && (
+                  <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
+                    {msg.unreadCount}
+                  </span>
+                )}
               </Link>
             ))}
           </CardContent>

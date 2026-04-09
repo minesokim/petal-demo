@@ -8,6 +8,7 @@ import { ArrowUpRight, Check, Calendar } from "lucide-react";
 import { type Client, type ReturnStage, stageLabels, pendingIntakeContext } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { InsightDot } from "@/components/insights";
+import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
 import { getOneLineInsightForClient } from "@/lib/insights-mock-data";
 
 function formatCallTimeShort(dateStr: string) {
@@ -133,7 +134,8 @@ export function ClientsPipelineView({
   }, [clients, acceptedIds]);
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
+    <DualScrollContainer>
+    <div className="flex gap-3 min-w-max pb-4">
       {columns.map((col) => (
         <div key={col.key} className="w-[240px] shrink-0">
           {/* Column header */}
@@ -283,5 +285,6 @@ export function ClientsPipelineView({
         </div>
       ))}
     </div>
+    </DualScrollContainer>
   );
 }

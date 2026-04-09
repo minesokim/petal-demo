@@ -231,12 +231,12 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* AI Intelligence */}
+      {/* Docket Insight */}
       {hasIntel && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Brain className="size-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intelligence</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Insight</span>
             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium text-muted-foreground">Preview</Badge>
           </div>
 
@@ -509,93 +509,107 @@ export default function ClientOverviewPage() {
 
 // ── Intelligence Cards (matching popup dialog) ──
 
-// TIER 1: CRITICAL - Red left border, can't miss it
+// TIER 1: CRITICAL
 function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{alert.title}</span>
             {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
           </div>
-          <div className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{alert.fineRisk}</div>
+          <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
+          <div className="mt-2 flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+            <span className="text-red-600">{alert.fineRisk}</span>
+          </div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}>
-          Complete {alert.formRequired}
+          <Check className="size-3 mr-1" /> Acknowledge
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>Dismiss</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
+          <X className="size-3 mr-1" /> Dismiss
+        </Button>
       </div>
     </div>
   );
 }
 
-// TIER 2: ATTENTION - Amber left border, shows data
+// TIER 2: ATTENTION
 function AnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-sm font-semibold">{alert.metric}</div>
-        <TrendingDown className="size-4 text-amber-500 shrink-0" />
+    <div className="rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
+        <div className="flex-1">
+          <div className="text-sm font-semibold">{alert.metric}</div>
+        </div>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <div className="rounded-lg border p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
           <div className="text-[10px] text-muted-foreground">2024</div>
         </div>
-        <div className="rounded-lg border p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
           <div className="text-[10px] text-muted-foreground">2025</div>
         </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
           <div className="text-[10px] text-muted-foreground">Change</div>
         </div>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{alert.aiExplanation}</p>
+      <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{alert.aiExplanation}</p>
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus("flagged")}>
-          <AlertTriangle className="mr-1 size-3" /> Flag for review
+          Flag for review
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>Confirm and proceed</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>Proceed</Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
-          <Brain className="mr-1 size-3" /> Ask Docket
+          Ask Docket
         </Button>
       </div>
     </div>
   );
 }
 
-// TIER 3: OPPORTUNITY - Emerald left border, big savings number
+// TIER 3: OPPORTUNITY
 function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start justify-between">
-        <div>
-          <div className="text-sm font-semibold">{suggestion.deductionType}</div>
-          <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-emerald-500" />
+          <div>
+            <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+            <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+          </div>
         </div>
         <div className="text-right">
-          <div className="font-display text-xl tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">savings</div>
+          <div className="font-display text-lg tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground">estimated savings</div>
         </div>
       </div>
+      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{suggestion.basis}</p>
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("applied")}>
-          Apply ${suggestion.estimatedSavings.toLocaleString()} deduction
+          <Check className="size-3 mr-1" /> Apply
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>Dismiss</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
+          <X className="size-3 mr-1" /> Dismiss
+        </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
-          <Brain className="mr-1 size-3" /> Ask Docket
+          Ask Docket
         </Button>
       </div>
     </div>

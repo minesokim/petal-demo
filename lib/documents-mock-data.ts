@@ -173,6 +173,278 @@ export const clientNotes: ClientNote[] = [
 ];
 
 // ============================================================
+// SMART CHECKLIST (categorized with tax-relevant groupings)
+// ============================================================
+
+export type SmartChecklistStatus = "received" | "pending" | "flagged" | "dismissed"
+
+export interface SmartChecklistItem {
+  id: string
+  clientId: string
+  category: "income" | "deductions" | "other"
+  label: string
+  formName?: string // e.g. "W-2", "1099-NEC"
+  status: SmartChecklistStatus
+  documentId?: string
+  dismissedReason?: string
+  aiSummary?: string
+  flagReason?: string
+}
+
+export interface SmartChecklistCategory {
+  category: "income" | "deductions" | "other"
+  label: string
+  items: SmartChecklistItem[]
+  received: number
+  total: number
+}
+
+// Generate smart checklist from existing data
+export function getSmartChecklist(clientId: string): SmartChecklistCategory[] {
+  const docs = getClientDocuments(clientId)
+  const checklist = getClientChecklist(clientId)
+  const intelligence = getDocumentIntelligence(clientId)
+
+  // Map existing checklist items to smart format
+  const smartItems: SmartChecklistItem[] = checklist.map(item => {
+    const intel = item.documentId ? intelligence.find(i => i.documentId === item.documentId) : undefined
+    const smartCategory: "income" | "deductions" | "other" =
+      item.category === "income" || item.category === "business" ? "income" :
+      item.category === "deductions" ? "deductions" : "other"
+
+    return {
+      id: item.id,
+      clientId: item.clientId,
+      category: smartCategory,
+      label: item.label,
+      formName: item.docType === "w2" ? "W-2" :
+                item.docType === "1099_nec" ? "1099-NEC" :
+                item.docType === "1099_int" ? "1099-INT" :
+                item.docType === "id" ? "ID" :
+                item.docType === "return" ? "Prior Return" :
+                item.docType === "engagement" ? "Agreement" :
+                undefined,
+      status: item.received ? "received" : "pending",
+      documentId: item.documentId,
+      aiSummary: intel?.aiSummary,
+    }
+  })
+
+  // If no checklist exists, generate from documents
+  if (smartItems.length === 0 && docs.length > 0) {
+    for (const doc of docs) {
+      const smartCategory: "income" | "deductions" | "other" =
+        doc.docCategory === "income" || doc.docCategory === "business" ? "income" :
+        doc.docCategory === "deductions" ? "deductions" : "other"
+      const intel = intelligence.find(i => i.documentId === doc.id)
+
+      smartItems.push({
+        id: `smart-${doc.id}`,
+        clientId: doc.clientId,
+        category: smartCategory,
+        label: doc.fileName.replace(/_/g, " ").replace(/\.[^.]+$/, ""),
+        formName: doc.docTypeLabel,
+        status: "received",
+        documentId: doc.id,
+        aiSummary: intel?.aiSummary,
+      })
+    }
+  }
+
+  // Group by category
+  const categoryMap: Record<string, SmartChecklistItem[]> = {
+    income: [],
+    deductions: [],
+    other: [],
+  }
+
+  for (const item of smartItems) {
+    categoryMap[item.category]?.push(item)
+  }
+
+  const categoryLabels: Record<string, string> = {
+    income: "Income",
+    deductions: "Deductions",
+    other: "Other",
+  }
+
+  return Object.entries(categoryMap)
+    .filter(([, items]) => items.length > 0)
+    .map(([cat, items]) => ({
+      category: cat as "income" | "deductions" | "other",
+      label: categoryLabels[cat],
+      items,
+      received: items.filter(i => i.status === "received").length,
+      total: items.length,
+    }))
+}
+
+// Compact summary for client cards: "Income ✓ · Deductions 1/3 · Other ✓"
+export function getSmartChecklistSummary(clientId: string): string {
+  const categories = getSmartChecklist(clientId)
+  if (categories.length === 0) return ""
+
+  return categories.map(cat => {
+    if (cat.received === cat.total) return `${cat.label} \u2713`
+    return `${cat.label} ${cat.received}/${cat.total}`
+  }).join(" · ")
+}
+
+// ============================================================
+// DOCUMENT INTELLIGENCE
+// ============================================================
+
+export interface DocumentFlag {
+  type: "info" | "warning" | "error"
+  message: string
+}
+
+export interface DocumentIntelligence {
+  documentId: string
+  clientId: string
+  aiSummary: string
+  keyDataPoints: { label: string; value: string }[]
+  flags: DocumentFlag[]
+  duplicateOf?: string
+  priorYearComparison?: string
+}
+
+export const documentIntelligence: DocumentIntelligence[] = [
+  // Marcus Chen - W-2
+  {
+    documentId: "d101",
+    clientId: "c1",
+    aiSummary: "W-2 from Golden Dragon LLC for tax year 2025. Gross wages: $58,000. Federal tax withheld: $7,200. This is the primary employment income. Wages decreased from $96,000 last year due to the Pasadena location closure.",
+    keyDataPoints: [
+      { label: "Wages", value: "$58,000" },
+      { label: "Fed Withheld", value: "$7,200" },
+      { label: "State", value: "CA" },
+    ],
+    flags: [
+      { type: "warning", message: "Wages decreased 40% from prior year ($96,000). Consistent with reported location closure." },
+    ],
+    priorYearComparison: "Wages down $38,000 (40%) from 2024. Location closure explains the drop.",
+  },
+  // Marcus Chen - 1099-NEC
+  {
+    documentId: "d102",
+    clientId: "c1",
+    aiSummary: "1099-NEC for consulting work. Non-employee compensation: $12,000. This is new income not present in prior year.",
+    keyDataPoints: [
+      { label: "NEC Income", value: "$12,000" },
+      { label: "Payer", value: "Restaurant Consulting Group" },
+    ],
+    flags: [
+      { type: "info", message: "New income source not present in 2024. May need Schedule C." },
+    ],
+  },
+  // Priya Sharma - 1099-NEC TikTok
+  {
+    documentId: "d201",
+    clientId: "c2",
+    aiSummary: "1099-NEC from TikTok Creator Fund for tax year 2025. Non-employee compensation: $28,400. This is Priya's primary self-employment income. Document was a phone photo converted to PDF.",
+    keyDataPoints: [
+      { label: "NEC Income", value: "$28,400" },
+      { label: "Payer", value: "TikTok Inc." },
+    ],
+    flags: [
+      { type: "info", message: "Matches expected document from intake. Filed under Income." },
+      { type: "warning", message: "Document is a phone photo. Some fields may be unclear. Consider requesting PDF." },
+    ],
+  },
+  // Rodriguez - W-2 James
+  {
+    documentId: "d302",
+    clientId: "c3",
+    aiSummary: "W-2 from Riverside County Public Works for James Rodriguez. Gross wages: $72,400. Federal tax withheld: $9,800. Consistent with prior year.",
+    keyDataPoints: [
+      { label: "Wages", value: "$72,400" },
+      { label: "Fed Withheld", value: "$9,800" },
+      { label: "State", value: "CA" },
+    ],
+    flags: [
+      { type: "info", message: "Wages up 3% from prior year ($70,200). Normal increase." },
+    ],
+    priorYearComparison: "Wages up $2,200 (3%) from 2024.",
+  },
+  // Rodriguez - W-2 Sofia
+  {
+    documentId: "d303",
+    clientId: "c3",
+    aiSummary: "W-2 from Inland Empire School District for Sofia Rodriguez. Gross wages: $54,200. Federal tax withheld: $6,100. Teaching position, same employer as prior year.",
+    keyDataPoints: [
+      { label: "Wages", value: "$54,200" },
+      { label: "Fed Withheld", value: "$6,100" },
+      { label: "State", value: "CA" },
+    ],
+    flags: [],
+    priorYearComparison: "Wages up $1,800 (3.4%) from 2024.",
+  },
+  // Rodriguez - 1099-INT
+  {
+    documentId: "d304",
+    clientId: "c3",
+    aiSummary: "1099-INT from Chase Bank. Interest income: $340. Standard savings account interest.",
+    keyDataPoints: [
+      { label: "Interest", value: "$340" },
+      { label: "Bank", value: "Chase" },
+    ],
+    flags: [],
+  },
+  // Rodriguez - Rental income
+  {
+    documentId: "d305",
+    clientId: "c3",
+    aiSummary: "Rental income statement for investment property at 1824 Palm Ave, Riverside. Gross rental income: $24,000 ($2,000/mo). Property managed by Rodriguez family.",
+    keyDataPoints: [
+      { label: "Rental Income", value: "$24,000" },
+      { label: "Monthly", value: "$2,000" },
+      { label: "Property", value: "1824 Palm Ave" },
+    ],
+    flags: [
+      { type: "info", message: "Rental income consistent with prior year. Schedule E required." },
+    ],
+  },
+  // David Park - W-2
+  {
+    documentId: "d1101",
+    clientId: "c11",
+    aiSummary: "W-2 from Park Family Dental PC. Salary: $185,000. Federal tax withheld: $38,200. S-Corp officer compensation.",
+    keyDataPoints: [
+      { label: "Salary", value: "$185,000" },
+      { label: "Fed Withheld", value: "$38,200" },
+      { label: "State", value: "CA" },
+    ],
+    flags: [
+      { type: "info", message: "S-Corp reasonable compensation. Up from $170,000 prior year." },
+    ],
+    priorYearComparison: "Officer salary increased $15,000 (8.8%) from 2024.",
+  },
+  // Mei-Lin Wu - 1099-NEC
+  {
+    documentId: "d1802",
+    clientId: "c18",
+    aiSummary: "1099-NEC combined from multiple acupuncture clients. Total non-employee compensation: $78,000. This is Mei-Lin's sole source of Schedule C income.",
+    keyDataPoints: [
+      { label: "NEC Total", value: "$78,000" },
+      { label: "Clients", value: "Multiple" },
+    ],
+    flags: [
+      { type: "info", message: "Income consistent with prior year ($74,500). QBI deduction applies." },
+    ],
+    priorYearComparison: "NEC income up $3,500 (4.7%) from 2024.",
+  },
+]
+
+export function getDocumentIntelligence(clientId: string): DocumentIntelligence[] {
+  return documentIntelligence.filter(d => d.clientId === clientId)
+}
+
+export function getIntelligenceForDocument(documentId: string): DocumentIntelligence | undefined {
+  return documentIntelligence.find(d => d.documentId === documentId)
+}
+
+// ============================================================
 // HELPERS
 // ============================================================
 

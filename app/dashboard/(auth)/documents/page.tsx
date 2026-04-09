@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Search, ChevronRight, ChevronDown, FileText, Users } from "lucide-react";
+import { Search, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { clients } from "@/lib/mock-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +15,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { DocumentRow } from "@/components/documents/document-row";
 import { MissingDocRow } from "@/components/documents/missing-doc-row";
 import { DocTypeBadge } from "@/components/documents/doc-type-badge";
-import { BulkReminderPanel } from "@/components/documents/bulk-reminder-panel";
 import {
   mockDocuments, checklistItems, firmDocuments,
   getDocumentsByDay, getUnviewedCount, getMissingCount,
@@ -197,43 +194,18 @@ export default function DocumentsPage() {
 
         {/* MISSING */}
         <TabsContent value="missing" className="mt-4 space-y-4">
-          {/* Bulk Reminders Panel */}
-          <BulkReminderPanel />
-
-          {/* AI Summary Header */}
+          {/* Simple summary text */}
           {(() => {
-            const criticalDocs = missingItems.filter(i => i.daysSinceRequested >= 7);
-            const attentionDocs = missingItems.filter(i => i.daysSinceRequested >= 3 && i.daysSinceRequested < 7);
+            const criticalCount = missingItems.filter(i => i.daysSinceRequested >= 7).length;
             const uniqueClients = new Set(missingItems.map(i => i.clientId)).size;
-            const blockingReturns = missingItems.filter(i => {
-              const client = clients.find(c => c.id === i.clientId);
-              return client && client.returnStage === "collecting_docs" && i.required;
-            }).length;
 
             return (
-              <Card className="bg-muted/30 border-dashed">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-red-500" />
-                        <span className="text-sm"><span className="font-semibold">{criticalDocs.length}</span> critical</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-amber-500" />
-                        <span className="text-sm"><span className="font-semibold">{attentionDocs.length}</span> attention</span>
-                      </div>
-                      <Separator orientation="vertical" className="h-4" />
-                      <span className="text-sm text-muted-foreground">
-                        {missingCount} docs from {uniqueClients} clients
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      Sorted by urgency
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+              <p className="text-sm text-muted-foreground">
+                {missingCount} documents from {uniqueClients} clients
+                {criticalCount > 0 && (
+                  <span className="text-destructive font-medium"> · {criticalCount} overdue 7+ days</span>
+                )}
+              </p>
             );
           })()}
 

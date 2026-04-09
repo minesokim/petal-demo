@@ -22,7 +22,8 @@ const conversationList = Object.entries(sharedThreads).map(([clientId, msgs]) =>
   const lastMsg = msgs[msgs.length - 1];
   const lastContent = lastMsg.systemCard ? lastMsg.systemCard.title : lastMsg.content;
   const hasDraft = getClientDrafts(clientId).length > 0;
-  return { clientId, client, lastMessage: lastContent, lastTime: lastMsg.time, unread: clientId === "c2" || clientId === "c3" || clientId === "c11" || clientId === "c15", hasDraft, messages: msgs };
+  const unreadCount = clientId === "c2" ? 2 : clientId === "c3" ? 3 : clientId === "c11" ? 1 : clientId === "c15" ? 2 : 0;
+  return { clientId, client, lastMessage: lastContent, lastTime: lastMsg.time, unread: unreadCount > 0, unreadCount, hasDraft, messages: msgs };
 }).filter(Boolean).sort((a, b) => {
   if (a!.unread !== b!.unread) return a!.unread ? -1 : 1;
   if (a!.hasDraft !== b!.hasDraft) return a!.hasDraft ? -1 : 1;
@@ -89,7 +90,11 @@ export default function Page() {
                   </div>
                 )}
               </div>
-              {convo.unread && <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" />}
+              {convo.unreadCount > 0 && (
+                <span className="mt-2 flex size-[18px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white">
+                  {convo.unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </div>

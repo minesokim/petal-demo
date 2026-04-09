@@ -10,35 +10,31 @@ import {
 } from "@/components/ui/tooltip"
 import type { TrackingBadgeData } from "@/lib/mock-data"
 
+// Clean, minimal badge design — no colored backgrounds
+// Severity communicated through subtle text color + optional dot
 const variantStyles: Record<TrackingBadgeData["variant"], {
-  bg: string
   text: string
-  border: string
+  dot: string
 }> = {
   success: {
-    bg: "bg-emerald-50 dark:bg-emerald-900/30",
     text: "text-emerald-700 dark:text-emerald-400",
-    border: "border-emerald-200 dark:border-emerald-800",
+    dot: "bg-emerald-500",
   },
   warning: {
-    bg: "bg-amber-50 dark:bg-amber-900/30",
     text: "text-amber-700 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-800",
+    dot: "bg-amber-500",
   },
   danger: {
-    bg: "bg-red-50 dark:bg-red-900/30",
     text: "text-red-700 dark:text-red-400",
-    border: "border-red-200 dark:border-red-800",
+    dot: "bg-red-500",
   },
   info: {
-    bg: "bg-blue-50 dark:bg-blue-900/30",
-    text: "text-blue-700 dark:text-blue-400",
-    border: "border-blue-200 dark:border-blue-800",
+    text: "text-foreground/70",
+    dot: "bg-blue-500",
   },
   neutral: {
-    bg: "bg-muted/50",
     text: "text-muted-foreground",
-    border: "border-border",
+    dot: "bg-muted-foreground/40",
   },
 }
 
@@ -54,14 +50,14 @@ export function TrackingBadge({ badge, className }: TrackingBadgeProps) {
     <span
       data-slot="tracking-badge"
       className={cn(
-        "inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium",
-        "border whitespace-nowrap",
-        styles.bg,
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
+        "border border-border/60 bg-card",
+        "whitespace-nowrap",
         styles.text,
-        styles.border,
         className
       )}
     >
+      <span className={cn("size-1.5 rounded-full shrink-0", styles.dot)} />
       {badge.label}
     </span>
   )
@@ -97,7 +93,7 @@ export function TrackingBadgeGroup({ badges, maxVisible = 4, className }: Tracki
   return (
     <div
       data-slot="tracking-badge-group"
-      className={cn("flex flex-wrap items-center gap-1", className)}
+      className={cn("flex flex-wrap items-center gap-1.5", className)}
     >
       {visibleBadges.map((badge) => (
         <TrackingBadge key={badge.id} badge={badge} />
@@ -106,7 +102,7 @@ export function TrackingBadgeGroup({ badges, maxVisible = 4, className }: Tracki
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-muted text-muted-foreground border border-border cursor-help">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-card border border-border/60 text-muted-foreground cursor-help">
                 +{hiddenCount}
               </span>
             </TooltipTrigger>

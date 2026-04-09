@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,29 +98,49 @@ export default function ClientDetailLayout({ children }: { children: React.React
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-0 border-b">
-        {tabs.map(tab => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === tab.href
-                ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-            {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="text-muted-foreground ml-1.5 text-xs">{tab.badge}</span>
-            )}
-          </Link>
-        ))}
-      </div>
+      <LayoutGroup>
+        <div className="relative flex gap-0.5 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border">
+          {tabs.map(tab => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`relative z-10 rounded-t-md px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.href
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {activeTab === tab.href && (
+                <motion.span
+                  layoutId="active-client-tab"
+                  className="absolute inset-0 rounded-t-md bg-muted"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">
+                {tab.label}
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="text-muted-foreground ml-1.5 text-xs tabular-nums">{tab.badge}</span>
+                )}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </LayoutGroup>
 
-      {/* Tab content */}
-      <div className="pt-6">
-        {children}
-      </div>
+      {/* Tab content — animated on route change */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+          className="pt-6"
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

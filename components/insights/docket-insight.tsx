@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { ChevronDown, AlertTriangle, AlertCircle, Info } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { DocketInsight, InsightSeverity, InsightAction } from "@/lib/mock-data"
@@ -11,34 +11,22 @@ import { ActivityTimeline } from "./activity-timeline"
 
 const severityConfig: Record<InsightSeverity, {
   label: string
-  icon: React.ElementType | null
-  borderClass: string
-  bgClass: string
-  iconClass: string
+  dotClass: string
   labelClass: string
 }> = {
   insight: {
     label: "Insight",
-    icon: null,
-    borderClass: "border-l-emerald-400",
-    bgClass: "bg-emerald-50/50 dark:bg-emerald-950/20",
-    iconClass: "text-emerald-600 dark:text-emerald-400",
+    dotClass: "bg-emerald-500",
     labelClass: "text-emerald-700 dark:text-emerald-400",
   },
   concern: {
     label: "Needs Attention",
-    icon: null,
-    borderClass: "border-l-amber-400",
-    bgClass: "bg-amber-50/50 dark:bg-amber-950/20",
-    iconClass: "text-amber-600 dark:text-amber-400",
+    dotClass: "bg-amber-500",
     labelClass: "text-amber-700 dark:text-amber-400",
   },
   alert: {
     label: "Action Required",
-    icon: null,
-    borderClass: "border-l-red-400",
-    bgClass: "bg-red-50/50 dark:bg-red-950/20",
-    iconClass: "text-red-600 dark:text-red-400",
+    dotClass: "bg-red-500",
     labelClass: "text-red-700 dark:text-red-400",
   },
 }
@@ -69,9 +57,6 @@ function InsightActionButton({ action, onAction }: InsightActionButtonProps) {
       variant={action.variant === "primary" ? "default" : action.variant === "secondary" ? "outline" : "ghost"}
       size="xs"
       onClick={() => onAction?.(action)}
-      className={cn(
-        action.variant === "primary" && "bg-primary hover:bg-primary/90"
-      )}
     >
       {action.label}
     </Button>
@@ -99,27 +84,24 @@ export function DocketInsightCard({
   const [showTimeline, setShowTimeline] = React.useState(false)
 
   const config = severityConfig[insight.severity]
-  const Icon = config.icon
 
   return (
     <div
       data-slot="docket-insight"
       data-severity={insight.severity}
       className={cn(
-        "border-l-2 rounded-r-lg transition-all duration-200",
-        config.borderClass,
-        config.bgClass,
+        "rounded-lg border bg-card transition-all duration-200",
         className
       )}
     >
-      {/* Header - Always visible */}
+      {/* Header */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center justify-between px-3.5 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg"
       >
-        <div className="flex items-center gap-1.5">
-          {Icon && <Icon className={cn("size-3.5", config.iconClass)} />}
+        <div className="flex items-center gap-2">
+          <span className={cn("size-1.5 rounded-full shrink-0", config.dotClass)} />
           <span className={cn(
             "text-[10px] font-semibold uppercase tracking-wide",
             config.labelClass
@@ -150,24 +132,29 @@ export function DocketInsightCard({
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 space-y-3">
+            <div className="px-3.5 pb-3.5 space-y-3">
               {/* AI Commentary */}
               <p className="text-sm text-foreground/90 leading-relaxed">
                 {insight.content}
               </p>
 
-              {/* Action buttons */}
-              {insight.actions.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {insight.actions.map((action) => (
-                    <InsightActionButton
-                      key={action.id}
-                      action={action}
-                      onAction={onAction}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Action buttons — hide primary when draft message exists (draft replaces it) */}
+              {(() => {
+                const actions = insight.draftMessage
+                  ? insight.actions.filter(a => a.variant !== "primary")
+                  : insight.actions
+                return actions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {actions.map((action) => (
+                      <InsightActionButton
+                        key={action.id}
+                        action={action}
+                        onAction={onAction}
+                      />
+                    ))}
+                  </div>
+                ) : null
+              })()}
 
               {/* Draft message */}
               {insight.draftMessage && (
@@ -220,7 +207,7 @@ export function DocketInsightCard({
   )
 }
 
-// Compact variant for client cards - shows minimal info until expanded
+// Compact variant for client cards
 interface CompactInsightProps {
   insight: DocketInsight
   onExpand?: () => void
@@ -229,7 +216,6 @@ interface CompactInsightProps {
 
 export function CompactInsight({ insight, onExpand, className }: CompactInsightProps) {
   const config = severityConfig[insight.severity]
-  const Icon = config.icon
 
   return (
     <button
@@ -237,14 +223,11 @@ export function CompactInsight({ insight, onExpand, className }: CompactInsightP
       onClick={onExpand}
       className={cn(
         "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left transition-colors",
-        "border-l-2",
-        config.borderClass,
-        config.bgClass,
-        "hover:bg-black/[0.03] dark:hover:bg-white/[0.03]",
+        "hover:bg-muted/30",
         className
       )}
     >
-      {Icon && <Icon className={cn("size-3.5 shrink-0", config.iconClass)} />}
+      <span className={cn("size-1.5 rounded-full shrink-0", config.dotClass)} />
       <span className="text-xs text-foreground/80 line-clamp-1 flex-1">
         {insight.title || insight.content.slice(0, 60) + "..."}
       </span>

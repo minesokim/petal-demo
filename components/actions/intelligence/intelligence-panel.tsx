@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Check, X, AlertTriangle, TrendingDown, FileText,
-  Calculator, Mail, Clock, ChevronRight, DollarSign, Brain
+  Calculator, Mail, Clock, ChevronRight, DollarSign, Brain, Sparkles
 } from "lucide-react";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { type DocumentExtraction } from "@/lib/actions-mock-data";
@@ -21,25 +21,24 @@ import {
 import { useAIPanelAsk } from "@/components/ai-panel";
 
 // ============================================================
-// Document Extraction Card - clickable, opens review dialog
+// Document Extraction Card — flagship feature, needs to stand out
 // ============================================================
 function DocumentExtractionCard({ extraction, onOpen }: { extraction: typeof documentExtractions[0]; onOpen: () => void }) {
   return (
-    <button onClick={onOpen} className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all hover:shadow-md hover:border-primary/20">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-        <FileText className="size-5 text-primary" />
+    <button onClick={onOpen} className="flex w-full items-center gap-4 rounded-lg border p-3.5 text-left transition-all hover:shadow-md hover:border-primary/30 group">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+        <FileText className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{extraction.documentType}</span>
-          <span className="text-xs text-muted-foreground">{extraction.clientName}</span>
           <Badge variant={extraction.overallConfidence >= 90 ? "default" : "secondary"} className="text-[10px]">{extraction.overallConfidence}%</Badge>
         </div>
         <div className="text-xs text-muted-foreground mt-0.5">
-          {extraction.fields.length} fields · {extraction.fields.filter(f => f.needsReview).length} need review
+          {extraction.fields.length} fields extracted · {extraction.fields.filter(f => f.needsReview).length} need review
         </div>
       </div>
-      <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+      <ChevronRight className="size-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
     </button>
   );
 }
@@ -49,7 +48,7 @@ function DocumentExtractionCard({ extraction, onOpen }: { extraction: typeof doc
 // ============================================================
 function AutoCategorizeCard({ item }: { item: typeof autoCategorizeItems[0] }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border p-3">
+    <div className="flex items-center gap-3 rounded-lg border p-3">
       <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
         <FileText className="size-3.5 text-muted-foreground" />
       </div>
@@ -66,34 +65,34 @@ function AutoCategorizeCard({ item }: { item: typeof autoCategorizeItems[0] }) {
 }
 
 // ============================================================
-// TIER 1: CRITICAL — Compliance alerts with fine risk
-// Red left border, red bg tint. Can't miss it.
+// Compliance Flag Card — clean, no red tint backgrounds
 // ============================================================
 function ComplianceFlagCard({ alert }: { alert: typeof complianceAlerts[0] }) {
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
 
   return (
-    <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="size-4 text-red-500 shrink-0 mt-0.5" />
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{alert.title}</span>
             {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">{alert.clientName}</div>
-          <div className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
-            {alert.fineRisk}
+          <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
+          <div className="mt-2 flex items-center gap-4 text-xs">
+            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+            <span className="text-red-600">{alert.fineRisk}</span>
           </div>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}>
-          Complete {alert.formRequired}
+          <Check className="size-3 mr-1" /> Acknowledge
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
-          Dismiss
+          <X className="size-3 mr-1" /> Dismiss
         </Button>
       </div>
     </div>
@@ -101,49 +100,50 @@ function ComplianceFlagCard({ alert }: { alert: typeof complianceAlerts[0] }) {
 }
 
 // ============================================================
-// TIER 2: ATTENTION — Anomalies, questions for Antonio
-// Amber left border. Shows data, asks to confirm.
+// Anomaly Alert Card — clean data display
 // ============================================================
 function AnomalyAlertCard({ alert, onAskDocket }: { alert: typeof anomalyAlerts[0]; onAskDocket?: () => void }) {
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
 
   return (
-    <div className="rounded-xl border p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <div className="rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
+        <div className="flex-1">
           <div className="text-sm font-semibold">{alert.metric}</div>
           <div className="text-xs text-muted-foreground">{alert.clientName}</div>
         </div>
-        <TrendingDown className="size-4 text-amber-500 shrink-0" />
       </div>
 
-      {/* Data comparison - compact */}
+      {/* Data comparison */}
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <div className="rounded-lg border p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
           <div className="text-[10px] text-muted-foreground">2024</div>
         </div>
-        <div className="rounded-lg border p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
           <div className="text-[10px] text-muted-foreground">2025</div>
         </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-2 text-center">
+        <div className="rounded-lg border p-2.5 text-center">
           <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
           <div className="text-[10px] text-muted-foreground">Change</div>
         </div>
       </div>
 
+      <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{alert.aiExplanation}</p>
+
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus("flagged")}>
-          <AlertTriangle className="mr-1 size-3" /> Flag for review
+          Flag for review
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>
-          Confirm and proceed
+          Proceed
         </Button>
         {onAskDocket && (
           <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskDocket}>
-            <Brain className="mr-1 size-3" /> Ask Docket
+            Ask Docket
           </Button>
         )}
       </div>
@@ -152,35 +152,38 @@ function AnomalyAlertCard({ alert, onAskDocket }: { alert: typeof anomalyAlerts[
 }
 
 // ============================================================
-// TIER 3: OPPORTUNITY — Deductions, savings
-// Emerald left border. Big savings number.
+// Deduction Suggestion Card
 // ============================================================
 function DeductionSuggestionCard({ suggestion, onAskDocket }: { suggestion: typeof deductionSuggestions[0]; onAskDocket?: () => void }) {
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
 
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start justify-between">
-        <div>
-          <div className="text-sm font-semibold">{suggestion.deductionType}</div>
-          <div className="text-xs text-muted-foreground">{suggestion.clientName} · {suggestion.section}</div>
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-emerald-500" />
+          <div>
+            <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+            <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+          </div>
         </div>
         <div className="text-right">
-          <div className="font-display text-xl tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">savings</div>
+          <div className="font-display text-lg tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground">estimated savings</div>
         </div>
       </div>
+      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{suggestion.basis}</p>
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("applied")}>
-          Apply ${suggestion.estimatedSavings.toLocaleString()} deduction
+          <Check className="size-3 mr-1" /> Apply
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
-          Dismiss
+          <X className="size-3 mr-1" /> Dismiss
         </Button>
         {onAskDocket && (
           <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskDocket}>
-            <Brain className="mr-1 size-3" /> Ask Docket
+            Ask Docket
           </Button>
         )}
       </div>
@@ -189,16 +192,18 @@ function DeductionSuggestionCard({ suggestion, onAskDocket }: { suggestion: type
 }
 
 // ============================================================
-// TIER 4: INFO — Extension predictions, quiet
-// No colored border. Clean data display.
+// Extension Prediction Card
 // ============================================================
 function ExtensionPredictionCard({ prediction }: { prediction: typeof extensionPredictions[0] }) {
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">{prediction.clientName}</div>
-          <div className="text-xs text-muted-foreground">Extension likelihood</div>
+        <div className="flex items-center gap-3">
+          <span className={`size-2 shrink-0 rounded-full ${prediction.probability >= 80 ? "bg-red-500" : "bg-amber-500"}`} />
+          <div>
+            <div className="text-sm font-semibold">{prediction.clientName}</div>
+            <div className="text-xs text-muted-foreground">Extension likelihood</div>
+          </div>
         </div>
         <div className="font-display text-2xl tabular-nums tracking-tight">{prediction.probability}%</div>
       </div>
@@ -218,15 +223,15 @@ function ExtensionPredictionCard({ prediction }: { prediction: typeof extensionP
 }
 
 // ============================================================
-// TIER 4: INFO — Estimated Tax, clean
+// Estimated Tax Card
 // ============================================================
 function EstimatedTaxCard({ calc }: { calc: typeof estimatedTaxCalcs[0] }) {
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-semibold">{calc.clientName}</div>
-          <div className="text-xs text-muted-foreground">2026 quarterly estimates</div>
+          <div className="text-sm font-semibold">2026 quarterly estimates</div>
+          <div className="text-xs text-muted-foreground">{calc.clientName}</div>
         </div>
         <div className="font-display text-xl tabular-nums tracking-tight">${calc.totalEstimated.toLocaleString()}</div>
       </div>
@@ -238,16 +243,16 @@ function EstimatedTaxCard({ calc }: { calc: typeof estimatedTaxCalcs[0] }) {
           </div>
         ))}
       </div>
-      <div className="mt-3 text-xs text-muted-foreground">{calc.basis}</div>
+      <p className="mt-3 text-xs text-muted-foreground">{calc.basis}</p>
       <Button size="sm" variant="outline" className="h-7 text-xs mt-3">
-        <DollarSign className="mr-1 size-3" /> Send to client
+        Send to client
       </Button>
     </div>
   );
 }
 
 // ============================================================
-// IRS Notice Card — Tier 1 (critical, with AI draft)
+// IRS Notice Card
 // ============================================================
 function IrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
   const [state, setState] = useState<DemoState>("idle");
@@ -255,13 +260,13 @@ function IrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
   const [draft, setDraft] = useState(notice.aiDraftResponse);
 
   return (
-    <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start gap-3">
-        <Mail className="size-4 text-red-500 shrink-0 mt-0.5" />
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="flex-1">
           <div className="text-sm font-semibold">{notice.noticeType} Notice</div>
           <div className="text-xs text-muted-foreground">{notice.clientName} · {notice.receivedDate}</div>
-          <div className="mt-1 text-xs">{notice.summary}</div>
+          <p className="mt-1.5 text-xs text-foreground/80">{notice.summary}</p>
         </div>
       </div>
       <Separator className="my-3" />
@@ -275,7 +280,7 @@ function IrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
           </div>
         </div>
       ) : state === "complete" ? (
-        <div className="flex items-center gap-2 rounded-lg border bg-emerald-50 p-3 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-2 rounded-lg border p-3">
           <Check className="size-4 text-emerald-600" />
           <span className="text-sm font-medium">Response sent</span>
         </div>
@@ -302,6 +307,23 @@ export function IntelligencePanel() {
 
   return (
     <div className="space-y-6">
+      {/* Document Extraction — flagship, at the top */}
+      {documentExtractions.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Extraction</h3>
+          <div className="rounded-lg border bg-card p-4 space-y-2">
+            <div className="flex items-center gap-3 mb-1">
+              <Sparkles className="size-4 text-primary" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Extracted Documents</div>
+                <div className="text-[11px] text-muted-foreground">Review fields, then push to OLT</div>
+              </div>
+            </div>
+            {documentExtractions.map(de => <DocumentExtractionCard key={de.id} extraction={de} onOpen={() => setSelectedExtraction(de)} />)}
+          </div>
+        </div>
+      )}
+
       {/* Critical: Compliance + IRS Notices */}
       {(complianceAlerts.length > 0 || irsNotices.length > 0) && (
         <div>
@@ -341,16 +363,6 @@ export function IntelligencePanel() {
                 onAskDocket={() => askDocket(`Tell me more about the ${ds.deductionType} deduction for ${ds.clientName} under ${ds.section}.`)}
               />
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Document Extraction */}
-      {documentExtractions.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Extraction</h3>
-          <div className="space-y-2">
-            {documentExtractions.map(de => <DocumentExtractionCard key={de.id} extraction={de} onOpen={() => setSelectedExtraction(de)} />)}
           </div>
         </div>
       )}

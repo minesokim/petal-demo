@@ -398,7 +398,7 @@ export const _originalNavItems: NavGroup[] = [
       },
       {
         title: "Github",
-        href: "https://github.com/bundui",
+        href: "https://github.com/minesokim/antonio-tax-ui",
         icon: GithubIcon,
         newTab: true
       }
@@ -499,9 +499,17 @@ export function NavMain() {
                     </SidebarMenuBadge>
                   )}
                   {!!item.isDataBadge && (
-                    <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
-                      {item.isDataBadge}
-                    </SidebarMenuBadge>
+                    item.title === "Messages" ? (
+                      <SidebarMenuBadge>
+                        <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold leading-none text-white">
+                          {item.isDataBadge}
+                        </span>
+                      </SidebarMenuBadge>
+                    ) : (
+                      <SidebarMenuBadge className="peer-hover/menu-button:text-foreground">
+                        {item.isDataBadge}
+                      </SidebarMenuBadge>
+                    )
                   )}
                 </SidebarMenuItem>
               ))}

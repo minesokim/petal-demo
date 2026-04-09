@@ -1,28 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "motion/react"
-import { Calendar, TrendingUp, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { MorningBriefingData, InsightAction } from "@/lib/mock-data"
-
-function formatBriefingDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-function formatBriefingTime(): string {
-  return new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
 
 interface MorningBriefingProps {
   briefing: MorningBriefingData
@@ -38,80 +19,58 @@ export function MorningBriefing({
   className,
 }: MorningBriefingProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    <div
       data-slot="morning-briefing"
-      className={cn(
-        "relative overflow-hidden rounded-xl border",
-        "bg-gradient-to-br from-primary/5 via-primary/3 to-transparent",
-        "border-primary/20",
-        className
-      )}
+      className={cn("space-y-4", className)}
     >
-      {/* Decorative gradient orb */}
-      <div className="absolute -top-20 -right-20 size-40 rounded-full bg-primary/10 blur-3xl" />
-
-      <div className="relative p-5">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-            Today's Briefing
+      {/* Overnight — what happened while you were away */}
+      {briefing.overnight && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Overnight
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            {formatBriefingDate(briefing.date)}
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {briefing.overnight}
           </p>
         </div>
+      )}
 
-        {/* Greeting and content */}
-        <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-foreground/90">
-            <span className="font-medium">{briefing.greeting}, {preparerName}.</span>{" "}
-            <span className="text-foreground/80">
-              <strong className="font-medium text-foreground/90">Overnight:</strong>{" "}
-              {briefing.overnight}
-            </span>
-          </p>
-
-          <p className="text-sm leading-relaxed text-foreground/80">
-            <strong className="font-medium text-foreground/90">Today:</strong>{" "}
-            {briefing.today}
-          </p>
-
-          {briefing.concern && (
-            <p className="text-sm leading-relaxed">
-              <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="size-3" />
-                Concern:
-              </span>{" "}
-              <span className="text-foreground/80">{briefing.concern}</span>
-            </p>
-          )}
-
-          <p className="text-sm leading-relaxed text-foreground/80">
-            <strong className="font-medium text-foreground/90">Pacing:</strong>{" "}
-            {briefing.pacing}
-          </p>
-        </div>
-
-        {/* Priority actions */}
-        {briefing.priorityActions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/40">
-            {briefing.priorityActions.map((action, index) => (
-              <Button
-                key={action.id}
-                variant={index === 0 ? "default" : "outline"}
-                size="sm"
-                onClick={() => onAction?.(action)}
-              >
-                {action.label}
-              </Button>
-            ))}
-          </div>
-        )}
+      {/* Today — what matters right now */}
+      <div className="space-y-1">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Today
+        </p>
+        <p className="text-sm text-foreground/90 leading-relaxed">
+          {briefing.today}
+        </p>
       </div>
-    </motion.div>
+
+      {/* Concern — proactive AI judgment */}
+      {briefing.concern && (
+        <div className="flex gap-2.5 items-start">
+          <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-amber-500" />
+          <p className="text-sm text-foreground/80 leading-relaxed">
+            {briefing.concern}
+          </p>
+        </div>
+      )}
+
+      {/* Priority actions */}
+      {briefing.priorityActions.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {briefing.priorityActions.map((action, index) => (
+            <Button
+              key={action.id}
+              variant={index === 0 ? "default" : "outline"}
+              size="sm"
+              onClick={() => onAction?.(action)}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -133,17 +92,14 @@ export function CompactBriefingCard({ headline, stats, onExpand, className }: Co
       type="button"
       onClick={onExpand}
       className={cn(
-        "w-full text-left p-4 rounded-lg border",
-        "bg-gradient-to-r from-primary/5 to-transparent",
-        "border-primary/20 hover:border-primary/30 transition-colors",
+        "w-full text-left p-4 rounded-lg border bg-card",
+        "hover:bg-muted/30 transition-colors",
         className
       )}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-          Today's Briefing
-        </span>
-      </div>
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+        Today's Briefing
+      </p>
       <p className="text-sm text-foreground/80 line-clamp-2 mb-3">
         {headline}
       </p>
@@ -163,7 +119,7 @@ export function CompactBriefingCard({ headline, stats, onExpand, className }: Co
   )
 }
 
-// Season progress indicator
+// SeasonProgress kept for backward compatibility but simplified
 interface SeasonProgressProps {
   daysToDeadline: number
   filedCount: number
@@ -179,7 +135,6 @@ export function SeasonProgress({
   lastYearPace,
   className,
 }: SeasonProgressProps) {
-  const percentComplete = Math.round((filedCount / totalClients) * 100)
   const isAheadOfPace = lastYearPace !== undefined && filedCount > lastYearPace
 
   return (
@@ -187,46 +142,18 @@ export function SeasonProgress({
       data-slot="season-progress"
       className={cn("p-4 rounded-lg border bg-card", className)}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Season Progress</span>
-        </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium">
+          <span className="tabular-nums">{filedCount}</span>/{totalClients} filed
+        </span>
         <span className={cn(
-          "text-xs font-medium px-2 py-0.5 rounded-full",
-          daysToDeadline <= 7
-            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-            : daysToDeadline <= 21
-              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-              : "bg-muted text-muted-foreground"
+          "text-xs",
+          daysToDeadline <= 7 ? "text-red-600" :
+          daysToDeadline <= 21 ? "text-amber-600" :
+          "text-muted-foreground"
         )}>
-          {daysToDeadline} days to deadline
+          {daysToDeadline} days left
         </span>
-      </div>
-
-      {/* Progress bar */}
-      <div className="relative h-2 bg-muted rounded-full overflow-hidden mb-2">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percentComplete}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="absolute inset-y-0 left-0 bg-primary rounded-full"
-        />
-      </div>
-
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">
-          <span className="font-semibold text-foreground">{filedCount}</span> of {totalClients} filed
-        </span>
-        {lastYearPace !== undefined && (
-          <span className={cn(
-            "flex items-center gap-1",
-            isAheadOfPace ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-          )}>
-            <TrendingUp className={cn("size-3", !isAheadOfPace && "rotate-180")} />
-            {isAheadOfPace ? "Ahead" : "Behind"} vs last year ({lastYearPace})
-          </span>
-        )}
       </div>
     </div>
   )

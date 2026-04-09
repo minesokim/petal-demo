@@ -49,7 +49,7 @@ export default function Page() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="contact@bundui.com" required />
+              <Input id="email" type="email" placeholder="antonio@docket.tax" required />
             </div>
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>

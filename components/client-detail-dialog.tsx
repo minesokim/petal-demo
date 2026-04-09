@@ -17,7 +17,9 @@ import {
 import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
-import { getClientChecklist, getClientNotes, groupDocumentsByCategory } from "@/lib/documents-mock-data";
+import { getClientChecklist, getClientNotes, groupDocumentsByCategory, getSmartChecklist, getDocumentIntelligence, getClientDocuments, getIntelligenceForDocument } from "@/lib/documents-mock-data";
+import { SmartChecklist } from "@/components/documents/smart-checklist";
+import { DocumentIntelligenceCard } from "@/components/documents/document-intelligence-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,6 +125,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const checklist = getClientChecklist(client.id);
   const docGroups = groupDocumentsByCategory(client.id);
   const notes = getClientNotes(client.id);
+  const smartCategories = getSmartChecklist(client.id);
+  const clientDocs = getClientDocuments(client.id);
+  const clientIntelligence = getDocumentIntelligence(client.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -248,7 +253,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         {/* Tabbed content */}
         <div className="overflow-y-auto" style={{ maxHeight: client.clientStatus === "pending" ? "calc(90vh - 340px)" : "calc(90vh - 120px)" }}>
           <Tabs defaultValue="overview" className="px-6 pt-2 pb-6">
-            <TabsList variant="line" className="mb-4">
+            <TabsList variant="fill" className="mb-4 w-full">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="intake">Intake</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -400,12 +405,12 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* AI Intelligence */}
+              {/* Docket Insight */}
               {hasIntel && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Brain className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intelligence</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Docket Insight</span>
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium text-muted-foreground">Preview</Badge>
                   </div>
 
@@ -702,8 +707,40 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 );
               })()}
 
-              {checklist.length > 0 && <DocumentChecklist items={checklist} />}
-              {docGroups.length > 0 && (
+              {/* Smart checklist — categorized view */}
+              {smartCategories.length > 0 && (
+                <div className="rounded-xl border p-3">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Document Checklist</div>
+                  <SmartChecklist categories={smartCategories} />
+                </div>
+              )}
+
+              {/* Document intelligence cards */}
+              {clientDocs.filter(d => d.uploadedBy === "client").length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Uploaded Documents</div>
+                  {clientDocs.filter(d => d.uploadedBy === "client").map(doc => {
+                    const intel = getIntelligenceForDocument(doc.id);
+                    if (intel) {
+                      return (
+                        <DocumentIntelligenceCard
+                          key={doc.id}
+                          intelligence={intel}
+                          fileName={doc.fileName}
+                          docTypeLabel={doc.docTypeLabel}
+                          fileSize={doc.fileSize}
+                          uploadedAt={doc.uploadedAt}
+                        />
+                      );
+                    }
+                    return null;
+                  }).filter(Boolean)}
+                </div>
+              )}
+
+              {/* Existing checklist + doc groups as fallback */}
+              {smartCategories.length === 0 && checklist.length > 0 && <DocumentChecklist items={checklist} />}
+              {smartCategories.length === 0 && docGroups.length > 0 && (
                 <div className="space-y-4">
                   {docGroups.map(g => <DocumentGroup key={g.category} label={g.label} docs={g.docs} missing={g.missing} />)}
                 </div>
@@ -889,16 +926,14 @@ function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId
   );
 }
 
-// ── Inline Intelligence Cards ──
+// ── Inline Docket Insight Cards ──
 
 function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   return (
-    <div className={`rounded-xl border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
+    <div className={`rounded-lg border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
-        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${alert.severity === "critical" ? "bg-red-100 dark:bg-red-900/50" : "bg-amber-100 dark:bg-amber-900/50"}`}>
-          <AlertTriangle className={`size-4 ${alert.severity === "critical" ? "text-red-600" : "text-amber-600"}`} />
-        </div>
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{alert.title}</span>
@@ -907,7 +942,7 @@ function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeo
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{alert.description}</p>
           <div className="mt-2 flex items-center gap-4 text-xs">
             <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
-            <span className="text-red-600">Fine risk: {alert.fineRisk}</span>
+            <span className="text-red-600">{alert.fineRisk}</span>
           </div>
         </div>
       </div>
@@ -915,7 +950,7 @@ function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeo
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => setStatus("acknowledged")}><Check className="size-3.5" /> Acknowledge</Button>
           <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}>Ask Docket</Button>
         </div>
       )}
     </div>
@@ -925,23 +960,21 @@ function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeo
 function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   return (
-    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+    <div className={`rounded-lg border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
-          <TrendingDown className="size-4 text-amber-600" />
-        </div>
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
         <div className="flex-1">
           <div className="text-sm font-semibold">Year-over-year anomaly: {alert.metric}</div>
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-lg border p-2 text-center">
+            <div className="rounded-lg border p-2.5 text-center">
               <div className="font-display text-base tabular-nums">${(alert.priorYear / 1000).toFixed(0)}K</div>
               <div className="text-[10px] text-muted-foreground">2024</div>
             </div>
-            <div className="rounded-lg border p-2 text-center">
+            <div className="rounded-lg border p-2.5 text-center">
               <div className="font-display text-base tabular-nums">${(alert.currentYear / 1000).toFixed(0)}K</div>
               <div className="text-[10px] text-muted-foreground">2025</div>
             </div>
-            <div className="rounded-lg border border-red-200 bg-red-50 p-2 text-center dark:border-red-900 dark:bg-red-950/30">
+            <div className="rounded-lg border p-2.5 text-center">
               <div className="font-display text-base tabular-nums text-red-600">{alert.changePercent}%</div>
               <div className="text-[10px] text-muted-foreground">Change</div>
             </div>
@@ -951,9 +984,9 @@ function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof a
       </div>
       {status === "pending" && (
         <div className="mt-3 flex gap-2">
-          <Button size="sm" variant="destructive" onClick={() => setStatus("flagged")}><AlertTriangle className="size-3.5" /> Flag for review</Button>
-          <Button size="sm" variant="outline" onClick={() => setStatus("proceeded")}><Check className="size-3.5" /> Proceed</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}><Brain className="size-3.5" /> Ask Docket</Button>
+          <Button size="sm" variant="outline" onClick={() => setStatus("flagged")}>Flag for review</Button>
+          <Button size="sm" variant="ghost" onClick={() => setStatus("proceeded")}>Proceed</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>Ask Docket</Button>
         </div>
       )}
     </div>
@@ -963,23 +996,26 @@ function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof a
 function InlineDeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
   return (
-    <div className={`rounded-xl border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
-      <div className="flex items-start gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-          <DollarSign className="size-4 text-emerald-600" />
+    <div className={`rounded-lg border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-emerald-500" />
+          <div>
+            <div className="text-sm font-semibold">{suggestion.deductionType}</div>
+            <div className="text-xs text-muted-foreground">{suggestion.section}</div>
+          </div>
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">{suggestion.deductionType}</div>
-          <div className="text-xs text-muted-foreground">{suggestion.section}</div>
-          <div className="mt-2 font-display text-xl tabular-nums tracking-tight text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()} savings</div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{suggestion.description}</p>
+        <div className="text-right">
+          <div className="font-display text-lg tabular-nums text-emerald-600">~${suggestion.estimatedSavings.toLocaleString()}</div>
+          <div className="text-[10px] text-muted-foreground">estimated savings</div>
         </div>
       </div>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{suggestion.description}</p>
       {status === "pending" && (
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => setStatus("applied")}><Check className="size-3.5" /> Apply</Button>
           <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}: ${suggestion.description}`)}><Brain className="size-3.5" /> Ask Docket</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}: ${suggestion.description}`)}>Ask Docket</Button>
         </div>
       )}
     </div>
@@ -992,15 +1028,13 @@ function InlineIrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
   const [draft, setDraft] = useState(notice.aiDraftResponse);
 
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-lg border p-4">
       <div className="flex items-start gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/50">
-          <Mail className="size-4 text-red-600" />
-        </div>
+        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
         <div className="flex-1">
           <div className="text-sm font-semibold">{notice.noticeType} Notice</div>
           <div className="text-xs text-muted-foreground">Received {notice.receivedDate}</div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{notice.summary}</p>
+          <p className="mt-2 text-xs leading-relaxed text-foreground/80">{notice.summary}</p>
         </div>
       </div>
       <Separator className="my-3" />
@@ -1009,12 +1043,12 @@ function InlineIrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
         <div>
           <textarea value={draft} onChange={e => setDraft(e.target.value)} className="w-full min-h-[100px] rounded-lg border bg-background p-2 text-xs font-mono outline-none resize-none" />
           <div className="mt-2 flex gap-2">
-            <Button size="sm" onClick={() => { setEditing(false); setState("processing"); setTimeout(() => setState("complete"), 1500); }}><Check className="size-3.5" /> Send</Button>
-            <Button size="sm" variant="outline" onClick={() => setEditing(false)}><X className="size-3.5" /> Cancel</Button>
+            <Button size="sm" onClick={() => { setEditing(false); setState("processing"); setTimeout(() => setState("complete"), 1500); }}>Send</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
           </div>
         </div>
       ) : state === "complete" ? (
-        <div className="flex items-center gap-2 rounded-lg border bg-emerald-50 p-3 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-2 rounded-lg border p-3">
           <Check className="size-4 text-emerald-600" />
           <span className="text-sm font-medium">Response sent</span>
         </div>
@@ -1022,8 +1056,8 @@ function InlineIrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
         <div>
           <pre className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">{draft}</pre>
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => { setState("processing"); setTimeout(() => setState("complete"), 1500); }}><Mail className="size-3.5" /> Send response</Button>
-            <Button size="sm" variant="outline" onClick={() => setEditing(true)}><FileText className="size-3.5" /> Edit</Button>
+            <Button size="sm" onClick={() => { setState("processing"); setTimeout(() => setState("complete"), 1500); }}>Send response</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit draft</Button>
           </div>
         </div>
       )}

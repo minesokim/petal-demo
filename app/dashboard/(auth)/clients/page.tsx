@@ -12,6 +12,7 @@ import { ViewModeToggle, type ViewMode } from "@/components/clients/view-mode-to
 import { ClientsFilterPills, type BucketFilter } from "@/components/clients/clients-filter-pills";
 import { ClientsTableView, type SortKey, type SortDir } from "@/components/clients/clients-table-view";
 import { ClientsPipelineView } from "@/components/clients/clients-pipeline-view";
+import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
 import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText, ArrowUpDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { clients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
@@ -224,9 +225,10 @@ export default function ClientsPage() {
 
       {/* Cards View (original) */}
       {viewMode === "cards" && (
+        <DualScrollContainer>
         <div className={cn(
           "flex gap-3 pb-4",
-          columnData.length > 3 ? "overflow-x-auto" : ""
+          columnData.length > 3 ? "min-w-max" : ""
         )}>
           {columnData.map((col) => (
             <div key={col.key} className={cn(
@@ -360,6 +362,7 @@ export default function ClientsPage() {
             </div>
           ))}
         </div>
+        </DualScrollContainer>
       )}
 
       {/* Table View */}

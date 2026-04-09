@@ -35,9 +35,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script src="https://dashboard.shadcnuikit.com/iframe-listener.js" strategy="afterInteractive" />
-      </head>
+      <head />
       <body
         suppressHydrationWarning
         className={cn("bg-background group/layout font-sans", fontVariables)}
