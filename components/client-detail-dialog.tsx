@@ -48,6 +48,15 @@ import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { UploadZone } from "@/components/documents/upload-zone";
 import { DocumentChecklist } from "@/components/documents/document-checklist";
 import { DocumentGroup } from "@/components/documents/document-group";
+import { DocumentViewerDialog } from "@/components/documents/document-viewer-dialog";
+import { OpenItemsSection } from "@/components/issues/open-items-section";
+import { UnifiedTimeline } from "@/components/messaging/unified-timeline";
+import { ChannelSelector } from "@/components/messaging/channel-selector";
+import { getUnifiedThread, type UnifiedMessage, type CommChannel } from "@/lib/comms-mock-data";
+import { getClientActivity } from "@/lib/activity-mock-data";
+import { ActivityFilterBar, type FilterOption } from "@/components/activity/activity-filter-bar";
+import { AuditTrailTimeline } from "@/components/activity/audit-trail-timeline";
+import type { MockDocument } from "@/lib/documents-mock-data";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -87,6 +96,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [assignedTier, setAssignedTier] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [viewerDoc, setViewerDoc] = useState<MockDocument | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<FilterOption>("all");
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
 
@@ -255,7 +267,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         <div className="flex-1 overflow-y-auto min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="px-6 pt-2 pb-6">
             <TabsList variant="fill" className="mb-4 w-full">
-              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
+              {["overview", "intake", "documents", "messages", "activity", "billing", "notes"].map(tab => (
                 <TabsTrigger key={tab} value={tab} className="relative">
                   {activeTab === tab && (
                     <motion.span
@@ -286,29 +298,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 />
               )}
 
-              {/* Feed actions — filter out signature actions when ERO card handles it */}
-              {(() => {
-                const filteredFeed = currentStage === "pay_and_sign"
-                  ? clientFeedActions.filter(a => a.category !== "signature")
-                  : clientFeedActions;
-                const filteredActions = clientActions.filter(a => a.type !== "signature_needed");
-                return (
-                  <>
-                    {filteredFeed.length > 0 && (
-                      <div className="space-y-3">
-                        {filteredFeed.map(action => (
-                          <ActionCard key={action.id} action={action} onClick={() => { setSelectedAction(action); setSheetOpen(true); }} />
-                        ))}
-                      </div>
-                    )}
-                    {filteredActions.length > 0 && filteredFeed.length === 0 && (
-                      <div className="space-y-3">
-                        {filteredActions.map(action => <ActionDraftCard key={action.id} action={action} />)}
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+              {/* Open Items */}
+              <OpenItemsSection clientId={client.id} />
 
               {/* Ready to Prep / Transition — animated (synced with full page) */}
               <AnimatePresence mode="wait">
@@ -665,117 +656,77 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             </TabsContent>
 
             {/* DOCUMENTS TAB */}
-            <TabsContent value="documents" className="space-y-5">
+            <TabsContent value="documents" className="space-y-4">
               <UploadZone clientName={client.fullName.split(" ")[0]} />
 
-              {/* Document status summary (synced with full page) */}
+              {/* Status summary */}
               {(() => {
                 const isFiled = client.returnStage === "filed";
                 const allReceived = client.documentsSubmitted >= client.documentsRequired || isFiled;
                 const totalDocs = docGroups.reduce((sum, g) => sum + g.docs.length, 0);
                 const missingCount = checklist.filter(c => c.required && !c.received).length;
                 return (
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-xl border p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`flex size-9 items-center justify-center rounded-xl ${allReceived ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted"}`}>
+                        <div className={`flex size-8 items-center justify-center rounded-lg ${allReceived ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted"}`}>
                           {allReceived ? <CheckCircle className="size-4 text-emerald-600" /> : <FileText className="size-4 text-muted-foreground" />}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">
-                              {allReceived ? "All documents received" : `${client.documentsSubmitted} of ${client.documentsRequired} received`}
-                            </span>
-                            {allReceived && (
-                              <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px]"><Check className="mr-1 size-3" /> Complete</Badge>
-                            )}
-                            {!allReceived && missingCount > 0 && (
-                              <Badge variant="outline" className="border-amber-200 text-amber-700 text-[10px]">{missingCount} missing</Badge>
-                            )}
-                          </div>
-                          {!allReceived && (
-                            <div className="mt-1.5 flex items-center gap-2">
-                              <Progress value={docPercent} className="h-1.5 w-24" />
-                              <span className="text-[11px] tabular-nums text-muted-foreground">{docPercent}%</span>
-                            </div>
+                          <span className="text-sm font-semibold">
+                            {allReceived ? "All documents received" : `${client.documentsSubmitted} of ${client.documentsRequired} received`}
+                          </span>
+                          {!allReceived && missingCount > 0 && (
+                            <Badge variant="outline" className="ml-2 border-amber-200 text-amber-700 text-[10px]">{missingCount} missing</Badge>
                           )}
-                          {allReceived && totalDocs > 0 && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{totalDocs} files uploaded</p>
+                          {!allReceived && (
+                            <div className="mt-1 flex items-center gap-2">
+                              <Progress value={docPercent} className="h-1.5 w-24" />
+                              <span className="text-[10px] tabular-nums text-muted-foreground">{docPercent}%</span>
+                            </div>
                           )}
                         </div>
                       </div>
-                      {allReceived && totalDocs > 0 && (
-                        <Button size="sm" variant="outline" className="gap-1.5 shrink-0" disabled={downloadingAll} onClick={() => { setDownloadingAll(true); setTimeout(() => setDownloadingAll(false), 1500); }}>
-                          {downloadingAll ? <><Loader2 className="size-3.5 animate-spin" /> Downloading...</> : <><Download className="size-3.5" /> Download all</>}
-                        </Button>
-                      )}
                     </div>
                   </div>
                 );
               })()}
 
-              {/* Smart checklist — categorized view */}
-              {smartCategories.length > 0 && (
-                <div className="rounded-xl border p-3">
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Document Checklist</div>
-                  <SmartChecklist categories={smartCategories} />
-                </div>
-              )}
-
-              {/* Document intelligence cards */}
-              {clientDocs.filter(d => d.uploadedBy === "client").length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Uploaded Documents</div>
-                  {clientDocs.filter(d => d.uploadedBy === "client").map(doc => {
-                    const intel = getIntelligenceForDocument(doc.id);
-                    if (intel) {
-                      return (
-                        <DocumentIntelligenceCard
-                          key={doc.id}
-                          intelligence={intel}
-                          fileName={doc.fileName}
-                          docTypeLabel={doc.docTypeLabel}
-                          fileSize={doc.fileSize}
-                          uploadedAt={doc.uploadedAt}
-                        />
-                      );
-                    }
-                    return null;
-                  }).filter(Boolean)}
-                </div>
-              )}
-
-              {/* Existing checklist + doc groups as fallback */}
-              {smartCategories.length === 0 && checklist.length > 0 && <DocumentChecklist items={checklist} />}
-              {smartCategories.length === 0 && docGroups.length > 0 && (
+              {/* Document groups — click opens viewer dialog */}
+              {docGroups.length > 0 ? (
                 <div className="space-y-4">
-                  {docGroups.map(g => <DocumentGroup key={g.category} label={g.label} docs={g.docs} missing={g.missing} />)}
+                  {docGroups.map(g => (
+                    <DocumentGroup
+                      key={g.category}
+                      label={g.label}
+                      docs={g.docs}
+                      missing={g.missing}
+                      onOpenDocument={(doc) => { setViewerDoc(doc); setViewerOpen(true); }}
+                    />
+                  ))}
                 </div>
-              )}
+              ) : client.documentsSubmitted === 0 && client.returnStage !== "filed" ? (
+                <div className="py-4 text-center text-sm text-muted-foreground">No documents uploaded yet.</div>
+              ) : client.documentsSubmitted > 0 ? (
+                <GeneratedDocList client={client} />
+              ) : null}
 
-              {/* Filed clients - show success banner but keep docs accessible */}
               {client.returnStage === "filed" && (
                 <div className="rounded-xl border bg-emerald-50/50 p-3 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle className="size-4" /> Return filed and accepted</div>
-                  <p className="mt-1 text-xs text-muted-foreground">All documents retained for audit support and next year's filing.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">All documents retained for audit support.</p>
                 </div>
-              )}
-
-              {/* Auto-generate doc list for clients without explicit checklist data */}
-              {checklist.length === 0 && docGroups.length === 0 && client.documentsSubmitted > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Documents on file</div>
-                  <GeneratedDocList client={client} />
-                </div>
-              )}
-              {checklist.length === 0 && docGroups.length === 0 && client.documentsSubmitted === 0 && client.returnStage !== "filed" && (
-                <div className="py-4 text-center text-sm text-muted-foreground">No documents uploaded yet. Send the intake form to get started.</div>
               )}
             </TabsContent>
 
-            {/* MESSAGES TAB */}
+            {/* MESSAGES TAB — unified comms */}
             <TabsContent value="messages">
-              <ClientMessagesInline clientId={client.id} clientAvatar={client.avatar} clientName={client.fullName} />
+              <DialogMessagesTab client={client} />
+            </TabsContent>
+
+            {/* ACTIVITY TAB */}
+            <TabsContent value="activity">
+              <DialogActivityTab client={client} activityFilter={activityFilter} setActivityFilter={setActivityFilter} />
             </TabsContent>
 
             {/* BILLING TAB */}
@@ -794,6 +745,23 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
       {selectedAction && <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedAction(null); }} />}
+      <DocumentViewerDialog
+        document={viewerDoc}
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+        hasPrev={viewerDoc ? clientDocs.findIndex(d => d.id === viewerDoc.id) > 0 : false}
+        hasNext={viewerDoc ? clientDocs.findIndex(d => d.id === viewerDoc.id) < clientDocs.length - 1 : false}
+        onPrev={() => {
+          if (!viewerDoc) return;
+          const idx = clientDocs.findIndex(d => d.id === viewerDoc.id);
+          if (idx > 0) setViewerDoc(clientDocs[idx - 1]);
+        }}
+        onNext={() => {
+          if (!viewerDoc) return;
+          const idx = clientDocs.findIndex(d => d.id === viewerDoc.id);
+          if (idx < clientDocs.length - 1) setViewerDoc(clientDocs[idx + 1]);
+        }}
+      />
     </Dialog>
   );
 }
@@ -936,6 +904,76 @@ function EditableNotes({ initialNotes }: { initialNotes: string }) {
 }
 
 // Generated doc list for clients without explicit document data
+// ── Unified Messages Tab for Dialog ──
+function DialogMessagesTab({ client }: { client: Client }) {
+  const baseThread = getUnifiedThread(client.id);
+  const [localMsgs, setLocalMsgs] = useState<UnifiedMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [composeChannel, setComposeChannel] = useState<Exclude<CommChannel, "voice">>("portal");
+  const thread = [...baseThread, ...localMsgs];
+
+  const suggestSms = !client.lastPortalLogin ||
+    (Date.now() - new Date(client.lastPortalLogin).getTime()) / 86400000 > 7;
+
+  const sendMsg = () => {
+    if (!input.trim()) return;
+    setLocalMsgs(prev => [...prev, {
+      id: `sent-${Date.now()}`,
+      sender: "preparer",
+      channel: composeChannel,
+      content: input,
+      timestamp: new Date().toISOString(),
+    }]);
+    setInput("");
+  };
+
+  return (
+    <div className="flex flex-col h-full -mb-6">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-3">
+        <UnifiedTimeline messages={thread} client={client} />
+      </div>
+      <div className="shrink-0 border-t pt-2 pb-6 bg-background space-y-2">
+        <ChannelSelector value={composeChannel} onChange={setComposeChannel} suggestSms={suggestSms} />
+        <div className="flex items-center gap-2">
+          <input
+            placeholder={composeChannel === "email" ? "Compose email..." : composeChannel === "sms" ? "Type a text..." : `Message ${client.fullName.split(" ")[0]}...`}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendMsg()}
+            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none"
+          />
+          <Button size="icon" className="size-9 shrink-0" onClick={sendMsg} disabled={!input.trim()}>
+            <Send className="size-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Activity Tab for Dialog ──
+function DialogActivityTab({ client, activityFilter, setActivityFilter }: {
+  client: Client;
+  activityFilter: FilterOption;
+  setActivityFilter: (f: FilterOption) => void;
+}) {
+  const allEvents = getClientActivity(client.id);
+  const counts: Record<FilterOption, number> = { all: allEvents.length, antonio: 0, client: 0, ai: 0, system: 0 };
+  for (const e of allEvents) {
+    if (e.actor && e.actor in counts) counts[e.actor as FilterOption]++;
+  }
+  const filtered = activityFilter === "all" ? allEvents : allEvents.filter(e => e.actor === activityFilter);
+
+  return (
+    <div className="space-y-3">
+      <ActivityFilterBar active={activityFilter} onChange={setActivityFilter} counts={counts} />
+      <div className="max-h-[calc(90vh-280px)] overflow-y-auto">
+        <AuditTrailTimeline events={filtered} clientAvatar={client.avatar} clientName={client.fullName} />
+      </div>
+    </div>
+  );
+}
+
 function GeneratedDocList({ client }: { client: Client }) {
   const docs: { name: string; type: string; size: string }[] = [];
 
