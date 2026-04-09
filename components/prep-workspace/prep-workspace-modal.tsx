@@ -674,15 +674,42 @@ interface PrepWorkspaceModalProps {
 export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep }: PrepWorkspaceModalProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showingSummary, setShowingSummary] = useState(true);
+  const [docketOpen, setDocketOpen] = useState(false);
+  const [docketMessages, setDocketMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [docketInput, setDocketInput] = useState("");
+  const [docketTyping, setDocketTyping] = useState(false);
   const selectedDoc = selectedDocId ? getDocumentById(selectedDocId) : null;
   const { showToast } = useToast();
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
 
-  // Ask Docket — opens the AI panel with the question pre-filled + client context
-  let askDocket = (_q: string) => {};
-  try { askDocket = useAIPanelAsk(); } catch {}
+  const simulateDocketResponse = (question: string) => {
+    setDocketMessages(prev => [...prev, { role: "user", text: question }]);
+    setDocketTyping(true);
+    // Simulate AI thinking + response
+    setTimeout(() => {
+      const responses: Record<string, string> = {
+        default: `Based on ${client.fullName}'s documents, here's what I found:\n\nAll ${client.documentsSubmitted} documents have been received and processed. The key items to review during preparation are the income sources and any flagged anomalies shown in the prep summary.\n\nWant me to look at something specific?`,
+      };
+      // Simple keyword matching for demo
+      const q = question.toLowerCase();
+      let response = responses.default!;
+      if (q.includes("revenue") || q.includes("drop") || q.includes("closure")) {
+        response = `The 40% revenue drop from $238K to $142K is primarily due to the Pasadena location (Golden Dragon #3) closure in Q2 2025. The expense records stop in June, which is consistent with a mid-year closure.\n\n**Key risk:** The IRS may flag this on the Schedule C without supporting documentation. I recommend getting written confirmation from Marcus about the closure date and circumstances before filing.\n\nThe remaining two locations show stable revenue, so this isn't a business-wide decline.`;
+      } else if (q.includes("consulting") || q.includes("1099") || q.includes("schedule c")) {
+        response = `The $12,000 1099-NEC from Restaurant Consulting Group is new income not present in 2024. Two options:\n\n1. **Separate Schedule C** — if this is a distinct business activity (consulting vs restaurant)\n2. **Same Schedule C** — if it's related to Golden Dragon operations\n\nI'd recommend asking Marcus during the March 30 call. If it's a separate activity, it may qualify for its own QBI deduction.`;
+      } else if (q.includes("equipment") || q.includes("depreciation") || q.includes("disposal")) {
+        response = `The $23,000 equipment disposal from the Riverside location needs careful treatment:\n\n- **Sale**: Report gain/loss on Form 4797\n- **Abandonment**: Deduct remaining basis as ordinary loss\n- **Trade-in**: Like-kind exchange rules may apply\n\nThe tax impact varies significantly. An abandonment gives the best deduction. Check with Marcus on what actually happened with the equipment.`;
+      } else if (q.includes("flag") || q.includes("wage") || q.includes("confirm")) {
+        response = `There are 4 open flags for Marcus:\n\n1. **Wage decrease** — W-2 dropped 40% ($96K → $58K). Consistent with location closure but needs verbal confirmation.\n2. **New consulting income** — $12K 1099-NEC needs Schedule C classification.\n3. **Equipment classification** — $23K disposal method TBD.\n4. **Review call** — Scheduled March 30 at 2pm, covers all of the above.\n\nResolving flags 1-3 requires information from the call. I'd prep talking points for each.`;
+      }
+      setDocketTyping(false);
+      setDocketMessages(prev => [...prev, { role: "assistant", text: response }]);
+    }, 1500);
+  };
+
   const handleAskDocket = (question: string) => {
-    askDocket(question);
+    setDocketOpen(true);
+    if (question) simulateDocketResponse(question);
   };
 
   const handleDocSelect = (docId: string) => { setSelectedDocId(docId); setShowingSummary(false); };
@@ -754,15 +781,135 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             )}
           </AnimatePresence>
 
-          {/* Right: Sidebar */}
-          <div className="w-[320px] shrink-0 border-l border-border/40 overflow-y-auto">
-            <PrepSidebar
-              client={client}
-              showingSummary={showingSummary}
-              selectedDoc={selectedDoc}
-              onCompletePrep={onCompletePrep}
-              onAskDocket={handleAskDocket}
-            />
+          {/* Right: Sidebar or Docket Chat */}
+          <div className="w-[360px] shrink-0 border-l border-border/40 flex flex-col overflow-hidden">
+            <AnimatePresence mode="wait">
+              {docketOpen ? (
+                <motion.div
+                  key="docket"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col h-full"
+                >
+                  {/* Docket header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="size-3.5 text-muted-foreground" />
+                      <span className="text-xs font-semibold">Ask Docket</span>
+                      <span className="text-[10px] text-muted-foreground">· {client.fullName}</span>
+                    </div>
+                    <Button variant="ghost" size="icon-sm" onClick={() => setDocketOpen(false)}>
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                    {docketMessages.length === 0 && !docketTyping && (
+                      <div className="py-8 text-center">
+                        <MessageSquare className="size-6 text-muted-foreground/30 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">Ask anything about {client.fullName.split(" ")[0]}'s return</p>
+                        <div className="mt-3 space-y-1.5">
+                          {[
+                            `What's blocking ${client.fullName.split(" ")[0]}'s return?`,
+                            "Explain the revenue drop",
+                            "Summarize all flags",
+                          ].map((suggestion, i) => (
+                            <button
+                              key={i}
+                              onClick={() => simulateDocketResponse(suggestion)}
+                              className="block w-full text-left rounded-lg border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {docketMessages.map((msg, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn(
+                          "text-xs leading-relaxed",
+                          msg.role === "user"
+                            ? "ml-8 rounded-lg bg-primary text-primary-foreground px-3 py-2"
+                            : "mr-4 text-foreground/85 whitespace-pre-line"
+                        )}
+                      >
+                        {msg.text}
+                      </motion.div>
+                    ))}
+                    {docketTyping && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 text-xs text-muted-foreground py-2"
+                      >
+                        <motion.div
+                          className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                        />
+                        Thinking...
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Input */}
+                  <div className="border-t px-3 py-2.5 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={docketInput}
+                        onChange={e => setDocketInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && docketInput.trim()) {
+                            simulateDocketResponse(docketInput.trim());
+                            setDocketInput("");
+                          }
+                        }}
+                        placeholder="Ask about this return..."
+                        className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+                      />
+                      <Button
+                        size="icon"
+                        className="size-8 shrink-0"
+                        disabled={!docketInput.trim()}
+                        onClick={() => {
+                          if (docketInput.trim()) {
+                            simulateDocketResponse(docketInput.trim());
+                            setDocketInput("");
+                          }
+                        }}
+                      >
+                        <Send className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="sidebar"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex-1 overflow-y-auto"
+                >
+                  <PrepSidebar
+                    client={client}
+                    showingSummary={showingSummary}
+                    selectedDoc={selectedDoc}
+                    onCompletePrep={onCompletePrep}
+                    onAskDocket={handleAskDocket}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </DialogContent>
