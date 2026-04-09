@@ -96,7 +96,7 @@ export function DocumentViewerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[100vh] w-[100vw] max-w-[100vw] rounded-none border-0 flex-col gap-0 overflow-hidden p-0 sm:rounded-none">
+      <DialogContent className="flex !h-[88vh] !w-[92vw] !max-w-[92vw] flex-col gap-0 overflow-hidden p-0" showCloseButton={false}>
         {/* Header */}
         <div className="flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-3 min-w-0">
