@@ -34,6 +34,7 @@ import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
+import { Form8867Dialog } from "@/components/compliance/form-8867-dialog";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { BillingCard } from "@/components/billing/billing-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -576,32 +577,54 @@ export default function ClientOverviewPage() {
 // TIER 1: CRITICAL
 function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
+  const [form8867Open, setForm8867Open] = useState(false);
+  const { showToast } = useToast();
   if (status !== "pending") return null;
+  const isForm8867 = alert.formRequired === "Form 8867";
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">{alert.title}</span>
-            {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
-          <div className="mt-2 flex items-center gap-4 text-xs">
-            <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
-            <span className="text-red-600">{alert.fineRisk}</span>
+    <>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{alert.title}</span>
+              {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
+            <div className="mt-2 flex items-center gap-4 text-xs">
+              <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+              <span className="text-red-600">{alert.fineRisk}</span>
+            </div>
           </div>
         </div>
+        <div className="mt-3 flex items-center gap-2">
+          {isForm8867 ? (
+            <Button size="sm" className="h-7 text-xs" onClick={() => setForm8867Open(true)}>
+              Begin Due Diligence
+            </Button>
+          ) : (
+            <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}>
+              <Check className="size-3 mr-1" /> Acknowledge
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
+            <X className="size-3 mr-1" /> Dismiss
+          </Button>
+        </div>
       </div>
-      <div className="mt-3 flex items-center gap-2">
-        <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}>
-          <Check className="size-3 mr-1" /> Acknowledge
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
-          <X className="size-3 mr-1" /> Dismiss
-        </Button>
-      </div>
-    </div>
+      {isForm8867 && (
+        <Form8867Dialog
+          clientName={clientName}
+          open={form8867Open}
+          onOpenChange={setForm8867Open}
+          onComplete={() => {
+            setStatus("acknowledged");
+            showToast("success", "Due diligence complete", `Form 8867 completed for ${clientName}`);
+          }}
+        />
+      )}
+    </>
   );
 }
 
