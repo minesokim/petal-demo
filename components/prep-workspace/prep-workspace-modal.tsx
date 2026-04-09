@@ -201,10 +201,10 @@ function DocTree({ clientId, selectedDocId, onSelect, onSummary, showingSummary 
 // ═══════════════════════════════════════════════
 // PREP SUMMARY LINE ITEM
 // ═══════════════════════════════════════════════
-function SummaryLineItem({ label, source, amount, priorYear, verified, onToggleVerified, onDocClick, flagType, docTypeBadge, allFields }: {
+function SummaryLineItem({ label, source, amount, priorYear, verified, onToggleVerified, onDocClick, flagType, flagMessage, docTypeBadge, allFields }: {
   label: string; source: string; amount: string; priorYear?: string;
   verified?: boolean; onToggleVerified?: () => void; onDocClick?: () => void; flagType?: "info" | "warning" | "error";
-  docTypeBadge?: string; allFields?: { label: string; value: string }[];
+  flagMessage?: string; docTypeBadge?: string; allFields?: { label: string; value: string }[];
 }) {
   const isVerified = verified ?? false;
   const [expanded, setExpanded] = useState(false);
@@ -219,8 +219,8 @@ function SummaryLineItem({ label, source, amount, priorYear, verified, onToggleV
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{label}</span>
-            {flagType === "warning" && <AlertTriangle className="size-3 text-amber-500" />}
-            {flagType === "error" && <AlertTriangle className="size-3 text-red-500" />}
+            {flagType === "warning" && <span title={flagMessage || "Needs attention"}><AlertTriangle className="size-3 text-amber-500 cursor-help" /></span>}
+            {flagType === "error" && <span title={flagMessage || "Action required"}><AlertTriangle className="size-3 text-red-500 cursor-help" /></span>}
           </div>
           <span className="text-xs text-muted-foreground">{source}</span>
         </div>
@@ -295,7 +295,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
   const returnDocs = docs.filter(d => d.docCategory === "returns" && d.status === "ready_for_review");
 
   // Calculate totals from extracted data
-  const incomeItems: { label: string; source: string; amount: string; rawAmount: number; priorYear?: string; docId: string; flagType?: "info" | "warning" | "error"; docTypeBadge: string; allFields: { label: string; value: string }[] }[] = [];
+  const incomeItems: { label: string; source: string; amount: string; rawAmount: number; priorYear?: string; docId: string; flagType?: "info" | "warning" | "error"; flagMessage?: string; docTypeBadge: string; allFields: { label: string; value: string }[] }[] = [];
   const deductionItems: typeof incomeItems = [];
   const withholdingItems: { label: string; amount: string; rawAmount: number }[] = [];
 
@@ -318,6 +318,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
       priorYear: intel.priorYearComparison ? (intel.priorYearComparison.includes("up") ? `+${intel.priorYearComparison.match(/\([\d.]+%\)/)?.[0]?.replace(/[()]/g, "") || ""} vs 2024` : intel.priorYearComparison.includes("down") ? `-${intel.priorYearComparison.match(/\([\d.]+%\)/)?.[0]?.replace(/[()]/g, "") || ""} vs 2024` : undefined) : undefined,
       docId: doc.id,
       flagType: flagType !== "info" ? flagType : undefined,
+      flagMessage: intel.flags.length > 0 ? intel.flags[0]!.message : undefined,
       docTypeBadge: doc.docTypeLabel,
       allFields: intel.keyDataPoints,
     });
@@ -396,7 +397,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className="font-display text-base tracking-tight mb-2"
+              className="text-base font-bold tracking-tight mb-2"
             >
               {insight.title}
             </motion.h3>
@@ -452,6 +453,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
                   amount={item.amount}
                   priorYear={item.priorYear}
                   flagType={item.flagType}
+                  flagMessage={item.flagMessage}
                   docTypeBadge={item.docTypeBadge}
                   allFields={item.allFields}
                   verified={verifiedItems.has(`income-${i}`)}
@@ -990,7 +992,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                <div className={cn("flex-1 overflow-y-auto py-3 space-y-3", docketFullscreen ? "px-8 mx-auto max-w-2xl" : "px-4")}>
                   {docketMessages.length === 0 && !docketTyping && (
                     <div className="py-6 text-center">
                       <p className="text-xs text-muted-foreground mb-3">Ask about {client.fullName.split(" ")[0]}'s return</p>
@@ -1047,7 +1049,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     }
                     // AI response with rich formatting
                     return (
-                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mr-2">
+                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mr-2 mb-4">
                         <FormattedInsightText text={msg.text} />
                       </motion.div>
                     );
