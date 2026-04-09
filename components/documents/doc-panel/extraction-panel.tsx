@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   Info,
   Flag,
-  Sparkles,
+  FileSearch,
   FileText,
   ChevronDown,
 } from "lucide-react";
@@ -66,10 +66,10 @@ export function ExtractionPanel({ documentId }: ExtractionPanelProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-center px-6">
         <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
-          <Sparkles className="size-5 text-muted-foreground/40" />
+          <FileSearch className="size-5 text-muted-foreground/40" />
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground/70">AI Extraction</p>
+          <p className="text-sm font-medium text-foreground/70">Extracted Data</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Select a document to see extracted data
           </p>
@@ -88,8 +88,7 @@ export function ExtractionPanel({ documentId }: ExtractionPanelProps) {
     return (
       <div className="flex flex-col gap-4 p-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-3.5 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground">AI EXTRACTION</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Extracted Data</span>
         </div>
         <div className="rounded-lg border border-dashed border-border/60 p-6 text-center">
           <FileText className="mx-auto mb-2 size-6 text-muted-foreground/30" />
@@ -109,9 +108,8 @@ export function ExtractionPanel({ documentId }: ExtractionPanelProps) {
       {/* Header */}
       <div className="border-b border-border/50 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-3.5 text-foreground/60" />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            AI Extraction
+            Extracted Data
           </span>
         </div>
         <h3 className="mt-1 text-sm font-medium leading-snug">

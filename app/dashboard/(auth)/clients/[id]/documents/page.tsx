@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { UploadZone } from "@/components/documents/upload-zone";
 import { DocumentPanel } from "@/components/documents/doc-panel/document-panel";
+import { BinderSummaryBar } from "@/components/documents/doc-panel/binder-summary-bar";
 import { clients } from "@/lib/mock-data";
 import { getClientChecklist, groupDocumentsByCategory } from "@/lib/documents-mock-data";
 import { Check, CheckCircle, FileText, FolderDown } from "lucide-react";
@@ -98,6 +99,9 @@ export default function ClientDocumentsPage() {
 
       {/* Upload zone */}
       <UploadZone clientName={client.fullName.split(" ")[0]} />
+
+      {/* Binder category summary */}
+      <BinderSummaryBar clientId={client.id} />
 
       {/* Three-column Document Intelligence Panel */}
       <DocumentPanel clientId={client.id} />

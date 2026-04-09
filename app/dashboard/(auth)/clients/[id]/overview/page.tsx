@@ -112,18 +112,8 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* Action items */}
-      {(filteredFeedActions.length > 0 || filteredActions.length > 0) && (
-        <div className="space-y-4">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Actions for {client.fullName.split(" ")[0]}</div>
-          {filteredFeedActions.map(action => (
-            <ActionCard key={action.id} action={action} onClick={() => { setSelectedAction(action); setSheetOpen(true); }} />
-          ))}
-          {filteredActions.filter(a => !filteredFeedActions.some(fa => fa.clientId === a.clientId && fa.title === a.title)).map(action => (
-            <ActionDraftCard key={action.id} action={action} />
-          ))}
-        </div>
-      )}
+      {/* Open Items (replaces old Actions section) */}
+      <OpenItemsSection clientId={client.id} />
 
       {/* Ready to Prep / Transition — animated */}
       <AnimatePresence mode="wait">
@@ -328,9 +318,6 @@ export default function ClientOverviewPage() {
           ))}
         </div>
       )}
-
-      {/* Open Items */}
-      <OpenItemsSection clientId={client.id} />
 
       {/* Two-column layout for details */}
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">
