@@ -328,30 +328,6 @@ function PrepSummary({ client, onDocClick }: { client: Client; onDocClick: (docI
         </motion.div>
       )}
 
-      {/* Client info bar */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.15 }}
-        className="mx-6 mt-4 rounded-lg bg-muted/30 px-4 py-3 flex items-center gap-6"
-      >
-        <div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Filing</div>
-          <div className="text-sm font-medium">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Service</div>
-          <div className="text-sm font-medium">{client.serviceTier}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Fee</div>
-          <div className="text-sm font-medium">${client.feeAmount}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Documents</div>
-          <div className="text-sm font-medium">{receivedCount}/{totalCount}</div>
-        </div>
-      </motion.div>
 
       <div className="px-6 py-5 space-y-6">
         {/* INCOME */}
@@ -545,14 +521,6 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
   // Summary sidebar
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col overflow-y-auto">
-      {/* Prep timer */}
-      <div className="border-b border-border/30 px-5 py-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Clock className="size-3.5" />
-          <span>In preparation for <span className="font-medium text-foreground">{prepDays} days</span></span>
-        </div>
-      </div>
-
       {/* Flags — check/exclamation style */}
       <div className="border-b border-border/30 px-5 py-4">
         <div className="flex items-center gap-2 mb-3">
@@ -567,21 +535,17 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
             const isExpanded = expandedFlags.has(flag.id);
             return (
               <div key={flag.id} className="overflow-hidden">
+                {/* Header row */}
                 <button
                   onClick={() => !isResolved && setExpandedFlags(prev => { const n = new Set(prev); n.has(flag.id) ? n.delete(flag.id) : n.add(flag.id); return n; })}
-                  className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/30"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/30"
                 >
                   {isResolved ? (
-                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
                   ) : (
-                    <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
+                    <AlertCircle className="size-3.5 text-red-500 shrink-0" />
                   )}
-                  <div className="flex-1 min-w-0">
-                    <span className={cn("text-xs font-medium", isResolved && "line-through text-muted-foreground")}>{flag.title}</span>
-                    {flag.description && isExpanded && !isResolved && (
-                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{flag.description}</p>
-                    )}
-                  </div>
+                  <span className={cn("flex-1 text-xs font-medium", isResolved && "line-through text-muted-foreground")}>{flag.title}</span>
                   {!isResolved && (
                     <Button
                       size="sm"
@@ -593,6 +557,7 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                     </Button>
                   )}
                 </button>
+                {/* Expanded detail */}
                 <AnimatePresence>
                   {isExpanded && !isResolved && (
                     <motion.div
@@ -601,10 +566,14 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="pl-9 pr-2 pb-2">
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-muted-foreground" onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
+                      <div className="pl-9 pr-2 pb-2.5 space-y-2">
+                        {flag.description && <p className="text-[11px] text-muted-foreground leading-relaxed">{flag.description}</p>}
+                        <button
+                          onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}
+                          className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
                           Ask Docket
-                        </Button>
+                        </button>
                       </div>
                     </motion.div>
                   )}
@@ -692,10 +661,15 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             )}
             {showingSummary ? (
               <>
-                <ClipboardList className="size-4 text-blue-600" />
-                <h2 className="text-sm font-semibold">Prep Workspace</h2>
-                <span className="text-xs text-muted-foreground">·</span>
-                <span className="text-xs text-muted-foreground">{client.fullName}</span>
+                <h2 className="text-sm font-semibold">{client.fullName}</h2>
+                <span className="text-[10px] text-muted-foreground/40">·</span>
+                <span className="text-[10px] text-muted-foreground">{client.filingStatus === "mfj" ? "MFJ" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "HOH" : client.filingStatus.toUpperCase()}</span>
+                <span className="text-[10px] text-muted-foreground/40">·</span>
+                <span className="text-[10px] text-muted-foreground">{client.serviceTier}</span>
+                <span className="text-[10px] text-muted-foreground/40">·</span>
+                <span className="text-[10px] text-muted-foreground">${client.feeAmount}</span>
+                <span className="text-[10px] text-muted-foreground/40">·</span>
+                <span className="text-[10px] text-muted-foreground">{client.documentsSubmitted}/{client.documentsRequired} docs</span>
               </>
             ) : selectedDoc ? (
               <>
@@ -728,7 +702,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
           {/* Center */}
           <AnimatePresence mode="wait">
             {showingSummary ? (
-              <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 overflow-hidden">
+              <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto">
                 <PrepSummary client={client} onDocClick={handleDocSelect} />
               </motion.div>
             ) : selectedDoc ? (
