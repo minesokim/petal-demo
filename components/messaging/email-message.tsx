@@ -16,6 +16,9 @@ export function EmailMessage({ message }: EmailMessageProps) {
     ? message.content
     : message.content.slice(0, 200) + "...";
 
+  const isInbound = message.sender === "client";
+  const allAttachments = [...(message.emailAttachments || []), ...(message.attachments || [])];
+
   return (
     <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
       {message.emailSubject && (
@@ -36,10 +39,10 @@ export function EmailMessage({ message }: EmailMessageProps) {
         </button>
       )}
 
-      {message.emailAttachments && message.emailAttachments.length > 0 && (
+      {allAttachments.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          {message.emailAttachments.map((att) => (
-            <AttachmentCard key={att.id} attachment={att} />
+          {allAttachments.map((att) => (
+            <AttachmentCard key={att.id} attachment={att} isInbound={isInbound} />
           ))}
         </div>
       )}

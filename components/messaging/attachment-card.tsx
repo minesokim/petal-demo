@@ -14,9 +14,10 @@ const docTypeLabels: Record<string, string> = {
 
 interface AttachmentCardProps {
   attachment: EmailAttachment;
+  isInbound?: boolean; // Only show Process/Ignore for inbound (client-sent) attachments
 }
 
-export function AttachmentCard({ attachment }: AttachmentCardProps) {
+export function AttachmentCard({ attachment, isInbound = true }: AttachmentCardProps) {
   const [status, setStatus] = useState<"idle" | "processing" | "processed" | "ignored">("idle");
   const [previewOpen, setPreviewOpen] = useState(false);
   const { showToast } = useToast();
@@ -98,8 +99,8 @@ export function AttachmentCard({ attachment }: AttachmentCardProps) {
           </div>
         </div>
 
-        {/* Actions */}
-        {status === "idle" && (
+        {/* Actions — only for inbound (client-sent) attachments */}
+        {isInbound && status === "idle" && (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Button size="sm" className="h-7 gap-1 px-3 text-[10px]" onClick={(e) => handleProcess(e)}>
               <ArrowRight className="size-3" /> Process
@@ -110,7 +111,7 @@ export function AttachmentCard({ attachment }: AttachmentCardProps) {
           </div>
         )}
 
-        {status === "ignored" && (
+        {isInbound && status === "ignored" && (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Button size="sm" variant="outline" className="h-7 gap-1 px-3 text-[10px]" onClick={(e) => { e.stopPropagation(); handleReprocess(); }}>
               <RotateCcw className="size-3" /> Process
@@ -118,8 +119,13 @@ export function AttachmentCard({ attachment }: AttachmentCardProps) {
           </div>
         )}
 
-        {status === "processed" && (
+        {isInbound && status === "processed" && (
           <Eye className="size-3.5 text-muted-foreground/40 shrink-0" />
+        )}
+
+        {/* Outbound attachments — just show the file, no actions */}
+        {!isInbound && (
+          <span className="text-[10px] text-muted-foreground/50 shrink-0">Sent</span>
         )}
 
         {status === "processing" && (

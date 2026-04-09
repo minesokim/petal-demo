@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChannelBadge } from "./channel-badge";
 import { EmailMessage } from "./email-message";
 import { VoiceMessage } from "./voice-message";
+import { AttachmentCard } from "./attachment-card";
 import { FileText, Calendar, DollarSign, Clock, Bot } from "lucide-react";
 import type { UnifiedMessage } from "@/lib/comms-mock-data";
 import type { Client } from "@/lib/mock-data";
@@ -150,7 +151,16 @@ export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
                       ) : isEmail ? (
                         <EmailMessage message={msg} />
                       ) : (
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                        <>
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                              {msg.attachments.map((att) => (
+                                <AttachmentCard key={att.id} attachment={att} isInbound={isClient} />
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

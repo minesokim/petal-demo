@@ -19,6 +19,7 @@ import { getClientDrafts } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { ChannelBadge } from "@/components/messaging/channel-badge";
 import { EmailMessage } from "@/components/messaging/email-message";
+import { AttachmentCard } from "@/components/messaging/attachment-card";
 import { VoiceMessage } from "@/components/messaging/voice-message";
 // Channel is derived from active filter tab — no separate selector needed
 import { format, parseISO, isToday, isYesterday } from "date-fns";
@@ -385,14 +386,10 @@ export default function ChatPage() {
                       ) : (
                         <>
                           <p className="text-sm leading-relaxed">{msg.content}</p>
-                          {msg.emailAttachments && msg.emailAttachments.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {msg.emailAttachments.map((att) => (
-                                <div key={att.id} className="flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs">
-                                  <FileText className="size-3" />
-                                  <span className="truncate">{att.fileName}</span>
-                                  <span className="text-[10px] opacity-60">{att.fileSize}</span>
-                                </div>
+                          {[...(msg.emailAttachments || []), ...(msg.attachments || [])].length > 0 && (
+                            <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                              {[...(msg.emailAttachments || []), ...(msg.attachments || [])].map((att) => (
+                                <AttachmentCard key={att.id} attachment={att} isInbound={msg.sender === "client"} />
                               ))}
                             </div>
                           )}
