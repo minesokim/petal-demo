@@ -32,7 +32,7 @@ export interface UnifiedMessage {
   // Video-specific
   videoPlatform?: "zoom" | "google_meet";
   videoRecordingUrl?: string;
-  videoSuggestedItems?: string[]; // AI-suggested open items from the call
+  suggestedItems?: string[]; // AI-suggested open items from the call
   // System card (same pattern as before)
   systemCard?: { type: string; title: string; description: string; action?: string };
 }
@@ -58,10 +58,10 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
   c3: [
     { id: "u3-1", sender: "client", channel: "portal", content: "Hi Antonio, just wanted to check in. Are our returns done?", timestamp: "2026-03-25T10:00:00" },
     { id: "u3-2", sender: "preparer", channel: "portal", content: "Hi James! Yes, your returns are complete. I just need you and Sofia to sign Form 8879 to authorize e-filing.", timestamp: "2026-03-26T09:00:00" },
-    { id: "u3-3", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-26T14:00:00", voiceDuration: "8:42", voiceAiSummary: "Antonio walked James through the completed return. Discussed rental income reporting on Schedule E, the mortgage interest deduction, and the $340 interest from Chase. James confirmed all numbers looked correct. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Return walkthrough completed — all figures confirmed", "Rental income of $24,000 on Schedule E reviewed", "Mortgage interest deduction of $18,200 verified", "Total refund: $3,840 federal, $420 state"], voiceActionItems: ["Sofia needs to sign 8879 by end of day", "Antonio to e-file once both signatures received"], voiceTranscript: "Antonio: Hey James, thanks for hopping on. I wanted to walk you through your return before you sign.\n\nJames: Sounds good, we're excited to get this filed.\n\nAntonio: So starting with income — your W-2 from Riverside County shows $72,400, and Sofia's from the school district is $54,200. Plus the $340 interest from Chase and $24,000 in rental income from Palm Ave.\n\nJames: That all sounds right. The rental has been steady at $2,000 a month.\n\nAntonio: Perfect. On deductions, your mortgage interest was $18,200, property taxes $4,800, and the rental expenses came to $8,400. You're looking at a federal refund of $3,840.\n\nJames: That's great! Sofia will sign tonight — she's at school right now.\n\nAntonio: Perfect, once I have both signatures I'll e-file same day." },
+    { id: "u3-3", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-26T14:00:00", voiceDuration: "8:42", voiceAiSummary: "Antonio walked James through the completed return. Discussed rental income reporting on Schedule E, the mortgage interest deduction, and the $340 interest from Chase. James confirmed all numbers looked correct. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Return walkthrough completed — all figures confirmed", "Rental income of $24,000 on Schedule E reviewed", "Mortgage interest deduction of $18,200 verified", "Total refund: $3,840 federal, $420 state"], voiceActionItems: ["Sofia needs to sign 8879 by end of day", "Antonio to e-file once both signatures received"], suggestedItems: ["Send 8879 to Sofia for signature", "E-file federal and state returns after both signatures", "Discuss estimated payments for rental income next year"], voiceTranscript: "Antonio: Hey James, thanks for hopping on. I wanted to walk you through your return before you sign.\n\nJames: Sounds good, we're excited to get this filed.\n\nAntonio: So starting with income — your W-2 from Riverside County shows $72,400, and Sofia's from the school district is $54,200. Plus the $340 interest from Chase and $24,000 in rental income from Palm Ave.\n\nJames: That all sounds right. The rental has been steady at $2,000 a month.\n\nAntonio: Perfect. On deductions, your mortgage interest was $18,200, property taxes $4,800, and the rental expenses came to $8,400. You're looking at a federal refund of $3,840.\n\nJames: That's great! Sofia will sign tonight — she's at school right now.\n\nAntonio: Perfect, once I have both signatures I'll e-file same day." },
     { id: "u3-4", sender: "client", channel: "portal", content: "We're ready to sign whenever you are!", timestamp: "2026-03-27T07:45:00" },
     { id: "u3-5", sender: "system", channel: "portal", content: "", timestamp: "2026-03-27T07:45:00", systemCard: { type: "signature", title: "E-Signature Ready", description: "Form 8879 is ready for signature. Both James and Sofia need to sign.", action: "Sign Now" } },
-    { id: "u3-6", sender: "preparer", channel: "video", content: "", timestamp: "2026-03-26T14:00:00", videoPlatform: "google_meet", voiceDuration: "18:30", voiceAiSummary: "Return walkthrough with James via Google Meet. Reviewed all income sources (W-2s, rental, interest), itemized deductions (mortgage, property tax), and the expected refund of $3,840 federal. James confirmed all figures. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Combined W-2 income: $126,600 (James $72,400 + Sofia $54,200)", "Rental net income: $15,600 on Schedule E", "Itemized deductions: $23,000 (mortgage + property tax)", "Federal refund: $3,840", "State (CA): $420 refund"], voiceActionItems: ["Sofia to sign 8879 by end of day", "Antonio to e-file once both signatures received", "Discuss estimated payments for rental income next year"], voiceTranscript: "Antonio: James, thanks for jumping on. I wanted to walk you through the return before signing.\n\nJames: Sounds good. Sofia is at work but she'll sign tonight.\n\nAntonio: Perfect. So your combined W-2 income is $126,600. Rental income from Palm Ave is $24,000 gross, $15,600 net after expenses. Plus $340 interest from Chase.\n\nJames: That all sounds right.\n\nAntonio: Deductions — you're itemizing at $23,000. Mortgage interest $14,200, property taxes $9,310 across both properties. You're looking at a $3,840 federal refund.\n\nJames: That's great. Better than last year.\n\nAntonio: Once Sofia signs tonight, I'll e-file first thing tomorrow.", videoSuggestedItems: ["E-file Rodriguez return after both 8879 signatures", "Discuss estimated payments for rental income", "Send Rodriguez family a copy of the filed return"] },
+    { id: "u3-6", sender: "preparer", channel: "video", content: "", timestamp: "2026-03-26T14:00:00", videoPlatform: "google_meet", voiceDuration: "18:30", voiceAiSummary: "Return walkthrough with James via Google Meet. Reviewed all income sources (W-2s, rental, interest), itemized deductions (mortgage, property tax), and the expected refund of $3,840 federal. James confirmed all figures. Sofia will sign the 8879 this evening.", voiceKeyPoints: ["Combined W-2 income: $126,600 (James $72,400 + Sofia $54,200)", "Rental net income: $15,600 on Schedule E", "Itemized deductions: $23,000 (mortgage + property tax)", "Federal refund: $3,840", "State (CA): $420 refund"], voiceActionItems: ["Sofia to sign 8879 by end of day", "Antonio to e-file once both signatures received", "Discuss estimated payments for rental income next year"], voiceTranscript: "Antonio: James, thanks for jumping on. I wanted to walk you through the return before signing.\n\nJames: Sounds good. Sofia is at work but she'll sign tonight.\n\nAntonio: Perfect. So your combined W-2 income is $126,600. Rental income from Palm Ave is $24,000 gross, $15,600 net after expenses. Plus $340 interest from Chase.\n\nJames: That all sounds right.\n\nAntonio: Deductions — you're itemizing at $23,000. Mortgage interest $14,200, property taxes $9,310 across both properties. You're looking at a $3,840 federal refund.\n\nJames: That's great. Better than last year.\n\nAntonio: Once Sofia signs tonight, I'll e-file first thing tomorrow.", suggestedItems: ["E-file Rodriguez return after both 8879 signatures", "Discuss estimated payments for rental income", "Send Rodriguez family a copy of the filed return"] },
   ],
 
   // DeShawn Williams (c4) — portal + SMS (stale client, needs nudging)
@@ -84,8 +84,8 @@ export const unifiedThreads: Record<string, UnifiedMessage[]> = {
     { id: "u11-4", sender: "preparer", channel: "email", content: "Thanks David! Got the P&L and payroll summary. I'll review before our call. Quick question — the equipment depreciation schedule, is that also in the P&L or separate?", emailSubject: "Re: P&L and payroll info", timestamp: "2026-03-26T10:15:00" },
     { id: "u11-5", sender: "client", channel: "portal", content: "Can we push the call to 3pm instead of 2? Got a patient emergency.", timestamp: "2026-03-27T08:15:00" },
     { id: "u11-6", sender: "preparer", channel: "portal", content: "Of course. Moved to 3pm. Hope everything is okay!", timestamp: "2026-03-27T08:30:00" },
-    { id: "u11-7", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-27T15:00:00", voiceDuration: "22:15", voiceAiSummary: "Detailed review of Park Family Dental S-Corp return. Discussed officer compensation ($185K), new dental chair purchase ($45K — Section 179 eligible), and payroll discrepancy in Q3. David confirmed the Q3 variance was due to a temp hygienist. Equipment depreciation schedule will be emailed separately.", voiceKeyPoints: ["Officer salary $185K confirmed as reasonable comp", "New dental chair $45K qualifies for Section 179", "Q3 payroll variance: temp hygienist (not permanent hire)", "Equipment depreciation schedule coming via email", "Estimated tax liability discussed — no surprises"], voiceActionItems: ["David to send equipment depreciation schedule", "Antonio to finalize 1120S once schedule received", "Schedule review call after filing for estimated payments discussion"], voiceTranscript: "Antonio: David, thanks for making time. Let's go through the S-Corp return.\n\nDavid: Sure, I've been looking forward to reviewing everything.\n\nAntonio: So your officer salary is $185,000, up from $170K last year. That's well within reasonable comp for your practice size.\n\nDavid: Right, we adjusted it based on the revenue increase.\n\nAntonio: The big item is the new dental chair — $45,000. Great news, it qualifies for Section 179 immediate expensing. Full deduction this year.\n\nDavid: That's what I was hoping. That should help offset the income increase.\n\nAntonio: Exactly. Now, I noticed a payroll bump in Q3 — about $12,000 higher than other quarters. Can you explain that?\n\nDavid: Oh yes, we had a temp hygienist covering for Sarah's maternity leave. That was August through October.\n\nAntonio: Perfect, that explains it. I'll note that. Last thing — I still need the equipment depreciation schedule. The P&L had a depreciation line but no detail.\n\nDavid: I'll get that from our accountant and email it over this week." },
-    { id: "u11-8", sender: "preparer", channel: "video", content: "", timestamp: "2026-04-02T14:00:00", videoPlatform: "zoom", voiceDuration: "34:20", voiceAiSummary: "Follow-up video call to review finalized 1120S and discuss estimated tax payments for 2026. David shared his screen to walk through the equipment depreciation schedule. Confirmed Section 179 election for dental chair. Discussed Q1 estimated payment of $12,400 and set up quarterly reminders.", voiceKeyPoints: ["1120S finalized — all numbers confirmed by David", "Equipment depreciation schedule reviewed on screen share", "Section 179 election confirmed for $45K dental chair", "Q1 2026 estimated payment: $12,400 due April 15", "Quarterly payment schedule set: $12,400 per quarter", "David wants Antonio to handle estimated payment vouchers"], voiceActionItems: ["Antonio to e-file 1120S today", "Prepare Form 1040-ES vouchers for David", "Schedule mid-year check-in for August", "Send David the quarterly payment calendar"], voiceTranscript: "Antonio: David, good to see you. Let me share my screen — I've got your finalized 1120S ready.\n\nDavid: Great, I've got the depreciation schedule pulled up too.\n\nAntonio: Perfect. So the bottom line — your S-Corp net income after the Section 179 deduction on the dental chair is $142,000. Your officer salary stays at $185K.\n\nDavid: That Section 179 made a big difference.\n\nAntonio: Absolutely. Saved about $11,000 in tax. Now let's talk estimated payments for 2026. Based on this year's numbers, I'm recommending $12,400 per quarter.\n\nDavid: That sounds manageable. Can you set up the vouchers for me?\n\nAntonio: Of course. I'll send the 1040-ES vouchers with the due dates. First one is April 15.", videoSuggestedItems: ["E-file 1120S for Park Family Dental PC", "Prepare 1040-ES vouchers ($12,400/quarter)", "Send David quarterly payment calendar", "Schedule August mid-year check-in"] },
+    { id: "u11-7", sender: "preparer", channel: "voice", content: "", timestamp: "2026-03-27T15:00:00", voiceDuration: "22:15", voiceAiSummary: "Detailed review of Park Family Dental S-Corp return. Discussed officer compensation ($185K), new dental chair purchase ($45K — Section 179 eligible), and payroll discrepancy in Q3. David confirmed the Q3 variance was due to a temp hygienist. Equipment depreciation schedule will be emailed separately.", voiceKeyPoints: ["Officer salary $185K confirmed as reasonable comp", "New dental chair $45K qualifies for Section 179", "Q3 payroll variance: temp hygienist (not permanent hire)", "Equipment depreciation schedule coming via email", "Estimated tax liability discussed — no surprises"], voiceActionItems: ["David to send equipment depreciation schedule", "Antonio to finalize 1120S once schedule received", "Schedule review call after filing for estimated payments discussion"], suggestedItems: ["Follow up with David on equipment depreciation schedule", "Verify Section 179 election is optimal vs MACRS for dental chair", "Note Q3 payroll variance explanation (temp hygienist) in file", "Schedule estimated payments review after filing"], voiceTranscript: "Antonio: David, thanks for making time. Let's go through the S-Corp return.\n\nDavid: Sure, I've been looking forward to reviewing everything.\n\nAntonio: So your officer salary is $185,000, up from $170K last year. That's well within reasonable comp for your practice size.\n\nDavid: Right, we adjusted it based on the revenue increase.\n\nAntonio: The big item is the new dental chair — $45,000. Great news, it qualifies for Section 179 immediate expensing. Full deduction this year.\n\nDavid: That's what I was hoping. That should help offset the income increase.\n\nAntonio: Exactly. Now, I noticed a payroll bump in Q3 — about $12,000 higher than other quarters. Can you explain that?\n\nDavid: Oh yes, we had a temp hygienist covering for Sarah's maternity leave. That was August through October.\n\nAntonio: Perfect, that explains it. I'll note that. Last thing — I still need the equipment depreciation schedule. The P&L had a depreciation line but no detail.\n\nDavid: I'll get that from our accountant and email it over this week." },
+    { id: "u11-8", sender: "preparer", channel: "video", content: "", timestamp: "2026-04-02T14:00:00", videoPlatform: "zoom", voiceDuration: "34:20", voiceAiSummary: "Follow-up video call to review finalized 1120S and discuss estimated tax payments for 2026. David shared his screen to walk through the equipment depreciation schedule. Confirmed Section 179 election for dental chair. Discussed Q1 estimated payment of $12,400 and set up quarterly reminders.", voiceKeyPoints: ["1120S finalized — all numbers confirmed by David", "Equipment depreciation schedule reviewed on screen share", "Section 179 election confirmed for $45K dental chair", "Q1 2026 estimated payment: $12,400 due April 15", "Quarterly payment schedule set: $12,400 per quarter", "David wants Antonio to handle estimated payment vouchers"], voiceActionItems: ["Antonio to e-file 1120S today", "Prepare Form 1040-ES vouchers for David", "Schedule mid-year check-in for August", "Send David the quarterly payment calendar"], voiceTranscript: "Antonio: David, good to see you. Let me share my screen — I've got your finalized 1120S ready.\n\nDavid: Great, I've got the depreciation schedule pulled up too.\n\nAntonio: Perfect. So the bottom line — your S-Corp net income after the Section 179 deduction on the dental chair is $142,000. Your officer salary stays at $185K.\n\nDavid: That Section 179 made a big difference.\n\nAntonio: Absolutely. Saved about $11,000 in tax. Now let's talk estimated payments for 2026. Based on this year's numbers, I'm recommending $12,400 per quarter.\n\nDavid: That sounds manageable. Can you set up the vouchers for me?\n\nAntonio: Of course. I'll send the 1040-ES vouchers with the due dates. First one is April 15.", suggestedItems: ["E-file 1120S for Park Family Dental PC", "Prepare 1040-ES vouchers ($12,400/quarter)", "Send David quarterly payment calendar", "Schedule August mid-year check-in"] },
   ],
 
   // Marcus Chen (c1) — portal + email
@@ -132,4 +132,64 @@ export function getLastMessageTime(clientId: string): string | null {
   const thread = unifiedThreads[clientId];
   if (!thread || thread.length === 0) return null;
   return thread[thread.length - 1].timestamp;
+}
+
+// ============================================================
+// SCHEDULED CALLS
+// ============================================================
+
+export interface ScheduledCall {
+  id: string;
+  clientId: string;
+  clientName: string;
+  platform: "zoom" | "google_meet";
+  scheduledAt: string; // ISO 8601
+  duration: number; // minutes
+  subject: string;
+  meetingUrl: string;
+  status: "upcoming" | "in_progress" | "completed";
+}
+
+export const scheduledCalls: ScheduledCall[] = [
+  {
+    id: "sc-1",
+    clientId: "c11",
+    clientName: "David Park",
+    platform: "zoom",
+    scheduledAt: "2026-04-08T15:00:00",
+    duration: 30,
+    subject: "Estimated payments review + 1120S follow-up",
+    meetingUrl: "https://zoom.us/j/92834756123",
+    status: "upcoming",
+  },
+  {
+    id: "sc-2",
+    clientId: "c1",
+    clientName: "Marcus Chen",
+    platform: "google_meet",
+    scheduledAt: "2026-04-08T16:30:00",
+    duration: 45,
+    subject: "Return walkthrough — all 3 restaurant P&Ls",
+    meetingUrl: "https://meet.google.com/abc-defg-hij",
+    status: "upcoming",
+  },
+  {
+    id: "sc-3",
+    clientId: "c6",
+    clientName: "Roberto Fuentes",
+    platform: "zoom",
+    scheduledAt: "2026-04-09T10:00:00",
+    duration: 30,
+    subject: "1120S review — trucking depreciation discussion",
+    meetingUrl: "https://zoom.us/j/83947561234",
+    status: "upcoming",
+  },
+];
+
+export function getScheduledCallsForClient(clientId: string): ScheduledCall[] {
+  return scheduledCalls.filter(c => c.clientId === clientId);
+}
+
+export function getAllScheduledCalls(): ScheduledCall[] {
+  return scheduledCalls;
 }

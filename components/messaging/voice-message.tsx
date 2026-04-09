@@ -32,7 +32,7 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
     setItemStatuses(prev => ({ ...prev, [index]: "dismissed" }));
   };
 
-  const suggestedItems = message.videoSuggestedItems || [];
+  const suggestedItems = message.suggestedItems || [];
   const pendingCount = suggestedItems.filter((_, i) => !itemStatuses[i]).length;
   const acceptedCount = suggestedItems.filter((_, i) => itemStatuses[i] === "accepted").length;
 
