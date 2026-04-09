@@ -114,7 +114,15 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
         {allOpen.length > 0 ? (
           <div className="divide-y divide-border/40">
             {allOpen.map((issue) => (
-              <IssueRow key={issue.id} issue={issue} onResolve={handleResolve} />
+              <motion.div
+                key={issue.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <IssueRow issue={issue} onResolve={handleResolve} />
+              </motion.div>
             ))}
           </div>
         ) : (

@@ -396,14 +396,16 @@ export default function ClientOverviewPage() {
             const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
             const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
             return (
-              <div className={`rounded-xl border p-3 ${daysSinceSent > 3 ? "border-amber-200 bg-amber-50/30 dark:border-amber-900 dark:bg-amber-950/10" : ""}`}>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="size-4 text-muted-foreground" />
-                  <span>Return sent <strong>{daysSinceSent} days ago</strong></span>
-                  <span className="text-muted-foreground">·</span>
-                  <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "accessed today" : `accessed ${lastLogin}d ago`) : "never accessed"}</span>
-                </div>
-                {daysSinceSent > 3 && <p className="mt-1.5 text-xs text-amber-600">Review may be stale — consider sending a follow-up</p>}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>Sent {daysSinceSent}d ago</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "today" : `${lastLogin}d ago`) : "never"}</span>
+                {daysSinceSent > 5 && (
+                  <>
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className="text-amber-600">{daysSinceSent}d without response</span>
+                  </>
+                )}
               </div>
             );
           })()}
@@ -498,9 +500,15 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
 function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
   const [status, setStatus] = useState(alert.status);
   const { showToast } = useToast();
-  if (status !== "pending") return null;
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <AnimatePresence>
+      {status === "pending" && (
+        <motion.div
+          initial={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="rounded-lg border bg-card p-4 overflow-hidden"
+        >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 size-2 shrink-0 rounded-full bg-amber-500" />
         <div className="flex-1">
@@ -531,7 +539,9 @@ function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof
           Ask Docket
         </Button>
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
