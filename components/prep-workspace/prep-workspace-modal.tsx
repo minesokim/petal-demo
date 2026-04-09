@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   X, ChevronRight, ChevronDown, Clock, FileText, Check, CheckCircle2, Eye,
-  AlertTriangle, AlertCircle, Send, ArrowLeft, ClipboardList, Download, MessageSquare
+  AlertTriangle, AlertCircle, Send, ArrowLeft, ClipboardList, Download, MessageSquare,
+  Maximize2, Minimize2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientPaymentSummary, type Client } from "@/lib/mock-data";
@@ -36,55 +37,86 @@ function parseAmount(val: string): number {
 
 // ── Rich text formatter for AI content ──
 function FormattedInsightText({ text }: { text: string }) {
-  const paragraphs = text.split("\n\n");
-
-  const formatLine = (line: string, key: number) => {
-    // Check for numbered list items like "(1) something"
-    const numberedMatch = line.match(/^\((\d+)\)\s+(.+)$/);
-    if (numberedMatch) {
-      return (
-        <div key={key} className="flex gap-2 pl-1">
-          <span className="text-muted-foreground font-medium shrink-0">{numberedMatch[1]}.</span>
-          <span>{highlightEntities(numberedMatch[2]!)}</span>
-        </div>
-      );
-    }
-    return <span key={key}>{highlightEntities(line)}</span>;
-  };
-
   const highlightEntities = (text: string) => {
-    // Split on amounts, percentages, and known entity patterns
-    const parts = text.split(/(\$[\d,]+(?:\.\d{2})?|\d+%|Golden Dragon LLC|Golden Dragon(?:\s+#\d)?|Marcus|Schedule [A-Z]|Form \d{4}[A-Z]?|1099-[A-Z]+|W-2|Q[1-4] \d{4}|March \d+|Restaurant Consulting Group|Pasadena|Riverside|IRS)/g);
+    const parts = text.split(/(\$[\d,]+(?:\.\d{2})?|\d+%|Golden Dragon LLC|Golden Dragon(?:\s+#\d)?|Marcus|Schedule [A-Z]|Form \d{4}[A-Z]?|1099-[A-Z]+|W-2|Q[1-4] \d{4}|March \d+|Restaurant Consulting Group|Pasadena|Riverside|Alhambra|IRS|Section \d+|QBI)/g);
     return parts.map((part, i) => {
       if (/^\$[\d,]+/.test(part)) return <span key={i} className="font-bold tabular-nums text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
       if (/^\d+%$/.test(part)) return <span key={i} className="font-bold tabular-nums text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
       if (/^Golden Dragon LLC$/.test(part)) return <span key={i} className="font-bold text-foreground bg-muted/50 rounded px-0.5">{part}</span>;
-      if (/^(Golden Dragon|Marcus|Restaurant Consulting Group|Pasadena|Riverside|IRS)/.test(part)) return <span key={i} className="font-semibold text-foreground bg-muted/40 rounded px-0.5">{part}</span>;
-      if (/^(Schedule [A-Z]|Form \d|1099-|W-2|Q[1-4])/.test(part)) return <span key={i} className="font-medium text-foreground/90 bg-muted/50 rounded px-1 py-0.5">{part}</span>;
+      if (/^(Golden Dragon|Marcus|Restaurant Consulting Group|Pasadena|Riverside|Alhambra|IRS)/.test(part)) return <span key={i} className="font-semibold text-foreground bg-muted/40 rounded px-0.5">{part}</span>;
+      if (/^(Schedule [A-Z]|Form \d|1099-|W-2|Q[1-4]|Section \d|QBI)/.test(part)) return <span key={i} className="font-medium text-foreground/90 bg-muted/50 rounded px-1 py-0.5">{part}</span>;
       if (/^March \d+/.test(part)) return <span key={i} className="font-medium text-foreground bg-muted/40 rounded px-0.5">{part}</span>;
       return <span key={i}>{part}</span>;
     });
   };
 
+  // Split into paragraphs by double newline
+  const paragraphs = text.split("\n\n");
+
   return (
     <div className="text-sm leading-relaxed text-foreground/75 space-y-3">
-      {paragraphs.map((para, i) => {
-        // Check if paragraph contains numbered items
-        const lines = para.split(/(?=\(\d+\))/);
-        if (lines.length > 1 && lines.some(l => l.match(/^\(\d+\)/))) {
-          // Has numbered items — split into intro + list
-          const intro = lines[0]!.match(/^\(\d+\)/) ? null : lines[0];
-          const items = lines.filter(l => l.match(/^\(\d+\)/));
+      {paragraphs.map((para, pi) => {
+        // Split paragraph into lines
+        const lines = para.split("\n");
+
+        // Check if this paragraph is a numbered or bullet list
+        const listLines = lines.filter(l => l.match(/^\d+\.\s|^-\s|^\(\d+\)/));
+        const nonListLines = lines.filter(l => !l.match(/^\d+\.\s|^-\s|^\(\d+\)/));
+
+        if (listLines.length > 0) {
           return (
-            <div key={i}>
-              {intro && <p className="mb-2">{highlightEntities(intro.trim())}</p>}
-              <div className="space-y-1">
-                {items.map((item, j) => formatLine(item.trim(), j))}
+            <div key={pi}>
+              {nonListLines.length > 0 && nonListLines[0]!.trim() && (
+                <p className="mb-2">{highlightEntities(nonListLines[0]!.trim())}</p>
+              )}
+              <div className="space-y-1.5 pl-1">
+                {listLines.map((line, li) => {
+                  const numMatch = line.match(/^(\d+)\.\s*(.+)$/);
+                  const parenMatch = line.match(/^\((\d+)\)\s*(.+)$/);
+                  const bulletMatch = line.match(/^-\s*(.+)$/);
+                  if (numMatch) {
+                    return (
+                      <div key={li} className="flex gap-2">
+                        <span className="text-muted-foreground font-medium shrink-0 w-4 text-right">{numMatch[1]}.</span>
+                        <span>{highlightEntities(numMatch[2]!)}</span>
+                      </div>
+                    );
+                  }
+                  if (parenMatch) {
+                    return (
+                      <div key={li} className="flex gap-2">
+                        <span className="text-muted-foreground font-medium shrink-0 w-4 text-right">{parenMatch[1]}.</span>
+                        <span>{highlightEntities(parenMatch[2]!)}</span>
+                      </div>
+                    );
+                  }
+                  if (bulletMatch) {
+                    return (
+                      <div key={li} className="flex gap-2">
+                        <span className="text-muted-foreground shrink-0 mt-1.5 size-1 rounded-full bg-muted-foreground/40" />
+                        <span>{highlightEntities(bulletMatch[1]!)}</span>
+                      </div>
+                    );
+                  }
+                  return <p key={li}>{highlightEntities(line)}</p>;
+                })}
               </div>
             </div>
           );
         }
-        return <p key={i}>{highlightEntities(para)}</p>;
+
+        // Regular paragraph — handle single newlines as line breaks
+        if (lines.length > 1) {
+          return (
+            <div key={pi}>
+              {lines.map((line, li) => (
+                <p key={li}>{highlightEntities(line)}</p>
+              ))}
+            </div>
+          );
+        }
+
+        return <p key={pi}>{highlightEntities(para)}</p>;
       })}
     </div>
   );
@@ -290,11 +322,17 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
       allFields: intel.keyDataPoints,
     });
 
-    // Extract withholding
+    // Extract withholding — federal and state
     const fedWithheld = intel.keyDataPoints.find(k => k.label === "Fed Withheld");
+    const state = intel.keyDataPoints.find(k => k.label === "State");
     if (fedWithheld) {
       const name = doc.fileName.includes("James") ? "James" : doc.fileName.includes("Sofia") ? "Sofia" : doc.clientName.split(" ")[0];
       withholdingItems.push({ label: `Federal (${name} ${doc.docTypeLabel})`, amount: fedWithheld.value, rawAmount: parseAmount(fedWithheld.value) });
+      // Check for state withholding in allFields (from the expanded data)
+      const stateWithheld = intel.keyDataPoints.find(k => k.label === "State Withheld" || k.label === "State Tax");
+      if (stateWithheld) {
+        withholdingItems.push({ label: `State ${state?.value || ""} (${name} ${doc.docTypeLabel})`, amount: stateWithheld.value, rawAmount: parseAmount(stateWithheld.value) });
+      }
     }
   });
 
@@ -480,10 +518,28 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
                   <span className="text-sm tabular-nums">{item.amount}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20">
-                <span className="text-xs font-semibold">Total Federal Withheld</span>
-                <span className="text-sm font-bold tabular-nums">${totalWithholding.toLocaleString()}</span>
-              </div>
+              {(() => {
+                const fedItems = withholdingItems.filter(w => w.label.startsWith("Federal"));
+                const stateItems = withholdingItems.filter(w => w.label.startsWith("State"));
+                const fedTotal = fedItems.reduce((s, w) => s + w.rawAmount, 0);
+                const stateTotal = stateItems.reduce((s, w) => s + w.rawAmount, 0);
+                return (
+                  <>
+                    {fedItems.length > 0 && (
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20 border-b border-border/20">
+                        <span className="text-xs font-semibold">Total Federal Withheld</span>
+                        <span className="text-sm font-bold tabular-nums">${fedTotal.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {stateTotal > 0 && (
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20">
+                        <span className="text-xs font-semibold">Total State Withheld</span>
+                        <span className="text-sm font-bold tabular-nums">${stateTotal.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </motion.div>
         )}
@@ -746,41 +802,84 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showingSummary, setShowingSummary] = useState(true);
   const [docketOpen, setDocketOpen] = useState(false);
+  const [docketFullscreen, setDocketFullscreen] = useState(false);
+  const [docketHasOpened, setDocketHasOpened] = useState(false);
   const [docketMessages, setDocketMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const [docketInput, setDocketInput] = useState("");
   const [docketTyping, setDocketTyping] = useState(false);
   const selectedDoc = selectedDocId ? getDocumentById(selectedDocId) : null;
   const { showToast } = useToast();
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
+  const firstName = client.fullName.split(" ")[0];
 
+  // Comprehensive auto-response for first open
+  const fullPrepBrief = `Marcus has 3 restaurant locations under Golden Dragon LLC, but total Schedule C revenue dropped 40% from $238,000 to $142,000. His notes mention one location closed. The Pasadena location (Golden Dragon #3) appears to have closed in Q2 2025 based on the expense records cutting off in June. You need verbal confirmation from Marcus that the closure is permanent before filing, because the IRS will flag a 40% revenue drop on a multi-location Schedule C without explanation.\n\nNew this year: Marcus has a $12,000 1099-NEC from Restaurant Consulting Group. This is new income not present in 2024 and will likely need its own Schedule C or allocation to the existing one. Ask Marcus if this is a separate business activity or related to Golden Dragon.\n\nThe W-2 from Golden Dragon shows wages of $58,000, down from $96,000 last year. This is consistent with the location closure but make sure the wage reduction is proportional to the actual closure timeline, not an error. Equipment disposal of $23,000 from the Riverside location needs special depreciation treatment. Verify whether this was a sale, abandonment, or trade-in, as each has different tax implications.\n\nMarcus has a call scheduled for March 30 at 2pm. Recommend covering:\n1. Confirm Pasadena closure date and circumstances\n2. Consulting income classification\n3. Equipment disposal method\n4. Review all three P&Ls side by side`;
+
+  // Word-by-word streaming with reasoning steps
   const simulateDocketResponse = (question: string) => {
     setDocketMessages(prev => [...prev, { role: "user", text: question }]);
-    setDocketTyping(true);
-    // Simulate AI thinking + response
+
+    const q = question.toLowerCase();
+    let response = `Based on ${firstName}'s documents, here's what I found:\n\nAll ${client.documentsSubmitted} documents have been received and processed. The key items to review during preparation are the income sources and any flagged anomalies shown in the prep summary.\n\nWant me to look at something specific?`;
+
+    if (q.includes("know before") || (q.includes("prep") && q.includes("return"))) {
+      response = fullPrepBrief;
+    } else if (q.includes("revenue") || q.includes("drop") || q.includes("closure")) {
+      response = `The 40% revenue drop from $238,000 to $142,000 is driven by the Pasadena location (Golden Dragon #3) closing mid-year in Q2 2025.\n\nThe expense records for Pasadena stop in June, which supports a Q2 closure. The other two locations (Alhambra and Riverside) show relatively stable revenue year-over-year.\n\nThe IRS will almost certainly flag a 40% Schedule C revenue decline on a multi-location business. Without documentation of the closure, it looks like underreporting. You need:\n\n1. Written or verbal confirmation from Marcus of the closure date\n2. Final lease termination or landlord correspondence if available\n3. Last payroll date for Pasadena employees\n\nThe remaining $142,000 across two locations actually represents slight growth per-location, which is a good sign.`;
+    } else if (q.includes("consulting") || q.includes("1099") || q.includes("schedule c") || q.includes("nec")) {
+      response = `The $12,000 1099-NEC from Restaurant Consulting Group is brand new — not present in 2024.\n\nTwo classification options:\n\n1. Separate Schedule C — if Marcus is doing consulting as a distinct side business. Gets its own profit/loss and may qualify for a separate QBI deduction.\n\n2. Same Schedule C as Golden Dragon — if the consulting is directly related to his restaurant operations.\n\nThe distinction matters for self-employment tax, QBI deduction eligibility, and business expense allocation.\n\nAsk Marcus during the March 30 call: "Is this consulting work you do separately from the restaurants, or is it through Golden Dragon?"`;
+    } else if (q.includes("equipment") || q.includes("depreciation") || q.includes("disposal")) {
+      response = `The $23,000 equipment disposal from the Riverside location has three possible treatments:\n\n1. Sale — Report on Form 4797. Could trigger ordinary income recapture on prior depreciation.\n\n2. Abandonment — Deduct remaining undepreciated basis as ordinary loss. Usually the best outcome tax-wise.\n\n3. Trade-in — Like-kind exchange rules under Section 1031 may defer the gain.\n\nKey question for Marcus: "What happened to the Riverside equipment — did you sell it, scrap it, or trade it in?"`;
+    } else if (q.includes("flag") || q.includes("wage") || q.includes("summarize")) {
+      response = `4 open flags for Marcus:\n\n1. Wage decrease needs confirmation — W-2 dropped 40% ($96K → $58K). Consistent with closure but needs verbal confirmation.\n\n2. New consulting income — $12K 1099-NEC needs Schedule C classification.\n\n3. Riverside equipment — $23K disposal method TBD (sale vs abandonment vs trade-in).\n\n4. Review call — March 30 at 2pm. Should resolve flags 1-3.\n\nPrep talking points for each topic so you can get clear answers in one conversation.`;
+    } else if (q.includes("blocking") || q.includes("block")) {
+      response = `Three things blocking Marcus's return:\n\n1. Unconfirmed Pasadena closure — can't file Schedule C with 40% revenue drop without documentation.\n\n2. Consulting income classification — $12,000 1099-NEC needs Schedule C determination.\n\n3. Equipment disposal method — $23,000 Form 4797 treatment depends on sale/abandonment/trade-in.\n\nAll three can be resolved in the March 30 call. Everything else is ready — documents in, deposit paid.`;
+    }
+
+    // Phase 1: Reasoning steps
+    setDocketMessages(prev => [...prev, { role: "assistant", text: "__reasoning__" }]);
+
+    // Phase 2: After reasoning, stream the response word by word
     setTimeout(() => {
-      const responses: Record<string, string> = {
-        default: `Based on ${client.fullName}'s documents, here's what I found:\n\nAll ${client.documentsSubmitted} documents have been received and processed. The key items to review during preparation are the income sources and any flagged anomalies shown in the prep summary.\n\nWant me to look at something specific?`,
-      };
-      // Simple keyword matching for demo
-      const q = question.toLowerCase();
-      let response = responses.default!;
-      if (q.includes("revenue") || q.includes("drop") || q.includes("closure")) {
-        response = `The 40% revenue drop from $238K to $142K is primarily due to the Pasadena location (Golden Dragon #3) closure in Q2 2025. The expense records stop in June, which is consistent with a mid-year closure.\n\n**Key risk:** The IRS may flag this on the Schedule C without supporting documentation. I recommend getting written confirmation from Marcus about the closure date and circumstances before filing.\n\nThe remaining two locations show stable revenue, so this isn't a business-wide decline.`;
-      } else if (q.includes("consulting") || q.includes("1099") || q.includes("schedule c")) {
-        response = `The $12,000 1099-NEC from Restaurant Consulting Group is new income not present in 2024. Two options:\n\n1. **Separate Schedule C** — if this is a distinct business activity (consulting vs restaurant)\n2. **Same Schedule C** — if it's related to Golden Dragon operations\n\nI'd recommend asking Marcus during the March 30 call. If it's a separate activity, it may qualify for its own QBI deduction.`;
-      } else if (q.includes("equipment") || q.includes("depreciation") || q.includes("disposal")) {
-        response = `The $23,000 equipment disposal from the Riverside location needs careful treatment:\n\n- **Sale**: Report gain/loss on Form 4797\n- **Abandonment**: Deduct remaining basis as ordinary loss\n- **Trade-in**: Like-kind exchange rules may apply\n\nThe tax impact varies significantly. An abandonment gives the best deduction. Check with Marcus on what actually happened with the equipment.`;
-      } else if (q.includes("flag") || q.includes("wage") || q.includes("confirm")) {
-        response = `There are 4 open flags for Marcus:\n\n1. **Wage decrease** — W-2 dropped 40% ($96K → $58K). Consistent with location closure but needs verbal confirmation.\n2. **New consulting income** — $12K 1099-NEC needs Schedule C classification.\n3. **Equipment classification** — $23K disposal method TBD.\n4. **Review call** — Scheduled March 30 at 2pm, covers all of the above.\n\nResolving flags 1-3 requires information from the call. I'd prep talking points for each.`;
-      }
-      setDocketTyping(false);
-      setDocketMessages(prev => [...prev, { role: "assistant", text: response }]);
-    }, 1500);
+      // Remove reasoning placeholder, start streaming
+      setDocketMessages(prev => prev.filter(m => m.text !== "__reasoning__"));
+      const words = response.split(" ");
+      let currentText = "";
+      const streamId = `stream-${Date.now()}`;
+      setDocketMessages(prev => [...prev, { role: "assistant", text: "" }]);
+
+      words.forEach((word, i) => {
+        setTimeout(() => {
+          currentText += (i === 0 ? "" : " ") + word;
+          setDocketMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", text: currentText };
+            return updated;
+          });
+        }, i * 25); // 25ms per word = ~40 words/sec
+      });
+    }, 2000); // 2s for reasoning
   };
 
-  const handleAskDocket = (question: string) => {
+  const handleAskDocket = (question?: string) => {
+    if (question) {
+      // Specific question from a button — open panel and ask
+      setDocketOpen(true);
+      simulateDocketResponse(question);
+      return;
+    }
+    // Toggle behavior for the sidebar Ask Docket button
+    if (docketOpen) {
+      setDocketOpen(false);
+      setDocketFullscreen(false);
+      return;
+    }
     setDocketOpen(true);
-    if (question) simulateDocketResponse(question);
+    if (!docketHasOpened) {
+      // First open only — auto-send the comprehensive question
+      setDocketHasOpened(true);
+      simulateDocketResponse(`What should I know before prepping ${client.fullName}'s return?`);
+    }
   };
 
   const handleDocSelect = (docId: string) => { setSelectedDocId(docId); setShowingSummary(false); };
@@ -831,7 +930,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
           {/* Left: Document tree */}
           <div className="w-[220px] shrink-0 border-r border-border/40 overflow-y-auto bg-muted/5">
             <DocTree clientId={client.id} selectedDocId={selectedDocId} onSelect={handleDocSelect} onSummary={handleSummary} showingSummary={showingSummary} />
@@ -868,20 +967,26 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             {docketOpen && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 340, opacity: 1 }}
+                animate={{ width: docketFullscreen ? "100%" : 340, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="shrink-0 border-l border-border/40 flex flex-col overflow-hidden"
+                className={cn("border-l border-border/40 flex flex-col overflow-hidden", docketFullscreen ? "absolute inset-0 z-10 bg-background border-l-0" : "shrink-0")}
               >
                 {/* Docket header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="size-3.5 text-muted-foreground" />
                     <span className="text-xs font-semibold">Ask Docket</span>
+                    <span className="text-[10px] text-muted-foreground">· {firstName}</span>
                   </div>
-                  <Button variant="ghost" size="icon-sm" onClick={() => setDocketOpen(false)}>
-                    <X className="size-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon-sm" onClick={() => setDocketFullscreen(!docketFullscreen)}>
+                      {docketFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => { setDocketOpen(false); setDocketFullscreen(false); }}>
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Messages */}
@@ -891,9 +996,11 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                       <p className="text-xs text-muted-foreground mb-3">Ask about {client.fullName.split(" ")[0]}'s return</p>
                       <div className="space-y-1.5">
                         {[
-                          `What's blocking ${client.fullName.split(" ")[0]}?`,
                           "Explain the revenue drop",
+                          "How should I classify the consulting income?",
+                          "What happened with the equipment disposal?",
                           "Summarize all flags",
+                          `What's blocking ${firstName}'s return?`,
                         ].map((suggestion, i) => (
                           <button
                             key={i}
@@ -906,28 +1013,45 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                       </div>
                     </div>
                   )}
-                  {docketMessages.map((msg, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={cn(
-                        "text-xs leading-relaxed",
-                        msg.role === "user"
-                          ? "ml-6 rounded-lg bg-primary text-primary-foreground px-3 py-2"
-                          : "mr-2 text-foreground/85 whitespace-pre-line"
-                      )}
-                    >
-                      {msg.text}
-                    </motion.div>
-                  ))}
-                  {docketTyping && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-                      <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-                      Thinking...
-                    </motion.div>
-                  )}
+                  {docketMessages.map((msg, i) => {
+                    // Reasoning placeholder
+                    if (msg.text === "__reasoning__") {
+                      return (
+                        <motion.div key={`reasoning-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 py-2">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <motion.div className="size-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                            <span>Analyzing {firstName}'s documents...</span>
+                          </div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Reviewed {client.documentsSubmitted} documents</span>
+                          </motion.div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Checked flags and anomalies</span>
+                          </motion.div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Check className="size-3 text-emerald-500" />
+                            <span>Compared with prior year</span>
+                          </motion.div>
+                        </motion.div>
+                      );
+                    }
+                    // User message
+                    if (msg.role === "user") {
+                      return (
+                        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="ml-8 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs leading-relaxed">
+                          {msg.text}
+                        </motion.div>
+                      );
+                    }
+                    // AI response with rich formatting
+                    return (
+                      <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mr-2">
+                        <FormattedInsightText text={msg.text} />
+                      </motion.div>
+                    );
+                  })}
                 </div>
 
                 {/* Input */}
