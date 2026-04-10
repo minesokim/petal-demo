@@ -101,9 +101,9 @@ export default function ClientDetailLayout({ children }: { children: React.React
       </div>
 
 
-      {/* Sub-tabs */}
+      {/* Sub-tabs — sticky */}
       <LayoutGroup>
-        <div className="relative flex gap-0.5 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border">
+        <div className="sticky top-0 z-20 bg-background relative flex gap-0.5 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border">
           {tabs.map(tab => (
             <Link
               key={tab.href}

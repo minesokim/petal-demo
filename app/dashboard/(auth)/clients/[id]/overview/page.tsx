@@ -16,7 +16,7 @@ import {
   TrendingDown, Calculator, Brain, Download, ClipboardList
 } from "lucide-react";
 import Link from "next/link";
-import { clients, stageLabels, actionItems, getClientPaymentSummary, type InsightAction } from "@/lib/mock-data";
+import { clients, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
@@ -112,6 +112,47 @@ export default function ClientOverviewPage() {
     <div className="space-y-6">
       {/* Prep Workspace button — portaled into layout header */}
       <PrepWorkspacePortal visible={currentStage === "in_preparation"} onOpen={() => setPrepWorkspaceOpen(true)} />
+
+      {/* Pending client — blocking action */}
+      {client.clientStatus === "pending" && (
+        <div className="rounded-xl border bg-card p-5 space-y-4">
+          <div>
+            <h3 className="text-base font-bold">Assign a service tier to accept this client</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              {client.fullName.split(" ")[0]} completed intake and paid the $50 deposit. Select a tier to start their return.
+            </p>
+          </div>
+          {client.notes && <p className="text-xs text-foreground/70 leading-relaxed">{client.notes}</p>}
+          {(() => {
+            const ctx = pendingIntakeContext[client.id];
+            return ctx ? (
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span>{ctx.filing}</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>{ctx.income.join(", ")}</span>
+                <span className="text-muted-foreground/30">·</span>
+                <span>Requested {ctx.service}</span>
+              </div>
+            ) : null;
+          })()}
+          <div className="space-y-2">
+            <select className="w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none">
+              <option value="">Assign service tier...</option>
+              {serviceTierOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <Button className="flex-1 h-10" onClick={() => showToast("success", "Client accepted", `${client.fullName} has been added to your pipeline.`)}>
+                Accept Client
+              </Button>
+              <Button variant="outline" className="h-10 px-6" onClick={() => showToast("info", "Client declined", `${client.fullName} has been removed.`)}>
+                Decline
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Insight — hides after stage override (e.g., extension filed) */}
       {clientInsight && !stageOverride && (

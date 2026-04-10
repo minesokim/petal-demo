@@ -274,9 +274,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         )}
 
         {/* Tabbed content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="px-6 pt-2 pb-6">
-            <TabsList variant="fill" className="mb-4 w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+          {/* Sticky tab bar */}
+          <div className="sticky top-0 z-10 bg-background border-b px-6 pt-2 pb-0 shrink-0">
+            <TabsList variant="fill" className="w-full">
               {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
                 <TabsTrigger key={tab} value={tab} className="relative">
                   {activeTab === tab && (
@@ -290,7 +291,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </TabsTrigger>
               ))}
             </TabsList>
+          </div>
 
+          {/* Scrollable tab content */}
+          <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6 pt-4">
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
               {/* AI Insight — hides after stage override */}
@@ -789,8 +793,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             <TabsContent value="notes" className="space-y-3">
               <ClientNotesTab clientId={client.id} initialNotes={notes} />
             </TabsContent>
-          </Tabs>
-        </div>
+          </div>
+        </Tabs>
       </DialogContent>
 
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
