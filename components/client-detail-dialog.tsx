@@ -203,72 +203,64 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
         {/* Pending intake banner */}
         {client.clientStatus === "pending" && onAccept && onDecline && (
-          <div className="border-b px-6 py-5">
+          <div className="px-6 py-5 border-b bg-foreground/[0.02]">
             {(() => {
               const ctx = pendingIntakeContext[client.id];
               const callMissed = client.scheduledCall && isCallPast(client.scheduledCall);
               return (
-                <div className="rounded-lg border bg-card overflow-hidden">
-                  {/* Header — urgency indicator */}
-                  <div className="px-4 py-2.5 flex items-center gap-2">
-                    <span className={`size-1.5 rounded-full shrink-0 ${callMissed ? "bg-red-500" : "bg-amber-500"}`} />
-                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${callMissed ? "text-red-700" : "text-amber-700"}`}>
-                      {callMissed ? "Action Required — Missed Call" : "New Client — Review Required"}
-                    </span>
-                    {client.scheduledCall && (
-                      <span className={`ml-auto text-[10px] ${callMissed ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                        {formatCallTime(client.scheduledCall)}{callMissed ? " · Missed" : ""}
-                      </span>
-                    )}
+                <div className="space-y-4">
+                  {/* Big clear headline */}
+                  <div>
+                    <h3 className="text-base font-bold">Assign a service tier to accept this client</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {client.fullName.split(" ")[0]} completed intake and paid the $50 deposit. Select a tier to start their return.
+                    </p>
                   </div>
 
-                  {/* Body */}
-                  <div className="px-4 pb-4 space-y-3">
-                    <p className="text-sm leading-relaxed">
-                      {client.notes || "New client intake received. Review and assign a service tier to begin."}
-                    </p>
+                  {/* Context */}
+                  <div className="text-xs text-foreground/70 leading-relaxed">
+                    {client.notes}
+                  </div>
 
-                    {ctx && (
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{ctx.filing}</span>
-                        <span className="text-muted-foreground/30">·</span>
-                        <span>{ctx.income.join(", ")}</span>
-                        <span className="text-muted-foreground/30">·</span>
-                        <span>Requested {ctx.service}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 text-[10px] text-emerald-600">
-                      <Check className="size-3" /> Intake
+                  {ctx && (
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                      <span>{ctx.filing}</span>
                       <span className="text-muted-foreground/30">·</span>
-                      <Check className="size-3" /> $50 deposit
+                      <span>{ctx.income.join(", ")}</span>
                       <span className="text-muted-foreground/30">·</span>
-                      <Check className="size-3" /> Engagement signed
+                      <span>Requested {ctx.service}</span>
                     </div>
+                  )}
 
-                    {/* Accept / Decline */}
-                    <div className="flex items-center gap-2 pt-1">
-                      <select
-                        value={assignedTier}
-                        onChange={(e) => setAssignedTier(e.target.value)}
-                        className="h-9 rounded-md border bg-background px-3 text-xs outline-none flex-1"
-                      >
-                        {serviceTierOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
+                  {callMissed && (
+                    <div className="flex items-center gap-2 text-xs text-red-600 font-medium">
+                      <span className="size-1.5 rounded-full bg-red-500" />
+                      Missed call: {formatCallTime(client.scheduledCall!)}
+                    </div>
+                  )}
+
+                  {/* Tier selector — prominent */}
+                  <div className="space-y-2">
+                    <select
+                      value={assignedTier}
+                      onChange={(e) => setAssignedTier(e.target.value)}
+                      className="w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none"
+                    >
+                      {serviceTierOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
                       <Button
-                        size="sm"
-                        className="h-9 px-5"
+                        className="flex-1 h-10"
                         disabled={!assignedTier}
                         onClick={() => { onAccept(client.id, assignedTier); onOpenChange(false); }}
                       >
                         Accept Client
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-9 text-muted-foreground"
+                        variant="outline"
+                        className="h-10 px-6"
                         onClick={() => { onDecline(client.id); onOpenChange(false); }}
                       >
                         Decline
