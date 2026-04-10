@@ -565,6 +565,7 @@ export default function ClientOverviewPage() {
                 Cancel
               </Button>
               <Button
+                variant="destructive"
                 className="flex-1"
                 onClick={() => {
                   setExtensionDialogOpen(false);
@@ -578,6 +579,7 @@ export default function ClientOverviewPage() {
               >
                 <Check className="size-3.5" /> Confirm Extension Filed
               </Button>
+
             </div>
           </div>
         </DialogContent>
