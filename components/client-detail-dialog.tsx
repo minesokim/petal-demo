@@ -203,15 +203,15 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
         {/* Pending intake banner */}
         {client.clientStatus === "pending" && onAccept && onDecline && (
-          <div className="px-6 py-5 border-b bg-foreground/[0.02]">
+          <div className="px-6 py-5 border-b">
             {(() => {
               const ctx = pendingIntakeContext[client.id];
               const callMissed = client.scheduledCall && isCallPast(client.scheduledCall);
               return (
                 <div className="space-y-4">
-                  {/* Big clear headline */}
-                  <div>
-                    <h3 className="text-base font-bold">Assign a service tier to accept this client</h3>
+                  {/* Big clear headline with warm accent */}
+                  <div className="rounded-lg bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/50 px-4 py-3">
+                    <h3 className="text-base font-bold text-amber-900 dark:text-amber-100">Assign a service tier to accept this client</h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       {client.fullName.split(" ")[0]} completed intake and paid the $50 deposit. Select a tier to start their return.
                     </p>
