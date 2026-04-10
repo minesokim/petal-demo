@@ -13,7 +13,7 @@ import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
   AlertTriangle, ChevronRight, Shield, Check, X,
-  TrendingDown, Calculator, Brain, Download, ClipboardList
+  TrendingDown, Calculator, Brain, Download, ClipboardList, Upload
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
@@ -31,6 +31,7 @@ import { ActionDraftCard } from "@/components/action-draft-card";
 import { ActionCard } from "@/components/actions/action-card";
 import { ActionExecutionSheet } from "@/components/actions/action-execution-sheet";
 import { EroSignatureDialog } from "@/components/ero-signature-dialog";
+// Chart library components available in components/ui/ — imported when needed
 import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
@@ -54,6 +55,8 @@ export default function ClientOverviewPage() {
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
+  const [returnPdf, setReturnPdf] = useState<File | null>(null);
+  const [pdfDragOver, setPdfDragOver] = useState(false);
   const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
   const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
@@ -171,8 +174,19 @@ export default function ClientOverviewPage() {
           onEditMessage={(messageId) => {
             showToast("info", "Editing draft", `Opening editor for ${messageId}`);
           }}
+          onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_insight", priority: "high", createdAt: new Date().toISOString(), status: "open" }])}
         />
       )}
+
+      {/* Chart library components saved in components/ui/ for future use:
+          - stats-4.tsx (area sparklines)
+          - category-bar-chart.tsx (segmented bar)
+          - stats-cards-with-links.tsx (KPI cards)
+          - stats-card-1.tsx (animated bar stats)
+          - area-chart.tsx (recharts primitives)
+          - statistics-card-2.tsx (colored KPI cards)
+          - statistics-card-5.tsx (balance card)
+      */}
 
       {/* Compliance cards (8867 due diligence) — second card, below insight */}
       {clientCompliance.map(a => (
@@ -343,6 +357,54 @@ export default function ClientOverviewPage() {
               />
             </div>
 
+            {/* Return PDF upload */}
+            <div>
+              <label className="text-xs font-medium">Return PDF <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <div
+                onDragOver={(e) => { e.preventDefault(); setPdfDragOver(true); }}
+                onDragLeave={() => setPdfDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setPdfDragOver(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file && file.type === "application/pdf") setReturnPdf(file);
+                }}
+                className={cn(
+                  "mt-1.5 rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer",
+                  pdfDragOver ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40",
+                  returnPdf && "border-emerald-300 bg-emerald-50/50"
+                )}
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = ".pdf";
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) setReturnPdf(file);
+                  };
+                  input.click();
+                }}
+              >
+                {returnPdf ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <FileText className="size-4 text-emerald-600" />
+                    <span className="text-xs font-medium">{returnPdf.name}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setReturnPdf(null); }}
+                      className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                    >
+                      <X className="size-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Upload className="mx-auto size-5 text-muted-foreground/40" />
+                    <p className="text-xs text-muted-foreground">Drop return PDF here or click to browse</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setCompletePrepOpen(false)}>
@@ -357,7 +419,8 @@ export default function ClientOverviewPage() {
                     setStageOverride("client_review");
                     setStageOverrideGlobal(client.id, "client_review");
                     setTransitioning(false);
-                    showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
+                    showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.${returnPdf ? " Return PDF attached." : ""}`);
+                    setReturnPdf(null);
                   }, 1500);
                 }}
               >

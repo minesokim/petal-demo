@@ -299,15 +299,8 @@ export const complianceAlerts: ComplianceAlert[] = [
 ];
 
 // --- Anomaly Alerts ---
-export const anomalyAlerts: AnomalyAlert[] = [
-  {
-    id: "aa1", clientId: "c1", clientName: "Marcus Chen",
-    metric: "Restaurant Revenue (3 locations)",
-    priorYear: 485000, currentYear: 291000, changePercent: -40,
-    aiExplanation: "40% drop across all 3 locations. Possible closure, seasonal shift, or data entry error. Confirm before filing.",
-    status: "pending",
-  },
-];
+// c1 Marcus Chen anomaly merged into DocketInsight supplementary data
+export const anomalyAlerts: AnomalyAlert[] = [];
 
 // --- Escalation States ---
 export const escalationStates: EscalationState[] = [
@@ -371,14 +364,8 @@ export const batchOperations: BatchOperation[] = [
 ];
 
 // --- Deduction Suggestions ---
+// c18 Mei-Lin Wu QBI merged into DocketInsight supplementary data
 export const deductionSuggestions: DeductionSuggestion[] = [
-  {
-    id: "ds1", clientId: "c18", clientName: "Mei-Lin Wu",
-    deductionType: "Qualified Business Income", section: "Section 199A",
-    estimatedSavings: 2400,
-    description: "20% QBI on $48K net income. $9,600 deduction.",
-    status: "pending",
-  },
   {
     id: "ds2", clientId: "c15", clientName: "Carlos & Elena Mendez",
     deductionType: "Equipment Depreciation", section: "Section 179",
@@ -400,29 +387,12 @@ export const irsNotices: IrsNotice[] = [
 ];
 
 // --- Extension Predictions ---
-export const extensionPredictions: ExtensionPrediction[] = [
-  {
-    id: "ep1", clientId: "c13", clientName: "Vladimir Petrov",
-    probability: 95,
-    factors: ["0 of 16 documents submitted", "No portal login ever", "Complex international business", "Prior year was also extended"],
-    status: "pending",
-  },
-  {
-    id: "ep2", clientId: "c17", clientName: "Tyrone Mitchell",
-    probability: 62,
-    factors: ["Only 2 of 5 docs submitted", "9 days inactive", "Extended last year", "But has logged into portal recently"],
-    status: "pending",
-  },
-];
+// Extension predictions merged into DocketInsight supplementary data
+export const extensionPredictions: ExtensionPrediction[] = [];
 
 // --- Estimated Tax ---
+// c18 Mei-Lin Wu quarterly estimates merged into DocketInsight supplementary data
 export const estimatedTaxCalcs: EstimatedTaxCalc[] = [
-  {
-    id: "et1", clientId: "c18", clientName: "Mei-Lin Wu",
-    quarterlyAmounts: { q1: 3200, q2: 3200, q3: 3200, q4: 3200 },
-    totalEstimated: 12800,
-    basis: "Schedule C net $48K + SE tax. Safe harbor (100% prior year).",
-  },
   {
     id: "et2", clientId: "c12", clientName: "Jasmine Torres",
     quarterlyAmounts: { q1: 1800, q2: 1800, q3: 1800, q4: 1800 },

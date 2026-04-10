@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Brain, Pen, Check, ChevronDown } from "lucide-react";
+import { AlertCircle, CheckCircle2, Check, ChevronDown, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -11,9 +11,10 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 interface IssueRowProps {
   issue: ClientIssue;
   onResolve: (id: string, note: string) => void;
+  onUnresolve?: (id: string) => void;
 }
 
-export function IssueRow({ issue, onResolve }: IssueRowProps) {
+export function IssueRow({ issue, onResolve, onUnresolve }: IssueRowProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [resolveNote, setResolveNote] = useState("");
   const [resolving, setResolving] = useState(false);
@@ -30,37 +31,48 @@ export function IssueRow({ issue, onResolve }: IssueRowProps) {
   };
 
   return (
-    <div className={cn("py-2.5 transition-colors", isResolved && "opacity-50")}>
+    <div className={cn("py-2.5 transition-colors")}>
       <div className="flex items-start gap-2.5">
-        {/* Source indicator */}
+        {/* Status icon — animated spring swap */}
         <div className="mt-0.5">
-          {issue.source === "ai" ? (
-            <Brain className="size-3.5 text-emerald-500/70" />
-          ) : (
-            <Pen className="size-3.5 text-muted-foreground/50" />
-          )}
+          <motion.div
+            key={isResolved ? "resolved" : "open"}
+            initial={{ scale: 0.3, opacity: 0, rotate: -45 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 12, mass: 0.6 }}
+          >
+            {isResolved ? (
+              <CheckCircle2 className="size-3.5 text-emerald-500" />
+            ) : (
+              <AlertCircle className="size-3.5 text-red-500" />
+            )}
+          </motion.div>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p
+          <motion.p
+            animate={{ opacity: isResolved ? 0.4 : 1 }}
+            transition={{ duration: 0.2 }}
             className={cn(
-              "text-sm leading-snug",
+              "text-sm leading-snug transition-all duration-300",
               isResolved && "line-through text-muted-foreground"
             )}
           >
             {issue.title}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {issue.description}
-          </p>
+          </motion.p>
+          {issue.description && !isResolved && (
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {issue.description}
+            </p>
+          )}
 
           {/* Metadata */}
           <div className="mt-1 flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground/60">
               {formatDistanceToNow(parseISO(issue.createdAt), { addSuffix: true })}
             </span>
-            {issue.aiReason && !isResolved && (
+            {issue.source === "ai" && !isResolved && (
               <button
                 onClick={() => setShowDetail(!showDetail)}
                 className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
@@ -122,17 +134,44 @@ export function IssueRow({ issue, onResolve }: IssueRowProps) {
           </AnimatePresence>
         </div>
 
-        {/* Resolve button */}
-        {!isResolved && !resolving && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[10px] text-muted-foreground shrink-0"
-            onClick={handleResolve}
-          >
-            Resolve
-          </Button>
-        )}
+        {/* Action buttons — animated swap */}
+        <AnimatePresence mode="wait">
+          {isResolved && onUnresolve ? (
+            <motion.div
+              key="undo"
+              initial={{ opacity: 0, x: 12, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ type: "spring", stiffness: 500, damping: 18, mass: 0.5 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] text-muted-foreground shrink-0"
+                onClick={() => onUnresolve(issue.id)}
+              >
+                Undo
+              </Button>
+            </motion.div>
+          ) : !isResolved && !resolving ? (
+            <motion.div
+              key="resolve"
+              initial={{ opacity: 0, x: -12, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ type: "spring", stiffness: 500, damping: 18, mass: 0.5 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] text-muted-foreground shrink-0"
+                onClick={handleResolve}
+              >
+                Resolve
+              </Button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
   );

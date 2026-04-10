@@ -1,10 +1,7 @@
-"use client";
-
 import React from "react";
 
 import { cn } from "@/lib/utils";
-import { format, startOfToday } from "date-fns";
-import { motion } from "motion/react";
+import { addDays, addMonths, format, startOfToday } from "date-fns";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,54 +25,45 @@ type DateRange = {
   to: Date;
 };
 
-// Colors match document status donut exactly:
-// Red hsl(0 84.2% 60.2%), Yellow hsl(47.9 95.8% 53.1%), Blue hsl(214.7 95% 50%), Green hsl(142.1 76.2% 36.3%)
-// New 7-stage workflow mapped to 4 colors:
-// Red (need you): new_intake(3)
-// Amber (waiting): collecting_docs(4)
-// Blue (in progress): ready_to_prep(2) + in_preparation(4) + client_review(2)
-// Green (complete): pay_and_sign(2) + filed(3)
-// Pending clients (3) not counted in pipeline
-const currentSeasonData = [
-  { width: 15, cssColor: "hsl(0 84.2% 60.2%)", label: "New Intake", count: 3 },
-  { width: 20, cssColor: "hsl(47.9 95.8% 48%)", label: "Collecting Docs", count: 4 },
-  { width: 10, cssColor: "hsl(214.7 95% 58%)", label: "Ready to Prep", count: 2 },
-  { width: 20, cssColor: "hsl(214.7 95% 50%)", label: "In Preparation", count: 4 },
-  { width: 10, cssColor: "hsl(214.7 95% 44%)", label: "Client Review", count: 2 },
-  { width: 10, cssColor: "hsl(142.1 76.2% 42%)", label: "Pay & Sign", count: 2 },
-  { width: 15, cssColor: "hsl(142.1 76.2% 36.3%)", label: "Filed", count: 3 },
+const weeklyData = [
+  { width: 29.41, color: "bg-blue-500", label: "Online" },
+  { width: 19.61, color: "bg-cyan-500", label: "Retail" },
+  { width: 16.34, color: "bg-indigo-500", label: "Wholesale" },
+  { width: 13.07, color: "bg-orange-500", label: "Affiliate" },
+  { width: 9.8, color: "bg-amber-500", label: "Direct" },
+  { width: 6.53, color: "bg-emerald-500", label: "Partners" },
+  { width: 5.23, color: "bg-emerald-300", label: "Other" },
 ];
 
-const lastSeasonData = [
-  { width: 0, cssColor: "hsl(0 84.2% 60.2%)", label: "New Intake", count: 0 },
-  { width: 5.2, cssColor: "hsl(47.9 95.8% 48%)", label: "Collecting Docs", count: 1 },
-  { width: 3.5, cssColor: "hsl(214.7 95% 58%)", label: "Ready to Prep", count: 1 },
-  { width: 8.1, cssColor: "hsl(214.7 95% 50%)", label: "In Preparation", count: 1 },
-  { width: 2.8, cssColor: "hsl(214.7 95% 44%)", label: "Client Review", count: 1 },
-  { width: 4.1, cssColor: "hsl(142.1 76.2% 42%)", label: "Pay & Sign", count: 0 },
-  { width: 76.3, cssColor: "hsl(142.1 76.2% 36.3%)", label: "Filed", count: 14 },
+const monthlyData = [
+  { width: 34.5, color: "bg-blue-500", label: "Online" },
+  { width: 22.1, color: "bg-cyan-500", label: "Retail" },
+  { width: 15.4, color: "bg-indigo-500", label: "Wholesale" },
+  { width: 10.8, color: "bg-orange-500", label: "Affiliate" },
+  { width: 9.2, color: "bg-amber-500", label: "Direct" },
+  { width: 4.0, color: "bg-emerald-500", label: "Partners" },
+  { width: 4.0, color: "bg-emerald-300", label: "Other" },
 ];
 
-export const CategoryBarChart = ({
+export const Component = ({
   className,
   ...props
 }: React.ComponentProps<"div">) => {
-  const [selectedPeriod, setSelectedPeriod] = React.useState<string>("current");
+  const [selectedPeriod, setSelectedPeriod] = React.useState<string>("weekly");
 
   const today = startOfToday();
-  const currentRange: DateRange = {
-    from: new Date(2026, 0, 15),
-    to: new Date(2026, 3, 15),
+  const weeklyRange: DateRange = {
+    from: today,
+    to: addDays(today, 7),
   };
-  const lastRange: DateRange = {
-    from: new Date(2025, 0, 15),
-    to: new Date(2025, 3, 15),
+  const monthlyRange: DateRange = {
+    from: today,
+    to: addMonths(today, 1),
   };
 
-  const period = selectedPeriod === "current" ? currentRange : lastRange;
-  const pipelineData = selectedPeriod === "current" ? currentSeasonData : lastSeasonData;
-  const totalClients = selectedPeriod === "current" ? 20 : 18;
-  const totalFiled = selectedPeriod === "current" ? 3 : 14;
+  const period = selectedPeriod === "weekly" ? weeklyRange : monthlyRange;
+  const salesData = selectedPeriod === "weekly" ? weeklyData : monthlyData;
+  const totalSales = selectedPeriod === "weekly" ? 246 : 1024;
 
   return (
     <Card
@@ -88,7 +76,7 @@ export const CategoryBarChart = ({
       <CardHeader className="flex flex-row items-center justify-between p-0">
         <div className="flex flex-row items-center gap-1">
           <CardTitle className="text-base font-medium text-muted-foreground">
-            Filing Pipeline
+            Sales Channels
           </CardTitle>
           <TooltipProvider>
             <Tooltip>
@@ -111,22 +99,22 @@ export const CategoryBarChart = ({
               </TooltipTrigger>
               <TooltipContent className="max-w-70">
                 <p className="text-xs">
-                  Track the distribution of your clients across each stage of the
-                  filing process. See where bottlenecks are and which clients need
-                  attention before the April 15 deadline.
+                  Compare weekly performance across your sales channels.
+                  Understand trends, evaluate growth rates, and identify key
+                  contributors to your overall sales.
                 </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger size="sm" className="w-full md:w-auto h-8 gap-2">
+          <SelectTrigger className="w-full md:w-auto h-8 gap-2 text-xs">
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="current">This Season</SelectItem>
-              <SelectItem value="last">Last Season</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -134,18 +122,18 @@ export const CategoryBarChart = ({
 
       <CardContent className="flex flex-col gap-4 p-0">
         <div className="flex items-center gap-3">
-          <span className="font-display text-3xl leading-none tracking-tight tabular-nums">
-            {totalFiled}/{totalClients}
+          <span className="text-3xl font-medium leading-none tracking-tight tabular-nums">
+            {totalSales}
           </span>
-          {selectedPeriod === "current" ? (
+          {selectedPeriod === "weekly" ? (
             <p className="text-sm text-green-500 dark:text-green-600">
-              {Math.round((totalFiled / totalClients) * 100)}% filed{" "}
-              <span className="text-muted-foreground">18 days remaining</span>
+              +2.1%{" "}
+              <span className="text-muted-foreground">from last week</span>
             </p>
           ) : (
             <p className="text-sm text-green-500 dark:text-green-600">
-              {Math.round((totalFiled / totalClients) * 100)}% filed{" "}
-              <span className="text-muted-foreground">season complete</span>
+              +5.4%{" "}
+              <span className="text-muted-foreground">from last month</span>
             </p>
           )}
         </div>
@@ -160,27 +148,25 @@ export const CategoryBarChart = ({
             </p>
           </div>
 
-          <TooltipProvider delayDuration={0}>
+          <TooltipProvider>
             <div className="flex gap-1">
-              {pipelineData.filter(d => d.width > 0).map((item, index) => (
-                <Tooltip key={index}>
+              {salesData.map((item, index) => (
+                <Tooltip key={index} delayDuration={0}>
                   <TooltipTrigger asChild>
-                    <motion.div
-                      className="cursor-pointer transition-opacity hover:opacity-80"
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: `${item.width}%`, opacity: 1 }}
-                      transition={{
-                        width: { duration: 2.2, delay: 0.2 + index * 0.1, ease: [0.35, 0, 0.15, 1] },
-                        opacity: { duration: 1, delay: 0.15 + index * 0.1 },
-                      }}
+                    <div
+                      className="h-[42px] rounded-sm transition-all"
+                      style={{ width: `${item.width}%` }}
                     >
-                      <div className="flex h-9 items-center justify-center rounded-md" style={{ backgroundColor: item.cssColor }}>
-                        {item.count >= 3 && <span className="text-[11px] font-bold text-white">{item.count}</span>}
-                      </div>
-                    </motion.div>
+                      <div className={cn("h-full rounded-sm", item.color)} />
+                    </div>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    {item.label} - {item.count} clients
+                  <TooltipContent sideOffset={1}>
+                    <p className="text-muted-foreground text-xs">
+                      {item.label} -{" "}
+                      <span className="font-medium tracking-[-0.006em] text-foreground">
+                        {item.width}%
+                      </span>
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               ))}
@@ -188,14 +174,14 @@ export const CategoryBarChart = ({
           </TooltipProvider>
         </div>
 
-        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
-          {pipelineData.filter(d => d.width > 0).map((item) => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full" style={{ backgroundColor: item.cssColor }} />
-              <span className="text-[9px] text-muted-foreground">{item.label}</span>
-            </div>
-          ))}
-        </div>
+        <Separator />
+
+        <p className="text-xs text-muted-foreground">
+          This chart shows the distribution of your total sales across different
+          channels. Use this breakdown to understand where most of your revenue
+          is coming from, which channels are underperforming, and where to focus
+          your next campaign.
+        </p>
       </CardContent>
     </Card>
   );

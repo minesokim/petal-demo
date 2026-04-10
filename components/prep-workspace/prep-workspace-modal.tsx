@@ -20,6 +20,7 @@ import {
 } from "@/lib/documents-mock-data";
 import { getOpenIssues, type ClientIssue } from "@/lib/issues-mock-data";
 import { getInsightForClient } from "@/lib/insights-mock-data";
+import { getIntakeData, type IntakeResponse } from "@/lib/intake-data";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { motion, AnimatePresence } from "motion/react";
@@ -132,9 +133,9 @@ function DocStatusIcon({ doc }: { doc: MockDocument }) {
 // ═══════════════════════════════════════════════
 // LEFT PANEL: Document Tree
 // ═══════════════════════════════════════════════
-function DocTree({ clientId, selectedDocId, onSelect, onSummary, showingSummary }: {
+function DocTree({ clientId, selectedDocId, onSelect, onSummary, onIntake, showingSummary, showingIntake }: {
   clientId: string; selectedDocId: string | null; onSelect: (docId: string) => void;
-  onSummary: () => void; showingSummary: boolean;
+  onSummary: () => void; onIntake: () => void; showingSummary: boolean; showingIntake: boolean;
 }) {
   const groups = groupDocumentsByCategory(clientId);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(groups.map(g => g.category)));
@@ -180,11 +181,18 @@ function DocTree({ clientId, selectedDocId, onSelect, onSummary, showingSummary 
   return (
     <div className="flex flex-col gap-0.5 py-2 px-2">
       <button onClick={onSummary} className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs transition-colors mb-1",
+        "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs transition-colors",
         showingSummary ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-muted/40"
       )}>
         <ClipboardList className="size-3.5" />
         <span className="font-medium">Prep Summary</span>
+      </button>
+      <button onClick={onIntake} className={cn(
+        "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs transition-colors mb-1",
+        showingIntake ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-muted/40"
+      )}>
+        <FileText className="size-3.5" />
+        <span className="font-medium">Client Intake</span>
       </button>
       <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground px-2 pt-1 pb-0.5">Working Documents</div>
       {workingGroups.map(renderGroup)}
@@ -685,9 +693,9 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                 >
                   <motion.div
                     key={isResolved ? "resolved" : "open"}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                    initial={{ scale: 0.3, opacity: 0, rotate: -45 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 12, mass: 0.6 }}
                   >
                     {isResolved ? (
                       <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
@@ -791,6 +799,167 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
 }
 
 // ═══════════════════════════════════════════════
+// INTAKE PANEL (for Prep Workspace center view)
+// ═══════════════════════════════════════════════
+function IntakeRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="flex items-start justify-between border-b border-border/40 py-1.5 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn("text-right text-xs font-medium", highlight && "text-primary")}>{value}</span>
+    </div>
+  );
+}
+
+function IntakeSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border bg-card/50 p-4">
+      <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
+      {children}
+    </div>
+  );
+}
+
+function IntakePanel({ client }: { client: Client }) {
+  const intake = getIntakeData(client.id);
+
+  if (!intake) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <FileText className="size-10 text-muted-foreground/20 mb-3" />
+        <p className="text-sm font-medium">No intake submitted</p>
+        <p className="text-xs text-muted-foreground mt-1">{client.fullName} hasn&apos;t completed the intake questionnaire yet.</p>
+      </div>
+    );
+  }
+
+  const submitted = new Date(intake.submittedAt);
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-3.5 text-emerald-600" />
+            <span className="text-xs font-medium text-emerald-700">Intake completed</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Submitted {submitted.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {submitted.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+          </p>
+        </div>
+        <Badge variant="secondary" className="text-[10px]">{intake.service}</Badge>
+      </div>
+
+      {/* Service & Filing */}
+      <IntakeSection title="Filing Details">
+        <IntakeRow label="Filing status" value={intake.filing} />
+        <IntakeRow label="State(s)" value={intake.states.join(", ")} />
+        <IntakeRow label="Prior year" value={intake.priorYear} />
+        <IntakeRow label="Deposit" value={`$${intake.depositAmount} paid`} highlight />
+        <IntakeRow label="Appointment" value={intake.slot} />
+      </IntakeSection>
+
+      {/* Personal */}
+      <IntakeSection title="Personal Information">
+        <IntakeRow label="Full name" value={intake.personal.name} />
+        <IntakeRow label="DOB" value={intake.personal.dob} />
+        <IntakeRow label="SSN" value={intake.personal.ssn} />
+        <IntakeRow label="Phone" value={intake.personal.phone} />
+        <IntakeRow label="Occupation" value={intake.personal.occupation} />
+        <IntakeRow label="Address" value={intake.personal.address} />
+      </IntakeSection>
+
+      {/* Spouse */}
+      {intake.spouse && (
+        <IntakeSection title="Spouse">
+          <IntakeRow label="Name" value={intake.spouse.name} />
+          <IntakeRow label="DOB" value={intake.spouse.dob} />
+          <IntakeRow label="SSN" value={intake.spouse.ssn} />
+          <IntakeRow label="Occupation" value={intake.spouse.occupation} />
+        </IntakeSection>
+      )}
+
+      {/* Dependents */}
+      {intake.dependents.length > 0 && (
+        <IntakeSection title={`Dependents (${intake.dependents.length})`}>
+          {intake.dependents.map((dep, i) => (
+            <div key={i} className={cn(i > 0 && "mt-3 border-t border-border/40 pt-3")}>
+              <div className="mb-1 text-[10px] font-semibold text-muted-foreground/60">DEPENDENT {i + 1}</div>
+              <IntakeRow label="Name" value={dep.name} />
+              <IntakeRow label="DOB" value={dep.dob} />
+              <IntakeRow label="Relationship" value={dep.relationship} />
+              <IntakeRow label="Months in home" value={dep.months} />
+            </div>
+          ))}
+        </IntakeSection>
+      )}
+
+      {/* Income */}
+      <IntakeSection title="Income Sources">
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {intake.income.map(inc => (
+            <Badge key={inc} variant="secondary" className="text-[10px]">{inc}</Badge>
+          ))}
+        </div>
+        {intake.selfEmployment && (
+          <div className="border-t border-border/40 pt-2 mt-1">
+            <div className="mb-1 text-[10px] font-semibold text-muted-foreground/60">SELF-EMPLOYMENT</div>
+            <IntakeRow label="Business" value={intake.selfEmployment.business} />
+            <IntakeRow label="Entity" value={intake.selfEmployment.entity} />
+            <IntakeRow label="Est. revenue" value={intake.selfEmployment.revenue} highlight />
+            <IntakeRow label="Home office" value={intake.selfEmployment.homeOffice ? "Yes" : "No"} />
+            <IntakeRow label="Vehicle" value={intake.selfEmployment.vehicle ? "Yes" : "No"} />
+          </div>
+        )}
+        {intake.rental && (
+          <div className="border-t border-border/40 pt-2 mt-1">
+            <div className="mb-1 text-[10px] font-semibold text-muted-foreground/60">RENTAL PROPERTY</div>
+            <IntakeRow label="Address" value={intake.rental.address} />
+            <IntakeRow label="Monthly rent" value={intake.rental.rent} />
+            <IntakeRow label="Mortgage" value={intake.rental.mortgage} />
+            <IntakeRow label="Year acquired" value={intake.rental.year} />
+          </div>
+        )}
+      </IntakeSection>
+
+      {/* Tax Questions & Deductions */}
+      <div className="grid grid-cols-2 gap-3">
+        <IntakeSection title="Tax Questions">
+          <div className="flex flex-wrap gap-1.5">
+            {intake.taxQuestions.map(q => (
+              <Badge key={q} variant="outline" className="text-[10px]">{q}</Badge>
+            ))}
+          </div>
+        </IntakeSection>
+        <IntakeSection title="Deductions">
+          <div className="flex flex-wrap gap-1.5">
+            {intake.deductions.map(d => (
+              <Badge key={d} variant="outline" className="text-[10px]">{d}</Badge>
+            ))}
+          </div>
+        </IntakeSection>
+      </div>
+
+      {/* Life Events */}
+      {intake.lifeEvents.length > 0 && (
+        <IntakeSection title="Life Events (2025)">
+          <div className="flex flex-wrap gap-1.5">
+            {intake.lifeEvents.map(e => (
+              <Badge key={e} variant="secondary" className="text-[10px]">{e}</Badge>
+            ))}
+          </div>
+        </IntakeSection>
+      )}
+
+      {/* Refund */}
+      <IntakeSection title="Refund Preference">
+        <IntakeRow label="Method" value={intake.refund} />
+      </IntakeSection>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
 // MAIN MODAL
 // ═══════════════════════════════════════════════
 interface PrepWorkspaceModalProps {
@@ -803,6 +972,7 @@ interface PrepWorkspaceModalProps {
 export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep }: PrepWorkspaceModalProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showingSummary, setShowingSummary] = useState(true);
+  const [showingIntake, setShowingIntake] = useState(false);
   const [docketOpen, setDocketOpen] = useState(false);
   const [docketFullscreen, setDocketFullscreen] = useState(false);
   const [docketHasOpened, setDocketHasOpened] = useState(false);
@@ -884,8 +1054,9 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
     }
   };
 
-  const handleDocSelect = (docId: string) => { setSelectedDocId(docId); setShowingSummary(false); };
-  const handleSummary = () => { setShowingSummary(true); setSelectedDocId(null); };
+  const handleDocSelect = (docId: string) => { setSelectedDocId(docId); setShowingSummary(false); setShowingIntake(false); };
+  const handleSummary = () => { setShowingSummary(true); setShowingIntake(false); setSelectedDocId(null); };
+  const handleIntake = () => { setShowingIntake(true); setShowingSummary(false); setSelectedDocId(null); };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -935,7 +1106,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
         <div className="flex flex-1 overflow-hidden relative">
           {/* Left: Document tree */}
           <div className="w-[220px] shrink-0 border-r border-border/40 overflow-y-auto bg-muted/5">
-            <DocTree clientId={client.id} selectedDocId={selectedDocId} onSelect={handleDocSelect} onSummary={handleSummary} showingSummary={showingSummary} />
+            <DocTree clientId={client.id} selectedDocId={selectedDocId} onSelect={handleDocSelect} onSummary={handleSummary} onIntake={handleIntake} showingSummary={showingSummary} showingIntake={showingIntake} />
           </div>
 
           {/* Center */}
@@ -943,6 +1114,10 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
             {showingSummary ? (
               <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto">
                 <PrepSummary client={client} onDocClick={handleDocSelect} onAskDocket={handleAskDocket} />
+              </motion.div>
+            ) : showingIntake ? (
+              <motion.div key="intake" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto p-6">
+                <IntakePanel client={client} />
               </motion.div>
             ) : selectedDoc ? (
               <motion.div key={selectedDoc.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 overflow-hidden">

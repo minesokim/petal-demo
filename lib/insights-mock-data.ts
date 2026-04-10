@@ -103,10 +103,14 @@ export const clientInsights: Record<string, DocketInsight> = {
     title: "Pattern match: likely extension",
     content: "Tyrone has 2 of 5 docs uploaded with 18 days to deadline. He opened the reminder email on 3/22 but didn't click the upload link. He hasn't logged into the portal in 9 days. Last year he also went dark mid-season and you ended up filing an extension. His Uber 1099 and mileage log are still missing. Given the pattern, recommend a direct call rather than another automated message. If he's extending again, better to file Form 4868 now rather than last minute.",
     timestamp: "2026-03-28T06:00:00",
+    supplementary: [
+      { label: "Extension Probability", value: "62%", type: "kpi", highlightColor: "amber", detail: "Same pattern as last year — went dark mid-season, ended up extending" },
+      { label: "Documents", value: "2 of 5", detail: "Missing: Uber 1099-NEC, mileage log, health insurance", type: "stat" },
+      { label: "Days Inactive", value: "9 days", detail: "Last portal login March 19", type: "stat" },
+    ],
     actions: [
       { id: "call-tyrone", label: "Call Tyrone", variant: "primary", action: "initiate_call" },
       { id: "draft-extension", label: "Draft extension", variant: "secondary", action: "draft_4868" },
-      { id: "send-reminder", label: "Send final reminder", variant: "ghost", action: "send_reminder" },
     ],
     activityTrail: [
       { id: "t1", timestamp: "2026-03-08T14:30:00", type: "portal_login", description: "Logged into portal, uploaded W-2 and 1099-K" },
@@ -129,6 +133,9 @@ export const clientInsights: Record<string, DocketInsight> = {
     actions: [
       { id: "send-checklist", label: "Send remaining items checklist", variant: "primary", action: "send_checklist" },
       { id: "reply-message", label: "Reply to her message", variant: "secondary", action: "open_thread" },
+    ],
+    supplementary: [
+      { label: "Documents Received", value: "4 of 7", detail: "Missing: PayPal 1099-K, estimated tax payments, 1095-A health insurance", type: "highlight", highlightColor: "blue" },
     ],
     draftMessage: {
       id: "draft-priya",
@@ -168,8 +175,12 @@ export const clientInsights: Record<string, DocketInsight> = {
     severity: "alert",
     category: "client_engagement",
     title: "Disengaged client, $600 penalty risk if due diligence incomplete",
-    content: "DeShawn has 1 of 6 docs, an overdue deposit, and has never logged into the portal. He's Head of Household with 2 dependents, which means EITC, CTC, AOTC, and HOH all require Form 8867 due diligence before you can file. That's a $600 per return penalty if you skip it. He was referred by the mentor network on 3/10 and completed intake on 3/12 but hasn't engaged since. Two follow-up emails were sent — neither was opened. Recommend one final SMS and if no response in 48 hours, consider closing the engagement.",
+    content: "DeShawn hasn't uploaded his W-2 or paid the $150 deposit. He's never logged into the portal. Intake was sent 10 days ago and two follow-up emails went unopened. He's Head of Household with 2 dependents, which means EITC, CTC, AOTC, and HOH all require Form 8867 due diligence before you can file. That's a $600 per return penalty if you skip it. Recommend one final SMS and if no response in 48 hours, consider closing the engagement.",
     timestamp: "2026-03-28T08:00:00",
+    supplementary: [
+      { label: "Penalty Risk", value: "$600/return", detail: "EITC + CTC + AOTC + HOH each require Form 8867 due diligence", type: "highlight", highlightColor: "red" },
+      { label: "Deposit Outstanding", value: "$150", detail: "10 days overdue — cannot begin preparation", type: "highlight", highlightColor: "amber" },
+    ],
     actions: [
       { id: "call-deshawn", label: "Call DeShawn", variant: "primary", action: "initiate_call" },
       { id: "ask-docket-dd", label: "Learn more with Docket", variant: "secondary", action: "ask_docket" },
@@ -263,7 +274,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     },
   },
 
-  // Marcus Chen - Concern (revenue anomaly)
+  // Marcus Chen - Concern (revenue anomaly + restaurant data merged)
   c1: {
     id: "insight-c1",
     clientId: "c1",
@@ -272,6 +283,9 @@ export const clientInsights: Record<string, DocketInsight> = {
     title: "3-year client, restaurant owner — 40% revenue drop needs confirmation",
     content: "Marcus Chen has been with the firm since 2023, filing MFJ with his wife. He owns Golden Dragon LLC, a 3-location restaurant business in the Inland Empire. This year his Schedule C revenue dropped 40% from $238,000 to $142,000 because one location (Pasadena) appears to have closed in Q2. He also has a new $12,000 consulting 1099-NEC that wasn't present last year. W-2 wages dropped proportionally from $96,000 to $58,000. There's a $23,000 equipment disposal from the Riverside location that needs classification. He has a call scheduled March 30 at 2pm to cover all open items.",
     timestamp: "2026-03-28T07:30:00",
+    supplementary: [
+      { label: "Schedule C Revenue", type: "comparison", priorValue: 485000, currentValue: 291000, priorLabel: "2024", currentLabel: "2025", changePercent: -40 },
+    ],
     actions: [
       { id: "message-marcus", label: "Message Marcus", variant: "primary", action: "open_thread" },
       { id: "ask-docket", label: "Ask Docket", variant: "secondary", action: "ask_docket" },
@@ -324,6 +338,9 @@ export const clientInsights: Record<string, DocketInsight> = {
     title: "0 engagement since intake - extension conversation needed this week",
     content: "Vladimir completed intake 14 days ago but has never logged into the portal. 0 of 16 documents uploaded. His import business (Petrov Imports) has complex international transactions that require significant prep time. With 18 days to deadline and zero progress, an extension is almost certain. You have a call scheduled tomorrow (March 29) at 10am. Use that call to discuss the extension and set realistic expectations for the extended deadline.",
     timestamp: "2026-03-28T06:00:00",
+    supplementary: [
+      { label: "Extension likelihood", type: "extension", probability: 95, factors: ["0 of 16 documents submitted", "No portal login ever", "Complex international business", "Prior year was also extended"] },
+    ],
     actions: [
       { id: "prep-extension", label: "Mark as extended", variant: "primary", action: "file_extension" },
       { id: "review-complexity", label: "Review complexity with Docket", variant: "secondary", action: "ask_docket" },
@@ -351,15 +368,20 @@ export const clientInsights: Record<string, DocketInsight> = {
     },
   },
 
-  // Mei-Lin Wu - Insight (ready for signature)
+  // Mei-Lin Wu - Insight (ready for signature, with QBI + quarterly merged)
   c18: {
     id: "insight-c18",
     clientId: "c18",
     severity: "insight",
     category: "review_ready",
     title: "QBI deduction applied - review sent 4 days ago, awaiting sign-off",
-    content: "Mei-Lin's Schedule C return is complete with the 20% QBI deduction applied to her consulting income. Return was sent for review 4 days ago. She logged in once since then but hasn't signed off. Her return is straightforward - $78,000 consulting income, standard deductions, health insurance premium deduction. Expected refund of $1,450.",
+    content: "Mei-Lin's Schedule C return is complete with the 20% QBI deduction applied to her consulting income. Return was sent for review 4 days ago. She logged in once since then but hasn't signed off. Her return is straightforward - $78,000 consulting income, standard deductions, health insurance premium deduction. Expected refund of $1,450. She'll also need to make quarterly estimated payments for 2026 based on her Schedule C net income.",
     timestamp: "2026-03-28T08:30:00",
+    supplementary: [
+      { label: "QBI Deduction (Section 199A)", value: "$2,400", detail: "20% QBI on $48K net income — $9,600 deduction applied", type: "highlight", highlightColor: "emerald" },
+      { label: "Expected Refund", value: "$1,450", type: "highlight", highlightColor: "blue" },
+      { label: "2026 Quarterly Estimates", value: "$12,800 total", detail: "Schedule C net $48K + SE tax. Safe harbor (100% prior year).", type: "quarterly", quarterlyAmounts: { q1: 3200, q2: 3200, q3: 3200, q4: 3200 } },
+    ],
     actions: [
       { id: "send-reminder", label: "Send gentle reminder", variant: "primary", action: "send_reminder" },
       { id: "view-return", label: "Review return", variant: "secondary", action: "open_return" },

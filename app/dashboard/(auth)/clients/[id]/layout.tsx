@@ -84,7 +84,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
           </div>
         </div>
         <div className="flex items-center gap-2" id="client-header-actions">
-          {client.returnStage === "in_preparation" && (
+          {client.returnStage === "in_preparation" && !pathname.endsWith("/overview") && (
             <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm" asChild>
               <Link href={`/dashboard/clients/${clientId}/overview?prepWorkspace=true`}>
                 <ClipboardList className="size-4" />

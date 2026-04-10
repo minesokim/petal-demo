@@ -16,7 +16,7 @@ import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
 import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText, ArrowUpDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { clients as rawClients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
-import { applyStageOverrides } from "@/lib/stage-overrides";
+import { applyStageOverrides, setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useToast } from "@/components/ui/toast-notification";
@@ -434,6 +434,7 @@ export default function ClientsPage() {
         onAccept={(id, tier) => {
           setAcceptedIds(prev => [...prev, id]);
           setAssignedTiers(prev => ({ ...prev, [id]: tier }));
+          setStageOverrideGlobal(id, "new_intake");
           const c = clients.find(cl => cl.id === id);
           if (c) showToast("success", `${c.fullName} accepted`, `Moved to ${tier || "Active Clients"}`);
         }}

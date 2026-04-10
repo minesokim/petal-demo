@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
 import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
-import { setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
+import { setStageOverride as setStageOverrideGlobal, getStageOverride } from "@/lib/stage-overrides";
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
@@ -43,7 +44,7 @@ import {
   Building2, Mail, Phone, FileText, DollarSign, Clock,
   Send, ExternalLink, Calendar, MessageSquare, Pen,
   CheckCircle, AlertTriangle, ArrowUpRight, ChevronRight, Download, Shield, Check,
-  TrendingDown, Calculator, X, Brain, Loader2, ClipboardList
+  TrendingDown, Calculator, X, Brain, Loader2, ClipboardList, Upload
 } from "lucide-react";
 import TrackingTimeline, { type TimelineItem } from "@/components/ui/tracking-timeline";
 import { ActionDraftCard } from "@/components/action-draft-card";
@@ -94,13 +95,15 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [selectedAction, setSelectedAction] = useState<FeedAction | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
-  const [stageOverride, setStageOverride] = useState<string | null>(null);
+  const [stageOverride, setStageOverride] = useState<string | null>(() => client ? (getStageOverride(client.id) || null) : null);
   const [transitioning, setTransitioning] = useState(false);
   const { showToast } = useToast();
   const [sentCalc, setSentCalc] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
+  const [returnPdf, setReturnPdf] = useState<File | null>(null);
+  const [pdfDragOver, setPdfDragOver] = useState(false);
   const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
   const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
@@ -112,6 +115,14 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [activityFilter, setActivityFilter] = useState<FilterOption>("all");
   let askDocket = (_q: string) => {};
   try { askDocket = useAIPanelAsk(); } catch {}
+
+  // Sync stage override from global store when client changes or dialog opens
+  useEffect(() => {
+    if (client && open) {
+      const globalOverride = getStageOverride(client.id);
+      if (globalOverride) setStageOverride(globalOverride);
+    }
+  }, [client?.id, open]);
 
   if (!client) return null;
 
@@ -202,8 +213,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           </div>
         </div>
 
-        {/* Pending intake banner */}
-        {client.clientStatus === "pending" && onAccept && onDecline && (
+        {/* Pending intake banner — hide if stage was overridden (client was accepted) */}
+        {client.clientStatus === "pending" && !stageOverride && onAccept && onDecline && (
           <div className="px-6 py-5 border-b">
             {(() => {
               const ctx = pendingIntakeContext[client.id];
@@ -310,6 +321,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                   onEditMessage={(messageId) => {
                     showToast("info", "Editing draft", `Opening editor for ${messageId}`);
                   }}
+                  onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_insight", priority: "high", createdAt: new Date().toISOString(), status: "open" }])}
                 />
               )}
 
@@ -466,6 +478,54 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                         rows={2}
                       />
                     </div>
+                    {/* Return PDF upload */}
+                    <div>
+                      <label className="text-xs font-medium">Return PDF <span className="text-muted-foreground font-normal">(optional)</span></label>
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setPdfDragOver(true); }}
+                        onDragLeave={() => setPdfDragOver(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setPdfDragOver(false);
+                          const file = e.dataTransfer.files?.[0];
+                          if (file && file.type === "application/pdf") setReturnPdf(file);
+                        }}
+                        className={cn(
+                          "mt-1.5 rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer",
+                          pdfDragOver ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/40",
+                          returnPdf && "border-emerald-300 bg-emerald-50/50"
+                        )}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = ".pdf";
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) setReturnPdf(file);
+                          };
+                          input.click();
+                        }}
+                      >
+                        {returnPdf ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <FileText className="size-4 text-emerald-600" />
+                            <span className="text-xs font-medium">{returnPdf.name}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setReturnPdf(null); }}
+                              className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                            >
+                              <X className="size-3 text-muted-foreground" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Upload className="mx-auto size-5 text-muted-foreground/40" />
+                            <p className="text-xs text-muted-foreground">Drop return PDF here or click to browse</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex gap-2 pt-1">
                       <Button variant="outline" className="flex-1" onClick={() => setCompletePrepOpen(false)}>Cancel</Button>
                       <Button className="flex-1" onClick={() => {
@@ -475,7 +535,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                           setStageOverride("client_review");
                           setStageOverrideGlobal(client.id, "client_review");
                           setTransitioning(false);
-                          showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
+                          showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.${returnPdf ? " Return PDF attached." : ""}`);
+                          setReturnPdf(null);
                         }, 1500);
                       }}>
                         <Send className="size-3.5" /> Send for Review

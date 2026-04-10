@@ -85,6 +85,36 @@ export interface DraftMessage {
   tone?: 'friendly' | 'professional' | 'urgent'
 }
 
+export interface DistributionSegment {
+  label: string
+  percent: number
+  color: string // Tailwind bg class e.g. 'bg-blue-500'
+}
+
+export interface InsightSupplementary {
+  label: string
+  value?: string
+  detail?: string
+  type: 'stat' | 'note' | 'quarterly' | 'comparison' | 'highlight' | 'distribution' | 'trend' | 'kpi' | 'extension'
+  quarterlyAmounts?: { q1: number; q2: number; q3: number; q4: number }
+  // For comparison bars (prior vs current)
+  priorValue?: number
+  currentValue?: number
+  priorLabel?: string
+  currentLabel?: string
+  changePercent?: number
+  // For highlight (savings, refund emphasis)
+  highlightColor?: 'emerald' | 'amber' | 'red' | 'blue'
+  // For distribution (segmented progress bar)
+  segments?: DistributionSegment[]
+  // For trend sparklines (area chart trajectory)
+  trendData?: { label: string; value: number }[]
+  changeValue?: number
+  // For extension likelihood
+  probability?: number
+  factors?: string[]
+}
+
 export interface DocketInsight {
   id: string
   clientId: string
@@ -96,6 +126,7 @@ export interface DocketInsight {
   actions: InsightAction[]
   draftMessage?: DraftMessage
   activityTrail?: ActivityEvent[]
+  supplementary?: InsightSupplementary[]
   isExpanded?: boolean
   isResolved?: boolean
 }

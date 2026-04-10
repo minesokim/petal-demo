@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IssueRow } from "./issue-row";
 import { getOpenIssues, getResolvedIssues, type ClientIssue } from "@/lib/issues-mock-data";
-import { AlertCircle, ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 interface OpenItemsSectionProps {
@@ -37,6 +37,13 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
     ]);
   };
 
+  const handleUnresolve = (id: string) => {
+    const item = resolvedItems.find((i) => i.id === id);
+    if (!item) return;
+    setResolvedItems((prev) => prev.filter((i) => i.id !== id));
+    setOpenItems((prev) => [...prev, { ...item, status: "open", resolvedAt: undefined, resolvedNote: undefined }]);
+  };
+
   const handleAdd = () => {
     if (!newTitle.trim()) return;
     const newIssue: ClientIssue = {
@@ -56,15 +63,17 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
   return (
     <Card>
       <CardContent className="py-4">
-        {/* Header */}
+        {/* Header — no exclamation icon, red count */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="size-4 text-red-500" />
             <h3 className="text-sm font-semibold">Flags</h3>
             {allOpen.length > 0 && (
-              <span className="flex size-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
+              <span className="flex size-5 items-center justify-center rounded-full bg-red-50 text-[10px] font-semibold tabular-nums text-red-600">
                 {allOpen.length}
               </span>
+            )}
+            {allOpen.length === 0 && (
+              <span className="text-[10px] text-emerald-600 font-medium">All clear</span>
             )}
           </div>
           <Button
@@ -113,17 +122,21 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
         {/* Open items */}
         {allOpen.length > 0 ? (
           <div className="divide-y divide-border/40">
-            {allOpen.map((issue) => (
-              <motion.div
-                key={issue.id}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <IssueRow issue={issue} onResolve={handleResolve} />
-              </motion.div>
-            ))}
+            <AnimatePresence>
+              {allOpen.map((issue) => (
+                <motion.div
+                  key={issue.id}
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0, x: -20 }}
+                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                  className="overflow-hidden"
+                >
+                  <IssueRow issue={issue} onResolve={handleResolve} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
           <p className="py-4 text-center text-xs text-muted-foreground">
@@ -158,7 +171,12 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
                 >
                   <div className="divide-y divide-border/20">
                     {resolvedItems.map((issue) => (
-                      <IssueRow key={issue.id} issue={issue} onResolve={() => {}} />
+                      <IssueRow
+                        key={issue.id}
+                        issue={issue}
+                        onResolve={() => {}}
+                        onUnresolve={handleUnresolve}
+                      />
                     ))}
                   </div>
                 </motion.div>
