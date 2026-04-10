@@ -108,8 +108,7 @@ export const navItems: NavGroup[] = [
       {
         title: "Messages",
         href: "/dashboard/apps/chat",
-        icon: MessageSquareIcon,
-        isDataBadge: "4"
+        icon: MessageSquareIcon
       },
       {
         title: "Documents",
