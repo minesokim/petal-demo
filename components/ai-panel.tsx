@@ -195,13 +195,14 @@ const clientSpecificData: Record<string, {
     payment: "**$650 total** - $175 deposit paid. Balance $475 due on signing.",
     summary: "Self-employed contractor. Schedule C with home office. Return complete, just awaiting signature. Follow up recommended.",
   },
-  c7: { // Vladimir Petrov
+  c13: { // Vladimir Petrov
     blocking: "**Complete non-engagement** - Never logged in, deposit unpaid ($500), 0 of 16 documents. Complex international business return.",
     missing: "**Missing all 16 docs** - Business financials, international transactions, K-1s, personal documents. No uploads at all.",
     timeline: "**Mar 20** - Signed up (referral)\n**Mar 20** - Portal invite sent\n**Mar 20** - Deposit invoice sent ($500)\n**0 activity** - Never logged in",
     risk: "**Almost certain extension (95%)** - Complex import business with no engagement. Extension conversation needed immediately.",
     payment: "**$1,500 total** - $500 deposit unpaid. High-value client but zero payment activity.",
     summary: "Petrov Imports - complex international business. First-year client. Needs immediate extension discussion. Schedule a call, portal reminders won't work.",
+    complexity: "**Petrov Imports LLC** is a California-based import business dealing with international suppliers. Here's what makes this return complex:\n\n**Required forms beyond 1040:**\n1. Schedule C — Petrov Imports business income and expenses\n2. Form 5471 — if Vladimir has ownership in foreign corporations\n3. FBAR (FinCEN 114) — if foreign bank accounts exceed $10,000 aggregate\n4. Form 8938 (FATCA) — if foreign financial assets exceed reporting threshold\n5. Schedule B — foreign bank account disclosure questions\n\n**International complexity factors:**\n- Import transactions require customs documentation and cost of goods sold calculations\n- Foreign supplier payments may trigger Form 1099-NEC or withholding obligations\n- Currency conversion for all international transactions\n- Potential foreign tax credits if taxes paid abroad\n- Transfer pricing considerations if related-party transactions\n\n**Estimated prep time:** 8-12 hours (vs 2-3 for a standard Schedule C)\n\n**Recommended fee:** $1,200-$1,500 based on complexity. Current fee is $500 (Premium tier) which may be underpriced for this level of work. Consider discussing a fee adjustment during the March 29 call.\n\n**Critical:** You need his complete business financials, import records, and any foreign account statements before you can start. With 0 of 16 docs submitted, an extension is the right call.",
   },
   c12: { // Jasmine Torres
     blocking: "**Missing 1099s from freelance work** - 4 of 8 docs received but key income documents still outstanding after 4 days.",
@@ -349,6 +350,19 @@ function matchResponse(query: string, clientCtx?: ClientContext): DemoResponse {
           ],
           foundContent: { text: data.payment },
           summary: `${firstName}'s billing is shown above.`,
+        };
+      }
+
+      // Complexity review
+      if ((q.includes("complex") || q.includes("international") || q.includes("forms needed") || q.includes("prep time")) && data.complexity) {
+        return {
+          steps: [
+            { type: "thinking", text: `Analyzing ${firstName}'s return complexity.` },
+            { type: "searching", text: "Reviewing business type, international factors, required forms", source: "Client profile + IRS requirements" },
+            { type: "found", text: "Complexity analysis complete." },
+          ],
+          foundContent: { text: data.complexity },
+          summary: `${firstName}'s return is significantly more complex than standard. Review the form requirements and estimated prep time above.`,
         };
       }
 

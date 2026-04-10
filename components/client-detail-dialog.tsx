@@ -118,7 +118,12 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
   const handleInsightAction = (action: InsightAction) => {
     if (action.action === "file_extension") { setExtensionDialogOpen(true); return; }
-    if (action.action === "ask_docket") { askDocket(`Tell me about ${client.fullName}'s situation`); return; }
+    if (action.action === "ask_docket") {
+      // Close popup first, then open Ask Docket
+      onOpenChange(false);
+      setTimeout(() => askDocket(`Break down the complexity factors for ${client.fullName}'s return — what makes this international, what forms are needed, and what's the estimated prep time?`), 300);
+      return;
+    }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
   };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
@@ -299,8 +304,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
-              {/* AI Insight */}
-              {clientInsight && (
+              {/* AI Insight — hides after stage override */}
+              {clientInsight && !stageOverride && (
                 <DocketInsightCard
                   insight={clientInsight}
                   defaultExpanded={true}
@@ -818,28 +823,37 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         <DialogContent className="sm:max-w-md">
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-bold">File Extension</h3>
+              <h3 className="text-base font-bold">Mark as Extended</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Form 4868 will extend {client.fullName}'s deadline to October 15, 2026.
+                Confirm that you've filed Form 4868 for {client.fullName} with the IRS.
               </p>
             </div>
             <div className="rounded-lg border p-3 space-y-2">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Extension details</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">What this does</div>
               <div className="flex items-center gap-2 text-xs">
                 <Check className="size-3.5 text-emerald-600" />
-                <span>Form 4868 — Automatic Extension of Time</span>
+                <span>Updates {client.fullName.split(" ")[0]}'s deadline to October 15, 2026</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <Clock className="size-3.5 text-orange-500" />
-                <span>New deadline: October 15, 2026</span>
+                <Check className="size-3.5 text-emerald-600" />
+                <span>Moves client to Extended stage in the pipeline</span>
               </div>
-              {clientExtensions.filter(a => a.status === "pending").flatMap(a => a.factors).map((f, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <AlertTriangle className="size-3 text-amber-500 shrink-0 mt-0.5" />
-                  <span>{f}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="size-3.5 text-orange-500" />
+                <span>Client still owes any estimated tax by April 15</span>
+              </div>
             </div>
+            {clientExtensions.filter(a => a.status === "pending").length > 0 && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Why extending</div>
+                {clientExtensions.filter(a => a.status === "pending").flatMap(a => a.factors).map((f, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" />
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setExtensionDialogOpen(false)}>Cancel</Button>
               <Button className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={() => {
@@ -848,10 +862,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 setTimeout(() => {
                   setStageOverride("extended");
                   setTransitioning(false);
-                  showToast("success", "Extension filed", `${client.fullName.split(" ")[0]}'s deadline extended to October 15, 2026.`);
+                  showToast("success", "Extension recorded", `${client.fullName.split(" ")[0]}'s deadline updated to October 15, 2026.`);
                 }, 1500);
               }}>
-                <FileText className="size-3.5" /> File Extension
+                <Check className="size-3.5" /> Confirm Extension Filed
               </Button>
             </div>
           </div>

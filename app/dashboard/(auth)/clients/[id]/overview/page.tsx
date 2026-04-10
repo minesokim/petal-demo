@@ -71,7 +71,7 @@ export default function ClientOverviewPage() {
       return;
     }
     if (action.action === "ask_docket") {
-      askDocket(`Tell me about ${client.fullName}'s situation — what's complex about this return?`);
+      askDocket(`Break down the complexity factors for ${client.fullName}'s return — what makes this international, what forms are needed, and what's the estimated prep time?`);
       return;
     }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
@@ -112,8 +112,8 @@ export default function ClientOverviewPage() {
       {/* Prep Workspace button — portaled into layout header */}
       <PrepWorkspacePortal visible={currentStage === "in_preparation"} onOpen={() => setPrepWorkspaceOpen(true)} />
 
-      {/* AI Insight */}
-      {clientInsight && (
+      {/* AI Insight — hides after stage override (e.g., extension filed) */}
+      {clientInsight && !stageOverride && (
         <DocketInsightCard
           insight={clientInsight}
           defaultExpanded={true}
@@ -530,29 +530,39 @@ export default function ClientOverviewPage() {
         <DialogContent className="sm:max-w-md">
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-bold">File Extension</h3>
+              <h3 className="text-base font-bold">Mark as Extended</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Form 4868 will extend {client.fullName}'s deadline to October 15, 2026.
+                Confirm that you've filed Form 4868 for {client.fullName} with the IRS.
               </p>
             </div>
 
             <div className="rounded-lg border p-3 space-y-2">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Extension details</div>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">What this does</div>
               <div className="flex items-center gap-2 text-xs">
                 <Check className="size-3.5 text-emerald-600" />
-                <span>Form 4868 — Automatic Extension of Time</span>
+                <span>Updates {client.fullName.split(" ")[0]}'s deadline to October 15, 2026</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <Clock className="size-3.5 text-orange-500" />
-                <span>New deadline: October 15, 2026</span>
+                <Check className="size-3.5 text-emerald-600" />
+                <span>Moves client to Extended stage in the pipeline</span>
               </div>
-              {clientExtensions.length > 0 && clientExtensions[0]!.factors.map((f, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <AlertTriangle className="size-3 text-amber-500 shrink-0 mt-0.5" />
-                  <span>{f}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="size-3.5 text-orange-500" />
+                <span>Client still owes any estimated tax by April 15</span>
+              </div>
             </div>
+
+            {clientExtensions.length > 0 && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Why extending</div>
+                {clientExtensions[0]!.factors.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" />
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setExtensionDialogOpen(false)}>
@@ -570,7 +580,7 @@ export default function ClientOverviewPage() {
                   }, 1500);
                 }}
               >
-                <FileText className="size-3.5" /> File Extension
+                <Check className="size-3.5" /> Confirm Extension Filed
               </Button>
             </div>
           </div>
