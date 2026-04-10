@@ -320,6 +320,11 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 />
               )}
 
+              {/* Compliance cards (8867) — second card, below insight */}
+              {clientCompliance.map(a => (
+                <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
+              ))}
+
               {/* Upcoming Call */}
               <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
@@ -509,10 +514,6 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               {/* Intelligence Cards — synced with full page */}
               {hasIntel && (
                 <div className="space-y-3">
-                  {/* Compliance alerts (8867 due diligence) */}
-                  {clientCompliance.map(a => (
-                    <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
-                  ))}
                   {clientAnomalies.filter(a => a.status === "pending").map(a => (
                     <DialogAnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
                   ))}
@@ -1610,10 +1611,10 @@ function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceA
               <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Complete</Badge>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Completed. Keep on file for IRS audit purposes.</p>
-            <Button size="sm" variant="outline" className="h-7 text-xs mt-2" onClick={() => setForm8867Open(true)}>View questionnaire</Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs mt-2" onClick={() => setForm8867Open(true)}>View completed form</Button>
           </div>
         </div>
-        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} />
+        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} readOnly />
       </div>
     );
   }

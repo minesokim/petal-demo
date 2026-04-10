@@ -127,6 +127,11 @@ export default function ClientOverviewPage() {
         />
       )}
 
+      {/* Compliance cards (8867 due diligence) — second card, below insight */}
+      {clientCompliance.map(a => (
+        <ComplianceCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+      ))}
+
       {/* Upcoming call notification */}
       <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
@@ -336,10 +341,6 @@ export default function ClientOverviewPage() {
       {/* Docket Insight */}
       {hasIntel && (
         <div className="space-y-3">
-          {/* Compliance */}
-          {clientCompliance.map(a => (
-            <ComplianceCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
-          ))}
           {/* Anomalies */}
           {clientAnomalies.map(a => (
             <AnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
@@ -611,18 +612,15 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
             <p className="mt-1 text-xs text-muted-foreground">
               Completed {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Keep on file for IRS audit purposes.
             </p>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2">
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setForm8867Open(true)}>
-                View questionnaire
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground">
-                <Download className="size-3 mr-1" /> Download PDF
+                View completed form
               </Button>
             </div>
           </div>
         </div>
         {isForm8867 && (
-          <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} />
+          <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} readOnly />
         )}
       </div>
     );

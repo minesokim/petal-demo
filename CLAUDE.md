@@ -124,6 +124,10 @@ type Client = {
 - Subtle, tasteful design — not flashy
 - Intelligence cards differentiate through content not decorative borders
 - Filter pills use workflow buckets (Need You, Waiting, etc.) not pipeline stages
+- **CRITICAL: ALWAYS update BOTH client detail views when changing one:**
+  - Full page: `app/dashboard/(auth)/clients/[id]/overview/page.tsx`
+  - Popup dialog: `components/client-detail-dialog.tsx`
+  - These MUST stay synced. Never commit changes to one without the other.
 
 ## AI Safety Rule
 

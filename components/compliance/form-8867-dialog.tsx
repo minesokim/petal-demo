@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, Download } from "lucide-react";
 import { motion } from "motion/react";
 
 interface Form8867Question {
@@ -42,13 +42,20 @@ interface Form8867DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: () => void;
+  readOnly?: boolean;
 }
 
-export function Form8867Dialog({ clientName, open, onOpenChange, onComplete }: Form8867DialogProps) {
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [notes, setNotes] = useState<Record<string, string>>({});
+export function Form8867Dialog({ clientName, open, onOpenChange, onComplete, readOnly = false }: Form8867DialogProps) {
+  const [checked, setChecked] = useState<Set<string>>(() => readOnly ? new Set(QUESTIONS.map(q => q.id)) : new Set());
+  const [notes, setNotes] = useState<Record<string, string>>(() => readOnly ? {
+    "id-1": "Verified via driver's license uploaded to portal",
+    "id-2": "SSN verified against intake form submission",
+    "eitc-3": "W-2 from Amazon warehouse confirmed as sole income source",
+    "inc-1": "Single W-2, no additional 1099s or unreported income",
+  } : {});
 
   const toggle = (id: string) => {
+    if (readOnly) return;
     setChecked(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -75,8 +82,8 @@ export function Form8867Dialog({ clientName, open, onOpenChange, onComplete }: F
               <SheetTitle className="text-base">Form 8867 Due Diligence</SheetTitle>
               <p className="text-xs text-muted-foreground mt-0.5">{clientName}</p>
             </div>
-            <Badge variant="outline" className="text-[10px]">
-              {checked.size}/{QUESTIONS.length}
+            <Badge variant={readOnly ? "default" : "outline"} className={readOnly ? "bg-emerald-100 text-emerald-700 text-[10px]" : "text-[10px]"}>
+              {readOnly ? "Complete" : `${checked.size}/${QUESTIONS.length}`}
             </Badge>
           </div>
           <Progress value={progress} className="h-1.5 mt-3" indicatorColor={isComplete ? "bg-emerald-500" : undefined} />
@@ -116,9 +123,10 @@ export function Form8867Dialog({ clientName, open, onOpenChange, onComplete }: F
                       >
                         <input
                           value={notes[q.id] || ""}
-                          onChange={e => setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
-                          placeholder="Notes (optional)"
-                          className="mt-2 ml-7 w-[calc(100%-28px)] rounded-md border bg-background px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                          onChange={e => !readOnly && setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          placeholder={readOnly ? "" : "Notes (optional)"}
+                          readOnly={readOnly}
+                          className={`mt-2 ml-7 w-[calc(100%-28px)] rounded-md border px-3 py-1.5 text-xs outline-none ${readOnly ? "bg-muted/30 text-muted-foreground" : "bg-background focus:ring-1 focus:ring-ring"}`}
                         />
                       </motion.div>
                     )}
@@ -131,6 +139,17 @@ export function Form8867Dialog({ clientName, open, onOpenChange, onComplete }: F
 
         {/* Footer */}
         <div className="border-t px-6 py-4 shrink-0">
+          {readOnly ? (
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              <Button variant="outline" className="flex-1">
+                <Download className="size-3.5" /> Download PDF
+              </Button>
+            </div>
+          ) : (
+          <>
           {!isComplete && (
             <div className="flex items-center gap-2 mb-3 text-xs text-amber-600">
               <AlertTriangle className="size-3" />
@@ -152,6 +171,8 @@ export function Form8867Dialog({ clientName, open, onOpenChange, onComplete }: F
               <Check className="size-3.5" /> Complete Due Diligence
             </Button>
           </div>
+          </>
+          )}
         </div>
       </SheetContent>
     </Sheet>
