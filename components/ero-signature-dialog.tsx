@@ -32,11 +32,12 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
     setTimeout(() => {
       setState("signed");
       // Fire confetti
+      const colors = ["#ef4444", "#eab308", "#3b82f6", "#10b981", "#8b5cf6"];
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ["#10b981", "#059669", "#34d399", "#6ee7b7", "#a7f3d0"],
+        colors,
       });
       setTimeout(() => {
         confetti({
@@ -44,14 +45,14 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
           angle: 60,
           spread: 55,
           origin: { x: 0 },
-          colors: ["#10b981", "#059669", "#34d399"],
+          colors,
         });
         confetti({
           particleCount: 50,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
-          colors: ["#10b981", "#059669", "#34d399"],
+          colors,
         });
       }, 200);
       // Call onComplete after a moment
