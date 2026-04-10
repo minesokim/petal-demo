@@ -203,73 +203,77 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
         {/* Pending intake banner */}
         {client.clientStatus === "pending" && onAccept && onDecline && (
-          <div className="border-b px-6 py-5 space-y-4">
-            {/* Context — who is this person */}
+          <div className="border-b px-6 py-5">
             {(() => {
               const ctx = pendingIntakeContext[client.id];
+              const callMissed = client.scheduledCall && isCallPast(client.scheduledCall);
               return (
-                <div className="space-y-3">
-                  <div className="rounded-lg border bg-card p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm leading-relaxed text-foreground/80">
-                          {client.notes || "New client intake received."}
-                        </p>
-                        {ctx && (
-                          <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                            <span>{ctx.filing}</span>
-                            <span className="text-muted-foreground/30">·</span>
-                            <span>{ctx.income.join(", ")}</span>
-                            <span className="text-muted-foreground/30">·</span>
-                            <span>Requested {ctx.service}</span>
-                          </div>
-                        )}
+                <div className="rounded-lg border bg-card overflow-hidden">
+                  {/* Header — urgency indicator */}
+                  <div className="px-4 py-2.5 flex items-center gap-2">
+                    <span className={`size-1.5 rounded-full shrink-0 ${callMissed ? "bg-red-500" : "bg-amber-500"}`} />
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${callMissed ? "text-red-700" : "text-amber-700"}`}>
+                      {callMissed ? "Action Required — Missed Call" : "New Client — Review Required"}
+                    </span>
+                    {client.scheduledCall && (
+                      <span className={`ml-auto text-[10px] ${callMissed ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                        {formatCallTime(client.scheduledCall)}{callMissed ? " · Missed" : ""}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="px-4 pb-4 space-y-3">
+                    <p className="text-sm leading-relaxed">
+                      {client.notes || "New client intake received. Review and assign a service tier to begin."}
+                    </p>
+
+                    {ctx && (
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{ctx.filing}</span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span>{ctx.income.join(", ")}</span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span>Requested {ctx.service}</span>
                       </div>
-                      {client.scheduledCall && (
-                        <div className={`text-right shrink-0 ml-4 ${isCallPast(client.scheduledCall) ? "text-red-600" : "text-muted-foreground"}`}>
-                          <div className="text-[10px] uppercase tracking-wider font-medium">{isCallPast(client.scheduledCall) ? "Missed" : "Scheduled"}</div>
-                          <div className="text-xs">{formatCallTime(client.scheduledCall)}</div>
-                        </div>
-                      )}
+                    )}
+
+                    <div className="flex items-center gap-2 text-[10px] text-emerald-600">
+                      <Check className="size-3" /> Intake
+                      <span className="text-muted-foreground/30">·</span>
+                      <Check className="size-3" /> $50 deposit
+                      <span className="text-muted-foreground/30">·</span>
+                      <Check className="size-3" /> Engagement signed
                     </div>
-                  </div>
 
-                  {/* Status chips */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="flex items-center gap-1 text-emerald-600"><Check className="size-3" /> Intake</div>
-                    <span className="text-muted-foreground/30">·</span>
-                    <div className="flex items-center gap-1 text-emerald-600"><Check className="size-3" /> $50 deposit</div>
-                    <span className="text-muted-foreground/30">·</span>
-                    <div className="flex items-center gap-1 text-emerald-600"><Check className="size-3" /> Engagement signed</div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={assignedTier}
-                      onChange={(e) => setAssignedTier(e.target.value)}
-                      className="h-9 rounded-md border bg-background px-3 text-xs outline-none flex-1"
-                    >
-                      {serviceTierOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                    <Button
-                      size="sm"
-                      className="h-9 px-5"
-                      disabled={!assignedTier}
-                      onClick={() => { onAccept(client.id, assignedTier); onOpenChange(false); }}
-                    >
-                      Accept Client
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-9 text-muted-foreground"
-                      onClick={() => { onDecline(client.id); onOpenChange(false); }}
-                    >
-                      Decline
-                    </Button>
+                    {/* Accept / Decline */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <select
+                        value={assignedTier}
+                        onChange={(e) => setAssignedTier(e.target.value)}
+                        className="h-9 rounded-md border bg-background px-3 text-xs outline-none flex-1"
+                      >
+                        {serviceTierOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <Button
+                        size="sm"
+                        className="h-9 px-5"
+                        disabled={!assignedTier}
+                        onClick={() => { onAccept(client.id, assignedTier); onOpenChange(false); }}
+                      >
+                        Accept Client
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-9 text-muted-foreground"
+                        onClick={() => { onDecline(client.id); onOpenChange(false); }}
+                      >
+                        Decline
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
