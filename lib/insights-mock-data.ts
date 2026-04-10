@@ -326,8 +326,8 @@ export const clientInsights: Record<string, DocketInsight> = {
     content: "Vladimir completed intake 14 days ago but has never logged into the portal. 0 of 16 documents uploaded. His import business (Petrov Imports) has complex international transactions that require significant prep time. With 18 days to deadline and zero progress, an extension is almost certain. You have a call scheduled tomorrow (March 29) at 10am. Use that call to discuss the extension and set realistic expectations for the extended deadline.",
     timestamp: "2026-03-28T06:00:00",
     actions: [
-      { id: "prep-extension", label: "Prepare Form 4868", variant: "primary", action: "draft_4868" },
-      { id: "view-profile", label: "Review complexity", variant: "secondary", action: "open_client" },
+      { id: "prep-extension", label: "Prepare Form 4868", variant: "primary", action: "file_extension" },
+      { id: "review-complexity", label: "Review complexity", variant: "secondary", action: "ask_docket" },
     ],
   },
 

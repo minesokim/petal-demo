@@ -66,6 +66,14 @@ export default function ClientOverviewPage() {
   const clientTrackingBadges = getTrackingBadgesForClient(client.id);
 
   const handleInsightAction = (action: InsightAction) => {
+    if (action.action === "file_extension") {
+      setExtensionDialogOpen(true);
+      return;
+    }
+    if (action.action === "ask_docket") {
+      askDocket(`Tell me about ${client.fullName}'s situation — what's complex about this return?`);
+      return;
+    }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
   };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);

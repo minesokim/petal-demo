@@ -99,6 +99,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [completePrepOpen, setCompletePrepOpen] = useState(false);
   const [returnSummary, setReturnSummary] = useState("");
   const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
+  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [assignedTier, setAssignedTier] = useState("");
@@ -116,6 +117,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const clientTrackingBadges = getTrackingBadgesForClient(client.id);
 
   const handleInsightAction = (action: InsightAction) => {
+    if (action.action === "file_extension") { setExtensionDialogOpen(true); return; }
+    if (action.action === "ask_docket") { askDocket(`Tell me about ${client.fullName}'s situation`); return; }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
   };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
@@ -506,6 +509,42 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                   {clientDeductions.filter(a => a.status === "pending").map(a => (
                     <DialogDeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
                   ))}
+                  {/* Extension predictions */}
+                  {currentStage === "extended" ? (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-orange-500" />
+                          <span className="text-sm font-semibold">Extended to October 15, 2026</span>
+                        </div>
+                        <Badge className="bg-orange-100 text-orange-700">Extended</Badge>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">Form 4868 filed. New deadline: October 15, 2026.</p>
+                    </div>
+                  ) : clientExtensions.filter(a => a.status === "pending").map(a => (
+                    <div key={a.id} className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-amber-500" />
+                          <span className="text-sm font-semibold">Extension likelihood</span>
+                        </div>
+                        <span className="font-display text-2xl tabular-nums tracking-tight">{a.probability}%</span>
+                      </div>
+                      <Progress value={a.probability} className="mt-3 h-2" indicatorColor={a.probability >= 80 ? "bg-red-500" : "bg-amber-500"} />
+                      <div className="mt-3 space-y-1">
+                        {a.factors.map((f, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" /> {f}
+                          </div>
+                        ))}
+                      </div>
+                      {a.probability >= 70 && (
+                        <Button className="mt-3 w-full" onClick={() => setExtensionDialogOpen(true)}>
+                          <FileText className="size-3.5" /> File Extension (Form 4868)
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -773,6 +812,51 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           setCompletePrepOpen(true);
         }}
       />
+
+      {/* File Extension Dialog */}
+      <Dialog open={extensionDialogOpen} onOpenChange={setExtensionDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-bold">File Extension</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Form 4868 will extend {client.fullName}'s deadline to October 15, 2026.
+              </p>
+            </div>
+            <div className="rounded-lg border p-3 space-y-2">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Extension details</div>
+              <div className="flex items-center gap-2 text-xs">
+                <Check className="size-3.5 text-emerald-600" />
+                <span>Form 4868 — Automatic Extension of Time</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Clock className="size-3.5 text-orange-500" />
+                <span>New deadline: October 15, 2026</span>
+              </div>
+              {clientExtensions.filter(a => a.status === "pending").flatMap(a => a.factors).map((f, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertTriangle className="size-3 text-amber-500 shrink-0 mt-0.5" />
+                  <span>{f}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setExtensionDialogOpen(false)}>Cancel</Button>
+              <Button className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={() => {
+                setExtensionDialogOpen(false);
+                setTransitioning(true);
+                setTimeout(() => {
+                  setStageOverride("extended");
+                  setTransitioning(false);
+                  showToast("success", "Extension filed", `${client.fullName.split(" ")[0]}'s deadline extended to October 15, 2026.`);
+                }, 1500);
+              }}>
+                <FileText className="size-3.5" /> File Extension
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
