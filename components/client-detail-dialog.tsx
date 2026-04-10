@@ -856,7 +856,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             )}
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setExtensionDialogOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={() => {
+              <Button className="flex-1" onClick={() => {
                 setExtensionDialogOpen(false);
                 setTransitioning(true);
                 setTimeout(() => {

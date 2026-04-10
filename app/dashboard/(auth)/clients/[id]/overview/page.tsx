@@ -365,10 +365,6 @@ export default function ClientOverviewPage() {
                   return daysLeft > 0 ? ` ${daysLeft} days remaining.` : " Deadline passed.";
                 })()}
               </p>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" className="text-xs h-7">Resume document collection</Button>
-                <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => askDocket(`What's the status of ${client.fullName}'s extension?`)}>Ask Docket</Button>
-              </div>
             </div>
           ) : clientExtensions.map(a => (
             <div key={a.id} className="rounded-xl border bg-card p-4">
@@ -569,7 +565,7 @@ export default function ClientOverviewPage() {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                className="flex-1"
                 onClick={() => {
                   setExtensionDialogOpen(false);
                   setTransitioning(true);
