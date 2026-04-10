@@ -161,19 +161,18 @@ export const clientInsights: Record<string, DocketInsight> = {
     ],
   },
 
-  // DeShawn Williams - Alert (critical, disengaged)
+  // DeShawn Williams - Alert (critical, disengaged + due diligence needed)
   c4: {
     id: "insight-c4",
     clientId: "c4",
     severity: "alert",
     category: "client_engagement",
-    title: "Disengaged new client - consider closing",
-    content: "DeShawn has 1 of 6 docs, an overdue deposit, and has never logged into the portal. He was referred by the mentor network on 3/10 and completed intake on 3/12 but hasn't engaged since. The welcome email was opened once on 3/12 but the portal link was never clicked. Two follow-up emails were sent (3/18, 3/25) - neither was opened. This could be a client who signed up casually and doesn't intend to follow through. Recommend one final SMS (he may not check email regularly) and if no response in 48 hours, consider closing the engagement to free up your pipeline.",
+    title: "Disengaged client, $600 penalty risk if due diligence incomplete",
+    content: "DeShawn has 1 of 6 docs, an overdue deposit, and has never logged into the portal. He's Head of Household with 2 dependents, which means EITC, CTC, AOTC, and HOH all require Form 8867 due diligence before you can file. That's a $600 per return penalty if you skip it. He was referred by the mentor network on 3/10 and completed intake on 3/12 but hasn't engaged since. Two follow-up emails were sent — neither was opened. Recommend one final SMS and if no response in 48 hours, consider closing the engagement.",
     timestamp: "2026-03-28T08:00:00",
     actions: [
-      { id: "send-sms", label: "Send final SMS", variant: "primary", action: "send_sms" },
-      { id: "call-deshawn", label: "Call DeShawn", variant: "secondary", action: "initiate_call" },
-      { id: "close-engagement", label: "Close engagement", variant: "ghost", action: "close_client" },
+      { id: "call-deshawn", label: "Call DeShawn", variant: "primary", action: "initiate_call" },
+      { id: "ask-docket-dd", label: "Learn more with Docket", variant: "secondary", action: "ask_docket" },
     ],
     draftMessage: {
       id: "draft-deshawn",

@@ -18,6 +18,7 @@ import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
+import { Form8867Dialog } from "@/components/compliance/form-8867-dialog";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory, getSmartChecklist, getDocumentIntelligence, getClientDocuments, getIntelligenceForDocument } from "@/lib/documents-mock-data";
@@ -121,7 +122,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
     if (action.action === "ask_docket") {
       // Close popup first, then open Ask Docket
       onOpenChange(false);
-      setTimeout(() => askDocket(`Break down the complexity factors for ${client.fullName}'s return — what makes this international, what forms are needed, and what's the estimated prep time?`), 300);
+      setTimeout(() => askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`), 300);
       return;
     }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
@@ -508,6 +509,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               {/* Intelligence Cards — synced with full page */}
               {hasIntel && (
                 <div className="space-y-3">
+                  {/* Compliance alerts (8867 due diligence) */}
+                  {clientCompliance.map(a => (
+                    <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
+                  ))}
                   {clientAnomalies.filter(a => a.status === "pending").map(a => (
                     <DialogAnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
                   ))}
@@ -1585,5 +1590,68 @@ function DialogDeductionCard({ suggestion, onAskDocket, clientName }: { suggesti
         </Button>
       </div>
     </div>
+  );
+}
+
+function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceAlerts[0]; clientName: string }) {
+  const [status, setStatus] = useState(alert.status);
+  const [form8867Open, setForm8867Open] = useState(false);
+  const { showToast } = useToast();
+  const isForm8867 = alert.formRequired === "Form 8867";
+
+  if (status === "acknowledged" && isForm8867) {
+    return (
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Form 8867 Due Diligence</span>
+              <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Complete</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Completed. Keep on file for IRS audit purposes.</p>
+            <Button size="sm" variant="outline" className="h-7 text-xs mt-2" onClick={() => setForm8867Open(true)}>View questionnaire</Button>
+          </div>
+        </div>
+        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} />
+      </div>
+    );
+  }
+
+  if (status !== "pending") return null;
+
+  return (
+    <>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 size-2 shrink-0 rounded-full bg-red-500" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{alert.title}</span>
+              {alert.severity === "critical" && <Badge variant="destructive" className="text-[10px]">critical</Badge>}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{alert.description}</p>
+            <div className="mt-2 flex items-center gap-4 text-xs">
+              <span className="text-muted-foreground">Form: <strong>{alert.formRequired}</strong></span>
+              <span className="text-red-600">{alert.fineRisk}</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          {isForm8867 ? (
+            <Button size="sm" className="h-7 text-xs" onClick={() => setForm8867Open(true)}>Begin Due Diligence</Button>
+          ) : (
+            <Button size="sm" className="h-7 text-xs" onClick={() => setStatus("acknowledged")}><Check className="size-3 mr-1" /> Acknowledge</Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}><X className="size-3 mr-1" /> Dismiss</Button>
+        </div>
+      </div>
+      {isForm8867 && (
+        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {
+          setStatus("acknowledged");
+          showToast("success", "Due diligence complete", `Form 8867 completed for ${clientName}`);
+        }} />
+      )}
+    </>
   );
 }

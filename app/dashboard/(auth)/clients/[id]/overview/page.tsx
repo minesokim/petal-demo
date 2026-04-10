@@ -71,7 +71,7 @@ export default function ClientOverviewPage() {
       return;
     }
     if (action.action === "ask_docket") {
-      askDocket(`Break down the complexity factors for ${client.fullName}'s return — what makes this international, what forms are needed, and what's the estimated prep time?`);
+      askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`);
       return;
     }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
@@ -595,8 +595,41 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
   const [status, setStatus] = useState(alert.status);
   const [form8867Open, setForm8867Open] = useState(false);
   const { showToast } = useToast();
-  if (status !== "pending") return null;
   const isForm8867 = alert.formRequired === "Form 8867";
+
+  // Completed state — stays visible with green indicator
+  if (status === "acknowledged" && isForm8867) {
+    return (
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Form 8867 Due Diligence</span>
+              <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Complete</Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Completed {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Keep on file for IRS audit purposes.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setForm8867Open(true)}>
+                View questionnaire
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground">
+                <Download className="size-3 mr-1" /> Download PDF
+              </Button>
+            </div>
+          </div>
+        </div>
+        {isForm8867 && (
+          <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} />
+        )}
+      </div>
+    );
+  }
+
+  if (status !== "pending") return null;
+
   return (
     <>
       <div className="rounded-lg border bg-card p-4">
