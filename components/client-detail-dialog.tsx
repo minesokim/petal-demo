@@ -121,8 +121,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
   const handleInsightAction = (action: InsightAction) => {
     if (action.action === "file_extension") { setExtensionDialogOpen(true); return; }
+    if (action.action === "ero_sign") { setEroOpen(true); return; }
     if (action.action === "ask_docket") {
-      // Close popup first, then open Ask Docket
       onOpenChange(false);
       setTimeout(() => askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`), 300);
       return;

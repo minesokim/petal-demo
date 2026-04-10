@@ -200,7 +200,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     timestamp: "2026-03-28T07:45:00",
     actions: [
       { id: "sign-efile", label: "Sign & e-file", variant: "primary", action: "ero_sign" },
-      { id: "review-return", label: "Review return first", variant: "secondary", action: "open_return" },
+      { id: "review-docket", label: "Review with Docket", variant: "secondary", action: "ask_docket" },
     ],
   },
 

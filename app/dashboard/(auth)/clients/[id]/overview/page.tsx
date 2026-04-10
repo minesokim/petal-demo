@@ -72,6 +72,10 @@ export default function ClientOverviewPage() {
       setExtensionDialogOpen(true);
       return;
     }
+    if (action.action === "ero_sign") {
+      setEroOpen(true);
+      return;
+    }
     if (action.action === "ask_docket") {
       askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`);
       return;
