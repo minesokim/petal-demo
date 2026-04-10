@@ -55,8 +55,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
         <ArrowLeft className="size-3.5" /> Back to clients
       </Link>
 
-      {/* Client header + tabs — sticky block */}
-      <div className="sticky z-20 bg-background pb-0" style={{ top: "var(--header-height)" }}>
+      {/* Client header */}
       <div className="flex items-start justify-between py-4">
         <div className="flex items-start gap-4">
           <Avatar className="size-14">
@@ -132,7 +131,6 @@ export default function ClientDetailLayout({ children }: { children: React.React
           ))}
         </div>
       </LayoutGroup>
-      </div>
 
       {/* Tab content — animated on route change */}
       <AnimatePresence mode="wait">
