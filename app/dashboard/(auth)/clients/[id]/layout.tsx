@@ -12,14 +12,12 @@ import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, 
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
 import { useAIPanel } from "@/components/ai-panel";
-import { EngagementLetterDialog } from "@/components/proposals/engagement-letter-dialog";
 
 export default function ClientDetailLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
   const clientId = params.id as string;
   const client = clients.find(c => c.id === clientId);
-  const [engagementLetterOpen, setEngagementLetterOpen] = useState(false);
   const { setClientContext } = useAIPanel();
 
   // Set AI panel client context when viewing this client
@@ -94,7 +92,6 @@ export default function ClientDetailLayout({ children }: { children: React.React
             <DropdownMenuItem><Mail className="mr-2 size-3.5" /> Send message</DropdownMenuItem>
             <DropdownMenuItem><Phone className="mr-2 size-3.5" /> Schedule call</DropdownMenuItem>
             <DropdownMenuItem><FileText className="mr-2 size-3.5" /> Request documents</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setEngagementLetterOpen(true)}><FileText className="mr-2 size-3.5" /> Generate engagement letter</DropdownMenuItem>
             <DropdownMenuItem><Download className="mr-2 size-3.5" /> Export client data</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive"><UserX className="mr-2 size-3.5" /> Archive client</DropdownMenuItem>
@@ -103,8 +100,6 @@ export default function ClientDetailLayout({ children }: { children: React.React
         </div>
       </div>
 
-      {/* Engagement Letter Dialog */}
-      {client && <EngagementLetterDialog client={client} open={engagementLetterOpen} onOpenChange={setEngagementLetterOpen} />}
 
       {/* Sub-tabs */}
       <LayoutGroup>
