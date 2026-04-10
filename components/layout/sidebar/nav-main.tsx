@@ -108,7 +108,8 @@ export const navItems: NavGroup[] = [
       {
         title: "Messages",
         href: "/dashboard/apps/chat",
-        icon: MessageSquareIcon
+        icon: MessageSquareIcon,
+        isDataBadge: "4"
       },
       {
         title: "Documents",
@@ -501,6 +502,13 @@ export function NavMain() {
                           <span className="ml-0.5">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
+                      {!!item.isDataBadge && (
+                        <SidebarMenuBadge>
+                          <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold text-white leading-[0]">
+                            {item.isDataBadge}
+                          </span>
+                        </SidebarMenuBadge>
+                      )}
                     </div>
                   )}
                   {!!item.isComing && (
@@ -511,13 +519,6 @@ export function NavMain() {
                   {!!item.isNew && (
                     <SidebarMenuBadge className="border border-green-400 text-green-600 peer-hover/menu-button:text-green-600">
                       New
-                    </SidebarMenuBadge>
-                  )}
-                  {!!item.isDataBadge && (
-                    <SidebarMenuBadge>
-                      <span className="flex size-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold text-white leading-[0]">
-                        {item.isDataBadge}
-                      </span>
                     </SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
