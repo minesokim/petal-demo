@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
@@ -356,7 +357,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                       className="mt-3 w-full"
                       onClick={() => {
                         setTransitioning(true);
-                        setTimeout(() => { setStageOverride("in_preparation"); setTransitioning(false); showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`); }, 1500);
+                        setTimeout(() => { setStageOverride("in_preparation"); setStageOverrideGlobal(client.id, "in_preparation"); setTransitioning(false); showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`); }, 1500);
                       }}
                     >
                       <FileText className="size-3.5" /> Begin Preparation
@@ -472,6 +473,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                         setTransitioning(true);
                         setTimeout(() => {
                           setStageOverride("client_review");
+                          setStageOverrideGlobal(client.id, "client_review");
                           setTransitioning(false);
                           showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
                         }, 1500);
@@ -801,6 +803,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} onComplete={() => {
         setStageOverride("filed");
+        setStageOverrideGlobal(client.id, "filed");
         showToast("success", "Return filed!", `${client.fullName}'s return has been e-filed with the IRS.`);
       }} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
@@ -864,6 +867,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 setTransitioning(true);
                 setTimeout(() => {
                   setStageOverride("extended");
+                  setStageOverrideGlobal(client.id, "extended");
                   setTransitioning(false);
                   showToast("success", "Extension recorded", `${client.fullName.split(" ")[0]}'s deadline updated to October 15, 2026.`);
                 }, 1500);

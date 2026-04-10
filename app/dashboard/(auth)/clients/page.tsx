@@ -15,7 +15,8 @@ import { ClientsPipelineView } from "@/components/clients/clients-pipeline-view"
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
 import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText, ArrowUpDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { clients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
+import { clients as rawClients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
+import { applyStageOverrides } from "@/lib/stage-overrides";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useToast } from "@/components/ui/toast-notification";
@@ -33,6 +34,7 @@ const sortOptions: { key: SortKey; label: string }[] = [
 ];
 
 export default function ClientsPage() {
+  const clients = applyStageOverrides(rawClients) as Client[];
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [acceptedIds, setAcceptedIds] = useState<string[]>([]);

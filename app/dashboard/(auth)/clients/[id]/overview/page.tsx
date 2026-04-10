@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
 import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
@@ -215,6 +216,7 @@ export default function ClientOverviewPage() {
                 setTransitioning(true);
                 setTimeout(() => {
                   setStageOverride("in_preparation");
+                  setStageOverrideGlobal(client.id, "in_preparation");
                   setTransitioning(false);
                   showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`);
                 }, 1500);
@@ -349,6 +351,7 @@ export default function ClientOverviewPage() {
                   setTransitioning(true);
                   setTimeout(() => {
                     setStageOverride("client_review");
+                    setStageOverrideGlobal(client.id, "client_review");
                     setTransitioning(false);
                     showToast("success", "Sent for review", `${client.fullName.split(" ")[0]}'s return has been sent for client review.`);
                   }, 1500);
@@ -557,6 +560,7 @@ export default function ClientOverviewPage() {
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(open) => !open && setSelectedExtraction(null)} />
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} onComplete={() => {
         setStageOverride("filed");
+        setStageOverrideGlobal(client.id, "filed");
         showToast("success", "Return filed!", `${client.fullName}'s return has been e-filed with the IRS.`);
       }} />
       <PrepWorkspaceModal
@@ -620,6 +624,7 @@ export default function ClientOverviewPage() {
                   setTransitioning(true);
                   setTimeout(() => {
                     setStageOverride("extended");
+                    setStageOverrideGlobal(client.id, "extended");
                     setTransitioning(false);
                     showToast("success", "Extension filed", `${client.fullName.split(" ")[0]}'s deadline extended to October 15, 2026.`);
                   }, 1500);
