@@ -39,8 +39,8 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
         confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0 }, colors, ...slow });
         confetti({ particleCount: 80, angle: 120, spread: 60, origin: { x: 1 }, colors, ...slow });
       }, 400);
-      // Call onComplete after a moment
-      setTimeout(() => onComplete?.(), 1500);
+      // Call onComplete immediately when signed
+      if (onComplete) onComplete();
     }, 2000);
   };
 
