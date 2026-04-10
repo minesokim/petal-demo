@@ -45,15 +45,14 @@ export function Form8867Viewer({ clientName, open, onOpenChange }: Form8867Viewe
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex !h-[85vh] !w-[700px] !max-w-[700px] flex-col gap-0 overflow-hidden p-0" showCloseButton={false}>
+        <DialogContent className="flex !h-[88vh] !w-[780px] !max-w-[780px] flex-col gap-0 overflow-hidden p-0" showCloseButton={false}>
           {/* Header */}
-          <div className="flex items-center justify-between border-b px-5 py-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="text-[10px]">8867</Badge>
-              <h2 className="text-sm font-semibold">Form 8867 Due Diligence Checklist</h2>
-              <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Complete</Badge>
+          <div className="flex items-center justify-between border-b px-5 py-2.5 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="text-sm font-semibold">Form 8867</h2>
+              <Badge className="bg-emerald-100 text-emerald-700 text-[10px] shrink-0">Complete</Badge>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditOpen(true)}>
                 <Pen className="size-3" /> Edit
               </Button>
