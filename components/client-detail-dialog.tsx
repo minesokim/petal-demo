@@ -19,6 +19,7 @@ import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { Form8867Dialog } from "@/components/compliance/form-8867-dialog";
+import { Form8867Viewer } from "@/components/compliance/form-8867-viewer";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { getClientChecklist, getClientNotes, groupDocumentsByCategory, getSmartChecklist, getDocumentIntelligence, getClientDocuments, getIntelligenceForDocument } from "@/lib/documents-mock-data";
@@ -1614,7 +1615,7 @@ function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceA
             <Button size="sm" variant="outline" className="h-7 text-xs mt-2" onClick={() => setForm8867Open(true)}>View completed form</Button>
           </div>
         </div>
-        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} readOnly />
+        <Form8867Viewer clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} />
       </div>
     );
   }

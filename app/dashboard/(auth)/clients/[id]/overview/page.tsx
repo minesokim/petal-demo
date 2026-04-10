@@ -35,6 +35,7 @@ import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { Form8867Dialog } from "@/components/compliance/form-8867-dialog";
+import { Form8867Viewer } from "@/components/compliance/form-8867-viewer";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { BillingCard } from "@/components/billing/billing-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -620,7 +621,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
           </div>
         </div>
         {isForm8867 && (
-          <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {}} readOnly />
+          <Form8867Viewer clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} />
         )}
       </div>
     );
