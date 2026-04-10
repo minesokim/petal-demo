@@ -33,19 +33,12 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
       setState("signed");
       // Fire confetti
       const colors = ["#ef4444", "#eab308", "#3b82f6", "#10b981", "#8b5cf6"];
-      const slow = { gravity: 0.6, drift: 0, ticks: 300 };
+      const slow = { gravity: 0.6, ticks: 300 };
       confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors, ...slow });
       setTimeout(() => {
         confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0 }, colors, ...slow });
         confetti({ particleCount: 80, angle: 120, spread: 60, origin: { x: 1 }, colors, ...slow });
-      }, 300);
-      setTimeout(() => {
-        confetti({ particleCount: 120, spread: 100, origin: { y: 0.5 }, colors, ...slow });
-      }, 700);
-      setTimeout(() => {
-        confetti({ particleCount: 60, angle: 60, spread: 70, origin: { x: 0, y: 0.7 }, colors, ...slow });
-        confetti({ particleCount: 60, angle: 120, spread: 70, origin: { x: 1, y: 0.7 }, colors, ...slow });
-      }, 1100);
+      }, 400);
       // Call onComplete after a moment
       setTimeout(() => onComplete?.(), 1500);
     }, 2000);
