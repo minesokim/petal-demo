@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +18,10 @@ interface EroSignatureDialogProps {
   client: Client | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onComplete?: () => void;
 }
 
-export function EroSignatureDialog({ client, open, onOpenChange }: EroSignatureDialogProps) {
+export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: EroSignatureDialogProps) {
   const [state, setState] = useState<SignState>("review");
   const [checked, setChecked] = useState(false);
 
@@ -27,7 +29,34 @@ export function EroSignatureDialog({ client, open, onOpenChange }: EroSignatureD
 
   const handleSign = () => {
     setState("signing");
-    setTimeout(() => setState("signed"), 2000);
+    setTimeout(() => {
+      setState("signed");
+      // Fire confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#10b981", "#059669", "#34d399", "#6ee7b7", "#a7f3d0"],
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ["#10b981", "#059669", "#34d399"],
+        });
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ["#10b981", "#059669", "#34d399"],
+        });
+      }, 200);
+      // Call onComplete after a moment
+      setTimeout(() => onComplete?.(), 1500);
+    }, 2000);
   };
 
   const handleClose = () => {

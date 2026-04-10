@@ -797,7 +797,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         </Tabs>
       </DialogContent>
 
-      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
+      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} onComplete={() => {
+        setStageOverride("filed");
+        showToast("success", "Return filed!", `${client.fullName}'s return has been e-filed with the IRS.`);
+      }} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(o) => !o && setSelectedExtraction(null)} />
       {selectedAction && <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setSelectedAction(null); }} />}
       <DocumentViewerDialog

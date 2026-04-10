@@ -553,7 +553,10 @@ export default function ClientOverviewPage() {
       {/* Dialogs */}
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(open) => !open && setSelectedExtraction(null)} />
-      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} />
+      <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} onComplete={() => {
+        setStageOverride("filed");
+        showToast("success", "Return filed!", `${client.fullName}'s return has been e-filed with the IRS.`);
+      }} />
       <PrepWorkspaceModal
         client={client}
         open={prepWorkspaceOpen}
