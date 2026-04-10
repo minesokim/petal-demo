@@ -178,7 +178,9 @@ export default function ClientOverviewPage() {
       <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
       {/* Flags */}
-      <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+      {currentStage !== "filed" && (
+        <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+      )}
 
       {/* Ready to Prep / Transition — animated */}
       <AnimatePresence mode="wait">

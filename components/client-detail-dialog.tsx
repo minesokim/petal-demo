@@ -320,8 +320,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               {/* Upcoming Call */}
               <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
 
-              {/* Flags */}
-              <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+              {/* Flags — hidden for filed clients */}
+              {currentStage !== "filed" && (
+                <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+              )}
 
               {/* Ready to Prep / Transition — animated (synced with full page) */}
               <AnimatePresence mode="wait">
