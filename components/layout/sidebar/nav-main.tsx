@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { motion, LayoutGroup } from "motion/react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -417,7 +418,7 @@ export function NavMain() {
         <SidebarGroup key={nav.title}>
           {nav.title && <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">
-            <SidebarMenu>
+            <LayoutGroup><SidebarMenu>
               {nav.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {Array.isArray(item.items) && item.items.length > 0 ? (
@@ -478,21 +479,30 @@ export function NavMain() {
                       </Collapsible>
                     </>
                   ) : (
-                    <SidebarMenuButton
-                      className={cn(
-                        "hover:bg-[#e8e4dc]/50 text-foreground/70 [&>svg]:text-foreground/70",
-                        pathname === item.href
-                          ? "bg-[#e8e4dc]/70 font-medium"
-                          : ""
+                    <div className="relative">
+                      {pathname === item.href && (
+                        <motion.span
+                          layoutId="active-sidebar-item"
+                          className="absolute inset-0 rounded-md bg-[#e8e4dc]/70"
+                          transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
+                        />
                       )}
-                      isActive={false}
-                      tooltip={item.title}
-                      asChild>
-                      <Link href={item.href} target={item.newTab ? "_blank" : ""}>
-                        {item.icon && <item.icon />}
-                        <span className="ml-0.5">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                      <SidebarMenuButton
+                        className={cn(
+                          "relative z-10 hover:bg-[#e8e4dc]/50 text-foreground/70 [&>svg]:text-foreground/70",
+                          pathname === item.href
+                            ? "font-medium"
+                            : ""
+                        )}
+                        isActive={false}
+                        tooltip={item.title}
+                        asChild>
+                        <Link href={item.href} target={item.newTab ? "_blank" : ""}>
+                          {item.icon && <item.icon />}
+                          <span className="ml-0.5">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </div>
                   )}
                   {!!item.isComing && (
                     <SidebarMenuBadge className="peer-hover/menu-button:text-foreground opacity-50">
@@ -513,7 +523,7 @@ export function NavMain() {
                   )}
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
+            </SidebarMenu></LayoutGroup>
           </SidebarGroupContent>
         </SidebarGroup>
       ))}
