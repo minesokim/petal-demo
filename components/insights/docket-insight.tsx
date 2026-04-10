@@ -37,6 +37,7 @@ function SupplementaryCards({ items, onFlag }: { items: InsightSupplementary[]; 
   // Split into visual types
   const trends = items.filter(s => s.type === "trend")
   const extensions = items.filter(s => s.type === "extension")
+  const barCharts = items.filter(s => s.type === "barChart")
   const cards = items.filter(s => s.type === "kpi" || s.type === "highlight")
   const stats = items.filter(s => s.type === "stat" || s.type === "note")
   const quarterly = items.filter(s => s.type === "quarterly")
@@ -124,6 +125,47 @@ function SupplementaryCards({ items, onFlag }: { items: InsightSupplementary[]; 
           )}
         </div>
       ))}
+
+      {/* Bar charts — compact inline using our design language */}
+      {barCharts.map((item) => {
+        if (!item.barChartData) return null
+        const isUp = (item.barChangeValue || 0) > 0
+        const changeColor = isUp ? "text-emerald-600 dark:text-emerald-500" : "text-red-600 dark:text-red-500"
+        const maxVal = Math.max(...item.barChartData.flatMap(d => [d.currentValue, d.previousValue]))
+
+        return (
+          <div key={item.label} className="rounded-xl border bg-card text-card-foreground shadow-sm p-5">
+            <dd className="flex items-start justify-between space-x-2">
+              <span className="text-sm text-muted-foreground">{item.label}</span>
+              <span className={cn("text-sm font-medium", changeColor)}>
+                {isUp ? "+" : ""}{item.barChangeValue}% {item.barChangeDescription}
+              </span>
+            </dd>
+            <dd className="mt-1 text-2xl font-display font-semibold text-foreground tabular-nums">
+              {item.value}
+            </dd>
+            <div className="mt-4 flex items-end gap-2 h-16">
+              {item.barChartData.map((point) => {
+                const curH = maxVal > 0 ? (point.currentValue / maxVal) * 100 : 0
+                const prevH = maxVal > 0 ? (point.previousValue / maxVal) * 100 : 0
+                return (
+                  <div key={point.label} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="flex items-end gap-0.5 w-full h-12">
+                      <div className={cn("flex-1 rounded-sm transition-all", item.barPrimaryColor || "bg-primary")} style={{ height: `${curH}%` }} />
+                      <div className={cn("flex-1 rounded-sm transition-all", item.barSecondaryColor || "bg-muted")} style={{ height: `${prevH}%` }} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{point.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-1"><span className={cn("size-2 rounded-sm", item.barPrimaryColor || "bg-primary")} /> 2025</div>
+              <div className="flex items-center gap-1"><span className={cn("size-2 rounded-sm", item.barSecondaryColor || "bg-muted")} /> 2024</div>
+            </div>
+          </div>
+        )
+      })}
 
       {/* KPI / Highlight cards — stats-cards-with-links pattern */}
       {cards.length > 0 && (

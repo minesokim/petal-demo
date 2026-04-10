@@ -152,19 +152,29 @@ export const clientInsights: Record<string, DocketInsight> = {
     ],
   },
 
-  // Miguel Sandoval - Insight (ready to prep)
+  // Miguel Sandoval - Insight (ready to prep, business growing)
   c9: {
     id: "insight-c9",
     clientId: "c9",
     severity: "insight",
     category: "prep_ready",
-    title: "All docs in, ready for prep",
+    title: "All docs in, ready for prep — business up 18%",
     content: "All 9 documents received and validated. Schedule C income is $142,000 (up 18% from $120,000 last year - business is growing). Estimated tax payments total $28,000 across 4 quarters. He wants to discuss incorporation during your 4 PM call today. Recommend prepping a simple S-Corp vs LLC comparison before the call. His return is straightforward once you decide the entity question.",
     timestamp: "2026-03-28T07:00:00",
+    supplementary: [
+      { label: "Quarterly Revenue", value: "$142K", type: "barChart", barChangeValue: 18, barChangeDescription: "vs 2024",
+        barPrimaryColor: "bg-emerald-500", barSecondaryColor: "bg-emerald-200 dark:bg-emerald-900",
+        barChartData: [
+          { label: "Q1", currentValue: 30, previousValue: 25 },
+          { label: "Q2", currentValue: 40, previousValue: 32 },
+          { label: "Q3", currentValue: 38, previousValue: 30 },
+          { label: "Q4", currentValue: 34, previousValue: 33 },
+        ],
+      },
+    ],
     actions: [
       { id: "start-prep", label: "Start prep in OLT", variant: "primary", action: "open_olt" },
       { id: "view-summary", label: "View pre-prep summary", variant: "secondary", action: "view_summary" },
-      { id: "scorp-notes", label: "S-Corp talking points", variant: "ghost", action: "view_notes" },
     ],
   },
 

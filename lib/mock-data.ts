@@ -95,7 +95,7 @@ export interface InsightSupplementary {
   label: string
   value?: string
   detail?: string
-  type: 'stat' | 'note' | 'quarterly' | 'comparison' | 'highlight' | 'distribution' | 'trend' | 'kpi' | 'extension'
+  type: 'stat' | 'note' | 'quarterly' | 'comparison' | 'highlight' | 'distribution' | 'trend' | 'kpi' | 'extension' | 'barChart'
   quarterlyAmounts?: { q1: number; q2: number; q3: number; q4: number }
   // For comparison bars (prior vs current)
   priorValue?: number
@@ -113,6 +113,12 @@ export interface InsightSupplementary {
   // For extension likelihood
   probability?: number
   factors?: string[]
+  // For bar chart (ActivityStatsCard pattern)
+  barChartData?: { label: string; currentValue: number; previousValue: number }[]
+  barChangeValue?: number
+  barChangeDescription?: string
+  barPrimaryColor?: string
+  barSecondaryColor?: string
 }
 
 export interface DocketInsight {
