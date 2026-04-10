@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docket Backend Architecture — Convex Schema &amp; UML</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  /* ========================================
+     BASE / RESET
+     ======================================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg-card: #181a20;
+    --bg-card-alt: #1e2028;
+    --bg-sidebar: #13141a;
+    --border: #2a2d37;
+    --text: #e4e5ea;
+    --text-muted: #8b8d97;
+    --text-dim: #5c5e69;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-purple: #a855f7;
+    --accent-cyan: #06b6d4;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ========================================
+     SIDEBAR NAV
+     ======================================== */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    padding: 24px 0;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  .sidebar-header .subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .sidebar-header .version {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-family: var(--font-mono);
+  }
+
+  .sidebar-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 8px 8px 4px;
+  }
+
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+
+  .sidebar a:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+  }
+
+  .sidebar a .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .sidebar a .num {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    min-width: 18px;
+  }
+
+  /* ========================================
+     MAIN CONTENT
+     ======================================== */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 1200px;
+  }
+
+  .page-header {
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .page-header .meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .page-header .meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+
+  /* ========================================
+     SECTIONS / CARDS
+     ======================================== */
+  .section {
+    margin-bottom: 56px;
+    scroll-margin-top: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .section-header .section-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    background: rgba(59,130,246,0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .section-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    max-width: 720px;
+    line-height: 1.7;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  /* ========================================
+     MERMAID DIAGRAMS
+     ======================================== */
+  .mermaid-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+  }
+
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ========================================
+     TABLES
+     ======================================== */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    background: var(--bg-card-alt);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+  }
+
+  tbody td {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+  tbody tr:hover { background: rgba(59,130,246,0.05); }
+
+  td code, .inline-code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent-cyan);
+  }
+
+  .type-col { color: var(--accent-purple); font-family: var(--font-mono); font-size: 12px; }
+  .required { color: var(--accent-red); font-weight: 700; }
+  .optional { color: var(--text-dim); }
+
+  /* ========================================
+     CALLOUT BOXES
+     ======================================== */
+  .callout {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .callout-red {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: #fca5a5;
+  }
+
+  .callout-amber {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
+    color: #fcd34d;
+  }
+
+  .callout-blue {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+    color: #93c5fd;
+  }
+
+  .callout-green {
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: #86efac;
+  }
+
+  .callout strong { color: #fff; }
+
+  /* ========================================
+     GRID LAYOUTS
+     ======================================== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    font-family: var(--font-mono);
+  }
+
+  .stat-card .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ========================================
+     FIELD LIST (compact entity display)
+     ======================================== */
+  .entity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  .entity-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .entity-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+
+  .entity-card .entity-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .field-list {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    line-height: 1.8;
+  }
+
+  .field-list .field-name { color: var(--text); }
+  .field-list .field-type { color: var(--accent-purple); }
+  .field-list .field-sep { color: var(--text-dim); }
+  .field-list .field-fk { color: var(--accent-amber); font-size: 10px; }
+
+  /* ========================================
+     PRINT STYLES
+     ======================================== */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+    body { background: #fff; color: #111; }
+    .card, .mermaid-wrapper, .entity-card, .stat-card { border-color: #ddd; background: #fff; }
+    .section-header h2, .page-header h1 { color: #111; }
+    .callout { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 24px 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .entity-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     SIDEBAR NAVIGATION
+     ============================================ -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>Docket</h1>
+    <div class="subtitle">Backend Architecture</div>
+    <div class="version">Convex Schema v1.0 -- Apr 2026</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Context</div>
+    <a href="#overview"><span class="num">0</span> System Overview</a>
+    <a href="#tech-stack"><span class="num">--</span> Tech Stack &amp; Cost</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Architecture Diagrams</div>
+    <a href="#erd"><span class="dot" style="background:var(--accent-blue)"></span> 1. Entity Relationships</a>
+    <a href="#pipeline"><span class="dot" style="background:var(--accent-green)"></span> 2. Return Stage Pipeline</a>
+    <a href="#quarantine"><span class="dot" style="background:var(--accent-red)"></span> 3. AI Quarantine Flow</a>
+    <a href="#escalation"><span class="dot" style="background:var(--accent-amber)"></span> 4. Escalation Flow</a>
+    <a href="#portal-flow"><span class="dot" style="background:var(--accent-cyan)"></span> 5. Portal-to-Dashboard</a>
+    <a href="#doc-pipeline"><span class="dot" style="background:var(--accent-purple)"></span> 6. Document Pipeline</a>
+    <a href="#security"><span class="dot" style="background:var(--accent-red)"></span> 7. Security Architecture</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Reference</div>
+    <a href="#types"><span class="num">8</span> Type Reference</a>
+    <a href="#entities"><span class="num">9</span> Entity Field Specs</a>
+    <a href="#business-rules"><span class="num">10</span> Business Rules</a>
+    <a href="#indexes"><span class="num">11</span> Index Strategy</a>
+  </div>
+</nav>
+
+<!-- ============================================
+     MAIN CONTENT
+     ============================================ -->
+<div class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header" id="overview">
+    <h1>Docket Backend Architecture</h1>
+    <div class="meta">
+      <span><span class="badge badge-blue">Convex</span></span>
+      <span><span class="badge badge-green">Next.js 15</span></span>
+      <span><span class="badge badge-purple">GPT-4o</span></span>
+      <span><span class="badge badge-amber">Stripe</span></span>
+      <span><span class="badge badge-red">Google Document AI</span></span>
+    </div>
+  </div>
+
+  <!-- SYSTEM OVERVIEW -->
+  <div class="section" id="tech-stack">
+    <div class="section-header">
+      <span class="section-num">0</span>
+      <h2>System Overview</h2>
+    </div>
+
+    <div class="section-desc">
+      Docket is an AI-native tax practice management platform built for Antonio Vazquez, a solo enrolled agent in Montclair, CA with ~200 clients. The platform automates everything <em>around</em> the return -- client communication, document collection, pipeline management, billing -- while keeping the human in full control of all AI outputs.
+    </div>
+
+    <div class="callout callout-red">
+      <strong>CRITICAL SAFETY RULE:</strong> All AI outputs are quarantined until human approval. No AI-generated data ever touches production tables directly. One compliance mistake = license revocation. IRC Section 7216 violations carry criminal penalties.
+    </div>
+
+    <div class="grid-3" style="margin-bottom: 20px;">
+      <div class="stat-card">
+        <div class="stat-value">~200</div>
+        <div class="stat-label">Active Clients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">26+</div>
+        <div class="stat-label">Database Tables</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">$80-110</div>
+        <div class="stat-label">Monthly Cost</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Tech Stack Breakdown</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Layer</th><th>Technology</th><th>Purpose</th><th>Cost</th></tr></thead>
+          <tbody>
+            <tr><td>Frontend</td><td><code>Next.js 15</code> (App Router)</td><td>Preparer dashboard + Client portal</td><td>$20/app/mo (Vercel Pro)</td></tr>
+            <tr><td>Backend</td><td><code>Convex</code></td><td>Reactive DB, auth, file storage, cron</td><td>$25/mo (Pro)</td></tr>
+            <tr><td>Payments</td><td><code>Stripe</code></td><td>Deposits, invoices, payment links</td><td>2.9% + $0.30/txn</td></tr>
+            <tr><td>AI - Drafts</td><td><code>GPT-4o-mini</code></td><td>Message drafts, summaries, nudges</td><td>$0.60/1M output tokens</td></tr>
+            <tr><td>AI - Compliance</td><td><code>GPT-4o</code></td><td>Anomaly detection, compliance checks</td><td>$10/1M output tokens</td></tr>
+            <tr><td>OCR</td><td><code>Google Document AI</code></td><td>Document extraction, field parsing</td><td>$1.50/1K pages</td></tr>
+            <tr><td>Auth</td><td><code>Clerk</code> (via Convex)</td><td>Preparer + client auth, SSO</td><td>Included in Convex</td></tr>
+            <tr><td>UI</td><td><code>shadcn/ui + Tailwind v4</code></td><td>Component library, design system</td><td>Free</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 1: ENTITY RELATIONSHIP DIAGRAM
+       ============================================ -->
+  <div class="section" id="erd">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Entity Relationship Diagram</h2>
+    </div>
+    <div class="section-desc">
+      All 26+ tables in the Convex database. Client is the central entity. Every table carries a <code>preparerId</code> for ownership isolation (Layer 2 security). AI-generated tables carry a <code>status</code> field for quarantine enforcement.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+erDiagram
+    Client ||--o{ Document : "uploads"
+    Client ||--o{ ChecklistItem : "has checklist"
+    Client ||--o{ SmartChecklistItem : "has smart checklist"
+    Client ||--o{ ActionItem : "triggers"
+    Client ||--o{ FeedAction : "generates"
+    Client ||--o{ Message : "exchanges"
+    Client ||--o{ Appointment : "schedules"
+    Client ||--o{ Invoice : "billed"
+    Client ||--o{ PaymentRecord : "pays"
+    Client ||--o{ DocketInsight : "receives insights"
+    Client ||--o{ ClientIssue : "has issues"
+    Client ||--|| IntakeResponse : "submits intake"
+    Client ||--o{ ActivityEvent : "audit trail"
+    Client ||--o{ AuditLog : "logged"
+    Client ||--o{ ClientNote : "has notes"
+    Client ||--o{ TodoItem : "tasks"
+    Document ||--o| DocumentExtraction : "AI extracts"
+    Document ||--o| DocumentIntelligence : "AI analyzes"
+    Client ||--o{ ComplianceAlert : "AI flags"
+    Client ||--o{ AnomalyAlert : "AI detects"
+    Client ||--o{ DeductionSuggestion : "AI suggests"
+    Client ||--o{ ExtensionPrediction : "AI predicts"
+    Client ||--o{ EstimatedTaxCalc : "AI calculates"
+    Client ||--o{ PortalNudge : "AI nudges"
+    Client ||--o| EscalationState : "escalation"
+    DocketInsight ||--o{ InsightAction : "has actions"
+    DocketInsight ||--o| DraftMessage : "drafts"
+    DocketInsight ||--o{ InsightSupplementary : "has data"
+    Client ||--o{ VoiceDumpSession : "voice notes"
+    VoiceDumpSession ||--o{ VoiceParsedItem : "parsed"
+
+    Client {
+        string id PK
+        string preparerId FK
+        string fullName
+        string email
+        string phone
+        FilingStatus filingStatus
+        ReturnStage returnStage
+        string serviceTier
+        number feeAmount
+        boolean depositPaid
+        UrgencyLevel urgency
+        string lastActivity
+        string lastPortalLogin
+        number documentsSubmitted
+        number documentsRequired
+        string notes
+        string type
+        string businessName
+        ClientStatus clientStatus
+        string scheduledCall
+        string returnSentDate
+        string extensionDeadline
+        string extensionFiledDate
+        string extensionReason
+        string portalUserId
+    }
+
+    Document {
+        string id PK
+        string clientId FK
+        string fileName
+        string originalFileName
+        string fileSize
+        string docType
+        string docCategory
+        string uploadedBy
+        boolean viewedByPreparer
+        string uploadedAt
+        string status
+        string storageId
+    }
+
+    DocumentExtraction {
+        string id PK
+        string clientId FK
+        string documentType
+        number overallConfidence
+        JSON fields
+        string status
+    }
+
+    DocumentIntelligence {
+        string id PK
+        string documentId FK
+        string clientId FK
+        string aiSummary
+        JSON keyDataPoints
+        JSON flags
+        string duplicateOf
+        string priorYearComparison
+    }
+
+    DocketInsight {
+        string id PK
+        string clientId FK
+        InsightSeverity severity
+        InsightCategory category
+        string title
+        string content
+        string timestamp
+        boolean isResolved
+    }
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <strong>Convex Note:</strong> Convex uses <code>_id</code> as the auto-generated primary key (type <code>Id&lt;tableName&gt;</code>). The <code>id</code> fields shown above map to Convex's native <code>_id</code>. All foreign keys use Convex's <code>v.id("tableName")</code> validator for referential type safety.
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 2: RETURN STAGE PIPELINE
+       ============================================ -->
+  <div class="section" id="pipeline">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Return Stage Pipeline (State Machine)</h2>
+    </div>
+    <div class="section-desc">
+      Every client progresses through 7 linear stages. Any stage can branch to <code>extended</code>. Stage transitions are logged to the audit trail and trigger downstream side effects (action items, notifications, insight generation).
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> new_intake : Client completes portal
+    new_intake --> collecting_docs : Preparer accepts + checklist generated
+    collecting_docs --> ready_to_prep : All required docs received
+    ready_to_prep --> in_preparation : Preparer begins return
+    in_preparation --> client_review : Return sent for review
+    client_review --> pay_and_sign : Client approves return
+    pay_and_sign --> filed : ERO signature + e-file
+
+    new_intake --> extended : Extension filed (Form 4868)
+    collecting_docs --> extended : Deadline risk
+    ready_to_prep --> extended : Deadline risk
+    in_preparation --> extended : Complex return
+    client_review --> extended : Client unresponsive
+    extended --> collecting_docs : Client re-engages
+    extended --> ready_to_prep : Docs complete post-extension
+
+    state new_intake {
+        [*] --> intake_submitted
+        intake_submitted --> pending_acceptance : Awaiting preparer review
+        pending_acceptance --> accepted : Preparer accepts
+        pending_acceptance --> declined : Preparer declines
+    }
+
+    state pay_and_sign {
+        [*] --> payment_pending
+        payment_pending --> payment_received : Stripe webhook
+        payment_received --> signature_sent : Form 8879 sent
+        signature_sent --> client_signed : Client e-signs
+        client_signed --> ero_signed : ERO countersigns
+    }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Stage Transition Triggers</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Side Effects</th></tr></thead>
+          <tbody>
+            <tr><td><code>new_intake</code></td><td><code>collecting_docs</code></td><td>Preparer clicks Accept</td><td>Checklist generated, welcome message sent, appointment confirmed</td></tr>
+            <tr><td><code>collecting_docs</code></td><td><code>ready_to_prep</code></td><td>All required docs received</td><td>Action item created for prep, insight generated</td></tr>
+            <tr><td><code>ready_to_prep</code></td><td><code>in_preparation</code></td><td>Preparer opens return in OLT</td><td>Prep timer starts, pre-prep summary generated</td></tr>
+            <tr><td><code>in_preparation</code></td><td><code>client_review</code></td><td>Preparer completes prep + clicks "Send for Review"</td><td>Return PDF uploaded, review message sent</td></tr>
+            <tr><td><code>client_review</code></td><td><code>pay_and_sign</code></td><td>Client approves return</td><td>Invoice generated, payment link sent</td></tr>
+            <tr><td><code>pay_and_sign</code></td><td><code>filed</code></td><td>ERO signs Form 8879</td><td>Return e-filed, confirmation sent, filing logged</td></tr>
+            <tr><td><em>Any stage</em></td><td><code>extended</code></td><td>Preparer files Form 4868</td><td>Extension recorded, deadline moved to Oct 15, client notified</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <strong>Business Rule:</strong> Payment MUST be received BEFORE signature can be collected. This is Antonio's legal safeguard -- once Form 8879 is signed and the return is filed, collecting payment becomes significantly harder. The pipeline enforces: <code>payment_received</code> &rarr; <code>signature_sent</code>, never the reverse.
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 3: AI QUARANTINE FLOW
+       ============================================ -->
+  <div class="section" id="quarantine">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>AI Quarantine Flow</h2>
+    </div>
+    <div class="section-desc">
+      ALL AI-generated outputs are written to quarantine tables with <code>status: "pending_review"</code>. The preparer must explicitly approve before any AI output reaches production data or client-facing surfaces. This is non-negotiable.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+flowchart LR
+    subgraph AI_GENERATION["AI Generation Layer"]
+        A1[GPT-4o / GPT-4o-mini]
+        A2[Google Document AI]
+    end
+
+    subgraph QUARANTINE["Quarantine Zone (pending_review)"]
+        Q1[DocumentExtraction]
+        Q2[ComplianceAlert]
+        Q3[AnomalyAlert]
+        Q4[DeductionSuggestion]
+        Q5[ExtensionPrediction]
+        Q6[EstimatedTaxCalc]
+        Q7[PortalNudge]
+        Q8[IrsNotice draft]
+    end
+
+    subgraph HUMAN_REVIEW["Human Review"]
+        H1{Antonio Reviews}
+    end
+
+    subgraph PRODUCTION["Production Data"]
+        P1[Approved extractions]
+        P2[Acknowledged alerts]
+        P3[Applied deductions]
+        P4[Filed extensions]
+        P5[Sent nudges]
+        P6[Sent responses]
+    end
+
+    A1 --> Q2 & Q3 & Q4 & Q5 & Q6 & Q7 & Q8
+    A2 --> Q1
+
+    Q1 & Q2 & Q3 & Q4 & Q5 & Q6 & Q7 & Q8 --> H1
+
+    H1 -->|Approve| P1 & P2 & P3 & P4 & P5 & P6
+    H1 -->|Reject| DISCARD[Dismissed + logged]
+    H1 -->|Edit| MODIFY[Modified + approved]
+
+    style QUARANTINE fill:#7f1d1d,stroke:#dc2626,color:#fca5a5
+    style PRODUCTION fill:#14532d,stroke:#22c55e,color:#86efac
+    style AI_GENERATION fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Quarantined Table Types</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Table</th><th>AI Source</th><th>Status Values</th><th>Approval Action</th></tr></thead>
+          <tbody>
+            <tr><td><code>DocumentExtraction</code></td><td>Google Document AI</td><td><code>pending_review | approved | needs_edit</code></td><td>Fields promoted to client record</td></tr>
+            <tr><td><code>ComplianceAlert</code></td><td>GPT-4o</td><td><code>pending | acknowledged | dismissed</code></td><td>Alert shown to client / filed</td></tr>
+            <tr><td><code>AnomalyAlert</code></td><td>GPT-4o</td><td><code>pending | flagged | proceeded</code></td><td>Issue created or dismissed</td></tr>
+            <tr><td><code>DeductionSuggestion</code></td><td>GPT-4o</td><td><code>pending | applied | dismissed</code></td><td>Deduction applied to return</td></tr>
+            <tr><td><code>ExtensionPrediction</code></td><td>GPT-4o-mini</td><td><code>pending | extension_filed | dismissed</code></td><td>Form 4868 filed</td></tr>
+            <tr><td><code>EstimatedTaxCalc</code></td><td>GPT-4o</td><td>Read-only after generation</td><td>Sent to client if approved</td></tr>
+            <tr><td><code>PortalNudge</code></td><td>GPT-4o-mini</td><td><code>pending | sent | dismissed</code></td><td>Message sent to client</td></tr>
+            <tr><td><code>IrsNotice</code></td><td>GPT-4o</td><td><code>pending | sent | resolved</code></td><td>Response sent to IRS / client</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout callout-red">
+      <strong>ZERO EXCEPTIONS:</strong> Even "obvious" AI outputs (like a 99% confidence W-2 extraction) require human approval. The audit log records who approved what and when. This creates a defensible compliance paper trail.
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 4: ESCALATION FLOW
+       ============================================ -->
+  <div class="section" id="escalation">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Client Escalation Flow</h2>
+    </div>
+    <div class="section-desc">
+      When clients go silent, the system automatically escalates through 4 levels. Each level increases urgency and diversifies channels. The preparer can override at any point.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> reminder : 3 days inactive
+
+    reminder --> urgent : +4 days (7 total)
+    urgent --> schedule_call : +3 days (10 total)
+    schedule_call --> final_notice : +4 days (14 total)
+    final_notice --> [*] : Extension filed or client withdraws
+
+    state reminder {
+        [*] --> email_reminder
+        email_reminder : Friendly email reminder
+        email_reminder : "Just checking in..."
+        email_reminder : Channel: Email
+    }
+
+    state urgent {
+        [*] --> sms_followup
+        sms_followup : SMS + Email combo
+        sms_followup : "Deadline approaching"
+        sms_followup : Channel: SMS + Email
+    }
+
+    state schedule_call {
+        [*] --> phone_outreach
+        phone_outreach : Phone call attempt
+        phone_outreach : AI suggests best time
+        phone_outreach : Channel: Phone + SMS
+    }
+
+    state final_notice {
+        [*] --> last_chance
+        last_chance : Final notice before extension
+        last_chance : "We need to file an extension"
+        last_chance : Channel: All channels
+    }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Escalation Timing &amp; Rules</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Level</th><th>Trigger (days inactive)</th><th>Channel</th><th>Tone</th><th>Action if No Response</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">reminder</span></td><td>3 days</td><td>Email</td><td>Friendly, casual</td><td>Escalate to urgent</td></tr>
+            <tr><td><span class="badge badge-amber">urgent</span></td><td>7 days</td><td>SMS + Email</td><td>Professional, deadline-aware</td><td>Escalate to schedule_call</td></tr>
+            <tr><td><span class="badge badge-red">schedule_call</span></td><td>10 days</td><td>Phone + SMS</td><td>Direct, concerned</td><td>Escalate to final_notice</td></tr>
+            <tr><td><span class="badge badge-red">final_notice</span></td><td>14 days</td><td>All channels</td><td>Formal, regulatory</td><td>File extension or withdraw</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <strong>AI Draft Rule:</strong> All escalation messages are AI-drafted but quarantined. Antonio reviews tone and content before any message is sent. The system never auto-sends client communication.
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 5: PORTAL-TO-DASHBOARD FLOW
+       ============================================ -->
+  <div class="section" id="portal-flow">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Portal-to-Dashboard Data Flow</h2>
+    </div>
+    <div class="section-desc">
+      When a new client completes the portal intake form, 7 backend operations fire atomically. This is the critical onboarding path -- everything downstream depends on this data being correct.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+flowchart TD
+    PORTAL["Client Portal<br/>Intake Form Completed"]
+
+    PORTAL --> OP1["1. Client Record Created<br/><em>status: pending, stage: new_intake</em>"]
+    PORTAL --> OP2["2. Document Checklist Generated<br/><em>Based on filing status + income types</em>"]
+    PORTAL --> OP3["3. Appointment Created<br/><em>From selected time slot</em>"]
+    PORTAL --> OP4["4. Payment Record Created<br/><em>$50 deposit via Stripe</em>"]
+    PORTAL --> OP5["5. System Message Posted<br/><em>'New intake completed'</em>"]
+    PORTAL --> OP6["6. Action Item Created<br/><em>'Review new intake' for Antonio</em>"]
+    PORTAL --> OP7["7. Intake Response Stored<br/><em>Full form data archived</em>"]
+
+    OP1 --> DB[(Convex Database)]
+    OP2 --> DB
+    OP3 --> DB
+    OP4 --> DB
+    OP5 --> DB
+    OP6 --> DB
+    OP7 --> DB
+
+    DB --> DASH["Preparer Dashboard<br/>Real-time reactive updates"]
+    DB --> NOTIFY["Notification System<br/>Email + In-app alert"]
+
+    style PORTAL fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+    style DB fill:#1a1a2e,stroke:#a855f7,color:#d8b4fe
+    style DASH fill:#14532d,stroke:#22c55e,color:#86efac
+    style NOTIFY fill:#422006,stroke:#f59e0b,color:#fcd34d
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Intake Response Structure</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Section</th><th>Fields</th><th>Used For</th></tr></thead>
+          <tbody>
+            <tr><td><code>personal</code></td><td>name, dob, ssn, phone, email, occupation, address</td><td>Client record, tax forms</td></tr>
+            <tr><td><code>spouse</code></td><td>name, dob, ssn, occupation</td><td>MFJ returns, Form 1040</td></tr>
+            <tr><td><code>dependents[]</code></td><td>name, dob, ssn, relationship, months</td><td>Dependency credits, EITC</td></tr>
+            <tr><td><code>selfEmployment</code></td><td>business, entity, revenue, homeOffice, vehicle</td><td>Schedule C generation</td></tr>
+            <tr><td><code>rental</code></td><td>address, rent, mortgage, year</td><td>Schedule E generation</td></tr>
+            <tr><td><code>income[]</code></td><td>Array of income type strings</td><td>Checklist generation</td></tr>
+            <tr><td><code>deductions[]</code></td><td>Array of deduction type strings</td><td>Deduction tracking</td></tr>
+            <tr><td><code>taxQuestions[]</code></td><td>Array of client questions</td><td>Prep notes, call agenda</td></tr>
+            <tr><td><code>lifeEvents[]</code></td><td>Array of life changes</td><td>Special form triggers</td></tr>
+            <tr><td><code>slot</code></td><td>Selected appointment time</td><td>Appointment creation</td></tr>
+            <tr><td><code>depositAmount</code></td><td>Deposit paid via Stripe</td><td>Payment record</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 6: DOCUMENT PROCESSING PIPELINE
+       ============================================ -->
+  <div class="section" id="doc-pipeline">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Document Processing Pipeline</h2>
+    </div>
+    <div class="section-desc">
+      Every uploaded document flows through OCR, AI extraction, quarantine, and human review. Confidence scores determine how much attention the preparer needs to give each extraction.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+flowchart LR
+    UPLOAD["Client Uploads<br/>Document"]
+    STORE["Convex File Storage<br/><em>storageId assigned</em>"]
+    OCR["Google Document AI<br/><em>OCR + field detection</em>"]
+    EXTRACT["DocumentExtraction<br/><em>status: pending_review</em>"]
+    INTEL["DocumentIntelligence<br/><em>AI summary + flags</em>"]
+    REVIEW{Human Review}
+    APPROVE["Approved<br/><em>Fields promoted</em>"]
+    REJECT["Needs Edit<br/><em>Manual correction</em>"]
+    CHECKLIST["Checklist Updated<br/><em>Item marked received</em>"]
+    FLAG["ClientIssue Created<br/><em>If anomaly detected</em>"]
+
+    UPLOAD --> STORE
+    STORE --> OCR
+    OCR --> EXTRACT
+    OCR --> INTEL
+    EXTRACT --> REVIEW
+    INTEL --> REVIEW
+    REVIEW -->|Approve| APPROVE
+    REVIEW -->|Edit| REJECT
+    REJECT --> REVIEW
+    APPROVE --> CHECKLIST
+    INTEL -->|Flags detected| FLAG
+
+    style EXTRACT fill:#7f1d1d,stroke:#dc2626,color:#fca5a5
+    style INTEL fill:#7f1d1d,stroke:#dc2626,color:#fca5a5
+    style APPROVE fill:#14532d,stroke:#22c55e,color:#86efac
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-label">Confidence Scoring</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Range</th><th>Meaning</th><th>UI Treatment</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-green">95-100%</span></td><td>High confidence</td><td>Green check, one-click approve</td></tr>
+              <tr><td><span class="badge badge-amber">80-94%</span></td><td>Moderate confidence</td><td>Amber indicator, review recommended</td></tr>
+              <tr><td><span class="badge badge-red">Below 80%</span></td><td>Low confidence</td><td>Red flag, manual entry required</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Intelligence Flags</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Flag Type</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><code>info</code></td><td>New income source not in prior year</td></tr>
+              <tr><td><code>warning</code></td><td>40% wage decrease year-over-year</td></tr>
+              <tr><td><code>error</code></td><td>SSN mismatch between documents</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 7: SECURITY ARCHITECTURE
+       ============================================ -->
+  <div class="section" id="security">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>Security Architecture</h2>
+    </div>
+    <div class="section-desc">
+      Convex has no database-level Row Level Security (RLS). All security is enforced at the application layer with a 3-layer defense model. Every query and mutation must pass all three layers.
+    </div>
+
+    <div class="mermaid-wrapper">
+      <div class="mermaid">
+flowchart TD
+    REQUEST["Incoming Request<br/><em>Query or Mutation</em>"]
+
+    subgraph LAYER1["Layer 1: Auth Middleware"]
+        AUTH{Authenticated?}
+        ROLE{Role Check}
+        AUTH -->|Yes| ROLE
+        AUTH -->|No| DENY1[403 Forbidden]
+        ROLE -->|requirePreparer| PREP_OK[Preparer verified]
+        ROLE -->|requireClient| CLIENT_OK[Client verified]
+        ROLE -->|Invalid| DENY2[403 Forbidden]
+    end
+
+    subgraph LAYER2["Layer 2: Ownership Verification"]
+        FILTER["Filter by preparerId<br/>or clientId"]
+        SCOPE["Scoped query result<br/><em>Only own data returned</em>"]
+        FILTER --> SCOPE
+    end
+
+    subgraph LAYER3["Layer 3: Audit Trail"]
+        LOG["AuditLog entry<br/><em>actor, action, resource, timestamp</em>"]
+        APPEND["Append-only table<br/><em>Cannot be modified or deleted</em>"]
+        LOG --> APPEND
+    end
+
+    REQUEST --> LAYER1
+    PREP_OK --> LAYER2
+    CLIENT_OK --> LAYER2
+    SCOPE --> LAYER3
+    LAYER3 --> RESPONSE["Response Returned"]
+
+    style LAYER1 fill:#1a1a2e,stroke:#ef4444,color:#fca5a5
+    style LAYER2 fill:#1a1a2e,stroke:#f59e0b,color:#fcd34d
+    style LAYER3 fill:#1a1a2e,stroke:#3b82f6,color:#93c5fd
+    style DENY1 fill:#7f1d1d,stroke:#dc2626,color:#fca5a5
+    style DENY2 fill:#7f1d1d,stroke:#dc2626,color:#fca5a5
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="callout callout-red">
+        <strong>IRC Section 7216:</strong> Criminal penalties for unauthorized disclosure of tax return information. Every data access must be scoped to the authenticated user. Cross-client data leakage = criminal liability.
+      </div>
+      <div class="callout callout-red">
+        <strong>Form 8867 Due Diligence:</strong> $600/return penalty for missing EITC/CTC/AOTC/HOH due diligence. The system must track and enforce due diligence documentation.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Security Rules (Non-Negotiable)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>#</th><th>Rule</th><th>Enforcement</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>NEVER write a query/mutation without <code>requirePreparer()</code> or <code>requireClient()</code></td><td>Code review + linter rule</td></tr>
+            <tr><td>2</td><td>NEVER query a table without filtering by <code>preparerId</code> or <code>clientId</code></td><td>Code review mandatory</td></tr>
+            <tr><td>3</td><td>NEVER skip audit logging on client data mutations</td><td>Wrapper function enforced</td></tr>
+            <tr><td>4</td><td>Code review mandatory for every PR touching <code>convex/</code></td><td>GitHub branch protection</td></tr>
+            <tr><td>5</td><td>All AI outputs quarantined until human approval</td><td>Schema-level status field</td></tr>
+            <tr><td>6</td><td>SSN/sensitive data encrypted at rest</td><td>Convex field-level encryption</td></tr>
+            <tr><td>7</td><td>Portal users can only read/write their own data</td><td><code>requireClient()</code> scope</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 8: TYPE REFERENCE
+       ============================================ -->
+  <div class="section" id="types">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2>Complete Type Reference</h2>
+    </div>
+    <div class="section-desc">
+      Every TypeScript enum and union type in the system. These types are shared between frontend and Convex schema validators.
+    </div>
+
+    <div class="entity-grid">
+
+      <!-- ReturnStage -->
+      <div class="entity-card">
+        <h4>ReturnStage</h4>
+        <div class="entity-desc">8 values -- client's position in the tax prep pipeline</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>new_intake</code></td><td>Client submitted intake, awaiting acceptance</td></tr>
+              <tr><td><code>collecting_docs</code></td><td>Accepted, gathering required documents</td></tr>
+              <tr><td><code>ready_to_prep</code></td><td>All docs received, queued for preparation</td></tr>
+              <tr><td><code>in_preparation</code></td><td>Preparer actively working on return</td></tr>
+              <tr><td><code>client_review</code></td><td>Return sent to client for review</td></tr>
+              <tr><td><code>pay_and_sign</code></td><td>Client approved, payment + signature pending</td></tr>
+              <tr><td><code>filed</code></td><td>Return e-filed, accepted by IRS</td></tr>
+              <tr><td><code>extended</code></td><td>Form 4868 filed, deadline moved to Oct 15</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FilingStatus -->
+      <div class="entity-card">
+        <h4>FilingStatus</h4>
+        <div class="entity-desc">5 values -- IRS filing status categories</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>single</code></td><td>Single filer</td></tr>
+              <tr><td><code>mfj</code></td><td>Married Filing Jointly</td></tr>
+              <tr><td><code>mfs</code></td><td>Married Filing Separately</td></tr>
+              <tr><td><code>hoh</code></td><td>Head of Household</td></tr>
+              <tr><td><code>qw</code></td><td>Qualifying Widow(er)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ClientStatus -->
+      <div class="entity-card">
+        <h4>ClientStatus</h4>
+        <div class="entity-desc">3 values -- preparer's acceptance decision</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>pending</code></td><td>Awaiting preparer accept/decline</td></tr>
+              <tr><td><code>active</code></td><td>Accepted, in pipeline</td></tr>
+              <tr><td><code>declined</code></td><td>Preparer declined engagement</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DocumentStatus -->
+      <div class="entity-card">
+        <h4>DocumentStatus</h4>
+        <div class="entity-desc">4 values -- document collection state</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>received</code></td><td>Document uploaded and available</td></tr>
+              <tr><td><code>pending</code></td><td>Requested, not yet uploaded</td></tr>
+              <tr><td><code>missing</code></td><td>Required but not provided</td></tr>
+              <tr><td><code>processing</code></td><td>Uploaded, undergoing OCR</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- UrgencyLevel -->
+      <div class="entity-card">
+        <h4>UrgencyLevel</h4>
+        <div class="entity-desc">4 values -- client priority ranking</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>urgent</code></td><td>Deadline risk, immediate action needed</td></tr>
+              <tr><td><code>high</code></td><td>Important, needs attention soon</td></tr>
+              <tr><td><code>normal</code></td><td>On track, standard timeline</td></tr>
+              <tr><td><code>low</code></td><td>Filed or no time pressure</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ActionType -->
+      <div class="entity-card">
+        <h4>ActionType</h4>
+        <div class="entity-desc">8 values -- action item classification</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>missing_docs</code></td><td>Documents still needed</td></tr>
+              <tr><td><code>stale_client</code></td><td>Client inactive too long</td></tr>
+              <tr><td><code>review_ready</code></td><td>Return ready for review</td></tr>
+              <tr><td><code>payment_due</code></td><td>Invoice unpaid</td></tr>
+              <tr><td><code>signature_needed</code></td><td>8879 awaiting signature</td></tr>
+              <tr><td><code>appointment_today</code></td><td>Scheduled call/meeting today</td></tr>
+              <tr><td><code>ai_draft</code></td><td>AI-drafted message for review</td></tr>
+              <tr><td><code>follow_up</code></td><td>General follow-up needed</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ActionCategory -->
+      <div class="entity-card">
+        <h4>ActionCategory</h4>
+        <div class="entity-desc">10 values -- feed action grouping</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>document</code></td><td>Document requests</td></tr>
+              <tr><td><code>signature</code></td><td>8879 signing actions</td></tr>
+              <tr><td><code>schedule</code></td><td>Calendar actions</td></tr>
+              <tr><td><code>payment</code></td><td>Invoice/deposit actions</td></tr>
+              <tr><td><code>pipeline</code></td><td>Stage advancement</td></tr>
+              <tr><td><code>escalation</code></td><td>Client escalation</td></tr>
+              <tr><td><code>intelligence</code></td><td>AI insight actions</td></tr>
+              <tr><td><code>batch</code></td><td>Bulk operations</td></tr>
+              <tr><td><code>voice</code></td><td>Voice dump items</td></tr>
+              <tr><td><code>nudge</code></td><td>Portal re-engagement</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- InsightSeverity -->
+      <div class="entity-card">
+        <h4>InsightSeverity</h4>
+        <div class="entity-desc">3 values -- AI insight urgency level</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Color</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><code>insight</code></td><td><span class="badge badge-green">Green</span></td><td>Informational, no action needed</td></tr>
+              <tr><td><code>concern</code></td><td><span class="badge badge-amber">Amber</span></td><td>Needs attention, not urgent</td></tr>
+              <tr><td><code>alert</code></td><td><span class="badge badge-red">Red</span></td><td>Critical, immediate action</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- InsightCategory -->
+      <div class="entity-card">
+        <h4>InsightCategory</h4>
+        <div class="entity-desc">9 values -- what the insight is about</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td><code>document_collection</code></td></tr>
+              <tr><td><code>client_engagement</code></td></tr>
+              <tr><td><code>payment</code></td></tr>
+              <tr><td><code>deadline</code></td></tr>
+              <tr><td><code>prep_ready</code></td></tr>
+              <tr><td><code>review_ready</code></td></tr>
+              <tr><td><code>signature_needed</code></td></tr>
+              <tr><td><code>anomaly</code></td></tr>
+              <tr><td><code>general</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MessageChannel -->
+      <div class="entity-card">
+        <h4>MessageChannel</h4>
+        <div class="entity-desc">3 values -- communication channel</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Use</th></tr></thead>
+            <tbody>
+              <tr><td><code>email</code></td><td>Primary channel</td></tr>
+              <tr><td><code>sms</code></td><td>Escalation + quick updates</td></tr>
+              <tr><td><code>portal</code></td><td>In-app messaging</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EscalationLevel -->
+      <div class="entity-card">
+        <h4>EscalationLevel</h4>
+        <div class="entity-desc">4 values -- escalation severity</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Days</th><th>Channel</th></tr></thead>
+            <tbody>
+              <tr><td><code>reminder</code></td><td>3</td><td>Email</td></tr>
+              <tr><td><code>urgent</code></td><td>7</td><td>SMS + Email</td></tr>
+              <tr><td><code>schedule_call</code></td><td>10</td><td>Phone + SMS</td></tr>
+              <tr><td><code>final_notice</code></td><td>14</td><td>All</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SmartChecklistStatus -->
+      <div class="entity-card">
+        <h4>SmartChecklistStatus</h4>
+        <div class="entity-desc">4 values -- checklist item state</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><code>received</code></td><td>Document uploaded and matched</td></tr>
+              <tr><td><code>pending</code></td><td>Still waiting for upload</td></tr>
+              <tr><td><code>flagged</code></td><td>Received but has issues</td></tr>
+              <tr><td><code>dismissed</code></td><td>Not applicable for this client</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ActivityEventType -->
+      <div class="entity-card" style="grid-column: span 2;">
+        <h4>ActivityEventType</h4>
+        <div class="entity-desc">23 values -- comprehensive audit trail event types</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th><th>Actor</th></tr></thead>
+            <tbody>
+              <tr><td><code>email_sent</code></td><td>Email dispatched to client</td><td>antonio / system</td></tr>
+              <tr><td><code>email_opened</code></td><td>Client opened email</td><td>client</td></tr>
+              <tr><td><code>email_clicked</code></td><td>Client clicked email link</td><td>client</td></tr>
+              <tr><td><code>sms_sent</code></td><td>SMS sent to client</td><td>antonio / system</td></tr>
+              <tr><td><code>sms_delivered</code></td><td>SMS delivery confirmed</td><td>system</td></tr>
+              <tr><td><code>sms_replied</code></td><td>Client replied to SMS</td><td>client</td></tr>
+              <tr><td><code>portal_login</code></td><td>Client logged into portal</td><td>client</td></tr>
+              <tr><td><code>document_uploaded</code></td><td>Document uploaded</td><td>client / antonio</td></tr>
+              <tr><td><code>form_completed</code></td><td>Intake form submitted</td><td>client</td></tr>
+              <tr><td><code>call_logged</code></td><td>Phone call recorded</td><td>antonio</td></tr>
+              <tr><td><code>payment_received</code></td><td>Stripe payment confirmed</td><td>system</td></tr>
+              <tr><td><code>appointment_scheduled</code></td><td>Appointment created/changed</td><td>client / antonio</td></tr>
+              <tr><td><code>stage_changed</code></td><td>Pipeline stage advanced</td><td>antonio / system</td></tr>
+              <tr><td><code>ai_extraction</code></td><td>AI extracted document fields</td><td>ai</td></tr>
+              <tr><td><code>ai_classification</code></td><td>AI classified document type</td><td>ai</td></tr>
+              <tr><td><code>ai_flag</code></td><td>AI flagged an issue</td><td>ai</td></tr>
+              <tr><td><code>message_sent</code></td><td>Message sent to client</td><td>antonio</td></tr>
+              <tr><td><code>message_received</code></td><td>Message received from client</td><td>client</td></tr>
+              <tr><td><code>signature_sent</code></td><td>Form 8879 sent for signing</td><td>antonio</td></tr>
+              <tr><td><code>signature_completed</code></td><td>Form 8879 signed</td><td>client</td></tr>
+              <tr><td><code>return_filed</code></td><td>Return e-filed with IRS</td><td>antonio</td></tr>
+              <tr><td><code>invoice_sent</code></td><td>Invoice sent to client</td><td>antonio / system</td></tr>
+              <tr><td><code>note_added</code></td><td>Private note added to client</td><td>antonio</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ActivityActor -->
+      <div class="entity-card">
+        <h4>ActivityActor</h4>
+        <div class="entity-desc">4 values -- who performed the action</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Value</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>antonio</code></td><td>The preparer (human)</td></tr>
+              <tr><td><code>client</code></td><td>The tax client</td></tr>
+              <tr><td><code>ai</code></td><td>AI system (quarantined)</td></tr>
+              <tr><td><code>system</code></td><td>Automated system (Stripe, cron)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 9: ENTITY FIELD SPECIFICATIONS
+       ============================================ -->
+  <div class="section" id="entities">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2>Entity Field Specifications</h2>
+    </div>
+    <div class="section-desc">
+      Complete field definitions for every table. These map directly to Convex schema validators. Every table includes <code>preparerId</code> for ownership isolation.
+    </div>
+
+    <div class="entity-grid">
+
+      <div class="entity-card">
+        <h4>Client</h4>
+        <div class="entity-desc">Central entity -- 25+ fields</div>
+        <div class="field-list">
+          <span class="field-name">id</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span><br>
+          <span class="field-name">preparerId</span><span class="field-sep">: </span><span class="field-type">Id&lt;preparers&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">fullName</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">email</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">phone</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">filingStatus</span><span class="field-sep">: </span><span class="field-type">FilingStatus</span><br>
+          <span class="field-name">returnStage</span><span class="field-sep">: </span><span class="field-type">ReturnStage</span><br>
+          <span class="field-name">serviceTier</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">feeAmount</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">depositPaid</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">urgency</span><span class="field-sep">: </span><span class="field-type">UrgencyLevel</span><br>
+          <span class="field-name">lastActivity</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">lastPortalLogin</span><span class="field-sep">: </span><span class="field-type">string? (ISO)</span><br>
+          <span class="field-name">documentsSubmitted</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">documentsRequired</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">notes</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">"individual" | "business"</span><br>
+          <span class="field-name">businessName</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">clientStatus</span><span class="field-sep">: </span><span class="field-type">ClientStatus?</span><br>
+          <span class="field-name">scheduledCall</span><span class="field-sep">: </span><span class="field-type">string? (ISO)</span><br>
+          <span class="field-name">returnSentDate</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">extensionDeadline</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">extensionFiledDate</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">extensionReason</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">portalUserId</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">avatar</span><span class="field-sep">: </span><span class="field-type">string</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>Document</h4>
+        <div class="entity-desc">Uploaded files with metadata</div>
+        <div class="field-list">
+          <span class="field-name">id</span><span class="field-sep">: </span><span class="field-type">Id&lt;documents&gt;</span><br>
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">preparerId</span><span class="field-sep">: </span><span class="field-type">Id&lt;preparers&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">fileName</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">originalFileName</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">fileSize</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">docType</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">docTypeLabel</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">docCategory</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">uploadedBy</span><span class="field-sep">: </span><span class="field-type">"client" | "preparer"</span><br>
+          <span class="field-name">viewedByPreparer</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">uploadedAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">storageId</span><span class="field-sep">: </span><span class="field-type">Id&lt;_storage&gt;?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>DocumentExtraction</h4>
+        <div class="entity-desc">AI-quarantined OCR results</div>
+        <div class="field-list">
+          <span class="field-name">id</span><span class="field-sep">: </span><span class="field-type">Id&lt;documentExtractions&gt;</span><br>
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">documentType</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">overallConfidence</span><span class="field-sep">: </span><span class="field-type">number (0-100)</span><br>
+          <span class="field-name">fields</span><span class="field-sep">: </span><span class="field-type">ExtractedField[]</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending_review" | "approved" | "needs_edit"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>DocumentIntelligence</h4>
+        <div class="entity-desc">AI analysis of document content</div>
+        <div class="field-list">
+          <span class="field-name">documentId</span><span class="field-sep">: </span><span class="field-type">Id&lt;documents&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">aiSummary</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">keyDataPoints</span><span class="field-sep">: </span><span class="field-type">{label, value}[]</span><br>
+          <span class="field-name">flags</span><span class="field-sep">: </span><span class="field-type">DocumentFlag[]</span><br>
+          <span class="field-name">duplicateOf</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">priorYearComparison</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>DocketInsight</h4>
+        <div class="entity-desc">AI intelligence card with actions + drafts</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">severity</span><span class="field-sep">: </span><span class="field-type">InsightSeverity</span><br>
+          <span class="field-name">category</span><span class="field-sep">: </span><span class="field-type">InsightCategory</span><br>
+          <span class="field-name">title</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">content</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">timestamp</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">actions</span><span class="field-sep">: </span><span class="field-type">InsightAction[]</span><br>
+          <span class="field-name">draftMessage</span><span class="field-sep">: </span><span class="field-type">DraftMessage?</span><br>
+          <span class="field-name">supplementary</span><span class="field-sep">: </span><span class="field-type">InsightSupplementary[]?</span><br>
+          <span class="field-name">isResolved</span><span class="field-sep">: </span><span class="field-type">boolean</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ActionItem</h4>
+        <div class="entity-desc">Prioritized to-do from AI or system</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">ActionType</span><br>
+          <span class="field-name">title</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">priority</span><span class="field-sep">: </span><span class="field-type">number (1-5)</span><br>
+          <span class="field-name">createdAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">isResolved</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">aiDraft</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>FeedAction</h4>
+        <div class="entity-desc">Enhanced action for the feed UI</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">category</span><span class="field-sep">: </span><span class="field-type">ActionCategory</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">title</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">priority</span><span class="field-sep">: </span><span class="field-type">number (1-5)</span><br>
+          <span class="field-name">aiDraft</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">createdAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">isResolved</span><span class="field-sep">: </span><span class="field-type">boolean</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>Message</h4>
+        <div class="entity-desc">Client-preparer messaging</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">content</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">sender</span><span class="field-sep">: </span><span class="field-type">"client" | "preparer" | "system"</span><br>
+          <span class="field-name">timestamp</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">read</span><span class="field-sep">: </span><span class="field-type">boolean</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>Appointment</h4>
+        <div class="entity-desc">Scheduled calls and meetings</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">"phone" | "video" | "in_person"</span><br>
+          <span class="field-name">date</span><span class="field-sep">: </span><span class="field-type">string (YYYY-MM-DD)</span><br>
+          <span class="field-name">startTime</span><span class="field-sep">: </span><span class="field-type">string (HH:MM)</span><br>
+          <span class="field-name">endTime</span><span class="field-sep">: </span><span class="field-type">string (HH:MM)</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"confirmed" | "pending" | "completed" | "cancelled"</span><br>
+          <span class="field-name">notes</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>Invoice</h4>
+        <div class="entity-desc">Billing invoices</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">amount</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"paid" | "pending" | "overdue"</span><br>
+          <span class="field-name">dueDate</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">paidDate</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">service</span><span class="field-sep">: </span><span class="field-type">string</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>PaymentRecord</h4>
+        <div class="entity-desc">Deposit + balance tracking</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">"deposit" | "balance"</span><br>
+          <span class="field-name">amount</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"paid" | "pending" | "overdue" | "sent" | "not_applicable"</span><br>
+          <span class="field-name">sentDate</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">paidDate</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">dueDate</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ComplianceAlert</h4>
+        <div class="entity-desc">AI-quarantined compliance flags</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">severity</span><span class="field-sep">: </span><span class="field-type">"critical" | "warning" | "info"</span><br>
+          <span class="field-name">title</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">formRequired</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">fineRisk</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "acknowledged" | "dismissed"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>AnomalyAlert</h4>
+        <div class="entity-desc">AI-quarantined YoY anomalies</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">metric</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">priorYear</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">currentYear</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">changePercent</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">aiExplanation</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "flagged" | "proceeded"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>EscalationState</h4>
+        <div class="entity-desc">Client escalation tracking</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">currentLevel</span><span class="field-sep">: </span><span class="field-type">EscalationLevel</span><br>
+          <span class="field-name">attemptCount</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">daysSinceLastActivity</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">history</span><span class="field-sep">: </span><span class="field-type">{level, date, method}[]</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>DeductionSuggestion</h4>
+        <div class="entity-desc">AI-quarantined deduction ideas</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">deductionType</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">section</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">estimatedSavings</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "applied" | "dismissed"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ExtensionPrediction</h4>
+        <div class="entity-desc">AI-quarantined extension likelihood</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">probability</span><span class="field-sep">: </span><span class="field-type">number (0-100)</span><br>
+          <span class="field-name">factors</span><span class="field-sep">: </span><span class="field-type">string[]</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "extension_filed" | "dismissed"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>EstimatedTaxCalc</h4>
+        <div class="entity-desc">Quarterly estimated tax calculations</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">quarterlyAmounts</span><span class="field-sep">: </span><span class="field-type">{q1, q2, q3, q4: number}</span><br>
+          <span class="field-name">totalEstimated</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">basis</span><span class="field-sep">: </span><span class="field-type">string</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>PortalNudge</h4>
+        <div class="entity-desc">AI-quarantined re-engagement nudges</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">daysSinceAction</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">lastAction</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">suggestedNudge</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "sent" | "dismissed"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>IrsNotice</h4>
+        <div class="entity-desc">IRS notice tracking + AI draft response</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">noticeType</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">receivedDate</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">summary</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">aiDraftResponse</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "sent" | "resolved"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ClientIssue</h4>
+        <div class="entity-desc">Per-client open items / flags</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">title</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">source</span><span class="field-sep">: </span><span class="field-type">"ai" | "manual"</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"open" | "resolved"</span><br>
+          <span class="field-name">createdAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">resolvedAt</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">resolvedNote</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">sourceDocumentId</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">aiReason</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ChecklistItem</h4>
+        <div class="entity-desc">Document collection checklist</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">label</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">docType</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">category</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">required</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">received</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">receivedAt</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">documentId</span><span class="field-sep">: </span><span class="field-type">Id&lt;documents&gt;?</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">requestedAt</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">daysSinceRequested</span><span class="field-sep">: </span><span class="field-type">number</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>SmartChecklistItem</h4>
+        <div class="entity-desc">AI-enhanced checklist with summaries</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">category</span><span class="field-sep">: </span><span class="field-type">"income" | "deductions" | "other"</span><br>
+          <span class="field-name">label</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">formName</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">SmartChecklistStatus</span><br>
+          <span class="field-name">documentId</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">aiSummary</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">flagReason</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>TodoItem</h4>
+        <div class="entity-desc">Preparer to-do list items</div>
+        <div class="field-list">
+          <span class="field-name">text</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">done</span><span class="field-sep">: </span><span class="field-type">boolean</span><br>
+          <span class="field-name">source</span><span class="field-sep">: </span><span class="field-type">"manual" | "voice" | "ai"</span><br>
+          <span class="field-name">createdAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;?</span> <span class="field-fk">FK</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>VoiceDumpSession</h4>
+        <div class="entity-desc">Voice recording sessions</div>
+        <div class="field-list">
+          <span class="field-name">timestamp</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">duration</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">transcript</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">parsedItems</span><span class="field-sep">: </span><span class="field-type">VoiceParsedItem[]</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>VoiceParsedItem</h4>
+        <div class="entity-desc">AI-parsed voice dump items</div>
+        <div class="field-list">
+          <span class="field-name">text</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">string?</span><br>
+          <span class="field-name">matchType</span><span class="field-sep">: </span><span class="field-type">"confident" | "ambiguous" | "none"</span><br>
+          <span class="field-name">matchCandidates</span><span class="field-sep">: </span><span class="field-type">VoiceClientMatch[]?</span><br>
+          <span class="field-name">category</span><span class="field-sep">: </span><span class="field-type">"action" | "todo"</span><br>
+          <span class="field-name">confidence</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">status</span><span class="field-sep">: </span><span class="field-type">"pending" | "approved" | "rejected"</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ActivityEvent</h4>
+        <div class="entity-desc">Client audit trail</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">timestamp</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">type</span><span class="field-sep">: </span><span class="field-type">ActivityEventType</span><br>
+          <span class="field-name">description</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">metadata</span><span class="field-sep">: </span><span class="field-type">Record&lt;string, unknown&gt;?</span><br>
+          <span class="field-name">actor</span><span class="field-sep">: </span><span class="field-type">ActivityActor?</span><br>
+          <span class="field-name">channel</span><span class="field-sep">: </span><span class="field-type">ActivityChannel?</span><br>
+          <span class="field-name">detail</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>AuditLog</h4>
+        <div class="entity-desc">Append-only security audit log</div>
+        <div class="field-list">
+          <span class="field-name">preparerId</span><span class="field-sep">: </span><span class="field-type">Id&lt;preparers&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">actor</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">action</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">resource</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">resourceId</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">changes</span><span class="field-sep">: </span><span class="field-type">Record&lt;string, unknown&gt;?</span><br>
+          <span class="field-name">timestamp</span><span class="field-sep">: </span><span class="field-type">number (epoch ms)</span><br>
+          <span class="field-name">ipAddress</span><span class="field-sep">: </span><span class="field-type">string?</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>ClientNote</h4>
+        <div class="entity-desc">Private preparer notes per client</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">content</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">createdAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">updatedAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span>
+        </div>
+      </div>
+
+      <div class="entity-card">
+        <h4>IntakeResponse</h4>
+        <div class="entity-desc">Full portal intake form data</div>
+        <div class="field-list">
+          <span class="field-name">clientId</span><span class="field-sep">: </span><span class="field-type">Id&lt;clients&gt;</span> <span class="field-fk">FK</span><br>
+          <span class="field-name">submittedAt</span><span class="field-sep">: </span><span class="field-type">string (ISO)</span><br>
+          <span class="field-name">service</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">filing</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">personal</span><span class="field-sep">: </span><span class="field-type">{name, dob, ssn, phone, email, occupation, address}</span><br>
+          <span class="field-name">spouse</span><span class="field-sep">: </span><span class="field-type">{name, dob, ssn, occupation}?</span><br>
+          <span class="field-name">dependents</span><span class="field-sep">: </span><span class="field-type">{name, dob, ssn, relationship, months}[]</span><br>
+          <span class="field-name">selfEmployment</span><span class="field-sep">: </span><span class="field-type">{business, entity, revenue, homeOffice, vehicle}?</span><br>
+          <span class="field-name">rental</span><span class="field-sep">: </span><span class="field-type">{address, rent, mortgage, year}?</span><br>
+          <span class="field-name">income</span><span class="field-sep">: </span><span class="field-type">string[]</span><br>
+          <span class="field-name">deductions</span><span class="field-sep">: </span><span class="field-type">string[]</span><br>
+          <span class="field-name">taxQuestions</span><span class="field-sep">: </span><span class="field-type">string[]</span><br>
+          <span class="field-name">lifeEvents</span><span class="field-sep">: </span><span class="field-type">string[]</span><br>
+          <span class="field-name">refund</span><span class="field-sep">: </span><span class="field-type">string</span><br>
+          <span class="field-name">depositAmount</span><span class="field-sep">: </span><span class="field-type">number</span><br>
+          <span class="field-name">slot</span><span class="field-sep">: </span><span class="field-type">string</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 10: BUSINESS RULES
+       ============================================ -->
+  <div class="section" id="business-rules">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2>Business Rules &amp; Constraints</h2>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Compliance Rules (Criminal / Civil Liability)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Rule</th><th>Regulation</th><th>Penalty</th><th>Enforcement</th></tr></thead>
+          <tbody>
+            <tr><td>Client data must never cross preparer boundaries</td><td>IRC Section 7216</td><td>Criminal: $1,000 fine + 1 year prison per violation</td><td>Layer 2: <code>preparerId</code> filter on every query</td></tr>
+            <tr><td>Due diligence documentation for EITC/CTC/AOTC/HOH</td><td>Form 8867</td><td>$600 per return per credit</td><td>Compliance alerts + checklist enforcement</td></tr>
+            <tr><td>Written consent before sharing return info</td><td>IRC Section 7216</td><td>Criminal penalties</td><td>7216 Consent document in checklist</td></tr>
+            <tr><td>Client must sign Form 8879 before e-filing</td><td>IRS e-file rules</td><td>ERO authorization revocation</td><td>Pipeline enforces signature before filing</td></tr>
+            <tr><td>Payment before signature (business rule)</td><td>Antonio's policy</td><td>Uncollectable receivables</td><td>Pipeline enforces pay_and_sign order</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">AI Safety Rules</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Rule</th><th>Implementation</th></tr></thead>
+          <tbody>
+            <tr><td>All AI outputs quarantined with <code>status: "pending_review"</code></td><td>Schema-enforced on 8 table types</td></tr>
+            <tr><td>No auto-sending of client messages</td><td>AI drafts stored, human sends</td></tr>
+            <tr><td>No auto-filing of returns</td><td>ERO signature required (human PKI)</td></tr>
+            <tr><td>No auto-modification of client financial data</td><td>Extractions quarantined, human promotes</td></tr>
+            <tr><td>All AI actions logged in audit trail</td><td><code>actor: "ai"</code> in ActivityEvent</td></tr>
+            <tr><td>Confidence scores visible on all AI outputs</td><td>UI shows score + color coding</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Trust Escalation Model (AI Autonomy Levels)</div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Level</th><th>Timeline</th><th>Behavior</th><th>Implementation</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-blue">Level 1</span></td><td>Week 1-2</td><td>Suggest + explain everything, verbose reasoning</td><td>Full quarantine, all actions need approval</td></tr>
+            <tr><td><span class="badge badge-green">Level 2</span></td><td>Week 3-4</td><td>Suggest with shorthand, compressed commentary</td><td>Quarantine continues, UI simplified</td></tr>
+            <tr><td><span class="badge badge-amber">Level 3</span></td><td>Month 2+</td><td>Auto-execute low-risk with notification</td><td>Selected actions auto-approved, still logged</td></tr>
+            <tr><td><span class="badge badge-purple">Level 4</span></td><td>Season 2</td><td>Full autopilot for known patterns</td><td>Exception-based review only</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SECTION 11: INDEX STRATEGY
+       ============================================ -->
+  <div class="section" id="indexes">
+    <div class="section-header">
+      <span class="section-num">11</span>
+      <h2>Convex Index Strategy</h2>
+    </div>
+    <div class="section-desc">
+      Every table needs indexes for the queries it supports. Convex requires explicit index definitions -- there are no implicit indexes except on <code>_id</code> and <code>_creationTime</code>.
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Table</th><th>Index Name</th><th>Fields</th><th>Used By</th></tr></thead>
+          <tbody>
+            <tr><td><code>clients</code></td><td><code>by_preparer</code></td><td><code>preparerId</code></td><td>All preparer queries</td></tr>
+            <tr><td><code>clients</code></td><td><code>by_portal_user_id</code></td><td><code>portalUserId</code></td><td><code>requireClient()</code> auth</td></tr>
+            <tr><td><code>clients</code></td><td><code>by_stage</code></td><td><code>preparerId, returnStage</code></td><td>Pipeline view, stage filters</td></tr>
+            <tr><td><code>clients</code></td><td><code>by_urgency</code></td><td><code>preparerId, urgency</code></td><td>Priority sorting</td></tr>
+            <tr><td><code>documents</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client document list</td></tr>
+            <tr><td><code>documents</code></td><td><code>by_preparer</code></td><td><code>preparerId</code></td><td>Global document view</td></tr>
+            <tr><td><code>messages</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Chat thread</td></tr>
+            <tr><td><code>actionItems</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client action items</td></tr>
+            <tr><td><code>actionItems</code></td><td><code>by_preparer_resolved</code></td><td><code>preparerId, isResolved</code></td><td>Action feed</td></tr>
+            <tr><td><code>appointments</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client appointments</td></tr>
+            <tr><td><code>appointments</code></td><td><code>by_preparer_date</code></td><td><code>preparerId, date</code></td><td>Calendar view</td></tr>
+            <tr><td><code>invoices</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client billing</td></tr>
+            <tr><td><code>paymentRecords</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Payment status</td></tr>
+            <tr><td><code>docketInsights</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client intelligence</td></tr>
+            <tr><td><code>documentExtractions</code></td><td><code>by_client_status</code></td><td><code>clientId, status</code></td><td>Pending review queue</td></tr>
+            <tr><td><code>activityEvents</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Client audit trail</td></tr>
+            <tr><td><code>auditLog</code></td><td><code>by_preparer</code></td><td><code>preparerId</code></td><td>Security audit</td></tr>
+            <tr><td><code>auditLog</code></td><td><code>by_resource</code></td><td><code>resource, resourceId</code></td><td>Resource audit history</td></tr>
+            <tr><td><code>clientIssues</code></td><td><code>by_client_status</code></td><td><code>clientId, status</code></td><td>Open items view</td></tr>
+            <tr><td><code>clientNotes</code></td><td><code>by_client</code></td><td><code>clientId</code></td><td>Notes tab</td></tr>
+            <tr><td><code>preparers</code></td><td><code>by_user_id</code></td><td><code>userId</code></td><td><code>requirePreparer()</code> auth</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center;">
+    <p style="font-size: 12px; color: var(--text-dim);">
+      Docket Backend Architecture v1.0 -- Generated April 2026<br>
+      For: Antonio Vazquez, Vazant Consulting -- Montclair, CA<br>
+      Built by: David Kim (Minseo Kim)
+    </p>
+  </div>
+
+</div>
+
+<!-- Initialize Mermaid -->
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#3b82f6',
+      primaryTextColor: '#e4e5ea',
+      primaryBorderColor: '#2a2d37',
+      lineColor: '#5c5e69',
+      secondaryColor: '#1e2028',
+      tertiaryColor: '#181a20',
+      background: '#181a20',
+      mainBkg: '#1e2028',
+      nodeBorder: '#3b82f6',
+      clusterBkg: '#13141a',
+      clusterBorder: '#2a2d37',
+      titleColor: '#e4e5ea',
+      edgeLabelBackground: '#181a20',
+      fontSize: '14px',
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis',
+    },
+    er: {
+      useMaxWidth: true,
+      fontSize: 12,
+    },
+    stateDiagram: {
+      useMaxWidth: true,
+    }
+  });
+</script>
+
+</body>
+</html>
