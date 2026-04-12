@@ -169,7 +169,7 @@ function SupplementaryCards({ items, onFlag }: { items: InsightSupplementary[]; 
 
       {/* KPI / Highlight cards — stats-cards-with-links pattern */}
       {cards.length > 0 && (
-        <div className={cn("grid gap-3", cards.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+        <div className={cn("grid gap-3 grid-cols-1", cards.length > 1 && "md:grid-cols-2")}>
           {cards.map((item) => {
             const valueColorMap: Record<string, string> = {
               emerald: "text-emerald-600 dark:text-emerald-500",
@@ -336,7 +336,7 @@ export function DocketInsightCard({
       )}
     >
       {/* Timestamp */}
-      <div className="px-7 pt-5 pb-0">
+      <div className="px-4 pt-4 pb-0 md:px-7 md:pt-5">
         <span className="text-[10px] uppercase tracking-[0.12em] text-foreground/30">
           {formatRelativeTime(insight.timestamp)}
         </span>
@@ -345,7 +345,7 @@ export function DocketInsightCard({
       {/* Title */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left px-7 pt-3 pb-4 flex items-center gap-2.5 group/title"
+        className="w-full text-left px-4 pt-3 pb-4 flex items-center gap-2.5 group/title md:px-7"
       >
         <span className={cn("size-[7px] rounded-full shrink-0", dot)} />
         <span className="flex-1 text-[17px] font-semibold text-foreground group-hover/title:text-foreground/70 transition-colors font-display leading-snug">
@@ -372,7 +372,7 @@ export function DocketInsightCard({
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-7 pb-7">
+            <div className="px-4 pb-5 md:px-7 md:pb-7">
               {/* Narrative */}
               <motion.p
                 initial={{ opacity: 0, y: 4 }}

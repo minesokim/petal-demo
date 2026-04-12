@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Search, Phone, FileText, Calendar, DollarSign, Clock,
   Bot, ChevronRight, MessageSquare, Mail, Smartphone,
-  PhoneCall, Video, Send, ExternalLink, X, Image as ImageIcon,
+  PhoneCall, Video, Send, ExternalLink, X, Image as ImageIcon, ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { clients } from "@/lib/mock-data";
@@ -108,6 +109,8 @@ function SystemCardIcon({ type }: { type: string }) {
 // ── Main Page ──
 export default function ChatPage() {
   const conversationList = useMemo(() => buildConversationList(), []);
+  const isMobile = useIsMobile();
+  const [mobileShowThread, setMobileShowThread] = useState(false);
   const [selectedId, setSelectedId] = useState(conversationList[0]?.clientId || "c2");
   const [searchQuery, setSearchQuery] = useState("");
   const [input, setInput] = useState("");
@@ -182,7 +185,11 @@ export default function ChatPage() {
   return (
     <div className="flex h-[calc(100vh-var(--header-height)-3rem)] w-full overflow-hidden rounded-lg border bg-card">
       {/* ── Left: Conversation List ── */}
-      <div className="w-[300px] shrink-0 border-r flex flex-col">
+      <div className={cn(
+        "shrink-0 border-r flex flex-col",
+        isMobile ? "w-full" : "w-[300px]",
+        isMobile && mobileShowThread && "hidden"
+      )}>
         {/* Search */}
         <div className="p-3 border-b">
           <div className="relative">
@@ -201,7 +208,7 @@ export default function ChatPage() {
           {filteredConvos.map((convo) => (
             <button
               key={convo.clientId}
-              onClick={() => { setSelectedId(convo.clientId); setViewFilter("all"); }}
+              onClick={() => { setSelectedId(convo.clientId); setViewFilter("all"); if (isMobile) setMobileShowThread(true); }}
               className={cn(
                 "w-full flex items-start gap-2.5 px-3 py-2.5 text-left border-b border-border/30 transition-colors",
                 selectedId === convo.clientId ? "bg-muted/50" : "hover:bg-muted/20"
@@ -260,11 +267,19 @@ export default function ChatPage() {
       </div>
 
       {/* ── Right: Chat Area ── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0",
+        isMobile && !mobileShowThread && "hidden"
+      )}>
         {/* Header */}
         {selected && (
-          <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b shrink-0 md:px-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              {isMobile && (
+                <Button variant="ghost" size="icon" className="size-8 shrink-0 -ml-1" onClick={() => setMobileShowThread(false)}>
+                  <ArrowLeft className="size-4" />
+                </Button>
+              )}
               <Avatar className="size-8">
                 <AvatarImage src={selected.client.avatar} />
                 <AvatarFallback className="text-[10px]">

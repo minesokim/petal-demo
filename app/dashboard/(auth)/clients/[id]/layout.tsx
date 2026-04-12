@@ -56,9 +56,9 @@ export default function ClientDetailLayout({ children }: { children: React.React
       </Link>
 
       {/* Client header */}
-      <div className="flex items-start justify-between py-4">
-        <div className="flex items-start gap-4">
-          <Avatar className="size-14">
+      <div className="flex flex-col gap-3 py-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3 md:gap-4">
+          <Avatar className="size-11 md:size-14">
             <AvatarImage src={client.avatar} alt={client.fullName} />
             <AvatarFallback className="text-lg">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
           </Avatar>
@@ -74,7 +74,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
               <span>&middot;</span>
               <span>Client since 2025</span>
             </div>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-wrap gap-1.5 md:gap-2">
               <Badge>{stageLabels[client.returnStage]}</Badge>
               <Badge variant="outline">{client.serviceTier}</Badge>
               <Badge variant="outline">${client.feeAmount}</Badge>
@@ -111,12 +111,12 @@ export default function ClientDetailLayout({ children }: { children: React.React
 
       {/* Sub-tabs — sticky */}
       <LayoutGroup>
-        <div className="relative flex gap-0.5 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border">
+        <div className="relative flex gap-0.5 overflow-x-auto mobile-scroll-tabs md:overflow-visible before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-border">
           {tabs.map(tab => (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`relative z-10 rounded-t-md px-4 py-2 text-sm font-medium transition-colors ${
+              className={`relative z-10 rounded-t-md px-4 py-2 text-sm font-medium transition-colors shrink-0 ${
                 activeTab === tab.href
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground"

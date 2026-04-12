@@ -173,10 +173,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[90vh] max-h-[90vh] overflow-hidden sm:max-w-3xl p-0 flex flex-col">
+      <DialogContent className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none overflow-hidden p-0 flex flex-col md:h-[90vh] md:max-h-[90vh] md:max-w-3xl md:rounded-lg">
         {/* Header */}
-        <div className="flex items-start gap-4 border-b px-6 py-4">
-          <Avatar className="size-14">
+        <div className="flex items-start gap-3 border-b px-4 py-3 md:gap-4 md:px-6 md:py-4">
+          <Avatar className="size-10 md:size-14">
             <AvatarImage src={client.avatar} alt={client.fullName} />
             <AvatarFallback className="text-lg">{getInitials(client.fullName)}</AvatarFallback>
           </Avatar>
@@ -279,7 +279,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
         {/* Tabbed content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
           {/* Sticky tab bar */}
-          <div className="sticky top-0 z-10 bg-background border-b px-6 pt-2 pb-0 shrink-0">
+          <div className="sticky top-0 z-10 bg-background border-b px-3 pt-2 pb-0 shrink-0 md:px-6 overflow-x-auto mobile-scroll-tabs md:overflow-visible">
             <TabsList variant="fill" className="w-full">
               {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
                 <TabsTrigger key={tab} value={tab} className="relative">
@@ -297,7 +297,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           </div>
 
           {/* Scrollable tab content */}
-          <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6 pt-4">
+          <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-6 pt-4 md:px-6">
             {/* OVERVIEW TAB */}
             <TabsContent value="overview" className="space-y-5">
               {/* AI Insight — hides after stage override */}

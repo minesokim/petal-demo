@@ -175,7 +175,7 @@ function PipelineStrip({ tabs, activeTab, onTabChange }: {
   return (
     <div
       ref={containerRef}
-      className="relative flex items-center gap-6"
+      className="relative flex items-center gap-4 overflow-x-auto mobile-scroll-tabs md:gap-6 md:overflow-visible"
       onMouseLeave={() => setHoveredKey(null)}
     >
       {tabs.map((tab) => {
@@ -186,7 +186,7 @@ function PipelineStrip({ tabs, activeTab, onTabChange }: {
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
             onMouseEnter={() => setHoveredKey(tab.key)}
-            className="flex items-center gap-2 cursor-pointer select-none pb-px"
+            className="flex items-center gap-2 cursor-pointer select-none pb-px shrink-0"
           >
             {/* Number */}
             <span className={`text-[17px] font-semibold tabular-nums transition-colors duration-200 ${isActive ? "" : "text-muted-foreground/50"}`} style={{ color: isActive ? tab.cssColor : undefined }}>
@@ -272,7 +272,7 @@ export default function Page() {
     <div className="space-y-4">
       {/* ── Section 1: Morning Intelligence ── */}
       <motion.div
-        className="rounded-[20px_20px_20px_6px] bg-card border border-border/40 px-7 py-6 shadow-sm"
+        className="rounded-[20px_20px_20px_6px] bg-card border border-border/40 px-4 py-4 md:px-7 md:py-6 shadow-sm"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
@@ -289,7 +289,7 @@ export default function Page() {
 
         {/* Greeting */}
         <motion.h1
-          className="text-[28px] tracking-[-0.02em] font-display mt-3 text-foreground"
+          className="text-xl md:text-[28px] tracking-[-0.02em] font-display mt-3 text-foreground"
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15 }}
@@ -299,7 +299,7 @@ export default function Page() {
 
         {/* Stat row */}
         <motion.div
-          className="flex items-baseline gap-7 mt-4 pb-5 border-b border-border/30"
+          className="grid grid-cols-3 gap-3 mt-4 pb-5 border-b border-border/30 md:flex md:items-baseline md:gap-7"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.25 }}
@@ -551,9 +551,9 @@ export default function Page() {
       </motion.div>
 
       {/* ── Section 2: Actions + Sidebar ── */}
-      <div className="flex gap-6 mt-10">
+      <div className="flex flex-col gap-6 mt-6 md:mt-10 md:flex-row">
       {/* Left: Pipeline + Action Feed (70%) */}
-      <div className="flex-[7] min-w-0 space-y-5">
+      <div className="min-w-0 space-y-5 md:flex-[7]">
         {/* Pipeline — organic circles with animated underline */}
         <PipelineStrip
           tabs={summaryTabs}
@@ -651,7 +651,7 @@ export default function Page() {
       </div>
 
       {/* Right: Today + Messages (30%) */}
-      <div className="flex-[3] flex flex-col gap-5 min-w-0 pt-1 border-l border-border/30 pl-6">
+      <div className="flex flex-col gap-5 min-w-0 pt-5 border-t border-border/30 md:flex-[3] md:pt-1 md:border-t-0 md:border-l md:border-border/30 md:pl-6">
         {/* Today */}
         <div>
           <div className="flex items-center justify-between mb-3">
