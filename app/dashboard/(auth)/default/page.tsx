@@ -749,17 +749,55 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Pending items */}
-            {todos.filter(t => !t.done).slice(0, 5).map(todo => (
-              <div key={todo.id} className="flex items-start gap-3 py-[7px] group">
-                <button onClick={() => toggleTodo(todo.id)} className="mt-[3px] shrink-0 cursor-pointer">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-                  </svg>
-                </button>
-                <span className="text-[13px] leading-relaxed text-foreground/80 line-clamp-2">{todo.text}</span>
-              </div>
+            {/* Pending items — all visible */}
+            <AnimatePresence>
+            {todos.filter(t => !t.done).map(todo => (
+              <motion.div
+                key={todo.id}
+                layout
+                exit={{ opacity: 0, x: -10, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex items-start gap-3 py-[7px] group cursor-pointer"
+                onClick={() => toggleTodo(todo.id)}
+              >
+                <div className="mt-[3px] shrink-0">
+                  <motion.div whileTap={{ scale: 1.4 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors duration-200 group-hover:text-violet-400" />
+                    </svg>
+                  </motion.div>
+                </div>
+                <span className="text-[13px] leading-relaxed text-foreground/80 border-b border-transparent transition-all duration-200 group-hover:border-violet-300 dark:group-hover:border-violet-600">{todo.text}</span>
+              </motion.div>
             ))}
+            </AnimatePresence>
+
+            {/* Completed items */}
+            {todos.filter(t => t.done).length > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/20">
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                >
+                  Completed ({todos.filter(t => t.done).length})
+                </button>
+                {showCompleted && (
+                  <div className="mt-1 space-y-0">
+                    {todos.filter(t => t.done).map(todo => (
+                      <div key={todo.id} className="flex items-start gap-3 py-[5px] group cursor-pointer" onClick={() => toggleTodo(todo.id)}>
+                        <div className="mt-[3px] shrink-0">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="5.5" fill="currentColor" className="text-violet-400/50 group-hover:text-violet-400 transition-colors" />
+                            <path d="M5 7L6.5 8.5L9 5.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <span className="text-[13px] leading-relaxed text-muted-foreground/40 line-through">{todo.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

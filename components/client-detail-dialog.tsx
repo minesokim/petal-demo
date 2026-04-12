@@ -1704,6 +1704,7 @@ function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceA
         <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {
           setStatus("acknowledged");
           showToast("success", "Due diligence complete", `Form 8867 completed for ${clientName}`);
+          setTimeout(() => setForm8867Open(true), 300);
         }} />
       )}
     </>

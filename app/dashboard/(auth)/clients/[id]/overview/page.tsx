@@ -787,6 +787,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
           onComplete={() => {
             setStatus("acknowledged");
             showToast("success", "Due diligence complete", `Form 8867 completed for ${clientName}`);
+            setTimeout(() => setForm8867Open(true), 300);
           }}
         />
       )}
