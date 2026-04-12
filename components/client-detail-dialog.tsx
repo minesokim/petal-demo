@@ -213,26 +213,19 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           </div>
         </div>
 
-        {/* Pending intake banner — hide if stage was overridden (client was accepted) */}
+        {/* Pending intake — clean accept flow */}
         {client.clientStatus === "pending" && !stageOverride && onAccept && onDecline && (
           <div className="px-6 py-5 border-b">
             {(() => {
               const ctx = pendingIntakeContext[client.id];
               const callMissed = client.scheduledCall && isCallPast(client.scheduledCall);
+              const firstName = client.fullName.split(" ")[0];
               return (
                 <div className="space-y-4">
-                  {/* Big clear headline with warm accent */}
-                  <div className="rounded-lg bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/50 px-4 py-3">
-                    <h3 className="text-base font-bold text-amber-900 dark:text-amber-100">Assign a service tier to accept this client</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {client.fullName.split(" ")[0]} completed intake and paid the $50 deposit. Select a tier to start their return.
-                    </p>
-                  </div>
-
-                  {/* Context */}
-                  <div className="text-xs text-foreground/70 leading-relaxed">
+                  {/* Context — notes + filing details */}
+                  <p className="text-[13px] text-foreground/70 leading-relaxed">
                     {client.notes}
-                  </div>
+                  </p>
 
                   {ctx && (
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -251,33 +244,31 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                     </div>
                   )}
 
-                  {/* Tier selector — prominent */}
-                  <div className="space-y-2">
+                  {/* Tier + actions — clean inline */}
+                  <div className="flex items-center gap-2">
                     <select
                       value={assignedTier}
                       onChange={(e) => setAssignedTier(e.target.value)}
-                      className="w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none"
+                      className="flex-1 h-9 rounded-lg border bg-background px-3 text-sm outline-none"
                     >
                       {serviceTierOptions.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1 h-10"
-                        disabled={!assignedTier}
-                        onClick={() => { onAccept(client.id, assignedTier); onOpenChange(false); }}
-                      >
-                        Accept Client
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="h-10 px-6"
-                        onClick={() => { onDecline(client.id); onOpenChange(false); }}
-                      >
-                        Decline
-                      </Button>
-                    </div>
+                    <Button
+                      className="h-9 px-5"
+                      disabled={!assignedTier}
+                      onClick={() => { onAccept(client.id, assignedTier); onOpenChange(false); }}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="h-9 px-3 text-muted-foreground"
+                      onClick={() => { onDecline(client.id); onOpenChange(false); }}
+                    >
+                      Decline
+                    </Button>
                   </div>
                 </div>
               );

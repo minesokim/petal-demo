@@ -129,6 +129,10 @@ type Client = {
   - Popup dialog: `components/client-detail-dialog.tsx`
   - These MUST stay synced. Never commit changes to one without the other.
 
+## Search Rules
+
+Before reading files or exploring directories, always use qmd to search for information in local projects first. Use `qmd search` for specific terms and `qmd vsearch` for conceptual queries where wording may vary.
+
 ## AI Safety Rule
 
 **AI output NEVER touches production data directly.** All AI results go to quarantine tables with `status: 'pending_review'`. Human approves before data is promoted. This is non-negotiable.
@@ -136,6 +140,14 @@ type Client = {
 ## The User
 
 Antonio Vazquez, EA. Solo enrolled agent in Montclair, CA. ~200 clients. Uses Xero + OLT. Values human interaction, compliance, and looking professional. See `docs/PRODUCT_BIBLE.md` for full background.
+
+## Security Requirements
+
+- All PII must be AES-256 encrypted at rest
+- OTP verification required for client portal access
+- Payment data never touches our servers (Square handles PCI)
+- RLS policies on every table with user data
+- WISP (Written Information Security Plan) compliance
 
 ## Deployment
 

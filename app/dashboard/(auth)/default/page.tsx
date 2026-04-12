@@ -53,7 +53,6 @@ const summaryTabs = [
   { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500", cssColor: "#f59e0b", circleClass: "bg-amber-500/12 border-amber-400/30 text-amber-600" },
   { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500", cssColor: "#3b82f6", circleClass: "bg-blue-500/12 border-blue-400/30 text-blue-600" },
   { key: "complete", label: "Done", count: 3, color: "bg-emerald-500", cssColor: "#10b981", circleClass: "bg-emerald-500/12 border-emerald-400/30 text-emerald-600" },
-  { key: "todos", label: "To-do", count: 0, color: "bg-violet-500", cssColor: "#8b5cf6", circleClass: "bg-violet-500/12 border-violet-400/30 text-violet-600" },
 ];
 
 type ActionClient = {
@@ -133,10 +132,9 @@ function OrganicCircle({ color, size = 32 }: { color: string; size?: number }) {
 }
 
 // ── Pipeline Strip with organic circles + animated underline ──
-function PipelineStrip({ tabs, activeTab, pendingTodoCount, onTabChange }: {
+function PipelineStrip({ tabs, activeTab, onTabChange }: {
   tabs: typeof summaryTabs;
   activeTab: string;
-  pendingTodoCount: number;
   onTabChange: (key: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -182,7 +180,7 @@ function PipelineStrip({ tabs, activeTab, pendingTodoCount, onTabChange }: {
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
-        const count = tab.key === "todos" ? pendingTodoCount : tab.count;
+        const count = tab.count;
         return (
           <button
             key={tab.key}
@@ -560,7 +558,6 @@ export default function Page() {
         <PipelineStrip
           tabs={summaryTabs}
           activeTab={activeTab}
-          pendingTodoCount={pendingTodoCount}
           onTabChange={setActiveTab}
         />
 
@@ -571,124 +568,6 @@ export default function Page() {
 
         {/* Content */}
         <div>
-          {activeTab === "todos" ? (
-            /* ── To-do — journal style ── */
-            <div className="space-y-0">
-              {/* Add task — at the top */}
-              <div className="py-[10px]">
-                <div className="flex items-start gap-3">
-                  <div className="mt-[3px] shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/20" strokeDasharray="2 2" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      placeholder="Add a task..."
-                      value={newTodoText}
-                      onChange={e => { setNewTodoText(e.target.value); if (e.target.value.trim() && !showClientPicker) setShowClientPicker(true); }}
-                      onKeyDown={e => e.key === "Enter" && addTodo()}
-                      onFocus={() => { if (newTodoText.trim()) setShowClientPicker(true); }}
-                      className="w-full text-[14px] text-foreground/85 bg-transparent outline-none placeholder:text-muted-foreground/30 border-b border-transparent focus:border-border/40 transition-colors pb-0.5"
-                    />
-                    {showClientPicker && newTodoText.trim() && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="mt-2 flex items-center gap-2"
-                      >
-                        <span className="text-[11px] text-muted-foreground/50">for</span>
-                        <select
-                          value={newTodoClient}
-                          onChange={e => setNewTodoClient(e.target.value)}
-                          className="text-[12px] text-muted-foreground bg-transparent border-b border-border/30 outline-none py-0.5 pr-4 cursor-pointer"
-                        >
-                          <option value="">no client</option>
-                          {clients.filter(c => c.clientStatus !== "declined").map(c => (
-                            <option key={c.id} value={c.id}>{c.fullName}</option>
-                          ))}
-                        </select>
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Pending items */}
-              {todos.filter(t => !t.done).map(todo => {
-                const sourceLabel = todo.source === "ai" ? "flagged by Docket" : null;
-                const nameInText = todo.clientName && todo.text.toLowerCase().includes(todo.clientName.split(" ")[0].toLowerCase());
-                return (
-                  <motion.div
-                    key={todo.id}
-                    layout
-                    initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex items-start gap-3 py-[10px] group"
-                  >
-                    {/* Open circle — animated fill on click */}
-                    <button
-                      onClick={() => toggleTodo(todo.id)}
-                      className="mt-[3px] shrink-0 cursor-pointer"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors duration-200 group-hover:text-muted-foreground" />
-                      </svg>
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[14px] leading-relaxed text-foreground/85">{todo.text}</span>
-                      {(sourceLabel || (todo.clientName && !nameInText)) && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {todo.clientName && !nameInText && (
-                            <button
-                              onClick={() => { const c = clients.find(cl => cl.id === todo.clientId); if (c) setDetailClient(c); }}
-                              className="text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors"
-                            >
-                              {todo.clientName}
-                            </button>
-                          )}
-                          {sourceLabel && (todo.clientName && !nameInText) && <span className="text-muted-foreground/30 text-[10px]">&middot;</span>}
-                          {sourceLabel && <span className="text-[11px] text-muted-foreground/40">{sourceLabel}</span>}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-
-              {/* Completed — open by default */}
-              {todos.filter(t => t.done).length > 0 && (
-                <div className="pt-4">
-                  <button
-                    onClick={() => setShowCompleted(!showCompleted)}
-                    className="text-[12px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                  >
-                    Completed ({todos.filter(t => t.done).length}) {showCompleted ? "" : ""}
-                  </button>
-                  {showCompleted && (
-                    <div className="mt-2 space-y-0">
-                      {todos.filter(t => t.done).map(todo => (
-                        <motion.div
-                          key={todo.id}
-                          layout
-                          className="flex items-start gap-3 py-[8px] group cursor-pointer"
-                          onClick={() => toggleTodo(todo.id)}
-                        >
-                          <div className="mt-[3px] shrink-0">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                              <circle cx="7" cy="7" r="5.5" fill="currentColor" className="text-muted-foreground/25 transition-colors duration-200 group-hover:text-muted-foreground/40" />
-                            </svg>
-                          </div>
-                          <span className="text-[14px] leading-relaxed text-muted-foreground/40 line-through">{todo.text}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
             <div className="space-y-4">
               {(actionGroups[activeTab] || []).map((group) => (
                 <div key={group.label}>
@@ -768,7 +647,6 @@ export default function Page() {
                 </div>
               ))}
             </div>
-          )}
         </div>
       </div>
 
@@ -840,6 +718,47 @@ export default function Page() {
                   </span>
                 )}
               </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* To-do */}
+        <div className="border-t border-border/30 pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[13px] font-medium text-foreground">To-do</span>
+            {todos.filter(t => !t.done).length > 0 && (
+              <span className="text-[11px] text-muted-foreground/50">{todos.filter(t => !t.done).length} pending</span>
+            )}
+          </div>
+          <div className="rounded-xl border border-border/40 p-4 space-y-0">
+            {/* Add task */}
+            <div className="py-[7px]">
+              <div className="flex items-start gap-3">
+                <div className="mt-[3px] shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/20" strokeDasharray="2 2" />
+                  </svg>
+                </div>
+                <input
+                  placeholder="Add a task..."
+                  value={newTodoText}
+                  onChange={e => setNewTodoText(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addTodo()}
+                  className="w-full text-[13px] text-foreground/85 bg-transparent outline-none placeholder:text-muted-foreground/30"
+                />
+              </div>
+            </div>
+
+            {/* Pending items */}
+            {todos.filter(t => !t.done).slice(0, 5).map(todo => (
+              <div key={todo.id} className="flex items-start gap-3 py-[7px] group">
+                <button onClick={() => toggleTodo(todo.id)} className="mt-[3px] shrink-0 cursor-pointer">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                  </svg>
+                </button>
+                <span className="text-[13px] leading-relaxed text-foreground/80 line-clamp-2">{todo.text}</span>
+              </div>
             ))}
           </div>
         </div>
