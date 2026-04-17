@@ -2,54 +2,8 @@
 
 @plugin "tailwindcss-animate";
 
-@font-face {
-  font-family: "SF Pro Display";
-  src: url("/fonts/sf-pro-display-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "SF Pro Display";
-  src: url("/fonts/sf-pro-display-medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "SF Pro Display";
-  src: url("/fonts/sf-pro-display-semibold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "SF Pro Display";
-  src: url("/fonts/sf-pro-display-bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Matter";
-  src: url("/fonts/matter-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Matter";
-  src: url("/fonts/matter-medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
+/* v4: P22 Mackinac Pro — editorial serif for brand, client names, AI insight body.
+   Fraunces loads via next/font/google as fallback (see lib/fonts.ts). */
 @font-face {
   font-family: "P22 Mackinac Pro";
   src: url("/fonts/p22-mackinac-book.woff2") format("woff2");
@@ -130,6 +84,63 @@
   --fc-border-color: var(--base-100);
   --fc-page-bg-color: var(--color-white);
   --fc-today-bg-color: var(--base-50);
+
+  /* ═══════════════════════════════════════════
+     v4 DESIGN TOKENS (DOCKET-V4-PRD.md §2)
+     Warm editorial palette — cream paper, warm ink, rust accent.
+     These are the tokens for v4 screens (triage, client workspace).
+     v3 tokens above remain for legacy pages until migrated.
+     ═══════════════════════════════════════════ */
+
+  /* Surfaces */
+  --bg: #F5F2EA;
+  --surface: #FBFAF5;
+  --surface-2: #F0EBDD;
+  --surface-3: #EAE3D0;
+
+  /* Ink (text) */
+  --ink: #1A1612;
+  --ink-2: #3F382E;
+  --ink-3: #6F6655;
+  --ink-4: #9C9380;
+  --ink-5: #B8AE99;
+
+  /* Hairlines */
+  --hairline: #E3DCC9;
+  --hairline-2: #D4CBB4;
+
+  /* Rust (urgency, emphasis) */
+  --rust: #B8532C;
+  --rust-2: #9A4323;
+  --rust-soft: #F5E2D2;
+  --rust-bg: #FBF2EC;
+
+  /* Positive (forest green, success) */
+  --positive: #3F6B40;
+  --positive-bg: #EDF2EC;
+
+  /* Warning (amber) */
+  --warning: #B87A2F;
+  --warning-bg: #F7EDD9;
+
+  /* Error (warm red) */
+  --error: #A73B2B;
+  --error-bg: #F5E0DC;
+
+  /* v4 font stacks (P22 via @font-face above, Fraunces/DM Sans/Geist Mono via next/font/google) */
+  --font-serif: "P22 Mackinac Pro", var(--font-fraunces), Georgia, serif;
+  --font-sans-v4: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono-v4: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  /* Spacing (4px grid, PRD §2.4) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
 }
 
 .dark {
@@ -227,6 +238,41 @@
   --font-display: var(--display-family);
   --display-weight: var(--display-weight);
   --font-sans: var(--text-family);
+
+  /* ═══════════════════════════════════════════
+     v4 TAILWIND UTILITIES
+     Exposes warm palette as bg-*, text-*, border-* utilities.
+     Namespaced with a `v4-` prefix where collisions are possible
+     (e.g. accent, destructive). Surface/ink/rust are unique so no prefix.
+     ═══════════════════════════════════════════ */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-ink-5: var(--ink-5);
+
+  --color-hairline: var(--hairline);
+  --color-hairline-2: var(--hairline-2);
+
+  --color-rust: var(--rust);
+  --color-rust-2: var(--rust-2);
+  --color-rust-soft: var(--rust-soft);
+  --color-rust-bg: var(--rust-bg);
+
+  --color-positive: var(--positive);
+  --color-positive-bg: var(--positive-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono-v4);
 }
 
 * {
