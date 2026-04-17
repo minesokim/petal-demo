@@ -1,0 +1,1500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Docket — Priya Sharma</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    /* B v2 warm tokens */
+    --bg: #F5F2EA;
+    --surface: #FBFAF5;
+    --surface-2: #F0EBDD;
+    --surface-3: #EAE3D0;
+    --ink: #1A1612;
+    --ink-2: #3F382E;
+    --ink-3: #6F6655;
+    --ink-4: #9C9380;
+    --ink-5: #B8AE99;
+    --hairline: #E3DCC9;
+    --hairline-2: #D4CBB4;
+    --accent: #B8532C;
+    --accent-2: #9A4323;
+    --accent-soft: #F5E2D2;
+    --accent-bg: #FBF2EC;
+    --positive: #3F6B40;
+    --positive-bg: #EDF2EC;
+    --warning: #B87A2F;
+    --warning-bg: #F7EDD9;
+    --error: #A73B2B;
+    --error-bg: #F5E0DC;
+
+    --serif: 'Fraunces', 'Times New Roman', serif;
+    --sans: 'Geist', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100vh; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .serif { font-family: var(--serif); font-variation-settings: "opsz" 144, "SOFT" 30; }
+
+  /* ============ LAYOUT ============ */
+  .app {
+    display: grid;
+    grid-template-rows: 48px 1fr 28px;
+    grid-template-columns: 200px 1fr 320px;
+    grid-template-areas:
+      "header header header"
+      "nav main context"
+      "status status status";
+    height: 100vh;
+  }
+
+  /* ============ HEADER ============ */
+  .header {
+    grid-area: header;
+    border-bottom: 1px solid var(--hairline);
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    align-items: center;
+    background: var(--bg);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 16px;
+    border-right: 1px solid var(--hairline);
+    height: 100%;
+  }
+  .brand-mark {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--ink);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 600;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    letter-spacing: -0.02em;
+  }
+  .brand-name {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 17px;
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    height: 100%;
+  }
+  .back-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 8px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 550;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .back-chip:hover { background: var(--surface-2); }
+  .back-chip .arrow {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .back-chip .pos {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-4);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .back-chip .kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+  .bc-sep {
+    color: var(--ink-5);
+    font-size: 14px;
+  }
+  .bc-current {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink);
+    font-weight: 550;
+  }
+  .bc-section {
+    font-size: 12px;
+    color: var(--ink-4);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .cmdk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--ink-4);
+    background: var(--surface);
+    width: 240px;
+  }
+  .cmdk .kbd {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    background: var(--bg);
+  }
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--ink-2);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 550;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .avatar.soft { background: var(--surface-2); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--hairline-2); }
+  .avatar.sm { width: 20px; height: 20px; font-size: 9px; }
+  .avatar.xs { width: 18px; height: 18px; font-size: 8.5px; }
+  .avatar.lg { width: 38px; height: 38px; font-size: 13px; }
+
+  /* ============ NAV ============ */
+  .nav {
+    grid-area: nav;
+    border-right: 1px solid var(--hairline);
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .nav-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--ink-4);
+    padding: 14px 10px 6px;
+    font-weight: 500;
+  }
+  .nav-section:first-child { padding-top: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 450;
+    cursor: pointer;
+    text-decoration: none;
+    gap: 8px;
+  }
+  .nav-item:hover { background: var(--surface-2); }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .nav-item .left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .nav-item .icon {
+    color: var(--ink-4);
+    width: 13px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .nav-item.active .icon { color: var(--ink-2); }
+  .nav-item .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+  .nav-item.active .count { color: var(--accent); font-weight: 500; }
+  .nav-item .count.urgent {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0 6px;
+    border-radius: 8px;
+    font-weight: 550;
+  }
+
+  .nav-footer {
+    margin-top: auto;
+    padding: 10px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-footer .name { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .nav-footer .firm { font-size: 10.5px; color: var(--ink-4); font-family: var(--mono); }
+
+  /* ============ MAIN ============ */
+  .main {
+    grid-area: main;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  /* Client header */
+  .client-header {
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .client-header-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .client-title {
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.018em;
+    line-height: 1.1;
+    margin-bottom: 3px;
+  }
+  .client-title-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .client-title-meta .tier {
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .client-title-meta .dot-sep {
+    margin: 0 5px;
+    color: var(--ink-5);
+  }
+  .client-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+  }
+  .client-header-stats {
+    display: flex;
+    gap: 28px;
+    padding-top: 8px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat .lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    font-weight: 500;
+  }
+  .stat .val {
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 550;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .stat .val .mono {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .val .sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .stat .val.rust { color: var(--accent); }
+  .stat .val.rust::before {
+    content: "●";
+    font-size: 10px;
+    margin-right: 3px;
+  }
+  .stat .val.positive { color: var(--positive); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .tab {
+    padding: 9px 14px;
+    font-size: 13px;
+    color: var(--ink-3);
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+    font-weight: 550;
+  }
+  .tab .count {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-4);
+  }
+  .tab .pulse {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulseDot 2s infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Workspace */
+  .workspace { padding: 20px 28px 24px; }
+  .section {
+    margin-bottom: 24px;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 550;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .section-label::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .section-label.no-dot::before { display: none; }
+  .section-action {
+    font-size: 11.5px;
+    color: var(--ink-4);
+    cursor: pointer;
+  }
+  .section-action:hover { color: var(--ink-2); }
+
+  /* AI Insight card — B v2 serif treatment */
+  .insight {
+    border: 1px solid var(--hairline);
+    border-left: 2px solid var(--accent);
+    background: var(--surface);
+    border-radius: 5px;
+    padding: 16px 20px;
+  }
+  .insight-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .insight-tag {
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .insight-tag::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .insight-grounding {
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .insight-grounding .sep { color: var(--ink-5); margin: 0 4px; }
+  .insight-body {
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.55;
+    font-variation-settings: "opsz" 14, "SOFT" 50;
+    color: var(--ink);
+    margin-bottom: 14px;
+    letter-spacing: -0.003em;
+  }
+  .insight-body em {
+    color: var(--accent);
+    font-style: italic;
+    font-variation-settings: "opsz" 14, "SOFT" 80;
+  }
+  .insight-body .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-style: normal;
+  }
+  .insight-data {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+    margin-bottom: 14px;
+  }
+  .insight-datum {
+    padding-right: 16px;
+    border-right: 1px solid var(--hairline);
+  }
+  .insight-datum:last-child { border-right: none; padding-right: 0; }
+  .insight-datum .lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 3px;
+  }
+  .insight-datum .val {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .insight-datum .val.rust { color: var(--accent); }
+  .insight-actions {
+    display: flex;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* Progress strip */
+  .progress-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .progress-cell {
+    padding: 14px 18px;
+    border-right: 1px solid var(--hairline);
+  }
+  .progress-cell:last-child { border-right: none; }
+  .progress-cell .lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+  .progress-cell .main-val {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
+  }
+  .progress-cell .main-val .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .progress-cell .main-val.positive { color: var(--positive); }
+  .progress-cell .progress-track {
+    height: 3px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 7px;
+    margin-bottom: 6px;
+  }
+  .progress-cell .progress-fill {
+    height: 100%;
+    background: var(--ink);
+    border-radius: 2px;
+  }
+  .progress-cell .progress-fill.rust { background: var(--accent); }
+  .progress-cell .progress-fill.positive { background: var(--positive); }
+  .progress-cell .sub-val {
+    font-size: 11.5px;
+    color: var(--ink-4);
+    line-height: 1.4;
+  }
+  .progress-cell .sub-val.urgent { color: var(--accent); }
+
+  /* Next steps */
+  .next-steps {
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .next-step {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    gap: 14px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--hairline);
+    align-items: center;
+  }
+  .next-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--ink-3);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid var(--hairline-2);
+  }
+  .step-num.done {
+    background: var(--positive);
+    color: var(--bg);
+    border-color: var(--positive);
+  }
+  .step-num.current {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .step-content { min-width: 0; }
+  .step-title {
+    font-size: 13px;
+    font-weight: 550;
+    color: var(--ink);
+  }
+  .step-title.done { color: var(--ink-4); text-decoration: line-through; }
+  .step-meta {
+    font-size: 11px;
+    color: var(--ink-4);
+    margin-top: 2px;
+    font-family: var(--mono);
+    letter-spacing: 0.01em;
+  }
+
+  /* Data rows — documents */
+  .data-rows {
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .data-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 130px 100px 40px;
+    gap: 14px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--hairline);
+    align-items: center;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .data-row:last-child { border-bottom: none; }
+  .data-row:hover { background: var(--surface-2); }
+  .data-row .type {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-align: center;
+    border: 1px solid var(--hairline);
+  }
+  .data-row .name { color: var(--ink); font-weight: 500; }
+  .data-row .meta-size {
+    color: var(--ink-4);
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-left: 8px;
+  }
+  .data-row .when {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-4);
+    letter-spacing: 0.01em;
+  }
+  .data-row .status-pill {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-align: center;
+  }
+  .status-pill.extracted { background: var(--positive-bg); color: var(--positive); }
+  .status-pill.pending { background: var(--warning-bg); color: var(--warning); }
+  .status-pill.flagged { background: var(--accent-bg); color: var(--accent); }
+  .data-row .arrow { color: var(--ink-4); text-align: right; font-size: 12px; }
+
+  /* ============ CONTEXT PANEL ============ */
+  .context {
+    grid-area: context;
+    border-left: 1px solid var(--hairline);
+    overflow-y: auto;
+    background: var(--bg);
+    padding: 18px 20px;
+  }
+  .context-section { margin-bottom: 24px; }
+  .context-section:last-child { margin-bottom: 0; }
+  .context-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .context-head .lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 550;
+  }
+  .context-head .more {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+
+  .msg-preview {
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .msg-preview:hover { background: var(--surface-2); }
+  .msg-preview.unread {
+    border-left: 2px solid var(--accent);
+  }
+  .msg-preview-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 4px;
+  }
+  .msg-preview-channel {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 2px;
+    border: 1px solid var(--hairline);
+  }
+  .msg-preview-who { font-size: 12px; font-weight: 550; color: var(--ink); }
+  .msg-preview-when { font-family: var(--mono); font-size: 10px; color: var(--ink-4); margin-left: auto; letter-spacing: 0.02em; }
+  .msg-preview-body {
+    font-size: 11.5px;
+    color: var(--ink-2);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--hairline);
+  }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--ink-5);
+    margin-top: 6px;
+    justify-self: center;
+    box-shadow: 0 0 0 2px var(--bg);
+  }
+  .timeline-dot.rust { background: var(--accent); }
+  .timeline-dot.positive { background: var(--positive); }
+  .timeline-when {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .timeline-what {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.45;
+    margin-top: 2px;
+  }
+  .timeline-what strong { font-weight: 550; color: var(--ink); }
+
+  /* Compliance */
+  .safety-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 7px 0;
+    align-items: center;
+    font-size: 11.5px;
+    color: var(--ink-2);
+    border-bottom: 1px dashed var(--hairline);
+  }
+  .safety-row:last-child { border-bottom: none; }
+  .safety-row .check {
+    width: 13px; height: 13px;
+    border-radius: 3px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 8.5px;
+    font-weight: 700;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+  .safety-row .check.ok { background: var(--positive); color: var(--bg); }
+  .safety-row .check.miss { background: var(--surface-3); color: var(--ink-4); border: 1px solid var(--hairline-2); }
+  .safety-row .ref {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .safety-row .ref.pending { color: var(--warning); }
+
+  /* ============ BUTTONS ============ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink-2);
+    border-radius: 4px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: -0.003em;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn .kbd {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    padding: 0 4px;
+    line-height: 14px;
+    border-radius: 2px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+  .btn.primary {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .btn.primary:hover { background: var(--ink-2); }
+  .btn.primary .kbd {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.75);
+  }
+  .btn.sm {
+    padding: 4px 9px;
+    font-size: 11.5px;
+  }
+
+  /* ============ STATUS BAR ============ */
+  .status {
+    grid-area: status;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    background: var(--surface);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .status-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status .kbd {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    padding: 0 4px;
+    line-height: 14px;
+    border-radius: 2px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .status .divider {
+    width: 1px;
+    height: 12px;
+    background: var(--hairline);
+  }
+  .status .sync {
+    margin-left: auto;
+    color: var(--positive);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status .sync::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--positive);
+  }
+  .status .deadline {
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-weight: 550;
+  }
+  .status .return-hint {
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-name">Docket</div>
+    </div>
+
+    <div class="breadcrumbs">
+      <div class="back-chip">
+        <span class="arrow">←</span>
+        <span>Triage</span>
+        <span class="pos">1 / 14</span>
+        <span class="kbd">⌘T</span>
+      </div>
+      <span class="bc-sep">/</span>
+      <div class="bc-current">
+        <div class="avatar xs soft">PS</div>
+        Priya Sharma
+      </div>
+      <span class="bc-sep">/</span>
+      <span class="bc-section">Overview</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="cmdk">
+        <span style="color:var(--ink-4);">⌕</span>
+        <span>Search or ask</span>
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="avatar">AV</div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-section">Queue</div>
+    <a class="nav-item">
+      <span class="left"><span class="icon">▸</span> Triage</span>
+      <span class="count urgent">14</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◷</span> Snoozed</span>
+      <span class="count">3</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">✓</span> Done today</span>
+      <span class="count">6</span>
+    </a>
+
+    <div class="nav-section">Views</div>
+    <a class="nav-item active">
+      <span class="left"><span class="icon">◇</span> Clients</span>
+      <span class="count">23</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">▤</span> Pipeline</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">☷</span> Documents</span>
+      <span class="count">142</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◴</span> Calendar</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◈</span> Ask Docket</span>
+    </a>
+
+    <div class="nav-section">Firm</div>
+    <a class="nav-item">
+      <span class="left"><span class="icon">✦</span> Automations</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">⊛</span> Integrations</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">⎙</span> Compliance</span>
+    </a>
+
+    <div class="nav-footer">
+      <div class="avatar sm">AV</div>
+      <div>
+        <div class="name">Antonio Vazquez</div>
+        <div class="firm">vazantconsulting.com</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Client header -->
+    <div class="client-header">
+      <div class="client-header-top">
+        <div class="avatar lg soft">PS</div>
+        <div>
+          <div class="client-title">Priya Sharma</div>
+          <div class="client-title-meta">
+            <span class="tier">Standard · $350</span>
+            <span class="dot-sep">·</span>
+            2nd year client
+            <span class="dot-sep">·</span>
+            intake Jan 14
+            <span class="dot-sep">·</span>
+            referred Ashley Kim
+          </div>
+        </div>
+        <div class="client-actions">
+          <button class="btn sm">Message <span class="kbd">M</span></button>
+          <button class="btn sm">Call <span class="kbd">C</span></button>
+          <button class="btn sm">Documents</button>
+          <button class="btn sm primary">Open return <span class="kbd">⌘⏎</span></button>
+        </div>
+      </div>
+
+      <div class="client-header-stats">
+        <div class="stat">
+          <div class="lbl">Status</div>
+          <div class="val rust">Needs gap review</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Deadline</div>
+          <div class="val"><span class="mono">Apr 15</span> <span class="sub">· 18 d</span></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Docs</div>
+          <div class="val"><span class="mono">6 of 9</span></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Paid</div>
+          <div class="val positive"><span class="mono">$350</span></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Est. refund</div>
+          <div class="val"><span class="mono">~$1,850</span></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Last contact</div>
+          <div class="val"><span class="mono">12 min ago</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active">Overview</div>
+      <div class="tab">Documents <span class="count">9</span></div>
+      <div class="tab">Messages <span class="count">14</span> <span class="pulse"></span></div>
+      <div class="tab">Return</div>
+      <div class="tab">Billing</div>
+      <div class="tab">Timeline</div>
+      <div class="tab">Compliance</div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="workspace">
+
+      <!-- AI Insight -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-label">Needs attention</div>
+          <div class="section-action">expand reasoning · ⇧R</div>
+        </div>
+
+        <div class="insight">
+          <div class="insight-meta">
+            <div class="insight-tag">Insight</div>
+            <div class="insight-grounding">intake form<span class="sep">·</span>1099-NEC uploaded 12m ago<span class="sep">·</span>prior year Sch C<span class="sep">·</span>Q1 to Q3 estimated payments</div>
+          </div>
+          <div class="insight-body">Priya's TikTok 1099 shows <em>$34,200</em> in NEC income, but her January intake estimated around <em>$20,000</em>. A <em>$14,200</em> gap usually means either a much bigger year than she realized, or a second platform she hasn't mentioned. Her Q1 to Q3 estimated payments were sized to the $20K number, so she's likely short on safe-harbor.</div>
+
+          <div class="insight-data">
+            <div class="insight-datum">
+              <div class="lbl">Stated</div>
+              <div class="val">$20,000</div>
+            </div>
+            <div class="insight-datum">
+              <div class="lbl">Actual</div>
+              <div class="val rust">$34,200</div>
+            </div>
+            <div class="insight-datum">
+              <div class="lbl">Gap</div>
+              <div class="val rust">+$14,200</div>
+            </div>
+            <div class="insight-datum">
+              <div class="lbl">Penalty risk</div>
+              <div class="val">~$420</div>
+            </div>
+          </div>
+
+          <div class="insight-actions">
+            <button class="btn primary">Draft response <span class="kbd">R</span></button>
+            <button class="btn">Schedule call <span class="kbd">C</span></button>
+            <button class="btn">Run safe-harbor calc <span class="kbd">H</span></button>
+            <button class="btn">Dismiss <span class="kbd">X</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress strip -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-label no-dot">Progress</div>
+          <div class="section-action">view full return →</div>
+        </div>
+        <div class="progress-strip">
+          <div class="progress-cell">
+            <div class="lbl">Documents</div>
+            <div class="main-val"><span class="mono">6 of 9</span></div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: 66%;"></div>
+            </div>
+            <div class="sub-val urgent">3 missing · Q4 estimates, mileage, biz statement</div>
+          </div>
+          <div class="progress-cell">
+            <div class="lbl">Return preparation</div>
+            <div class="main-val"><span class="mono">40%</span></div>
+            <div class="progress-track">
+              <div class="progress-fill rust" style="width: 40%;"></div>
+            </div>
+            <div class="sub-val">1040 + Sch C · drafted, gap blocking</div>
+          </div>
+          <div class="progress-cell">
+            <div class="lbl">Client engagement</div>
+            <div class="main-val positive">Active</div>
+            <div class="progress-track">
+              <div class="progress-fill positive" style="width: 85%;"></div>
+            </div>
+            <div class="sub-val">7-day response avg · portal active</div>
+          </div>
+          <div class="progress-cell">
+            <div class="lbl">Billing</div>
+            <div class="main-val positive"><span class="mono">$350</span></div>
+            <div class="progress-track">
+              <div class="progress-fill positive" style="width: 100%;"></div>
+            </div>
+            <div class="sub-val">Paid in full · Mar 14</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next steps -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-label no-dot">Next steps · Docket recommended</div>
+          <div class="section-action">reorder</div>
+        </div>
+        <div class="next-steps">
+          <div class="next-step">
+            <div class="step-num current">1</div>
+            <div class="step-content">
+              <div class="step-title">Resolve the 1099 gap with Priya</div>
+              <div class="step-meta">3 min · reply to SMS + schedule 10 min call</div>
+            </div>
+            <button class="btn primary sm">Draft &amp; send</button>
+          </div>
+          <div class="next-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Collect Q4 estimated payment proof</div>
+              <div class="step-meta">2 min · portal upload request, auto-reminder set</div>
+            </div>
+            <button class="btn sm">Request</button>
+          </div>
+          <div class="next-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Run safe-harbor recalculation with $34,200 income</div>
+              <div class="step-meta">10 sec · auto-computes penalty exposure and Q4 payment</div>
+            </div>
+            <button class="btn sm">Run</button>
+          </div>
+          <div class="next-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Complete 1040 + Sch C preparation</div>
+              <div class="step-meta">25 min · blocked by #1 · OLT Pro ready</div>
+            </div>
+            <button class="btn sm">Open draft</button>
+          </div>
+          <div class="next-step">
+            <div class="step-num done">✓</div>
+            <div class="step-content">
+              <div class="step-title done">Intake collected and reviewed</div>
+              <div class="step-meta">Jan 14 · signed · 7216 consent captured</div>
+            </div>
+          </div>
+          <div class="next-step">
+            <div class="step-num done">✓</div>
+            <div class="step-content">
+              <div class="step-title done">Deposit collected ($350)</div>
+              <div class="step-meta">Mar 14 · paid in full via Square</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent documents -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-label no-dot">Recent documents</div>
+          <div class="section-action">all 9 →</div>
+        </div>
+        <div class="data-rows">
+          <div class="data-row">
+            <div class="type">1099</div>
+            <div>
+              <span class="name">1099-NEC TikTok.pdf</span>
+              <span class="meta-size">89 KB</span>
+            </div>
+            <div class="when">12 min ago</div>
+            <div><span class="status-pill flagged">Flagged · Gap</span></div>
+            <div class="arrow">→</div>
+          </div>
+          <div class="data-row">
+            <div class="type">W-2</div>
+            <div>
+              <span class="name">W-2 Whole Foods 2024.pdf</span>
+              <span class="meta-size">64 KB</span>
+            </div>
+            <div class="when">3 days ago</div>
+            <div><span class="status-pill extracted">Extracted</span></div>
+            <div class="arrow">→</div>
+          </div>
+          <div class="data-row">
+            <div class="type">1099</div>
+            <div>
+              <span class="name">1099-INT Chase Savings.pdf</span>
+              <span class="meta-size">41 KB</span>
+            </div>
+            <div class="when">5 days ago</div>
+            <div><span class="status-pill extracted">Extracted</span></div>
+            <div class="arrow">→</div>
+          </div>
+          <div class="data-row">
+            <div class="type">DEP</div>
+            <div>
+              <span class="name">Q1 – Q3 estimates screenshots.zip</span>
+              <span class="meta-size">1.2 MB</span>
+            </div>
+            <div class="when">Mar 10</div>
+            <div><span class="status-pill extracted">Extracted</span></div>
+            <div class="arrow">→</div>
+          </div>
+          <div class="data-row">
+            <div class="type">MISS</div>
+            <div>
+              <span class="name">Q4 estimated payment proof</span>
+              <span class="meta-size">requested</span>
+            </div>
+            <div class="when">—</div>
+            <div><span class="status-pill pending">Pending</span></div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTEXT PANEL -->
+  <aside class="context">
+
+    <div class="context-section">
+      <div class="context-head">
+        <span class="lbl">Recent messages</span>
+        <span class="more">14 · M</span>
+      </div>
+      <div class="msg-preview unread">
+        <div class="msg-preview-head">
+          <span class="msg-preview-channel">SMS</span>
+          <span class="msg-preview-who">Priya</span>
+          <span class="msg-preview-when">12m</span>
+        </div>
+        <div class="msg-preview-body">Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.</div>
+      </div>
+      <div class="msg-preview">
+        <div class="msg-preview-head">
+          <span class="msg-preview-channel">Portal</span>
+          <span class="msg-preview-who">Antonio</span>
+          <span class="msg-preview-when">Mar 27</span>
+        </div>
+        <div class="msg-preview-body">Thanks Priya — go ahead and upload your TikTok 1099 whenever it arrives.</div>
+      </div>
+      <div class="msg-preview">
+        <div class="msg-preview-head">
+          <span class="msg-preview-channel">Email</span>
+          <span class="msg-preview-who">Priya</span>
+          <span class="msg-preview-when">Mar 24</span>
+        </div>
+        <div class="msg-preview-body">My brand partnership 1099 should arrive this week. Will upload as soon as…</div>
+      </div>
+    </div>
+
+    <div class="context-section">
+      <div class="context-head">
+        <span class="lbl">Activity</span>
+        <span class="more">full →</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot rust"></div>
+        <div>
+          <div class="timeline-when">12 min ago</div>
+          <div class="timeline-what"><strong>Docket flagged</strong> 1099 gap of $14,200 vs intake</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">12 min ago</div>
+          <div class="timeline-what">Priya uploaded <strong>1099-NEC TikTok.pdf</strong></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">3 days ago</div>
+          <div class="timeline-what">Priya uploaded <strong>W-2 Whole Foods</strong></div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">Mar 27</div>
+          <div class="timeline-what">Antonio sent portal message re: 1099</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot positive"></div>
+        <div>
+          <div class="timeline-when">Mar 14</div>
+          <div class="timeline-what"><strong>$350 deposit</strong> collected via Square</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot positive"></div>
+        <div>
+          <div class="timeline-when">Jan 14</div>
+          <div class="timeline-what">Intake completed · 7216 consent captured</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="context-section">
+      <div class="context-head">
+        <span class="lbl">Compliance</span>
+        <span class="more">audit →</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check ok">✓</span>7216 disclosure consent</span>
+        <span class="ref">Jan 14</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check ok">✓</span>KBA identity verified</span>
+        <span class="ref">Jan 14</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check ok">✓</span>Engagement letter signed</span>
+        <span class="ref">Jan 14</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check ok">✓</span>Circular 230 disclosure</span>
+        <span class="ref">Jan 14</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check miss">—</span>8867 due diligence (EIC)</span>
+        <span class="ref">n/a</span>
+      </div>
+      <div class="safety-row">
+        <span><span class="check miss">—</span>ERO signature</span>
+        <span class="ref pending">pending</span>
+      </div>
+    </div>
+
+    <div class="context-section">
+      <div class="context-head">
+        <span class="lbl">Similar in your book</span>
+        <span class="more">3</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">Your book · 2023</div>
+          <div class="timeline-what"><strong>Ashley R.</strong> — 1099 gap $8K, safe-harbor adjustment Q4</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">Your book · 2022</div>
+          <div class="timeline-what"><strong>Marcus C.</strong> — creator income undercount, no penalty</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <div class="timeline-when">Your book · 2022</div>
+          <div class="timeline-what"><strong>Jen L.</strong> — OnlyFans 1099 vs intake gap, Sch C adj</div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- STATUS BAR -->
+  <div class="status">
+    <div class="status-group"><span class="return-hint"><span class="kbd">⌘T</span> back to triage (13 remaining)</span></div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">⌘K</span> search</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">M</span> message</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">C</span> call</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">R</span> respond to insight</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">Tab</span> switch tab</div>
+    <div class="divider"></div>
+    <div class="status-group" style="text-transform:none; letter-spacing:0.02em;">April 17 · <span class="deadline">18 days to deadline</span></div>
+    <span class="sync">Synced 2 min ago</span>
+  </div>
+
+</div>
+
+</body>
+</html>

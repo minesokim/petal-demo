@@ -1,0 +1,1468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Docket — Triage</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #F5F2EA;
+    --surface: #FBFAF5;
+    --surface-2: #F0EBDD;
+    --surface-3: #EAE3D0;
+    --ink: #1A1612;
+    --ink-2: #3F382E;
+    --ink-3: #6F6655;
+    --ink-4: #9C9380;
+    --ink-5: #B8AE99;
+    --hairline: #E3DCC9;
+    --hairline-2: #D4CBB4;
+    --accent: #B8532C;
+    --accent-2: #9A4323;
+    --accent-soft: #F5E2D2;
+    --accent-bg: #FBF2EC;
+    --positive: #3F6B40;
+    --positive-bg: #EDF2EC;
+    --warning: #B87A2F;
+    --warning-bg: #F7EDD9;
+    --error: #A73B2B;
+    --error-bg: #F5E0DC;
+
+    --serif: 'Fraunces', 'Times New Roman', serif;
+    --sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100vh; overflow: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .serif { font-family: var(--serif); font-variation-settings: "opsz" 144, "SOFT" 30; }
+
+  .app {
+    display: grid;
+    grid-template-rows: 48px 1fr 28px;
+    grid-template-columns: 200px 440px 1fr;
+    grid-template-areas:
+      "header header header"
+      "nav list detail"
+      "status status status";
+    height: 100vh;
+  }
+
+  /* ============ HEADER ============ */
+  .header {
+    grid-area: header;
+    border-bottom: 1px solid var(--hairline);
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    align-items: center;
+    background: var(--bg);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 16px;
+    border-right: 1px solid var(--hairline);
+    height: 100%;
+  }
+  .brand-mark {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: var(--ink);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    font-family: var(--serif);
+    font-size: 14px;
+    font-weight: 600;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    letter-spacing: -0.02em;
+  }
+  .brand-name {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 17px;
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+  }
+
+  .progress-strip {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 20px;
+    height: 100%;
+    border-right: 1px solid var(--hairline);
+  }
+  .progress-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .progress-bar {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  .seg {
+    width: 16px; height: 4px;
+    border-radius: 1px;
+    background: var(--hairline-2);
+  }
+  .seg.done { background: var(--positive); }
+  .seg.active {
+    background: var(--accent);
+    height: 6px;
+    box-shadow: 0 0 0 2px var(--accent-bg);
+  }
+  .progress-stats {
+    font-size: 12px;
+    color: var(--ink-3);
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+  .progress-stats .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .progress-stats .remaining {
+    color: var(--accent);
+  }
+  .time-goal {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .time-goal .italic {
+    font-family: var(--serif);
+    font-style: italic;
+    font-variation-settings: "opsz" 14, "SOFT" 60;
+    color: var(--accent);
+    font-size: 13px;
+  }
+  .time-goal .est {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 100%;
+  }
+  .cmdk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--ink-4);
+    background: var(--surface);
+    width: 260px;
+  }
+  .cmdk-icon { font-size: 12px; color: var(--ink-4); }
+  .cmdk .kbd {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    background: var(--bg);
+  }
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--ink-2);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .avatar.soft { background: var(--surface-2); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--hairline-2); }
+  .avatar.sm { width: 20px; height: 20px; font-size: 9px; }
+  .avatar.xs { width: 16px; height: 16px; font-size: 8px; }
+
+  /* ============ LEFT NAV ============ */
+  .nav {
+    grid-area: nav;
+    border-right: 1px solid var(--hairline);
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .nav-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--ink-4);
+    padding: 14px 10px 6px;
+    font-weight: 500;
+  }
+  .nav-section:first-child { padding-top: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 450;
+    cursor: pointer;
+    text-decoration: none;
+    gap: 8px;
+  }
+  .nav-item:hover { background: var(--surface-2); }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .nav-item .left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .nav-item .icon {
+    color: var(--ink-4);
+    width: 13px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .nav-item.active .icon { color: var(--ink-2); }
+  .nav-item .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+  .nav-item.active .count { color: var(--accent); font-weight: 500; }
+
+  .nav-footer {
+    margin-top: auto;
+    padding: 10px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-footer .name {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .nav-footer .firm {
+    font-size: 10.5px;
+    color: var(--ink-4);
+    font-family: var(--mono);
+  }
+
+  /* ============ QUEUE LIST ============ */
+  .list {
+    grid-area: list;
+    border-right: 1px solid var(--hairline);
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .list-header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--hairline);
+    padding: 10px 16px 9px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 3;
+  }
+  .list-title {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .list-title .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+    font-weight: 400;
+  }
+  .list-controls {
+    display: flex;
+    gap: 4px;
+  }
+  .list-btn {
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink-3);
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .list-btn:hover { background: var(--surface-2); }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 16px 7px;
+    background: var(--bg);
+  }
+  .group-header:first-of-type { padding-top: 12px; }
+  .group-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .group-title.urgent { color: var(--accent); }
+  .group-line {
+    flex: 1;
+    height: 1px;
+    background: var(--hairline);
+  }
+  .group-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--hairline);
+    cursor: pointer;
+    transition: background 0.08s ease;
+    position: relative;
+  }
+  .item:hover { background: var(--surface); }
+  .item.selected {
+    background: var(--surface);
+  }
+  .item.selected::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+  }
+
+  .item-glyph {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    background: var(--surface-2);
+    color: var(--ink-3);
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    margin-top: 1px;
+  }
+  .item-glyph.return { background: var(--accent-bg); color: var(--accent); }
+  .item-glyph.message { background: var(--warning-bg); color: var(--warning); }
+  .item-glyph.flag { background: var(--error-bg); color: var(--error); }
+  .item-glyph.doc { background: var(--positive-bg); color: var(--positive); }
+  .item-glyph.call { background: var(--surface-3); color: var(--ink-2); }
+  .item-glyph.intake { background: var(--surface-2); color: var(--ink-3); }
+  .item-glyph.prep { background: var(--accent-bg); color: var(--accent); }
+
+  .item-body { min-width: 0; }
+  .item-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+  .item-client {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+  }
+  .item-service {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+  }
+  .item-action {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-action .emph {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .item-action .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+  .item-cost {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    letter-spacing: 0.01em;
+  }
+  .item-cost.call { color: var(--warning); }
+  .item-age {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+  }
+  .item-age.overdue { color: var(--error); }
+
+  /* ============ DETAIL ============ */
+  .detail {
+    grid-area: detail;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    position: relative;
+  }
+
+  .detail-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .bc-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .bc-btn {
+    width: 22px; height: 22px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    border-radius: 3px;
+    display: grid;
+    place-items: center;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .bc-btn:hover { background: var(--surface-2); color: var(--ink); }
+  .bc-pos {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+  .bc-pos .current { color: var(--ink); font-weight: 500; }
+  .bc-divider { color: var(--ink-5); }
+  .bc-client {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px 3px 5px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .bc-client:hover { background: var(--surface-2); }
+  .bc-service {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+  .bc-spacer { flex: 1; }
+  .bc-est {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bc-est::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--warning);
+  }
+
+  .detail-header {
+    padding: 24px 32px 18px;
+  }
+  .detail-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--error);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .detail-tag::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--error);
+  }
+  .detail-title {
+    font-family: var(--serif);
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.018em;
+    line-height: 1.18;
+    color: var(--ink);
+    margin-bottom: 7px;
+    max-width: 680px;
+  }
+  .detail-sub {
+    font-size: 13.5px;
+    color: var(--ink-3);
+    max-width: 640px;
+    line-height: 1.5;
+  }
+  .detail-sub .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .detail-section {
+    padding: 0 32px 20px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .section-num {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline-2);
+    color: var(--ink-3);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--hairline);
+  }
+  .section-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+  }
+
+  /* Message */
+  .msg {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .msg-content {
+    flex: 1;
+    max-width: 560px;
+  }
+  .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px 10px 10px 2px;
+    padding: 11px 13px;
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .msg-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    margin-top: 5px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .msg-channel {
+    padding: 0 5px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+
+  /* AI Insight */
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-left: 2px solid var(--accent);
+    border-radius: 3px;
+    padding: 16px 18px;
+  }
+  .insight-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .insight-tag {
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .insight-tag::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .insight-reasoning {
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .insight-reasoning .sep { margin: 0 4px; color: var(--ink-5); }
+  .insight-body {
+    font-family: var(--serif);
+    font-size: 15.5px;
+    line-height: 1.55;
+    font-variation-settings: "opsz" 14, "SOFT" 50;
+    color: var(--ink);
+    letter-spacing: -0.003em;
+    margin-bottom: 14px;
+  }
+  .insight-body em {
+    color: var(--accent);
+    font-style: italic;
+    font-variation-settings: "opsz" 14, "SOFT" 80;
+  }
+
+  .insight-data {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+  }
+  .insight-datum {
+    padding-right: 16px;
+    border-right: 1px solid var(--hairline);
+  }
+  .insight-datum:last-child { border-right: none; }
+  .insight-datum .lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 3px;
+  }
+  .insight-datum .val {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .insight-datum .val.accent { color: var(--accent); }
+
+  /* Draft */
+  .draft {
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .draft-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg);
+  }
+  .draft-head-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .draft-badge {
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .draft-badge::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .draft-rationale {
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .draft-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+  }
+  .draft-body {
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.58;
+    color: var(--ink);
+  }
+  .draft-body p { margin-bottom: 10px; }
+  .draft-body p:last-child { margin-bottom: 0; }
+
+  /* up next preview */
+  .up-next {
+    margin-top: 4px;
+    padding: 10px 32px 16px;
+    border-top: 1px dashed var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .up-next .lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .up-next .item-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 4px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    border-radius: 14px;
+  }
+  .up-next .item-preview .avatar { width: 18px; height: 18px; font-size: 8.5px; }
+  .up-next .item-preview .who {
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .up-next .item-preview .what {
+    color: var(--ink-4);
+    font-size: 11.5px;
+  }
+  .up-next .kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+  }
+
+  /* ============ ACTION BAR ============ */
+  .actions {
+    display: flex;
+    gap: 8px;
+    padding: 14px 32px;
+    border-top: 1px solid var(--hairline);
+    background: var(--bg);
+    position: sticky;
+    bottom: 0;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink-2);
+    border-radius: 5px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn .kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+  .btn.primary {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    padding: 7px 15px;
+  }
+  .btn.primary:hover { background: var(--ink-2); }
+  .btn.primary .kbd {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.75);
+  }
+  .btn.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink-3);
+  }
+  .btn.ghost:hover { background: var(--surface-2); color: var(--ink-2); }
+  .btn.ghost .kbd {
+    background: transparent;
+    border-color: var(--hairline);
+  }
+
+  /* ============ STATUS BAR ============ */
+  .status {
+    grid-area: status;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    background: var(--surface);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .status-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status .kbd {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    padding: 0 4px;
+    line-height: 15px;
+    border-radius: 2px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+    color: var(--ink-3);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .status .divider {
+    width: 1px;
+    height: 12px;
+    background: var(--hairline);
+  }
+  .status .sync {
+    margin-left: auto;
+    color: var(--positive);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status .sync::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--positive);
+  }
+  .status .deadline { color: var(--accent); font-weight: 500; text-transform: none; letter-spacing: 0.02em; }
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-name">Docket</div>
+    </div>
+
+    <div class="progress-strip">
+      <div class="progress-main">
+        <div class="progress-bar">
+          <div class="seg done"></div>
+          <div class="seg done"></div>
+          <div class="seg done"></div>
+          <div class="seg done"></div>
+          <div class="seg done"></div>
+          <div class="seg done"></div>
+          <div class="seg active"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+          <div class="seg"></div>
+        </div>
+        <div class="progress-stats">
+          <span class="num">6</span><span>done</span>
+          <span style="color:var(--ink-5); margin: 0 2px;">·</span>
+          <span class="num remaining">14</span><span>remaining</span>
+        </div>
+      </div>
+      <div class="time-goal">
+        <span class="italic">inbox zero by 4 pm</span>
+        <span class="est">· est 2h 20m at current pace</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="cmdk">
+        <span class="cmdk-icon">⌕</span>
+        <span>Search clients, docs, commands</span>
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="avatar">AV</div>
+    </div>
+  </div>
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+    <div class="nav-section">Queue</div>
+    <a class="nav-item active">
+      <span class="left"><span class="icon">▸</span> Triage</span>
+      <span class="count">14</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◷</span> Snoozed</span>
+      <span class="count">3</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">✓</span> Done today</span>
+      <span class="count">6</span>
+    </a>
+
+    <div class="nav-section">Views</div>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◇</span> Clients</span>
+      <span class="count">23</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">▤</span> Pipeline</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">☷</span> Documents</span>
+      <span class="count">142</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◴</span> Calendar</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">◈</span> Ask Docket</span>
+    </a>
+
+    <div class="nav-section">Firm</div>
+    <a class="nav-item">
+      <span class="left"><span class="icon">✦</span> Automations</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">⊛</span> Integrations</span>
+    </a>
+    <a class="nav-item">
+      <span class="left"><span class="icon">⎙</span> Compliance</span>
+    </a>
+
+    <div class="nav-footer">
+      <div class="avatar sm">AV</div>
+      <div>
+        <div class="name">Antonio Vazquez</div>
+        <div class="firm">vazantconsulting.com</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- QUEUE LIST -->
+  <div class="list">
+    <div class="list-header">
+      <div class="list-title">Triage <span class="count">14 items</span></div>
+      <div class="list-controls">
+        <button class="list-btn" title="Filter">≡</button>
+        <button class="list-btn" title="Sort">↕</button>
+      </div>
+    </div>
+
+    <!-- RIGHT NOW -->
+    <div class="group-header">
+      <span class="group-title urgent">Right now</span>
+      <span class="group-line"></span>
+      <span class="group-count">2</span>
+    </div>
+
+    <div class="item selected">
+      <div class="item-glyph message">MSG</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Priya Sharma</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">TikTok 1099 needs <span class="emph">gap review</span> before upload</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">3m</span>
+        <span class="item-age">12m ago</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph flag">FLAG</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Tyrone Mitchell</span>
+          <span class="item-service">· Basic · $150</span>
+        </div>
+        <div class="item-action">Mileage log <span class="emph">still missing</span>, extended last year</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost call">call</span>
+        <span class="item-age overdue">9d</span>
+      </div>
+    </div>
+
+    <!-- TODAY -->
+    <div class="group-header">
+      <span class="group-title">Today</span>
+      <span class="group-line"></span>
+      <span class="group-count">8</span>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph return">FILE</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">James &amp; Sofia Rodriguez</span>
+          <span class="item-service">· Premium · $500</span>
+        </div>
+        <div class="item-action">Paid, signed, awaiting ERO countersignature</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">2m</span>
+        <span class="item-age">2h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph return">FILE</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Aisha Johnson</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">Paid, signed, awaiting ERO countersignature</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">2m</span>
+        <span class="item-age">3h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph flag">FLAG</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Carlos &amp; Elena Mendez</span>
+          <span class="item-service">· Premium · $500</span>
+        </div>
+        <div class="item-action">Paint booth depreciation question pending</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">10m</span>
+        <span class="item-age">3d</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph doc">DOC</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Mei-Lin Wu</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">New Schedule C uploaded, extracted, needs review</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">5m</span>
+        <span class="item-age">1h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph call">CALL</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">David Park</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">3:00 PM today, prep brief auto-generated</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">30m</span>
+        <span class="item-age">in 9h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph flag">FLAG</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">James &amp; Sofia Rodriguez</span>
+          <span class="item-service">· Premium · $500</span>
+        </div>
+        <div class="item-action">Refund will land <span class="emph"><span class="num">$1,750</span> lower</span> than expected</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">5m</span>
+        <span class="item-age">4h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph intake">INTAKE</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Vladimir Petrov</span>
+          <span class="item-service">· Premium · $500</span>
+        </div>
+        <div class="item-action">Never logged in, extension conversation needed</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost call">call</span>
+        <span class="item-age overdue">5d</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph message">MSG</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">DeShawn Williams</span>
+          <span class="item-service">· Basic · $150</span>
+        </div>
+        <div class="item-action">W-2 uploaded, auto-matched to prior year employer</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">2m</span>
+        <span class="item-age">1h</span>
+      </div>
+    </div>
+
+    <!-- LATER THIS WEEK -->
+    <div class="group-header">
+      <span class="group-title">Later this week</span>
+      <span class="group-line"></span>
+      <span class="group-count">4</span>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph intake">INTAKE</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Ashley Kim</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">Nudge overdue, deposit pending since Wednesday</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">2m</span>
+        <span class="item-age">2d</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph doc">DOC</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Thomas DuBois</span>
+          <span class="item-service">· Premium · $500</span>
+        </div>
+        <div class="item-action">Crypto records still outstanding (<span class="num">11 of 14</span>)</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">5m</span>
+        <span class="item-age">2d</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph prep">PREP</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Miguel Sandoval</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">All 9 docs received, ready for prep</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">45m</span>
+        <span class="item-age">4h</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-glyph prep">PREP</div>
+      <div class="item-body">
+        <div class="item-head">
+          <span class="item-client">Anthony Russo</span>
+          <span class="item-service">· Standard · $350</span>
+        </div>
+        <div class="item-action">Ready for prep, cap gains calc needed</div>
+      </div>
+      <div class="item-meta">
+        <span class="item-cost">60m</span>
+        <span class="item-age">6h</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DETAIL -->
+  <div class="detail">
+    <div class="detail-breadcrumb">
+      <div class="bc-nav">
+        <button class="bc-btn" title="Previous (K)">↑</button>
+        <button class="bc-btn" title="Next (J)">↓</button>
+      </div>
+      <span class="bc-pos"><span class="current">1</span> / 14</span>
+      <span class="bc-divider">·</span>
+      <div class="bc-client">
+        <div class="avatar xs">PS</div>
+        Priya Sharma
+        <span class="bc-service">· Standard</span>
+      </div>
+      <span class="bc-divider">·</span>
+      <span class="bc-pos">intake Jan 14 · 2nd year client</span>
+      <span class="bc-spacer"></span>
+      <span class="bc-est">3 min to resolve</span>
+    </div>
+
+    <div class="detail-header">
+      <div class="detail-tag">Message · Critical · needs gap review</div>
+      <h1 class="detail-title">Priya's TikTok 1099 doesn't match her intake.</h1>
+      <div class="detail-sub">She's trying to upload it. Before you reply, there's a <span class="num">$14,200</span> discrepancy between the 1099 and her January intake that's worth asking about.</div>
+    </div>
+
+    <!-- CONTEXT -->
+    <div class="detail-section">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <span class="section-label">Context · her message</span>
+        <span class="section-line"></span>
+      </div>
+
+      <div class="msg">
+        <div class="avatar soft">PS</div>
+        <div class="msg-content">
+          <div class="msg-bubble">Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.</div>
+          <div class="msg-meta"><span class="msg-channel">SMS</span> Mar 29, 2:30 PM · Priya Sharma · arrived 12 min ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSIGHT -->
+    <div class="detail-section">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <span class="section-label">Docket noticed</span>
+        <span class="section-line"></span>
+        <span class="section-hint">expand reasoning ⇧R</span>
+      </div>
+
+      <div class="insight">
+        <div class="insight-meta">
+          <span class="insight-tag">Insight</span>
+          <span class="insight-reasoning">intake form<span class="sep">·</span>1099-NEC attached<span class="sep">·</span>prior year Sch C<span class="sep">·</span>Q3 estimated payments ledger</span>
+        </div>
+        <div class="insight-body">Her TikTok 1099 shows <em>$34,200</em> in NEC income. Her January intake estimated around <em>$20,000</em>. A <em>$14,200</em> gap this size usually means either a much bigger year than she realized, or a second platform she hasn't mentioned. Her Q1 to Q3 estimated payments were sized to the $20K number, so she's likely short.</div>
+
+        <div class="insight-data">
+          <div class="insight-datum">
+            <div class="lbl">Stated</div>
+            <div class="val">$20,000</div>
+          </div>
+          <div class="insight-datum">
+            <div class="lbl">Actual</div>
+            <div class="val accent">$34,200</div>
+          </div>
+          <div class="insight-datum">
+            <div class="lbl">Gap</div>
+            <div class="val accent">+$14,200</div>
+          </div>
+          <div class="insight-datum">
+            <div class="lbl">Penalty risk</div>
+            <div class="val">~$420</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAFT -->
+    <div class="detail-section">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <span class="section-label">Draft · ready to send</span>
+        <span class="section-line"></span>
+        <span class="section-hint">edit inline · E</span>
+      </div>
+
+      <div class="draft">
+        <div class="draft-head">
+          <div class="draft-head-left">
+            <span class="draft-badge">Docket drafted</span>
+            <span class="draft-rationale">answers her question · surfaces the gap · offers a call</span>
+          </div>
+          <span class="draft-meta">SMS · 340 / 480 chars</span>
+        </div>
+        <div class="draft-body">
+          <p>Hi Priya! Easy, drag the 1099 into the Documents section of your portal and I'll see it immediately.</p>
+          <p>Quick flag while I have you: the TikTok 1099 shows $34,200, but your January intake had you closer to $20K. That's a meaningful gap. Did you earn from another platform this year, or did TikTok have a bigger year than expected? Worth a 10-minute call, it affects your estimated payments too.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- UP NEXT preview -->
+    <div class="up-next">
+      <span class="lbl">Up next</span>
+      <div class="item-preview">
+        <div class="avatar soft">TM</div>
+        <span class="who">Tyrone Mitchell</span>
+        <span class="what">· mileage log missing, 9 days overdue</span>
+      </div>
+      <span class="kbd">J</span>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn primary">Send as Antonio <span class="kbd">R</span></button>
+      <button class="btn">Edit draft <span class="kbd">E</span></button>
+      <button class="btn">Call Priya <span class="kbd">C</span></button>
+      <button class="btn">Open client file <span class="kbd">⌘⏎</span></button>
+      <div style="flex:1"></div>
+      <button class="btn ghost">Snooze <span class="kbd">S</span></button>
+      <button class="btn ghost">Archive <span class="kbd">⌫</span></button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status">
+    <div class="status-group"><span class="kbd">J K</span> navigate</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">⏎</span> open</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">R</span> respond</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">S</span> snooze</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">⌫</span> archive</div>
+    <div class="divider"></div>
+    <div class="status-group"><span class="kbd">⌘K</span> command</div>
+    <div class="divider"></div>
+    <div class="status-group" style="text-transform:none; letter-spacing:0.02em;">April 17 · <span class="deadline">18 days to deadline</span></div>
+    <span class="sync">SYNCED 2 MIN AGO</span>
+  </div>
+
+</div>
+
+</body>
+</html>
