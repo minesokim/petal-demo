@@ -17,9 +17,12 @@ export interface QueueListProps {
   items: TriageItem[];
   selectedId: string;
   onSelect: (id: string) => void;
+  /** Editorial tagline shown below the title, italic rust serif.
+   *  e.g. "inbox zero by 4 pm · est 2h 20m at pace". */
+  tagline?: string;
 }
 
-export function QueueList({ items, selectedId, onSelect }: QueueListProps) {
+export function QueueList({ items, selectedId, onSelect, tagline }: QueueListProps) {
   const grouped = React.useMemo(() => {
     const map = new Map<string, TriageItem[]>();
     for (const i of items) {
@@ -32,14 +35,36 @@ export function QueueList({ items, selectedId, onSelect }: QueueListProps) {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto border-r border-hairline bg-bg">
-      <div className="sticky top-0 z-[3] flex items-center justify-between border-b border-hairline bg-bg px-4 pt-2.5 pb-2.5">
-        <div className="flex items-baseline gap-2 font-serif text-[16px] font-medium tracking-[-0.015em] text-ink">
-          Triage <span className="font-mono text-[11px] font-normal text-ink-4">{items.length} items</span>
+      <div className="sticky top-0 z-[3] border-b border-hairline bg-bg px-4 pt-2.5 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-baseline gap-2 font-serif text-[16px] font-medium tracking-[-0.015em] text-ink">
+            Triage{" "}
+            <span className="font-mono text-[11px] font-normal text-ink-4">
+              {items.length} items
+            </span>
+          </div>
+          <div className="flex gap-1">
+            <ListBtn title="Filter" Icon={ListFilter} />
+            <ListBtn title="Sort" Icon={ArrowDownUp} />
+          </div>
         </div>
-        <div className="flex gap-1">
-          <ListBtn title="Filter" Icon={ListFilter} />
-          <ListBtn title="Sort" Icon={ArrowDownUp} />
-        </div>
+        {tagline ? (
+          <p
+            className="mt-1 text-[13px] leading-snug tracking-[-0.003em] text-rust italic"
+            style={{
+              // Pull Fraunces italic directly (bypass the P22-first serif stack):
+              // the self-hosted P22 Mackinac build ships roman-only AND includes
+              // DEMO watermarks on certain glyphs (notably digits), so routing
+              // through P22 for italic body text produces visible artifacts like
+              // "inbox zero by [DEMO]pm". Fraunces has a real italic face loaded
+              // via next/font/google — use it unconditionally for this moment.
+              fontFamily: 'var(--font-fraunces), Georgia, serif',
+              fontVariationSettings: '"opsz" 14',
+              fontSynthesis: "none"
+            }}>
+            {tagline}
+          </p>
+        ) : null}
       </div>
 
       {HORIZONS.map((h) => {

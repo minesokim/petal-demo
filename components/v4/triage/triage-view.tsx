@@ -118,15 +118,19 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
         <ProgressStrip
           done={TRIAGE_PROGRESS.done}
           total={TRIAGE_PROGRESS.total}
-          goalCopy={TRIAGE_PROGRESS.goalCopy}
-          paceEstimate={TRIAGE_PROGRESS.paceEstimate}
+          goalTime={TRIAGE_PROGRESS.goalTime}
         />
       </HeaderSlot>
 
       <div
         className="grid h-full min-h-0"
         style={{ gridTemplateColumns: "440px minmax(0, 1fr)" }}>
-        <QueueList items={items} selectedId={selected.id} onSelect={setSelectedId} />
+        <QueueList
+          items={items}
+          selectedId={selected.id}
+          onSelect={setSelectedId}
+          tagline={`${TRIAGE_PROGRESS.goalCopy} · ${TRIAGE_PROGRESS.paceEstimate}`}
+        />
         <DetailPane
           item={selected}
           position={selectedIndex + 1}
