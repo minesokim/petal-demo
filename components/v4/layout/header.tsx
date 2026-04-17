@@ -1,19 +1,20 @@
 import * as React from "react";
 import { Search, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HEADER_SLOT_ATTR } from "./shell-context";
 
 /**
  * Header — 48px top bar, persistent across triage and client workspace.
  *
  * Layout per DOCKET-V4-PRD.md §3.4 and design-references/docket-direction-b-v2.html:
- *   [ 200px brand ] [ flex: breadcrumb / progress-strip slot ] [ ⌘K  🔔  avatar ]
+ *   [ 200px brand ] [ flex: header-middle portal target ] [ ⌘K  🔔  avatar ]
  *
- * The middle region is a slot (`children`) so triage can mount its progress
- * strip and client workspace can mount its ← Triage 1/14 ⌘T breadcrumb.
+ * The middle region is a DOM node marked with `data-header-slot` so
+ * pages can portal content into it (triage: progress strip; workspace:
+ * breadcrumb). Using a portal instead of context state avoids the
+ * infinite-loop hazard of storing JSX in useState.
  */
 export interface HeaderProps {
-  /** Breadcrumb / context region. Triage: progress strip. Workspace: return chip. */
-  children?: React.ReactNode;
   user?: {
     initials: string;
   };
@@ -25,7 +26,6 @@ export interface HeaderProps {
 }
 
 export function Header({
-  children,
   user = { initials: "AV" },
   unreadCount = 0,
   searchPlaceholder = "Search clients, docs, commands",
@@ -40,9 +40,10 @@ export function Header({
         className
       )}>
       <Brand />
-      <div className="flex h-full min-w-0 items-center border-r border-hairline">
-        {children}
-      </div>
+      <div
+        {...{ [HEADER_SLOT_ATTR]: "" }}
+        className="flex h-full min-w-0 items-center border-r border-hairline"
+      />
       <div className="flex h-full items-center gap-3 px-4">
         <CommandKInput placeholder={searchPlaceholder} />
         <NotificationBell unreadCount={unreadCount} />

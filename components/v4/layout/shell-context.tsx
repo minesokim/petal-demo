@@ -1,23 +1,26 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import type { Shortcut } from "./status-bar";
 
 /**
- * ShellContext — lets pages inject content into the layout's Header
- * middle slot and customize the StatusBar (return hint + shortcut row)
- * without having to re-render the whole shell themselves.
+ * ShellContext — lets pages customize the StatusBar (return hint +
+ * shortcut row) without re-rendering the whole shell themselves.
+ *
+ * Header middle-slot content flows through a DOM portal (see
+ * <HeaderSlot>), NOT through context state — passing JSX through
+ * useState triggers infinite loops because children is a fresh
+ * element reference on every render.
  *
  * Triage:            HeaderSlot = <ProgressStrip />, shortcuts = J/K/⏎/R/S/⌫
  * Client workspace:  HeaderSlot = <WorkspaceBreadcrumb />,
- *                    returnHint = { remaining: N }, shortcuts = M/C/R/Tab
+ *                    returnHint = N remaining, shortcuts = M/C/R/Tab
  */
 
 type ReturnHint = { remaining: number } | null;
 
 type ShellState = {
-  headerContent: React.ReactNode;
-  setHeaderContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
   returnHint: ReturnHint;
   setReturnHint: React.Dispatch<React.SetStateAction<ReturnHint>>;
   shortcuts: Shortcut[] | null;
@@ -26,21 +29,16 @@ type ShellState = {
 
 const ShellCtx = React.createContext<ShellState | null>(null);
 
+/** DOM attribute identifying the header middle-slot portal target. */
+export const HEADER_SLOT_ATTR = "data-header-slot";
+
 export function ShellProvider({ children }: { children: React.ReactNode }) {
-  const [headerContent, setHeaderContent] = React.useState<React.ReactNode>(null);
   const [returnHint, setReturnHint] = React.useState<ReturnHint>(null);
   const [shortcuts, setShortcuts] = React.useState<Shortcut[] | null>(null);
 
   const value = React.useMemo(
-    () => ({
-      headerContent,
-      setHeaderContent,
-      returnHint,
-      setReturnHint,
-      shortcuts,
-      setShortcuts
-    }),
-    [headerContent, returnHint, shortcuts]
+    () => ({ returnHint, setReturnHint, shortcuts, setShortcuts }),
+    [returnHint, shortcuts]
   );
 
   return <ShellCtx.Provider value={value}>{children}</ShellCtx.Provider>;
@@ -54,25 +52,31 @@ export function useShell() {
   return ctx;
 }
 
-/** Mount React children into the Header's middle slot for the lifetime of this component. */
+/**
+ * Portal React children into the Header's middle slot (the element
+ * with data-header-slot="" in the AppShell header). Portal means we
+ * don't store JSX in state, which avoids the "children is a fresh
+ * reference every render" infinite loop.
+ */
 export function HeaderSlot({ children }: { children: React.ReactNode }) {
-  const { setHeaderContent } = useShell();
-
+  const [target, setTarget] = React.useState<HTMLElement | null>(null);
   React.useEffect(() => {
-    setHeaderContent(children);
-    return () => setHeaderContent(null);
-  }, [children, setHeaderContent]);
-
-  return null;
+    const el = document.querySelector(`[${HEADER_SLOT_ATTR}]`) as HTMLElement | null;
+    setTarget(el);
+  }, []);
+  return target ? createPortal(children, target) : null;
 }
 
-/** Set the StatusBar return hint (⌘T back to triage · N remaining) while mounted. */
-export function useReturnHint(hint: ReturnHint) {
+/** Set the StatusBar return hint (⌘T back to triage · N remaining) while mounted.
+ *  Pass a primitive number (or null to clear) to avoid creating a fresh object
+ *  reference on every render — the hook re-fires only when the remaining count
+ *  actually changes. */
+export function useReturnHint(remaining: number | null) {
   const { setReturnHint } = useShell();
   React.useEffect(() => {
-    setReturnHint(hint);
+    setReturnHint(remaining == null ? null : { remaining });
     return () => setReturnHint(null);
-  }, [hint, setReturnHint]);
+  }, [remaining, setReturnHint]);
 }
 
 /** Override the StatusBar shortcut row for the lifetime of the calling component. */

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
 import { HeaderSlot } from "@/components/v4/layout/shell-context";
 import { QueueList } from "./queue-list";
@@ -30,6 +31,7 @@ const KEY_ACTIONS = {
 } as const;
 
 export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = React.useState<string>(items[0]?.id ?? "");
 
   const selectedIndex = React.useMemo(
@@ -47,6 +49,12 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
     [items, selectedIndex]
   );
 
+  const openWorkspace = React.useCallback(() => {
+    if (selected?.clientId) {
+      router.push(`/dashboard/client/${selected.clientId}`);
+    }
+  }, [router, selected]);
+
   // Global keyboard handler — ignore when user is typing in a text input.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,8 +71,8 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
         e.preventDefault();
         advance(-1);
       } else if (KEY_ACTIONS.open.includes(k as (typeof KEY_ACTIONS.open)[number])) {
-        // Phase 3: navigate into client workspace. Stub for now.
-        console.log("[triage] open client workspace for", selected?.clientName);
+        e.preventDefault();
+        openWorkspace();
       } else if (KEY_ACTIONS.respond.includes(k as (typeof KEY_ACTIONS.respond)[number])) {
         console.log("[triage] R: resolve/respond", selected?.id);
       } else if (KEY_ACTIONS.edit.includes(k as (typeof KEY_ACTIONS.edit)[number])) {
@@ -78,7 +86,7 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [advance, selected]);
+  }, [advance, openWorkspace, selected]);
 
   if (!selected) {
     return (

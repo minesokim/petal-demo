@@ -26,11 +26,11 @@ export default function AuthV4Layout({ children }: { children: React.ReactNode }
 }
 
 function ShellInner({ children }: { children: React.ReactNode }) {
-  const { headerContent, returnHint, shortcuts } = useShell();
+  const { returnHint, shortcuts } = useShell();
 
   return (
     <AppShell
-      header={<Header>{headerContent}</Header>}
+      header={<Header />}
       nav={<Nav basePath="/dashboard" />}
       status={
         <StatusBar
