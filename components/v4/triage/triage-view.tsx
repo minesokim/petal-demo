@@ -8,6 +8,7 @@ import { QueueList } from "./queue-list";
 import { DetailPane } from "./detail-pane";
 import { ProgressStrip } from "./progress-strip";
 import { TRIAGE_ITEMS, TRIAGE_PROGRESS, type TriageItem } from "@/lib/v4/triage-items";
+import { readTriageSession, recordOpen } from "@/lib/v4/triage-session";
 
 /**
  * TriageView — top-level client component for /dashboard/triage.
@@ -41,6 +42,20 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
   const selected = items[selectedIndex] ?? items[0];
   const next = items[selectedIndex + 1] ?? null;
 
+  // On mount, consume the triage session if it was set by a workspace
+  // round-trip — lands the selection on the NEXT item after the one the
+  // user worked on (handover §Phase 4.1). Runs once; subsequent
+  // navigation within triage uses the in-memory state.
+  React.useEffect(() => {
+    const session = readTriageSession();
+    if (session && items[session.landIndex]) {
+      setSelectedId(items[session.landIndex].id);
+    }
+    // intentionally omit `items` dep: we only want this on mount, and
+    // items is a stable module-level constant in practice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const advance = React.useCallback(
     (delta: number) => {
       const nextIdx = Math.min(Math.max(selectedIndex + delta, 0), items.length - 1);
@@ -51,9 +66,10 @@ export function TriageView({ items = TRIAGE_ITEMS }: { items?: TriageItem[] }) {
 
   const openWorkspace = React.useCallback(() => {
     if (selected?.clientId) {
+      recordOpen(selectedIndex, items.length);
       router.push(`/dashboard/client/${selected.clientId}`);
     }
-  }, [router, selected]);
+  }, [router, selected, selectedIndex, items.length]);
 
   // Global keyboard handler — ignore when user is typing in a text input.
   React.useEffect(() => {

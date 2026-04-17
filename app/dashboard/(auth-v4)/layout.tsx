@@ -7,6 +7,7 @@ import { Nav } from "@/components/v4/layout/nav";
 import { Header } from "@/components/v4/layout/header";
 import { StatusBar } from "@/components/v4/layout/status-bar";
 import { ShellProvider, useShell } from "@/components/v4/layout/shell-context";
+import { RouteTransition } from "@/components/v4/layout/route-transition";
 
 /**
  * v4 route group layout.
@@ -38,7 +39,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
           shortcuts={shortcuts ?? undefined}
         />
       }>
-      {children}
+      <RouteTransition>{children}</RouteTransition>
     </AppShell>
   );
 }
