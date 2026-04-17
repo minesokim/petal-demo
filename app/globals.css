@@ -127,10 +127,15 @@
   --error: #A73B2B;
   --error-bg: #F5E0DC;
 
-  /* v4 font stacks (P22 via @font-face above, Fraunces/DM Sans/Geist Mono via next/font/google) */
-  --font-serif: "P22 Mackinac Pro", var(--font-fraunces), Georgia, serif;
-  --font-sans-v4: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono-v4: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+  /* v4 font stacks (P22 via @font-face above, Fraunces/DM Sans/Geist Mono via next/font/google).
+     Namespaced with `-stack` so @theme inline can expose them as font-serif / font-mono / font-sans
+     without producing circular var() references. */
+  /* Fallback strings inside var() are required: next/font registers
+     --font-* on <body>, not :root, so without a fallback the nested
+     var() resolves to empty at :root → whole stack becomes invalid. */
+  --serif-stack: "P22 Mackinac Pro", var(--font-fraunces, "Fraunces"), Georgia, serif;
+  --sans-stack: var(--font-dm-sans, "DM Sans"), -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono-stack: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SF Mono", monospace;
 
   /* Spacing (4px grid, PRD §2.4) */
   --s-1: 4px;
@@ -271,8 +276,8 @@
   --color-error: var(--error);
   --color-error-bg: var(--error-bg);
 
-  --font-serif: var(--font-serif);
-  --font-mono: var(--font-mono-v4);
+  --font-serif: var(--serif-stack);
+  --font-mono: var(--mono-stack);
 }
 
 * {
