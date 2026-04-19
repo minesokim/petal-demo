@@ -175,12 +175,15 @@ export type IntakeState = {
   rental: RentalProperty;
   selfEmployment: SelfEmployment;
 
-  // Step 8 — Tax questions
+  // Step 8 — Tax questions (reference uses 7 yes/no toggles)
   taxQuestions: {
-    digitalAssets: boolean | null;
-    foreignAccounts: boolean | null;
-    estimatedPayments: boolean | null;
-    healthCoverage: "all" | "partial" | "none" | null;
+    crypto: boolean;
+    estimated: boolean;
+    healthAll: boolean;
+    retirement: boolean;
+    foreign: boolean;
+    overtime: boolean;
+    tips: boolean;
   };
 
   // Step 9 — Deductions
@@ -302,10 +305,13 @@ export const INITIAL_STATE: IntakeState = {
   },
 
   taxQuestions: {
-    digitalAssets: null,
-    foreignAccounts: null,
-    estimatedPayments: null,
-    healthCoverage: null
+    crypto: false,
+    estimated: true,
+    healthAll: true,
+    retirement: true,
+    foreign: false,
+    overtime: false,
+    tips: false
   },
 
   deductions: {
