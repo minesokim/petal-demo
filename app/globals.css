@@ -127,28 +127,11 @@
   --error: #A73B2B;
   --error-bg: #F5E0DC;
 
-  /* ───────────────────────────────────────────
-     CLIENT PORTAL (forest-green accent)
-     Distinct from the preparer-side rust accent so clients and
-     Antonio see visually different surfaces. Forest green reads
-     as "calm, trustworthy" for the client-facing flow. Surfaces
-     and ink inherit from the shared warm palette above.
-     ─────────────────────────────────────────── */
-  --portal-bg: #F5F2EA;
-  --portal-bg-elev: #FBF9F3;
-  --portal-card: #FFFFFF;
-  --portal-ink: #1A1612;
-  --portal-ink-soft: #4A4038;
-  --portal-muted: #8A7F72;
-  --portal-border: #E4DDCE;
-  --portal-border-soft: #EDE7D9;
-
-  --portal-forest: #335E45;           /* primary accent */
-  --portal-forest-2: #24432F;         /* darker, hover */
-  --portal-forest-soft: #E4EDE6;      /* pale moss tint (backgrounds) */
-  --portal-forest-ink: #284A36;       /* readable on soft tint */
-  --portal-forest-tint: rgba(51, 94, 69, 0.06);
-  --portal-forest-tint-strong: rgba(51, 94, 69, 0.11);
+  /* Client-portal tokens live in components/portal/theme.ts and
+     are passed as inline styles through the `t` theme object,
+     matching the reference design file 1:1. No Tailwind mapping
+     here — see design-references/client-portal/components/tokens.jsx
+     for the source of truth. */
 
   /* v4 font stacks (P22 via @font-face above, Fraunces/DM Sans/Geist Mono via next/font/google).
      Namespaced with `-stack` so @theme inline can expose them as font-serif / font-mono / font-sans
@@ -298,22 +281,6 @@
   --color-warning-bg: var(--warning-bg);
   --color-error: var(--error);
   --color-error-bg: var(--error-bg);
-
-  /* Portal surfaces (client-facing, forest-green accent) */
-  --color-portal-bg: var(--portal-bg);
-  --color-portal-bg-elev: var(--portal-bg-elev);
-  --color-portal-card: var(--portal-card);
-  --color-portal-ink: var(--portal-ink);
-  --color-portal-ink-soft: var(--portal-ink-soft);
-  --color-portal-muted: var(--portal-muted);
-  --color-portal-border: var(--portal-border);
-  --color-portal-border-soft: var(--portal-border-soft);
-  --color-forest: var(--portal-forest);
-  --color-forest-2: var(--portal-forest-2);
-  --color-forest-soft: var(--portal-forest-soft);
-  --color-forest-ink: var(--portal-forest-ink);
-  --color-forest-tint: var(--portal-forest-tint);
-  --color-forest-tint-strong: var(--portal-forest-tint-strong);
 
   --font-serif: var(--serif-stack);
   --font-mono: var(--mono-stack);
