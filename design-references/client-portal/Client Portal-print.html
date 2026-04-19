@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Docket v4 — Client Portal (Print)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #FAFAF7; font-family: "DM Sans", -apple-system, system-ui, sans-serif; color: #111; font-variant-numeric: tabular-nums; }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 18mm 14mm 14mm;
+    margin: 0 auto 8mm;
+    background: #FAFAF7;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 10mm;
+    border-bottom: 1px solid #ECECE8;
+    margin-bottom: 10mm;
+  }
+  .page-head .kicker {
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    color: #8A8A8A;
+    text-transform: uppercase;
+  }
+  .page-head .title {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 30px;
+    letter-spacing: -0.6px;
+    color: #111;
+    margin-top: 4px;
+  }
+  .page-head .num {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 54px;
+    color: #ECECE8;
+    letter-spacing: -2px;
+    line-height: 0.8;
+  }
+
+  .phone-row {
+    flex: 1;
+    display: flex;
+    gap: 12mm;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .phone {
+    width: 78mm;
+    height: 158mm;
+    border-radius: 8mm;
+    border: 1px solid #ECECE8;
+    overflow: hidden;
+    background: #FAFAF7;
+    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .phone-label {
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #8A8A8A;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 4mm;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  .notes {
+    width: 60mm;
+    padding-top: 2mm;
+  }
+  .notes h3 {
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #8A8A8A;
+    margin: 0 0 6px;
+    font-weight: 400;
+  }
+  .notes p {
+    font-size: 12px;
+    line-height: 1.55;
+    color: #3A3A3A;
+    margin: 0 0 10px;
+  }
+  .notes ul {
+    margin: 0 0 10px; padding-left: 16px;
+    font-size: 11px; line-height: 1.55; color: #3A3A3A;
+  }
+  .notes li { margin-bottom: 4px; }
+  .notes .row { display:flex; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+  .notes .row .k { font-family: "DM Sans", -apple-system, system-ui, sans-serif; font-size: 9px; color: #8A8A8A; letter-spacing: 0.5px; min-width: 50px; padding-top: 2px; text-transform: uppercase;}
+  .notes .row .v { color: #111; }
+
+  .page-foot {
+    margin-top: 8mm;
+    padding-top: 6mm;
+    border-top: 1px solid #ECECE8;
+    display: flex;
+    justify-content: space-between;
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #8A8A8A;
+    text-transform: uppercase;
+  }
+
+  /* ─── Cover page ─── */
+  .cover {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 40mm 24mm;
+    background: #FAFAF7;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .cover .mark {
+    display: inline-flex;
+    gap: 8px; align-items: center;
+    padding: 6px 12px;
+    background: rgba(184, 83, 44, 0.06);
+    border-radius: 999px;
+    font-family: "DM Sans", -apple-system, system-ui, sans-serif;
+    font-size: 10px;
+    color: oklch(30% 0.09 10);
+    letter-spacing: 1.2px;
+    align-self: flex-start;
+  }
+  .cover .mark::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: oklch(56% 0.14 10);
+  }
+  .cover h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 72px;
+    font-weight: 400;
+    letter-spacing: -2.4px;
+    line-height: 1.02;
+    margin: 16mm 0 10mm;
+    max-width: 140mm;
+  }
+  .cover h1 em { font-style: italic; }
+  .cover .sub {
+    font-size: 16px;
+    line-height: 1.55;
+    color: #3A3A3A;
+    max-width: 130mm;
+    margin-bottom: 0;
+  }
+  .cover .meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8mm;
+    padding-top: 10mm;
+    border-top: 1px solid #ECECE8;
+  }
+  .cover .meta .k { font-family: "DM Sans", -apple-system, system-ui, sans-serif; font-size: 9px; color: #8A8A8A; letter-spacing: 1px; margin-bottom: 3px; text-transform: uppercase;}
+  .cover .meta .v { font-family: "Fraunces", Georgia, serif; font-size: 16px; color: #111; letter-spacing: -0.2px; }
+
+  /* Hide app-level chrome not useful in print */
+  .no-print { display: none !important; }
+
+  @page { size: A4 portrait; margin: 0; }
+  @media print {
+    body { background: #FAFAF7; }
+    .page, .cover { margin: 0 auto; box-shadow: none; }
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="components/ios-frame.jsx"></script>
+<script type="text/babel" src="components/tokens.jsx"></script>
+<script type="text/babel" src="components/intake-screens.jsx"></script>
+<script type="text/babel" src="components/portal-screens.jsx"></script>
+
+<script type="text/babel">
+// Minimal tone to match user's current selection
+const t = useTheme({ tone: 'minimal', fonts: 'classic', density: 'comfortable', hue: 10 });
+
+// Phone render — scaled to fit 78mm x 158mm frame
+function PhonePrint({ children }) {
+  // Phone content designed for 390x780 viewport; scale into the print frame.
+  // 78mm ≈ 295px at 96dpi, 158mm ≈ 598px.
+  const scale = 295 / 390;
+  return (
+    <div style={{
+      width: 390, height: 780,
+      transformOrigin: 'top left',
+      transform: `scale(${scale})`,
+      background: t.bg,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+const SCREENS = [
+  {
+    num: '01', kicker: 'Intake · Entry',
+    title: "Phone login",
+    screen: <ScreenLogin t={t} />,
+    notes: {
+      purpose: 'First touchpoint for a brand-new client who clicked a link from Antonio\'s text or email.',
+      beats: [
+        'Avatar slot, Fraunces headline, trust line.',
+        'Auto-formatting US phone input.',
+        'Secondary escape hatch: "Text Antonio directly."',
+        'Footer reaffirms Antonio\'s credentials.',
+      ],
+      tone: 'Warm, professional, calm. Not SaaS-corporate.',
+    },
+  },
+  {
+    num: '02', kicker: 'Intake · Verification',
+    title: 'SMS OTP',
+    screen: <ScreenOTP t={t} />,
+    notes: {
+      purpose: 'Verify phone via 6-digit code.',
+      beats: [
+        'Back chevron top-left.',
+        'Six independent square inputs, auto-advance.',
+        'Resend countdown (60s), auto-verify on 6 digits.',
+        'No primary button — verification is automatic.',
+      ],
+      tone: 'Same calm as login. One screen, one job.',
+    },
+  },
+  {
+    num: '03', kicker: 'Intake · Step 1A/13',
+    title: 'Services — choose your path',
+    screen: <ScreenServicePath t={t} />,
+    notes: {
+      purpose: 'Split services into two screens to reduce overwhelm.',
+      beats: [
+        'Four paths: personal / self-employed / business / something else.',
+        'Picking "Something else" reveals four sub-options inline.',
+        'Starting estimate updates with selection — no breakdown yet.',
+        'Advances to add-ons screen (skipped for consultation paths).',
+      ],
+      tone: 'One structural question first, detail second.',
+    },
+  },
+  {
+    num: '03b', kicker: 'Intake · Step 1B/13',
+    title: 'Services — anything else?',
+    screen: <ScreenServiceAddons t={t} />,
+    notes: {
+      purpose: 'Conditional add-ons tailored to the chosen path.',
+      beats: [
+        'Only shows add-ons that actually apply — e.g. no FBAR for biz returns.',
+        'Chip at top references the path with a "change" affordance.',
+        'Ticker shows base + each add-on as a line item with live total.',
+        '"Skip — nothing else" label when nothing selected.',
+      ],
+      tone: 'Add-ons feel like catches, not pressure.',
+    },
+  },
+  {
+    num: '04', kicker: 'Intake · Step 4/10',
+    title: 'Filing status',
+    screen: <ScreenFilingStatus t={t} />,
+    notes: {
+      purpose: 'Reference step showing the standard intake pattern.',
+      beats: [
+        'Slim rust progress bar + "04 OF 10" mono label.',
+        'Radio cards with plain-language hints.',
+        'Selected state: rust border + tinted bg.',
+        'Antonio note demystifies the legal jargon.',
+      ],
+      tone: 'Guided, not interrogated. One question per screen.',
+    },
+  },
+  {
+    num: '05', kicker: 'Intake · Step 8/10',
+    title: 'Engagement letter',
+    screen: <ScreenEngagement t={t} />,
+    notes: {
+      purpose: 'First of two legally-separate signatures.',
+      beats: [
+        'Scrollable legal document with real structure.',
+        'Checkbox + signature pad (tap-to-sign).',
+        'Continue disabled until both completed.',
+        'Captures independent timestamp.',
+      ],
+      tone: 'Formal without intimidating. User understands why.',
+    },
+  },
+  {
+    num: '06', kicker: 'Intake · Step 9/10',
+    title: '§7216 consent',
+    screen: <ScreenConsent7216 t={t} />,
+    notes: {
+      purpose: 'IRS-required SEPARATE consent, SEPARATE timestamp.',
+      beats: [
+        'Eyebrow badge: "IRS §7216 · SEPARATE CONSENT".',
+        'Sub-text explains why this is separate from engagement letter.',
+        'Distinct signature pad, own timestamp.',
+        'Protects Antonio\'s EA license.',
+      ],
+      tone: 'Compliance without alarm. Auditable by design.',
+    },
+  },
+  {
+    num: '07', kicker: 'Intake · Complete',
+    title: 'You\'re all set',
+    screen: <ScreenDone t={t} />,
+    notes: {
+      purpose: 'Most important first-impression screen — user just trusted Antonio with sensitive info.',
+      beats: [
+        'Hand-drawn-feel checkmark on organic rust blob.',
+        'Appointment card w/ Add-to-calendar & Reschedule.',
+        '"What happens next" numbered stepper (4 steps).',
+        'Primary CTA: Go to portal.',
+      ],
+      tone: 'Genuinely warm. Reinforces: you made the right call.',
+    },
+  },
+  {
+    num: '08', kicker: 'Portal · Home',
+    title: 'Status dashboard',
+    screen: <ScreenHome t={t} />,
+    notes: {
+      purpose: 'Returning signed-in client, mid-season view. Maria at "Pay & Sign" step (5/7).',
+      beats: [
+        'Time-aware greeting in Fraunces.',
+        'Hero status card with rust "ACTION NEEDED" badge.',
+        'Pay balance ($250 of $500) + locked 8879 below.',
+        'Vertical 7-step tracker: green checks, rust current, muted future.',
+        'Appointment card with join/calendar/reschedule.',
+        'Antonio\'s message in serif italic — feels human.',
+      ],
+      tone: 'Premium consumer feel with enterprise compliance underneath.',
+    },
+  },
+  {
+    num: '09', kicker: 'Portal · Docs',
+    title: 'Documents',
+    screen: <ScreenDocs t={t} />,
+    notes: {
+      purpose: 'Upload & tracking. Maria has 6 of 9 required docs.',
+      beats: [
+        'Progress bar shows achievement (67%), not guilt.',
+        'Upload zone + "Take a photo" shortcut.',
+        'Grouped: Income / Business / Identity / Agreements.',
+        '"AI READ" badge when extraction succeeded.',
+        'Inline "Request info" button for missing items.',
+      ],
+      tone: 'Progress, not anxiety.',
+    },
+  },
+  {
+    num: '10', kicker: 'Portal · Messages',
+    title: 'Thread with Antonio',
+    screen: <ScreenMessages t={t} />,
+    notes: {
+      purpose: '1:1 encrypted messaging with Antonio.',
+      beats: [
+        'iMessage-style bubbles: cream (Antonio), rust-tinted (Maria).',
+        'Inline photo attachments with monospace filename.',
+        'Full-width system cards for auto-status updates.',
+        'Composer: photo + text + send.',
+        'Encrypted badge in header — no suggested replies.',
+      ],
+      tone: 'Messaging a person, not a support bot.',
+    },
+  },
+  {
+    num: '11', kicker: 'Portal · Signatures',
+    title: 'Audit-grade signing',
+    screen: <ScreenSignatures t={t} />,
+    notes: {
+      purpose: 'Protects Antonio\'s EA license. Every signature auditable.',
+      beats: [
+        '"Awaiting you" section with locked 8879.',
+        '"Completed" section with green checks + timestamps.',
+        'Each card: form name, plain-language subtitle, status footer.',
+        'Info strip: "cryptographically timestamped, per IRS Circular 230".',
+      ],
+      tone: 'Trustworthy, professional, auditable.',
+    },
+  },
+];
+
+function PrintPage({ spec, i, total }) {
+  return (
+    <div className="page">
+      <div className="page-head">
+        <div>
+          <div className="kicker">{spec.kicker}</div>
+          <div className="title">{spec.title}</div>
+        </div>
+        <div className="num">{spec.num}</div>
+      </div>
+
+      <div className="phone-row">
+        <div className="phone-wrap">
+          <div className="phone">
+            <PhonePrint>{spec.screen}</PhonePrint>
+          </div>
+          <div className="phone-label">Mobile · 390 × 780</div>
+        </div>
+
+        <div className="notes">
+          <h3>Purpose</h3>
+          <p>{spec.notes.purpose}</p>
+
+          <h3>Design beats</h3>
+          <ul>
+            {spec.notes.beats.map((b, i) => <li key={i}>{b}</li>)}
+          </ul>
+
+          <h3>Tone</h3>
+          <p style={{ fontFamily: '"Fraunces", Georgia, serif', fontStyle: 'italic', fontSize: 13 }}>
+            {spec.notes.tone}
+          </p>
+        </div>
+      </div>
+
+      <div className="page-foot">
+        <span>Docket v4 · Client Portal</span>
+        <span>{String(i + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
+      </div>
+    </div>
+  );
+}
+
+function Cover() {
+  return (
+    <div className="cover">
+      <div>
+        <div className="mark">DOCKET V4 · CLIENT-FACING MOBILE</div>
+        <h1>The client portal,<br/><em>warmer.</em></h1>
+        <div className="sub">
+          Eleven mobile screens redesigning the intake flow and returning-client dashboard for Vazant Consulting.
+          Minimal variant · rust accent · Fraunces serif, DM Sans body, DM Sans for all UI.
+          Rust for primary & urgency · green reserved for completed and signed.
+        </div>
+      </div>
+
+      <div className="meta">
+        <div><div className="k">Surfaces</div><div className="v">2 — intake, portal</div></div>
+        <div><div className="k">Screens</div><div className="v">11</div></div>
+        <div><div className="k">Target</div><div className="v">iOS Safari · Android Chrome</div></div>
+        <div><div className="k">Primary</div><div className="v">rust · oklch(56% 0.14 10)</div></div>
+        <div><div className="k">Success</div><div className="v">green</div></div>
+        <div><div className="k">Delivered</div><div className="v">April 17, 2026</div></div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <Cover />
+      {SCREENS.map((s, i) => <PrintPage key={i} spec={s} i={i} total={SCREENS.length} />)}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+// Auto-print after fonts + JSX + a safety delay
+(async () => {
+  try { await document.fonts.ready; } catch {}
+  await new Promise(r => setTimeout(r, 900));
+  window.print();
+})();
+</script>
+</body>
+</html>
