@@ -141,6 +141,7 @@ export type IntakeState = {
   dob: string;
   ssn: string;
   email: string;
+  occupation: string;
   address: string;
   city: string;
   state: StateCode | "";
@@ -159,6 +160,7 @@ export type IntakeState = {
   spouseLastName: string;
   spouseDob: string;
   spouseSsn: string;
+  spouseOccupation: string;
   spouseHasIncome: boolean | null;
 
   // Step 6 — Dependents
@@ -253,6 +255,7 @@ export const INITIAL_STATE: IntakeState = {
   dob: "",
   ssn: "",
   email: "",
+  occupation: "",
   address: "",
   city: "",
   state: "",
@@ -268,6 +271,7 @@ export const INITIAL_STATE: IntakeState = {
   spouseLastName: "",
   spouseDob: "",
   spouseSsn: "",
+  spouseOccupation: "",
   spouseHasIncome: null,
 
   dependentCount: 0,
