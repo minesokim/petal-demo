@@ -97,12 +97,13 @@ export type RentalProperty = {
 
 export type SelfEmployment = {
   businessName: string;
-  description: string; // "what you do"
-  vehicleUse: boolean | null;
-  homeOffice: boolean | null;
-  gross: number | null;
-  expenses: number | null;
-  hasEmployees: boolean | null;
+  whatYouDo: string;
+  entityType: string;
+  ein: string;
+  revenue: string;
+  homeOffice: boolean;
+  vehicleUse: boolean;
+  cashBusiness: boolean;
 };
 
 export type BusinessEntityType = "scorp" | "partnership" | "llc" | "ccorp" | null;
@@ -291,12 +292,13 @@ export const INITIAL_STATE: IntakeState = {
   },
   selfEmployment: {
     businessName: "",
-    description: "",
-    vehicleUse: null,
-    homeOffice: null,
-    gross: null,
-    expenses: null,
-    hasEmployees: null
+    whatYouDo: "",
+    entityType: "",
+    ein: "",
+    revenue: "",
+    homeOffice: false,
+    vehicleUse: false,
+    cashBusiness: false
   },
 
   taxQuestions: {
