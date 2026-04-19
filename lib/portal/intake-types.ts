@@ -84,14 +84,15 @@ export type Dependent = {
   qualifiesForCtc?: boolean;
 };
 
+export type RentalType = "long" | "short" | "commercial" | "mixed";
+
 export type RentalProperty = {
-  addressLine: string;
-  city: string;
-  state: StateCode | "";
-  zip: string;
-  grossRent: number | null;
-  expenses: number | null;
-  activeParticipation: boolean | null;
+  rentalType: RentalType;
+  address: string;
+  monthlyRent: string; // "$2,850" — keep formatted so display matches input
+  monthlyMortgage: string;
+  yearAcquired: string;
+  propertyCount: string;
 };
 
 export type SelfEmployment = {
@@ -148,7 +149,8 @@ export type IntakeState = {
   zip: string;
 
   // Step 3 — State & prior year
-  residencyState: StateCode | "";
+  residencyState: string; // free-text full state name to match reference
+  secondaryState: string;
   priorYearFiled: boolean | null;
   priorYearPreparer: string;
 
@@ -262,6 +264,7 @@ export const INITIAL_STATE: IntakeState = {
   zip: "",
 
   residencyState: "",
+  secondaryState: "",
   priorYearFiled: null,
   priorYearPreparer: "",
 
@@ -279,13 +282,12 @@ export const INITIAL_STATE: IntakeState = {
 
   incomeSources: [],
   rental: {
-    addressLine: "",
-    city: "",
-    state: "",
-    zip: "",
-    grossRent: null,
-    expenses: null,
-    activeParticipation: null
+    rentalType: "long",
+    address: "",
+    monthlyRent: "",
+    monthlyMortgage: "",
+    yearAcquired: "",
+    propertyCount: ""
   },
   selfEmployment: {
     businessName: "",
