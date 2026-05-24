@@ -9,9 +9,11 @@
  * here. Other surfaces (popup, overview page, etc.) can read the effective
  * stage with `getClientStage(id, fallback)`.
  *
- * Same persistence pattern as form-8867-store / petal-prompts-store —
- * localStorage so moves survive reload, stable cached snapshot for
- * useSyncExternalStore consumers.
+ * ── Persistence policy ──
+ * Session-only. Drag-and-drop and AI moves apply for the current session and
+ * reset to mock-data.ts originals on refresh. On mount we also wipe any
+ * previously-persisted localStorage entries so users who upgraded from older
+ * builds (which DID persist) get cleaned up automatically.
  */
 
 import type { ReturnStage } from "@/lib/mock-data";
@@ -46,40 +48,22 @@ function rebuildCache() {
   cachedLog = [...moveLog];
 }
 
-function persist() {
+// Wipe legacy persisted state from older builds where this store DID persist.
+// Runs once per page load; session changes after this never write back.
+function clearLegacyStorage() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STAGE_STORAGE_KEY, JSON.stringify(Array.from(overrides.entries())));
-    window.localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(moveLog));
+    window.localStorage.removeItem(STAGE_STORAGE_KEY);
+    window.localStorage.removeItem(LOG_STORAGE_KEY);
   } catch {
-    // Ignore quota / serialization errors
+    // Ignore — Safari private mode etc.
   }
 }
 
-function hydrate() {
-  if (typeof window === "undefined" || overrides.size > 0) return;
-  try {
-    const rawStages = window.localStorage.getItem(STAGE_STORAGE_KEY);
-    if (rawStages) {
-      const entries = JSON.parse(rawStages) as Array<[string, ReturnStage]>;
-      for (const [k, v] of entries) overrides.set(k, v);
-    }
-    const rawLog = window.localStorage.getItem(LOG_STORAGE_KEY);
-    if (rawLog) {
-      const arr = JSON.parse(rawLog) as StageMoveLogEntry[];
-      moveLog.push(...arr);
-    }
-    rebuildCache();
-  } catch {
-    // Corrupted JSON — start fresh
-  }
-}
-
-hydrate();
+clearLegacyStorage();
 
 function emit() {
   rebuildCache();
-  persist();
   listeners.forEach((l) => l());
 }
 
