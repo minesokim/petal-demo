@@ -262,6 +262,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const hasLeftContent = !!clientInsight || !!stageAction || clientCompliance.length > 0;
 
   // Single JSX definition reused in either column based on hasLeftContent.
+  // Intake Summary + Contact merged into one card (popup only — full page keeps them separate).
+  // Notes card has its own dedicated tab — no duplicate card on the Overview tab.
   const intakeSummaryCard = (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -270,7 +272,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
           <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
         </Link>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
@@ -297,28 +299,11 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             <div className="text-sm font-medium mt-1">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
           </div>
         </div>
-        {/* (Notes paragraph removed — duplicated the dedicated Notes card.) */}
-      </CardContent>
-    </Card>
-  );
-
-  // Contact card — promoted to LEFT column when no hero (same swap pattern).
-  const contactCard = (
-    <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
-      <CardContent className="space-y-2.5">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
-      </CardContent>
-    </Card>
-  );
-
-  // Notes card — promoted to LEFT column when no hero.
-  const notesCard = (
-    <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
-      <CardContent>
-        <EditableNotes initialNotes={client.notes} />
+        {/* Contact — folded into Intake Summary (popup only) to remove a redundant card */}
+        <div className="space-y-2 border-t border-border/40 pt-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -765,12 +750,10 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* When no hero exists, promote Intake Summary + Contact + Notes
-                  into the LEFT column so the 60/40 split is visually balanced
-                  (no dead space). Right column keeps Documents + Return Progress. */}
+              {/* When no hero exists, promote Intake Summary (now includes Contact)
+                  into the LEFT column so the 60/40 split stays visually balanced.
+                  Notes lives in its own tab — not duplicated on Overview. */}
               {!hasLeftContent && intakeSummaryCard}
-              {!hasLeftContent && contactCard}
-              {!hasLeftContent && notesCard}
               </div>
               {/* ── RIGHT COLUMN (40%) — context cards: intake (when hero in left), docs, contact, notes ── */}
               <div className="space-y-5 min-w-0">
@@ -842,10 +825,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 );
               })()}
 
-              {/* Contact + Notes — only here when there's hero content in LEFT.
-                  Otherwise both are promoted into the LEFT column for balance. */}
-              {hasLeftContent && contactCard}
-              {hasLeftContent && notesCard}
+              {/* Contact is now folded into Intake Summary; Notes lives in its own tab.
+                  Right column intentionally ends after Return Progress (and the
+                  optional Client Review stage chip above). */}
               </div>
             </TabsContent>
 
@@ -1237,30 +1219,6 @@ function ClientNotesTab({ clientId, initialNotes }: { clientId: string; initialN
           <p className="text-sm text-muted-foreground">No notes yet</p>
           <p className="text-xs text-muted-foreground/60 mt-1">Notes are private and only visible to you</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-// Editable notes component
-function EditableNotes({ initialNotes }: { initialNotes: string }) {
-  const [editing, setEditing] = useState(false);
-  const [notes, setNotes] = useState(initialNotes);
-  return (
-    <div className="rounded-xl bg-muted/50 p-3">
-      {editing ? (
-        <div>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full min-h-[60px] bg-transparent text-sm leading-relaxed outline-none resize-none" autoFocus />
-          <div className="mt-2 flex gap-2">
-            <Button size="sm" className="h-6 text-[10px]" onClick={() => setEditing(false)}><Check className="size-2.5" /> Save</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => { setNotes(initialNotes); setEditing(false); }}>Cancel</Button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setEditing(true)} className="w-full text-left group">
-          <p className="text-sm leading-relaxed text-muted-foreground">{notes}</p>
-          <span className="text-[10px] text-muted-foreground/50 group-hover:text-muted-foreground mt-1 block">Click to edit</span>
-        </button>
       )}
     </div>
   );

@@ -517,33 +517,35 @@ export default function Page() {
           <CardHeader className="pb-3">
             <CardTitle className="text-[15px] font-semibold">Defense layer</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
-            {[
-              { icon: ShieldCheckIcon, label: "Active audits", sub: "IRS examinations in progress", count: 1 },
-              { icon: FileWarningIcon, label: "Notices in triage", sub: "Drafts ready for review", count: 2 },
-              { icon: FileTextIcon, label: "Form 8867 due diligence", sub: "Checklists pending", count: 4 },
-              { icon: EyeIcon, label: "8275 disclosures", sub: "Ready to file", count: 1 },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={() => showToast("info", item.label, "Coming soon")}
-                className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/40"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04]">
-                  <item.icon className="size-4 text-muted-foreground" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium">{item.label}</div>
-                  <div className="text-[11.5px] text-muted-foreground">{item.sub}</div>
-                </div>
-                <span className="text-[14px] font-semibold tabular-nums">{item.count}</span>
-                <ChevronRightIcon className="size-3.5 text-muted-foreground/60" />
-              </button>
-            ))}
+          <CardContent className="flex flex-1 flex-col">
+            <div className="space-y-1">
+              {[
+                { icon: ShieldCheckIcon, label: "Active audits", sub: "IRS examinations in progress", count: 1 },
+                { icon: FileWarningIcon, label: "Notices in triage", sub: "Drafts ready for review", count: 2 },
+                { icon: FileTextIcon, label: "Form 8867 due diligence", sub: "Checklists pending", count: 4 },
+                { icon: EyeIcon, label: "8275 disclosures", sub: "Ready to file", count: 1 },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={() => showToast("info", item.label, "Coming soon")}
+                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04]">
+                    <item.icon className="size-4 text-muted-foreground" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium">{item.label}</div>
+                    <div className="text-[11.5px] text-muted-foreground">{item.sub}</div>
+                  </div>
+                  <span className="text-[14px] font-semibold tabular-nums">{item.count}</span>
+                  <ChevronRightIcon className="size-3.5 text-muted-foreground/60" />
+                </button>
+              ))}
+            </div>
 
             <Link
               href="/dashboard/clients"
-              className="mt-2 flex items-center gap-1 px-2 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+              className="mt-auto flex items-center gap-1 px-2 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
             >
               View all defense items <ArrowRightIcon className="size-3" />
             </Link>
@@ -605,17 +607,19 @@ export default function Page() {
               <CalendarIcon className="size-3.5 text-muted-foreground" /> Upcoming meetings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-0">
-            {todayAppointments.map(appt => (
-              <div key={appt.clientId} className="flex items-center gap-3 rounded-md px-1 py-2">
-                <span className="w-16 shrink-0 text-[11.5px] font-medium tabular-nums text-muted-foreground">{appt.time}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium truncate">{appt.name}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">{appt.note}</div>
+          <CardContent className="flex flex-1 flex-col">
+            <div>
+              {todayAppointments.map(appt => (
+                <div key={appt.clientId} className="flex items-center gap-3 rounded-md px-1 py-2">
+                  <span className="w-16 shrink-0 text-[11.5px] font-medium tabular-nums text-muted-foreground">{appt.time}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium truncate">{appt.name}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{appt.note}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-            <Link href="/dashboard/apps/calendar" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+              ))}
+            </div>
+            <Link href="/dashboard/apps/calendar" className="mt-auto flex items-center gap-1 px-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
               View calendar <ArrowRightIcon className="size-3" />
             </Link>
           </CardContent>
@@ -628,26 +632,28 @@ export default function Page() {
               <MessageSquareIcon className="size-3.5 text-muted-foreground" /> Recent messages
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-0">
-            {recentMessages.map(msg => {
-              const initials = msg.name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
-              return (
-                <div key={msg.name} className="flex items-start gap-2.5 rounded-md px-1 py-2">
-                  <Avatar className="size-7 shrink-0">
-                    {msg.avatar && <AvatarImage src={msg.avatar} alt={msg.name} />}
-                    <AvatarFallback className="bg-foreground/10 text-[9px] font-semibold">{initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[13px] font-medium truncate">{msg.name}</span>
-                      <span className="shrink-0 text-[10.5px] text-muted-foreground tabular-nums">{msg.time}</span>
+          <CardContent className="flex flex-1 flex-col">
+            <div>
+              {recentMessages.map(msg => {
+                const initials = msg.name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
+                return (
+                  <div key={msg.name} className="flex items-start gap-2.5 rounded-md px-1 py-2">
+                    <Avatar className="size-7 shrink-0">
+                      {msg.avatar && <AvatarImage src={msg.avatar} alt={msg.name} />}
+                      <AvatarFallback className="bg-foreground/10 text-[9px] font-semibold">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[13px] font-medium truncate">{msg.name}</span>
+                        <span className="shrink-0 text-[10.5px] text-muted-foreground tabular-nums">{msg.time}</span>
+                      </div>
+                      <div className="text-[11.5px] text-muted-foreground line-clamp-1">{msg.message}</div>
                     </div>
-                    <div className="text-[11.5px] text-muted-foreground line-clamp-1">{msg.message}</div>
                   </div>
-                </div>
-              );
-            })}
-            <Link href="/dashboard/apps/chat" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+                );
+              })}
+            </div>
+            <Link href="/dashboard/apps/chat" className="mt-auto flex items-center gap-1 px-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
               Go to inbox <ArrowRightIcon className="size-3" />
             </Link>
           </CardContent>
@@ -660,23 +666,25 @@ export default function Page() {
               <ShieldCheckIcon className="size-3.5 text-muted-foreground" /> Action center
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-0">
-            {[
-              { icon: PetalMark, label: "AI drafts awaiting approval", count: 11 },
-              { icon: AlertCircleIcon, label: "Positions cited this week", count: 34 },
-              { icon: PenIcon, label: "Evidence chains complete", count: 27 },
-              { icon: FileWarningIcon, label: "Notices triaged", count: 8 },
-              { icon: MailIcon, label: "Reversible actions pending", count: 4 },
-            ].map(item => (
-              <div key={item.label} className="flex items-center gap-2.5 rounded-md px-1 py-2">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground">
-                  <item.icon className="size-3.5" />
-                </span>
-                <span className="flex-1 truncate text-[12.5px] text-foreground/85">{item.label}</span>
-                <span className="shrink-0 text-[13px] font-semibold tabular-nums">{item.count}</span>
-              </div>
-            ))}
-            <Link href="/dashboard/actions" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+          <CardContent className="flex flex-1 flex-col">
+            <div>
+              {[
+                { icon: PetalMark, label: "AI drafts awaiting approval", count: 11 },
+                { icon: AlertCircleIcon, label: "Positions cited this week", count: 34 },
+                { icon: PenIcon, label: "Evidence chains complete", count: 27 },
+                { icon: FileWarningIcon, label: "Notices triaged", count: 8 },
+                { icon: MailIcon, label: "Reversible actions pending", count: 4 },
+              ].map(item => (
+                <div key={item.label} className="flex items-center gap-2.5 rounded-md px-1 py-2">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground">
+                    <item.icon className="size-3.5" />
+                  </span>
+                  <span className="flex-1 truncate text-[12.5px] text-foreground/85">{item.label}</span>
+                  <span className="shrink-0 text-[13px] font-semibold tabular-nums">{item.count}</span>
+                </div>
+              ))}
+            </div>
+            <Link href="/dashboard/actions" className="mt-auto flex items-center gap-1 px-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
               View all actions <ArrowRightIcon className="size-3" />
             </Link>
           </CardContent>

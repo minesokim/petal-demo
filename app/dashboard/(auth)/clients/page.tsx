@@ -12,8 +12,12 @@ import { ViewModeToggle, type ViewMode } from "@/components/clients/view-mode-to
 import { ClientsFilterPills, type BucketFilter, PipelineFilterPills, type PipelineFilter } from "@/components/clients/clients-filter-pills";
 import { ClientsTableView, type SortKey, type SortDir } from "@/components/clients/clients-table-view";
 import { ClientsPipelineView } from "@/components/clients/clients-pipeline-view";
+import type { SortMode } from "@/lib/pipeline-smart-sort";
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
-import { SearchIcon, Check, X, Calendar, Phone, Clock, FileText, ArrowUpDown } from "lucide-react";
+import { SearchIcon, ArrowUpDown, Plus, ArrowRightIcon, LayoutGrid, Rows3 } from "lucide-react";
+import Link from "next/link";
+import { PetalMark } from "@/components/petal-mark";
+import type { Density } from "@/lib/pipeline-smart-sort";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { clients as rawClients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
 import { applyStageOverrides, setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
@@ -45,6 +49,8 @@ export default function ClientsPage() {
   const [activeFilter, setActiveFilter] = useState<BucketFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [pipelineSortMode, setPipelineSortMode] = useState<SortMode>("smart");
+  const [pipelineDensity, setPipelineDensity] = useState<Density>("comfortable");
   const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>("all");
   const [highlightedColumn, setHighlightedColumn] = useState<string | null>(null);
 
@@ -177,24 +183,59 @@ export default function ClientsPage() {
 
   const currentSortLabel = sortOptions.find(s => s.key === sortKey)?.label || "Name";
 
+  const seasonYear = new Date().getFullYear() + 1;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      {/* ── Header ── */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-display tracking-tight">Clients</h1>
-          <p className="text-muted-foreground text-sm">
-            {totalCount} total
-            <span className="mx-1.5 text-border">|</span>
+          <h1 className="font-display text-3xl tracking-tight md:text-4xl">Clients</h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">
+            Tax Season {seasonYear}
+            <span className="mx-1.5 text-muted-foreground/40">·</span>
+            {totalCount} {totalCount === 1 ? "client" : "clients"}
             {pendingCount > 0 && (
               <>
-                {pendingCount} pending
-                <span className="mx-1.5 text-border">|</span>
+                <span className="mx-1.5 text-muted-foreground/40">·</span>
+                <span className="text-foreground/80">{pendingCount} need review</span>
               </>
             )}
-            {activeCount} active
           </p>
         </div>
+        <Button
+          size="sm"
+          className="bg-foreground text-background hover:bg-foreground/90"
+          onClick={() => showToast("success", "Add client", "Client creation flow coming soon")}
+        >
+          <Plus className="size-3.5" /> Add client
+        </Button>
       </div>
+
+      {/* ── Petal AI banner — surfaces pending review queue ── */}
+      {pendingCount > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setPipelineFilter("pending");
+            setActiveFilter("pending");
+          }}
+          className="group flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/30"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-foreground/[0.05]">
+              <PetalMark className="size-4 text-foreground/70" />
+            </span>
+            <div className="text-[13px]">
+              <span className="font-medium">Petal found {pendingCount} client {pendingCount === 1 ? "file" : "files"} requiring partner review</span>
+              <div className="text-muted-foreground text-[12px]">Review these clients before today&apos;s calls.</div>
+            </div>
+          </div>
+          <span className="flex items-center gap-1 text-[12px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+            Open review queue <ArrowRightIcon className="size-3" />
+          </span>
+        </button>
+      )}
 
       {/* Search + View Toggle + Sort (table only) */}
       <div className="flex items-center justify-between gap-3">
@@ -203,12 +244,14 @@ export default function ClientsPage() {
           <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-white" />
         </div>
         <div className="flex items-center gap-2">
-          {viewMode === "table" && (
+          {/* Sort dropdown — different options per view mode, same position */}
+          {viewMode === "table" ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
                   <ArrowUpDown className="size-3" />
-                  <span className="hidden sm:inline">{currentSortLabel}</span>
+                  <span className="text-muted-foreground">Sort:</span>
+                  <span className="font-medium">{currentSortLabel}</span>
                   <span className="text-muted-foreground">{sortDir === "asc" ? "↑" : "↓"}</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -234,25 +277,75 @@ export default function ClientsPage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                  <span className="text-muted-foreground">Sort:</span>
+                  <span className="font-medium capitalize">{pipelineSortMode}</span>
+                  <span className="text-muted-foreground">▾</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {(["smart", "stale", "recent", "name"] as SortMode[]).map((opt) => (
+                  <DropdownMenuItem
+                    key={opt}
+                    onClick={() => setPipelineSortMode(opt)}
+                    className="text-xs capitalize"
+                  >
+                    <span className="flex-1">{opt}</span>
+                    {pipelineSortMode === opt && (
+                      <span className="text-muted-foreground text-[10px]">✓</span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <ViewModeToggle value={viewMode} onChange={handleViewModeChange} />
         </div>
       </div>
 
-      {/* Filter pills */}
-      {viewMode === "pipeline" ? (
-        <PipelineFilterPills
-          value={pipelineFilter}
-          onChange={setPipelineFilter}
-          counts={pipelineCounts}
-        />
-      ) : (
-        <ClientsFilterPills
-          value={activeFilter}
-          onChange={setActiveFilter}
-          counts={bucketCounts}
-        />
-      )}
+      {/* Filter pills + (pipeline only) density toggle on the right of the same row */}
+      <div className="flex items-center justify-between gap-3">
+        {viewMode === "pipeline" ? (
+          <PipelineFilterPills
+            value={pipelineFilter}
+            onChange={setPipelineFilter}
+            counts={pipelineCounts}
+          />
+        ) : (
+          <ClientsFilterPills
+            value={activeFilter}
+            onChange={setActiveFilter}
+            counts={bucketCounts}
+          />
+        )}
+        {viewMode === "pipeline" && (
+          <div className="flex shrink-0 items-center rounded-md border bg-card p-0.5">
+            <button
+              onClick={() => setPipelineDensity("comfortable")}
+              title="Comfortable"
+              className={cn(
+                "flex size-7 items-center justify-center rounded transition-colors",
+                pipelineDensity === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <LayoutGrid className="size-3.5" />
+            </button>
+            <button
+              onClick={() => setPipelineDensity("compact")}
+              title="Compact"
+              className={cn(
+                "flex size-7 items-center justify-center rounded transition-colors",
+                pipelineDensity === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Rows3 className="size-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Table View */}
       {viewMode === "table" && (
@@ -280,6 +373,8 @@ export default function ClientsPage() {
           onDecline={handleDecline}
           onOpenDetail={setDetailClient}
           filterStage={pipelineFilter}
+          sortMode={pipelineSortMode}
+          density={pipelineDensity}
         />
       )}
 

@@ -2,8 +2,6 @@
 
 import { useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { type Client, type ReturnStage } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
@@ -16,38 +14,24 @@ import {
   subscribePipelineStages,
 } from "@/lib/pipeline-stage-store";
 import { sortClients, type SortMode, type Density } from "@/lib/pipeline-smart-sort";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, Rows3, LayoutGrid } from "lucide-react";
 
 type PipelineStageKey = ReturnStage | "pending";
 
 const pipelineStages: {
   key: PipelineStageKey;
   label: string;
+  subtitle: string;
   dot: string;
 }[] = [
-  { key: "pending", label: "Pending Review", dot: "bg-rose-400" },
-  { key: "new_intake", label: "New Intake", dot: "bg-sky-400" },
-  { key: "collecting_docs", label: "Collecting Docs", dot: "bg-amber-500" },
-  { key: "in_preparation", label: "In Preparation", dot: "bg-blue-500" },
-  { key: "client_review", label: "Client Review", dot: "bg-purple-500" },
-  { key: "pay_and_sign", label: "Pay & Sign", dot: "bg-orange-500" },
-  { key: "filed", label: "Filed", dot: "bg-emerald-500" },
-  { key: "extended", label: "Extended (Oct 15)", dot: "bg-orange-500" },
+  { key: "pending",         label: "Pending Review",  subtitle: "Partner review needed",      dot: "bg-rose-400"    },
+  { key: "new_intake",      label: "New Intake",      subtitle: "Recently added clients",     dot: "bg-sky-400"     },
+  { key: "collecting_docs", label: "Collecting Docs", subtitle: "Waiting on client documents",dot: "bg-amber-500"   },
+  { key: "in_preparation",  label: "In Preparation",  subtitle: "Preparing returns",          dot: "bg-blue-500"    },
+  { key: "client_review",   label: "Client Review",   subtitle: "Awaiting client signoff",    dot: "bg-purple-500"  },
+  { key: "pay_and_sign",    label: "Pay & Sign",      subtitle: "Signatures pending",         dot: "bg-orange-500"  },
+  { key: "filed",           label: "Filed",           subtitle: "Returns complete",           dot: "bg-emerald-500" },
+  { key: "extended",        label: "Extended",        subtitle: "Oct 15 deadline",            dot: "bg-orange-500"  },
 ];
-
-const SORT_LABELS: Record<SortMode, string> = {
-  smart: "Smart",
-  stale: "Stale",
-  recent: "Recent",
-  name: "Name",
-};
 
 // Stable empty snapshot for SSR
 const EMPTY_OVERRIDES: Record<string, ReturnStage> = {};
@@ -62,6 +46,10 @@ interface ClientsPipelineViewProps {
   onDecline?: (clientId: string) => void;
   onOpenDetail: (client: Client) => void;
   filterStage?: string;
+  /** Sort mode — lifted to the page-level toolbar to match the reference layout. */
+  sortMode?: SortMode;
+  /** Density — lifted to the page-level filter row alongside the filter pills. */
+  density?: Density;
 }
 
 export function ClientsPipelineView({
@@ -74,6 +62,8 @@ export function ClientsPipelineView({
   onDecline,
   onOpenDetail,
   filterStage = "all",
+  sortMode = "smart",
+  density = "comfortable",
 }: ClientsPipelineViewProps) {
   // Subscribe to stage overrides so cards re-flow into the right column after drag / AI moves
   const overrides = useSyncExternalStore<Record<string, ReturnStage>>(
@@ -87,8 +77,6 @@ export function ClientsPipelineView({
     [overrides]
   );
 
-  const [sortMode, setSortMode] = useState<SortMode>("smart");
-  const [density, setDensity] = useState<Density>("comfortable");
   const [highlightedCol, setHighlightedCol] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [draggingOver, setDraggingOver] = useState<string | null>(null);
@@ -152,64 +140,6 @@ export function ClientsPipelineView({
 
   return (
     <>
-      {/* ── Toolbar — Sort + Density ── */}
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-                Sort: <span className="font-medium">{SORT_LABELS[sortMode]}</span>
-                <ChevronDown className="size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-44">
-              <DropdownMenuRadioGroup value={sortMode} onValueChange={v => setSortMode(v as SortMode)}>
-                <DropdownMenuRadioItem value="smart">
-                  Smart
-                  <span className="ml-auto text-[10px] text-muted-foreground">stage-aware</span>
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="stale">
-                  Stale
-                  <span className="ml-auto text-[10px] text-muted-foreground">oldest first</span>
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="recent">
-                  Recent
-                  <span className="ml-auto text-[10px] text-muted-foreground">newest first</span>
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="name">
-                  Name
-                  <span className="ml-auto text-[10px] text-muted-foreground">A → Z</span>
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Density toggle — segmented icon control */}
-          <div className="flex items-center rounded-md border bg-card p-0.5">
-            <button
-              onClick={() => setDensity("comfortable")}
-              title="Comfortable"
-              className={cn(
-                "flex size-7 items-center justify-center rounded transition-colors",
-                density === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <LayoutGrid className="size-3.5" />
-            </button>
-            <button
-              onClick={() => setDensity("compact")}
-              title="Compact"
-              className={cn(
-                "flex size-7 items-center justify-center rounded transition-colors",
-                density === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Rows3 className="size-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <DualScrollContainer>
         <div className="flex gap-3 min-w-max pb-4">
           {columns.map(col => {
@@ -219,39 +149,39 @@ export function ClientsPipelineView({
               <div
                 key={col.key}
                 className={cn(
-                  "w-[300px] shrink-0 transition-all duration-300",
-                  isDimmed && "opacity-30 blur-[1px]"
+                  // Whole column wrapped in a soft tinted card — header + cards live inside one container.
+                  // Border + tinted bg both visible by default so the column edges read clearly against the page.
+                  "flex w-[300px] shrink-0 flex-col rounded-xl border border-border/60 bg-muted/50 p-3 transition-all duration-300",
+                  isDimmed && "opacity-30 blur-[1px]",
+                  isDropTarget && "border-foreground/30 bg-muted/80",
+                  highlightedCol === col.key && "border-foreground/20"
                 )}
                 onDragOver={(e) => handleDragOver(e, col.key)}
                 onDragLeave={() => handleDragLeave(col.key)}
                 onDrop={(e) => handleDrop(e, col.key)}
               >
-                {/* Column header — clickable to highlight */}
+                {/* Column header — editorial: dot + title + count on top, subtitle on second line. Clickable to highlight. */}
                 <button
                   onClick={() => setHighlightedCol(highlightedCol === col.key ? null : col.key)}
-                  className={cn(
-                    "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
-                    highlightedCol === col.key && "border-border/60 shadow-sm"
-                  )}
+                  className="mb-3 flex w-full items-start justify-between gap-2 px-1 text-left transition-opacity hover:opacity-80"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={cn("size-1.5 rounded-full", col.dot)} />
-                    <span className="text-[13px] font-medium text-foreground">{col.label}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("size-1.5 shrink-0 rounded-full", col.dot)} />
+                      <span className="text-[14px] font-semibold text-foreground">{col.label}</span>
+                    </div>
+                    <div className="ml-3.5 mt-0.5 text-[11.5px] text-muted-foreground">
+                      {col.subtitle}
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
+                  <span className="inline-flex h-[22px] min-w-[32px] shrink-0 items-center justify-center rounded-full bg-background px-2.5 text-[11px] font-medium tabular-nums text-foreground/70 ring-1 ring-border/60">
                     {col.clients.length}
-                  </Badge>
+                  </span>
                 </button>
 
-                {/* Column container — dashed wrap visually groups the cards.
-                    Highlights when drag is hovering this column. */}
-                <div
-                  className={cn(
-                    "rounded-xl border border-dashed border-border/50 bg-muted/10 p-2.5 min-h-[280px] transition-colors",
-                    isDropTarget && "border-foreground/40 bg-muted/40"
-                  )}
-                >
-                  <div className={cn(density === "comfortable" ? "space-y-3 [zoom:0.85]" : "space-y-1.5")}>
+                {/* Cards container — drops directly into the wrapped column (no nested bg) */}
+                <div className="min-h-[200px] flex-1">
+                  <div className={cn(density === "comfortable" ? "space-y-3" : "space-y-1.5")}>
                     {col.key === "pending" ? (
                       <AnimatePresence mode="popLayout">
                         {col.clients.map(client => (
