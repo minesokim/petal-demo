@@ -14,7 +14,7 @@ export default function FirmProfilePage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">Firm Profile</h3>
-        <p className="text-sm text-muted-foreground">Your firm information and credentials used across Docket.</p>
+        <p className="text-sm text-muted-foreground">Your firm information and credentials used across Petal.</p>
       </div>
 
       <Card>

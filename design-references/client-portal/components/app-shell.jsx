@@ -114,7 +114,7 @@ function CanvasOverview({ t, deviceFrame }) {
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.rust }}/>
           <span style={{
             fontFamily: t.mono, fontSize: 11, color: t.rustInk, letterSpacing: 1,
-          }}>DOCKET V4 · CLIENT-FACING MOBILE</span>
+          }}>PETAL V4 · CLIENT-FACING MOBILE</span>
         </div>
         <div style={{
           fontFamily: t.serif, fontSize: 56, color: t.ink,
@@ -205,44 +205,44 @@ function ScreenGrid({ screens, t, deviceFrame }) {
 // ─── Prototype ──────────────────────────────────────────────────
 function Prototype({ t, deviceFrame }) {
   const [route, setRoute] = React.useState(() => {
-    try { return localStorage.getItem('docket:route') || 'login'; } catch { return 'login'; }
+    try { return localStorage.getItem('petal:route') || 'login'; } catch { return 'login'; }
   });
   const [direction, setDirection] = React.useState('jump');
   const go = (r) => {
     setDirection('jump');
     setRoute(r);
-    try { localStorage.setItem('docket:route', r); } catch {}
+    try { localStorage.setItem('petal:route', r); } catch {}
   };
   const goNext = (r) => {
     setDirection('forward');
     setRoute(r);
-    try { localStorage.setItem('docket:route', r); } catch {}
+    try { localStorage.setItem('petal:route', r); } catch {}
   };
   const goBack = (r) => {
     setDirection('back');
     setRoute(r);
-    try { localStorage.setItem('docket:route', r); } catch {}
+    try { localStorage.setItem('petal:route', r); } catch {}
   };
 
   // ─── Portal state: payment + 8879 signing ───
   const [paid, setPaid] = React.useState(() => {
-    try { return localStorage.getItem('docket:paid') === '1'; } catch { return false; }
+    try { return localStorage.getItem('petal:paid') === '1'; } catch { return false; }
   });
   const [signed8879, setSigned8879] = React.useState(() => {
-    try { return localStorage.getItem('docket:signed8879') === '1'; } catch { return false; }
+    try { return localStorage.getItem('petal:signed8879') === '1'; } catch { return false; }
   });
   const [paymentOpen, setPaymentOpen] = React.useState(false);
   const markPaid = () => {
     setPaid(true);
-    try { localStorage.setItem('docket:paid', '1'); } catch {}
+    try { localStorage.setItem('petal:paid', '1'); } catch {}
   };
   const markSigned = () => {
     setSigned8879(true);
-    try { localStorage.setItem('docket:signed8879', '1'); } catch {}
+    try { localStorage.setItem('petal:signed8879', '1'); } catch {}
   };
   const resetPortal = () => {
     setPaid(false); setSigned8879(false);
-    try { localStorage.removeItem('docket:paid'); localStorage.removeItem('docket:signed8879'); } catch {}
+    try { localStorage.removeItem('petal:paid'); localStorage.removeItem('petal:signed8879'); } catch {}
   };
 
   // Intake order

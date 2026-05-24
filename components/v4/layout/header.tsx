@@ -6,7 +6,7 @@ import { HEADER_SLOT_ATTR } from "./shell-context";
 /**
  * Header — 48px top bar, persistent across triage and client workspace.
  *
- * Layout per DOCKET-V4-PRD.md §3.4 and design-references/docket-direction-b-v2.html:
+ * Layout per PETAL-V4-PRD.md §3.4 and design-references/petal-direction-b-v2.html:
  *   [ 200px brand ] [ flex: header-middle portal target ] [ ⌘K  🔔  avatar ]
  *
  * The middle region is a DOM node marked with `data-header-slot` so
@@ -71,7 +71,7 @@ function Brand() {
           letterSpacing: "-0.015em",
           fontVariationSettings: '"opsz" 144, "SOFT" 30'
         }}>
-        Docket
+        Petal
       </span>
     </div>
   );

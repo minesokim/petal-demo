@@ -1,5 +1,5 @@
 // ============================================================
-// DOCKET ACTIONS - Comprehensive mock data for all 26 agentic capabilities
+// PETAL ACTIONS - Comprehensive mock data for all 26 agentic capabilities
 // ============================================================
 
 import { type ActionItem, type Client, clients, actionItems } from "./mock-data";
@@ -299,7 +299,7 @@ export const complianceAlerts: ComplianceAlert[] = [
 ];
 
 // --- Anomaly Alerts ---
-// c1 Marcus Chen anomaly merged into DocketInsight supplementary data
+// c1 Marcus Chen anomaly merged into PetalInsight supplementary data
 export const anomalyAlerts: AnomalyAlert[] = [];
 
 // --- Escalation States ---
@@ -364,7 +364,7 @@ export const batchOperations: BatchOperation[] = [
 ];
 
 // --- Deduction Suggestions ---
-// c18 Mei-Lin Wu QBI merged into DocketInsight supplementary data
+// c18 Mei-Lin Wu QBI merged into PetalInsight supplementary data
 export const deductionSuggestions: DeductionSuggestion[] = [
   {
     id: "ds2", clientId: "c15", clientName: "Carlos & Elena Mendez",
@@ -387,11 +387,11 @@ export const irsNotices: IrsNotice[] = [
 ];
 
 // --- Extension Predictions ---
-// Extension predictions merged into DocketInsight supplementary data
+// Extension predictions merged into PetalInsight supplementary data
 export const extensionPredictions: ExtensionPrediction[] = [];
 
 // --- Estimated Tax ---
-// c18 Mei-Lin Wu quarterly estimates merged into DocketInsight supplementary data
+// c18 Mei-Lin Wu quarterly estimates merged into PetalInsight supplementary data
 export const estimatedTaxCalcs: EstimatedTaxCalc[] = [
   {
     id: "et2", clientId: "c12", clientName: "Jasmine Torres",

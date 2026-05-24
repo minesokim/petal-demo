@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { clients, stageLabels, actionItems, getClientPaymentSummary } from "@/lib/mock-data";
@@ -14,14 +15,14 @@ import {
   Command as CommandIcon
 } from "lucide-react";
 
-// ─── Cycling placeholder phrases ───
+// ─── Cycling placeholder phrases (≤2 words each — terse on purpose) ───
 const placeholders = [
-  "Search clients, docs, actions...",
-  "Who needs my attention today?",
-  "Show me overdue deposits",
-  "Draft a message to Vladimir...",
-  "Which returns are ready to file?",
-  "Show DeShawn's missing documents",
+  "Search anything",
+  "Find clients",
+  "Recent activity",
+  "Pending tasks",
+  "Missing docs",
+  "Quick reply",
 ];
 
 // ─── Search data builders ───
@@ -179,7 +180,7 @@ function ActionIcon({ type }: { type: string }) {
 }
 
 // ─── Main Component ───
-export function DocketCommand() {
+export function PetalCommand() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -187,10 +188,13 @@ export function DocketCommand() {
   const [aiResponse, setAiResponse] = useState<ReturnType<typeof getAIResponse> | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Cycle placeholders
+  useEffect(() => { setMounted(true); }, []);
+
+  // Cycle placeholders every 3s while the trigger is at rest.
   useEffect(() => {
     if (open) return;
     const interval = setInterval(() => {
@@ -277,7 +281,7 @@ export function DocketCommand() {
       {/* ─── Resting trigger ─── */}
       <button
         onClick={() => setOpen(true)}
-        className="relative flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm transition-all hover:border-border hover:shadow-sm"
+        className="relative flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 text-sm transition-all hover:bg-muted hover:shadow-sm"
       >
         <Search className="size-3.5 text-muted-foreground/60" />
         <AnimatePresence mode="wait">
@@ -297,8 +301,9 @@ export function DocketCommand() {
         </div>
       </button>
 
-      {/* ─── Modal overlay ─── */}
-      <AnimatePresence>
+      {/* ─── Modal overlay (portaled to escape sidebar stacking context) ─── */}
+      {mounted && createPortal(
+        <AnimatePresence>
         {open && (
           <>
             {/* Backdrop — darkened + blurred */}
@@ -329,7 +334,7 @@ export function DocketCommand() {
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setAiMode(false); setAiResponse(null); setSelectedIdx(0); }}
                     onKeyDown={handleKeyDown}
-                    placeholder="Search clients, docs, actions..."
+                    placeholder="Search anything"
                     className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/40"
                     autoComplete="off"
                   />
@@ -404,7 +409,7 @@ export function DocketCommand() {
                       >
                         <div className="px-1">
                           <p className="mb-3 px-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground/40">
-                            Ask Docket
+                            Ask Petal
                           </p>
                           <div className="space-y-0.5">
                             {exampleQueries.map((eq) => (
@@ -441,7 +446,7 @@ export function DocketCommand() {
                                 <div className="size-2 rounded-full bg-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-[11px] text-muted-foreground/50">Ask Docket</div>
+                                <div className="text-[11px] text-muted-foreground/50">Ask Petal</div>
                                 <div className="text-sm truncate">{query}</div>
                               </div>
                               <CornerDownLeft className="size-3.5 text-muted-foreground/30 shrink-0" />
@@ -531,7 +536,7 @@ export function DocketCommand() {
                             ))}
                           </div>
                         )}
-                        {/* Ask Docket row — below results when results exist */}
+                        {/* Ask Petal row — below results when results exist */}
                         {hasResults && (
                           <div className="mx-3 mb-2 mt-1">
                             <button
@@ -542,7 +547,7 @@ export function DocketCommand() {
                                 <div className="size-1.5 rounded-full bg-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-[11px] text-muted-foreground/50">Ask Docket</div>
+                                <div className="text-[11px] text-muted-foreground/50">Ask Petal</div>
                                 <div className="text-xs truncate">{query}</div>
                               </div>
                             </button>
@@ -569,7 +574,9 @@ export function DocketCommand() {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

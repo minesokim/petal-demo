@@ -1,8 +1,9 @@
 // ============================================================
-// DOCKET DOCUMENTS - Mock data for Documents system
+// PETAL DOCUMENTS - Mock data for Documents system
 // ============================================================
 
 import { clients } from "./mock-data";
+import { getAllForm8867Completions, getForm8867Completion } from "./form-8867-store";
 
 // ============================================================
 // TYPES
@@ -450,8 +451,44 @@ export function getIntelligenceForDocument(documentId: string): DocumentIntellig
 // HELPERS
 // ============================================================
 
-export function getClientDocuments(clientId: string) {
-  return mockDocuments.filter(d => d.clientId === clientId);
+/**
+ * Build a virtual MockDocument from a completed Form 8867. Keeps the
+ * filed checklist visible alongside taxpayer-uploaded files so the
+ * Documents tab and the global Documents page reflect actual compliance work.
+ */
+function form8867AsDocument(clientId: string): MockDocument | null {
+  const completion = getForm8867Completion(clientId);
+  if (!completion) return null;
+  const client = clients.find(c => c.id === clientId);
+  return {
+    id: `f8867-${clientId}`,
+    clientId,
+    clientName: completion.clientName,
+    clientAvatar: client?.avatar ?? "",
+    fileName: `Form_8867_${completion.clientName.replace(/\s+/g, "_")}_${completion.answers.taxYear}.pdf`,
+    originalFileName: `Form_8867_${completion.answers.taxYear}.pdf`,
+    fileSize: "128 KB",
+    docType: "form_8867",
+    docTypeLabel: "8867",
+    docCategory: "agreements",
+    uploadedBy: "preparer",
+    viewedByPreparer: true,
+    uploadedAt: completion.completedAt,
+    status: "signed",
+  };
+}
+
+export function getClientDocuments(clientId: string): MockDocument[] {
+  const base = mockDocuments.filter(d => d.clientId === clientId);
+  const f8867 = form8867AsDocument(clientId);
+  return f8867 ? [...base, f8867] : base;
+}
+
+/** All completed Form 8867s as virtual documents — for the global documents page. */
+export function getAllForm8867Documents(): MockDocument[] {
+  return getAllForm8867Completions()
+    .map(c => form8867AsDocument(c.clientId))
+    .filter((d): d is MockDocument => d !== null);
 }
 
 export function getClientChecklist(clientId: string) {

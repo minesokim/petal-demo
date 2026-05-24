@@ -1,16 +1,16 @@
-# Docket Product Bible
+# Petal Product Bible
 
-> The single source of truth for building Docket. If you're a developer, AI model, designer, or investor touching this product, read this first.
+> The single source of truth for building Petal. If you're a developer, AI model, designer, or investor touching this product, read this first.
 
 ---
 
-## What is Docket?
+## What is Petal?
 
-Docket is an AI-native practice management platform for solo enrolled agents and small tax preparers. It replaces 5+ disconnected tools (Cognito Forms, Calendly, Square, IRS Solutions, email) with one integrated system.
+Petal is an AI-native practice management platform for solo enrolled agents and small tax preparers. It replaces 5+ disconnected tools (Cognito Forms, Calendly, Square, IRS Solutions, email) with one integrated system.
 
 Two apps:
-1. **Docket Dashboard** (preparer-facing) — command center for managing clients, returns, documents, payments, and AI intelligence
-2. **Docket Portal** (client-facing) — branded client portal for document upload, return status, payments, e-signatures, and messaging
+1. **Petal Dashboard** (preparer-facing) — command center for managing clients, returns, documents, payments, and AI intelligence
+2. **Petal Portal** (client-facing) — branded client portal for document upload, return status, payments, e-signatures, and messaging
 
 ---
 
@@ -38,7 +38,7 @@ Antonio is our founding user and the person every feature is designed for.
 
 5. **Iteration over perfection.** "Never a finished product. One tax season happens and I'll come back to you."
 
-### His pain points (why Docket exists):
+### His pain points (why Petal exists):
 
 - **Document collection chaos**: Clients submit incomplete docs. He follows up 3-4 times via email/text. Sensitive data flying around insecurely.
 - **"Where's my return?"**: Constant phone calls/texts. No visibility. He calls this "a solved problem in every other industry" (DoorDash tracks your pizza).
@@ -55,7 +55,7 @@ Antonio is our founding user and the person every feature is designed for.
 ### "Automate Antonio's side, humanize the client's side."
 
 - **For Antonio**: AI drafts messages, extracts documents, flags compliance risks, predicts extensions, calculates estimates. Antonio reviews and approves. AI never acts alone.
-- **For clients**: The portal feels personal. Antonio's logo, Antonio's voice, Antonio's welcome message. Clients interact with "Vazant Consulting," not "Docket."
+- **For clients**: The portal feels personal. Antonio's logo, Antonio's voice, Antonio's welcome message. Clients interact with "Vazant Consulting," not "Petal."
 
 ### The Quarantine Pattern (AI Safety)
 
@@ -177,7 +177,7 @@ Work is organized by stage, not by deadline. This enables triage: "Who needs me 
 | Component | What | Backend needs |
 |---|---|---|
 | Notification Bell | Unread notification dropdown with actions | notifications table |
-| Ask Docket (AI Panel) | Conversational AI about clients/tax | LLM API + client data context |
+| Ask Petal (AI Panel) | Conversational AI about clients/tax | LLM API + client data context |
 | Time Tracker | Floating timer per client with activity types | time_entries table |
 | ERO Signature Dialog | Multi-step 8879 signing flow | ero_config + tax_returns + audit_log |
 | Client Detail Dialog | Modal version of client overview | Same as client detail pages |
@@ -216,12 +216,12 @@ Work is organized by stage, not by deadline. This enables triage: "Who needs me 
 
 ## Competitive Landscape
 
-| Competitor | What they do | What Docket does better |
+| Competitor | What they do | What Petal does better |
 |---|---|---|
 | **TaxDome** | Practice management + client portal | AI-native (not bolted on). Document extraction, compliance alerts, anomaly detection, deduction mining built in. |
 | **Canopy** | Practice management + intake workflows | More opinionated pipeline (7 stages vs generic). AI drafts messages. Voice-to-todo. |
-| **Carbon** | AI tax assistant | Carbon is B2C (consumer tax). Docket is B2B (for the preparer, not the client). |
-| **Accruel** | Automated form-filling | Docket is full workflow, not just forms. Portal, messaging, payments, ERO signing. |
+| **Carbon** | AI tax assistant | Carbon is B2C (consumer tax). Petal is B2B (for the preparer, not the client). |
+| **Accruel** | Automated form-filling | Petal is full workflow, not just forms. Portal, messaging, payments, ERO signing. |
 
 Antonio's take: "Nothing is really emerging in terms of what we're trying to do" (AI-native + tax workflow + client portal all together).
 
@@ -230,7 +230,7 @@ Antonio's take: "Nothing is really emerging in terms of what we're trying to do"
 ## Business Context
 
 - **Deal**: $12K founding partnership with 2% equity, lifetime platform access, no monthly fees
-- **Market**: Medium-scale agencies pay $200-500K for custom portals. Docket targets solo EAs/CPAs at $125-200/month (future pricing).
+- **Market**: Medium-scale agencies pay $200-500K for custom portals. Petal targets solo EAs/CPAs at $125-200/month (future pricing).
 - **Distribution**: Antonio's mentor runs an EA training network with "thousands of people." If Antonio succeeds, mentor recommends to network.
 - **Tech stack**: Next.js (Vercel) + Convex (reactive backend) + Stripe + Google Calendar/Meet + AI APIs (GPT-4o, Document AI)
 - **Running cost**: ~$80-110/month (Convex Pro $25 + Vercel Pro $40 for 2 apps + AI ~$15-45 + Stripe pass-through)

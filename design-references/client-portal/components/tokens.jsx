@@ -1,7 +1,7 @@
-// Docket v4 — Design tokens + primitives
+// Petal v4 — Design tokens + primitives
 // Tone variants: 'editorial' (warm cream), 'minimal' (crisp off-white), 'magazine' (bold/inky)
 
-const DOCKET_TOKENS = {
+const PETAL_TOKENS = {
   editorial: {
     bg: '#F5F2EA',
     bgElev: '#FBF9F3',
@@ -99,7 +99,7 @@ function accentColors(hue = 150) {
 
 // Theme hook
 function useTheme({ tone = 'editorial', fonts = 'classic', density = 'comfortable', hue = 150 } = {}) {
-  const base = DOCKET_TOKENS[tone];
+  const base = PETAL_TOKENS[tone];
   const font = FONT_PAIRINGS[fonts];
   const d = DENSITY[density];
   const a = accentColors(hue);
@@ -323,7 +323,7 @@ function AvatarSlot({ t, size = 56, label = 'A', style }) {
 }
 
 Object.assign(window, {
-  DOCKET_TOKENS, FONT_PAIRINGS, DENSITY, accentColors, useTheme,
+  PETAL_TOKENS, FONT_PAIRINGS, DENSITY, accentColors, useTheme,
   Screen, Stack, Row, Card, Button, Eyebrow, H1, H2, Body,
   ProgressBar, Placeholder, AvatarSlot,
 });

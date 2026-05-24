@@ -39,7 +39,7 @@ export default function RemindersPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">Automated Reminders</h3>
-        <p className="text-sm text-muted-foreground">Configure when Docket generates follow-ups and flags overdue items.</p>
+        <p className="text-sm text-muted-foreground">Configure when Petal generates follow-ups and flags overdue items.</p>
       </div>
 
       <Card>

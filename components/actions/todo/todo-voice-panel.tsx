@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Mic, Clock, Sparkles, User } from "lucide-react";
+import { Plus, Mic, Clock, User } from "lucide-react";
+import { PetalMark } from "@/components/petal-mark";
 import { initialTodos, voiceDumpSession, type TodoItem } from "@/lib/actions-mock-data";
 
 export function TodoVoicePanel() {
@@ -30,7 +31,7 @@ export function TodoVoicePanel() {
   const sourceIcon = (source: string) => {
     switch (source) {
       case "voice": return <Mic className="size-3 text-muted-foreground" />;
-      case "ai": return <Sparkles className="size-3 text-muted-foreground" />;
+      case "ai": return <PetalMark className="size-3 text-muted-foreground" />;
       default: return <User className="size-3 text-muted-foreground" />;
     }
   };

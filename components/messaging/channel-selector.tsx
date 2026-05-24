@@ -1,15 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { MessageSquare, Mail, Smartphone } from "lucide-react";
+import { Globe, Mail, Smartphone } from "lucide-react";
 import type { CommChannel } from "@/lib/comms-mock-data";
 
 type ComposableChannel = Exclude<CommChannel, "voice">;
 
-const channels: { value: ComposableChannel; icon: React.ElementType; label: string }[] = [
-  { value: "portal", icon: MessageSquare, label: "Portal" },
-  { value: "email", icon: Mail, label: "Email" },
-  { value: "sms", icon: Smartphone, label: "SMS" },
+const channels: { value: ComposableChannel; icon: React.ElementType; label: string; color: string }[] = [
+  { value: "portal", icon: Globe, label: "Portal", color: "text-purple-600 dark:text-purple-400" },
+  { value: "email", icon: Mail, label: "Email", color: "text-blue-600 dark:text-blue-400" },
+  { value: "sms", icon: Smartphone, label: "SMS", color: "text-emerald-600 dark:text-emerald-400" },
 ];
 
 interface ChannelSelectorProps {
@@ -36,8 +36,8 @@ export function ChannelSelector({ value, onChange, suggestSms }: ChannelSelector
                 : "text-muted-foreground hover:text-foreground/70"
             )}
           >
-            <Icon className="size-3" />
-            <span className="hidden sm:inline">{ch.label}</span>
+            <Icon className={cn("size-3", isActive ? ch.color : "")} />
+            <span>{ch.label}</span>
             {ch.value === "sms" && suggestSms && !isActive && (
               <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-500" />
             )}

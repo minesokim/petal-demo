@@ -19,10 +19,15 @@ import { DocTypeBadge } from "@/components/documents/doc-type-badge";
 import {
   mockDocuments, checklistItems, firmDocuments,
   getDocumentsByDay, getUnviewedCount, getMissingCount,
-  getIntelligenceForDocument,
+  getIntelligenceForDocument, getAllForm8867Documents,
   type MockDocument
 } from "@/lib/documents-mock-data";
+import { subscribeForm8867, getAllForm8867Completions, type Form8867Completion } from "@/lib/form-8867-store";
 import { useToast } from "@/components/ui/toast-notification";
+import { useSyncExternalStore } from "react";
+
+// Stable empty array for SSR snapshot — avoids infinite-loop warning from useSyncExternalStore
+const EMPTY_COMPLETIONS: Form8867Completion[] = [];
 
 // Stat data
 const docStatusData: { value: number; color: string; label: string }[] = [
@@ -330,9 +335,22 @@ export default function DocumentsPage() {
   const docsByDay = getDocumentsByDay();
   const missingItems = checklistItems.filter(c => !c.received).sort((a, b) => b.daysSinceRequested - a.daysSinceRequested);
 
+  // Subscribe to Form 8867 completions — use the cached completions array (stable
+  // reference) as the snapshot; derive documents via useMemo so the render stays
+  // pure and we don't trigger useSyncExternalStore's infinite-loop guard.
+  const form8867Completions = useSyncExternalStore(
+    subscribeForm8867,
+    getAllForm8867Completions,
+    () => EMPTY_COMPLETIONS
+  );
+  const form8867Docs = useMemo(
+    () => (form8867Completions.length > 0 ? getAllForm8867Documents() : []),
+    [form8867Completions]
+  );
+
   // Search filtering — searches filename, client name, doc type, and AI content
   const allDocsFiltered = useMemo(() => {
-    return mockDocuments
+    return [...mockDocuments, ...form8867Docs]
       .filter(d => {
         if (!search) return true;
         const q = search.toLowerCase();
@@ -347,7 +365,7 @@ export default function DocumentsPage() {
         );
       })
       .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-  }, [search]);
+  }, [search, form8867Docs]);
 
   const handleStatClick = (tab: string) => setActiveTab(tab);
   const handleOpenDoc = (doc: MockDocument) => {

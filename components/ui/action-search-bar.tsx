@@ -27,7 +27,7 @@ export interface Action {
   end?: string;
 }
 
-const docketActions: Action[] = [
+const petalActions: Action[] = [
   { id: "1", label: "Missing documents", icon: <FileText className="h-4 w-4 text-red-500" />, description: "14 clients", short: "", end: "Urgent" },
   { id: "2", label: "Send reminder to Priya Sharma", icon: <Send className="h-4 w-4 text-blue-500" />, description: "Collecting docs", short: "", end: "Action" },
   { id: "3", label: "Review Roberto Fuentes 1120S", icon: <FileText className="h-4 w-4 text-amber-500" />, description: "Ready for review", short: "", end: "Review" },
@@ -38,7 +38,7 @@ const docketActions: Action[] = [
   { id: "8", label: "Upload documents for David Park", icon: <Upload className="h-4 w-4 text-blue-500" />, description: "2 docs missing", short: "", end: "Docs" },
 ];
 
-function ActionSearchBar({ actions = docketActions }: { actions?: Action[] }) {
+function ActionSearchBar({ actions = petalActions }: { actions?: Action[] }) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<{ actions: Action[] } | null>(null);
   const [isFocused, setIsFocused] = useState(false);

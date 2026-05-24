@@ -22,9 +22,9 @@ import { cn } from "@/lib/utils";
 /**
  * Nav — 200px left rail, persistent across triage and client workspace.
  *
- * Structure per DOCKET-V4-PRD.md §3.3 and design-references/docket-direction-b-v2.html:
+ * Structure per PETAL-V4-PRD.md §3.3 and design-references/petal-direction-b-v2.html:
  *   Queue: Triage (urgent count), Snoozed, Done today
- *   Views: Clients, Pipeline, Documents, Calendar, Ask Docket
+ *   Views: Clients, Pipeline, Documents, Calendar, Ask Petal
  *   Firm:  Automations, Integrations, Compliance
  *   Footer: user profile (avatar + name + firm)
  *
@@ -95,7 +95,7 @@ export function Nav({
         { label: "Pipeline", icon: Columns3, href: `${basePath}/pipeline` },
         { label: "Documents", icon: FileText, href: `${basePath}/documents`, count: c.documents },
         { label: "Calendar", icon: Calendar, href: `${basePath}/calendar` },
-        { label: "Ask Docket", icon: Sparkles, href: `${basePath}/ask` }
+        { label: "Ask Petal", icon: Sparkles, href: `${basePath}/ask` }
       ]
     },
     {

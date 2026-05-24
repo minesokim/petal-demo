@@ -8,12 +8,26 @@ import {
   SendIcon, CopyIcon, RefreshCwIcon, ShareIcon,
   MoreHorizontalIcon, SearchIcon, FileTextIcon,
   Loader2Icon, PanelRightCloseIcon, MessageSquareTextIcon,
-  MaximizeIcon, MinimizeIcon
+  MaximizeIcon, MinimizeIcon,
+  Plus, Paperclip, Database, Table as TableIcon,
+  Check, Globe, Users
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { voiceDumpSession, type VoiceParsedItem } from "@/lib/actions-mock-data";
 import { clients } from "@/lib/mock-data";
 import { X as XIcon, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
+import {
+  subscribePetalPrompts,
+  getPetalPrompts,
+  addPetalPrompt,
+  deletePetalPrompt,
+  type SavedPrompt,
+} from "@/lib/petal-prompts-store";
 
 /* ------------------------------------------------------------------ */
 /*  Context                                                            */
@@ -28,6 +42,8 @@ type AIPanelContextType = {
   isFullPage: boolean;
   toggle: () => void;
   open: () => void;
+  /** Open the panel directly in fullscreen mode — used by the sidebar "Ask Petal" entry. */
+  openFullScreen: () => void;
   close: () => void;
   toggleFullPage: () => void;
   askQuestion: (question: string) => void;
@@ -38,7 +54,7 @@ type AIPanelContextType = {
 };
 
 const AIPanelContext = createContext<AIPanelContextType>({
-  isOpen: false, isFullPage: false, toggle: () => {}, open: () => {}, close: () => {},
+  isOpen: false, isFullPage: false, toggle: () => {}, open: () => {}, openFullScreen: () => {}, close: () => {},
   toggleFullPage: () => {}, askQuestion: () => {}, pendingQuestion: null, clearPendingQuestion: () => {},
   clientContext: null, setClientContext: () => {},
 });
@@ -60,6 +76,7 @@ export function AIPanelProvider({ children }: { children: React.ReactNode }) {
       isFullPage,
       toggle: () => setIsOpen((v) => !v),
       open: () => setIsOpen(true),
+      openFullScreen: () => { setIsOpen(true); setIsFullPage(true); },
       close: () => { setIsOpen(false); setIsFullPage(false); },
       toggleFullPage: () => setIsFullPage((v) => !v),
       askQuestion: (q: string) => { setPendingQuestion(q); setIsOpen(true); },
@@ -710,12 +727,678 @@ function CyclingSuggestions({ onSelect, clientContext }: { onSelect: (q: string)
 }
 
 /* ------------------------------------------------------------------ */
+/*  Fullscreen Landing (Harvey-style)                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Common integrations + MCP-style connectors for the accounting / CPA space.
+ * Replaces Harvey's legal stack (Vault, EDGAR, LexisNexis, iManage).
+ */
+type Integration = {
+  name: string;
+  /** Path to a PNG logo in /public/integrations. Preferred over IconNode when present. */
+  src?: string;
+  /** Fallback render for integrations without a real logo (letter badges). */
+  IconNode?: () => React.ReactNode;
+  /** Background tint behind the icon/letter — only used for IconNode fallback. */
+  bg?: string;
+};
+
+/** Primary integration row — real brand logos. */
+const PETAL_INTEGRATIONS: Integration[] = [
+  { name: "QuickBooks Online", src: "/integrations/quickbooks.png" },
+  { name: "Xero", src: "/integrations/xero.png" },
+  { name: "Drake Tax", src: "/integrations/drake.png" },
+  { name: "IRS e-Services", src: "/integrations/irs.png" },
+  { name: "DocuSign", src: "/integrations/docusign.png" },
+  { name: "Plaid", src: "/integrations/plaid.png" },
+  { name: "TaxDome", src: "/integrations/taxdome.png" },
+];
+
+/**
+ * Additional integrations available under the "More" popover. Letter badges
+ * for now; swap to real logos as we acquire them.
+ */
+const MORE_INTEGRATIONS: Integration[] = [
+  { name: "Bill.com",        IconNode: () => <span className="text-[9px] font-bold leading-none text-red-700 dark:text-red-300">B</span>, bg: "bg-red-100 dark:bg-red-950/40" },
+  { name: "Gusto",           IconNode: () => <span className="text-[9px] font-bold leading-none text-orange-700 dark:text-orange-300">G</span>, bg: "bg-orange-100 dark:bg-orange-950/40" },
+  { name: "Box",             IconNode: () => <span className="text-[9px] font-bold leading-none text-blue-700 dark:text-blue-300">B</span>, bg: "bg-blue-100 dark:bg-blue-950/40" },
+  { name: "Microsoft 365",   IconNode: () => <span className="text-[9px] font-bold leading-none text-amber-700 dark:text-amber-300">M</span>, bg: "bg-amber-100 dark:bg-amber-950/40" },
+  { name: "Karbon",          IconNode: () => <span className="text-[9px] font-bold leading-none text-emerald-700 dark:text-emerald-300">K</span>, bg: "bg-emerald-100 dark:bg-emerald-950/40" },
+  { name: "Canopy",          IconNode: () => <span className="text-[9px] font-bold leading-none text-sky-700 dark:text-sky-300">C</span>, bg: "bg-sky-100 dark:bg-sky-950/40" },
+  { name: "ProSeries",       IconNode: () => <span className="text-[9px] font-bold leading-none text-emerald-700 dark:text-emerald-300">P</span>, bg: "bg-emerald-100 dark:bg-emerald-950/40" },
+  { name: "UltraTax",        IconNode: () => <span className="text-[9px] font-bold leading-none text-blue-700 dark:text-blue-300">U</span>, bg: "bg-blue-100 dark:bg-blue-950/40" },
+  { name: "Stripe",          IconNode: () => <span className="text-[9px] font-bold leading-none text-purple-700 dark:text-purple-300">S</span>, bg: "bg-purple-100 dark:bg-purple-950/40" },
+  { name: "Google Drive",    IconNode: () => <span className="text-[9px] font-bold leading-none text-green-700 dark:text-green-300">GD</span>, bg: "bg-green-100 dark:bg-green-950/40" },
+];
+
+/** All integrations indexed by name — for resolving attached source chips. */
+const ALL_INTEGRATIONS: Record<string, Integration> = Object.fromEntries(
+  [...PETAL_INTEGRATIONS, ...MORE_INTEGRATIONS].map(i => [i.name, i])
+);
+
+/** Renders just the small icon chip — used both in pills + in attached chips. */
+function IntegrationIconChip({ integ, size = "size-5" }: { integ: Integration; size?: string }) {
+  if (integ.src) {
+    return (
+      <span className={`flex ${size} shrink-0 items-center justify-center overflow-hidden rounded bg-white p-0.5 ring-1 ring-border/50`}>
+        <img src={integ.src} alt={integ.name} className="size-full object-contain" />
+      </span>
+    );
+  }
+  const I = integ.IconNode!;
+  return (
+    <span className={`flex ${size} shrink-0 items-center justify-center rounded ${integ.bg ?? "bg-muted"}`}>
+      <I />
+    </span>
+  );
+}
+
+/** Mock "Recent" list — the kind of thing a real session-history table would back. */
+const PETAL_RECENT = [
+  { type: "table" as const, title: "Analyze deductions across portfolio", date: "Today" },
+  { type: "chat" as const, title: "Compare service tiers vs collections rate", date: "Today" },
+  { type: "doc" as const, title: "Email to client for missing 1099s", date: "Yesterday" },
+  { type: "table" as const, title: "Form 8867 compliance scan", date: "Yesterday" },
+];
+
+/**
+ * Client scoping dropdown — searchable, Command-driven.
+ * Defaults to "All clients". Picking a client sets `clientContext` on the panel
+ * so subsequent prompts (and integration cards) are scoped to that client.
+ */
+function ClientPicker() {
+  const { clientContext, setClientContext } = useAIPanel();
+  const [open, setOpen] = useState(false);
+  const selected = clientContext;
+
+  // Initials for the small avatar chip
+  const initials = (name: string) =>
+    name.split(" ").map(s => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cnLite(
+            "flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] transition-colors",
+            "hover:bg-muted hover:text-foreground",
+            selected ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {selected ? (
+            <>
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[8px] font-semibold uppercase">
+                {initials(selected.clientName)}
+              </span>
+              <span className="font-medium">{selected.clientName}</span>
+              <span
+                role="button"
+                aria-label="Clear client"
+                onClick={(e) => { e.stopPropagation(); setClientContext(null); }}
+                className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+              >
+                <XIcon size={10} />
+              </span>
+            </>
+          ) : (
+            <>
+              <Users size={12} />
+              <span>All clients</span>
+              <ChevronDown size={11} className="text-muted-foreground/60" />
+            </>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        className="w-[320px] p-0 overflow-hidden"
+      >
+        <Command>
+          <CommandInput placeholder={`Search ${clients.length} clients...`} className="h-10" />
+          <CommandList className="max-h-[340px]">
+            <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">
+              No clients match
+            </CommandEmpty>
+            <CommandGroup heading="Scope">
+              <CommandItem
+                value="__all__ all clients"
+                onSelect={() => { setClientContext(null); setOpen(false); }}
+                className="flex items-center gap-2.5 py-2"
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground/5 text-muted-foreground">
+                  <Globe size={13} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium">All clients</div>
+                  <div className="text-[11px] text-muted-foreground">Broad query across your roster</div>
+                </div>
+                {!selected && <Check size={14} className="text-foreground" />}
+              </CommandItem>
+            </CommandGroup>
+            <CommandGroup heading="Clients">
+              {clients.map((c) => {
+                const isSelected = selected?.clientId === c.id;
+                return (
+                  <CommandItem
+                    key={c.id}
+                    value={`${c.fullName} ${c.email ?? ""} ${c.returnStage}`}
+                    onSelect={() => {
+                      setClientContext({ clientId: c.id, clientName: c.fullName });
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 py-2"
+                  >
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold uppercase text-foreground/80">
+                      {initials(c.fullName)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-medium truncate">{c.fullName}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {prettyStage(c.returnStage)} · {c.filingStatus?.toUpperCase?.() ?? ""}
+                      </div>
+                    </div>
+                    {isSelected && <Check size={14} className="text-foreground" />}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * Saved-prompt library — seeded with the canonical CPA/EA workflows Antonio
+ * is likely to reach for. Click to fire the prompt against the current
+ * client-scope. New saved prompts would be inserted into this list (in
+ * production: user-editable + persisted via the same store as completions).
+ */
+const PETAL_SAVED_PROMPTS: { category: string; items: { title: string; prompt: string }[] }[] = [
+  {
+    category: "Compliance",
+    items: [
+      { title: "Find clients missing 1099s", prompt: "Which clients still need to submit 1099 forms for this tax year?" },
+      { title: "Check Form 8867 due diligence", prompt: "Run a Form 8867 compliance scan across all returns claiming EIC, CTC/ACTC/ODC, AOTC, or HOH." },
+      { title: "Identify HOH eligibility", prompt: "Verify Head of Household filing status eligibility for the scoped client(s)." },
+    ],
+  },
+  {
+    category: "Calculations",
+    items: [
+      { title: "Compute QBI deduction", prompt: "Calculate the Section 199A Qualified Business Income deduction for this client." },
+      { title: "Calculate AMT exposure", prompt: "Compute Alternative Minimum Tax exposure for this client." },
+      { title: "Estimated tax safe harbor", prompt: "Compute Q1–Q4 estimated tax payments needed to satisfy the safe-harbor rule for this client." },
+    ],
+  },
+  {
+    category: "Analysis",
+    items: [
+      { title: "Compare year-over-year changes", prompt: "Compare this year's return to last year's and surface significant changes (income, deductions, credits)." },
+      { title: "Find clients past deposit due date", prompt: "Which clients have unpaid deposits past their due date?" },
+      { title: "Review return for red flags", prompt: "Scan this client's return for audit triggers, missed deductions, and computational errors." },
+    ],
+  },
+];
+
+// Stable empty array for the SSR snapshot — same identity each call so
+// useSyncExternalStore doesn't warn about server/client mismatch.
+const EMPTY_PROMPTS: SavedPrompt[] = [];
+
+function PromptsLibrary({ onSelect }: { onSelect: (q: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"list" | "add">("list");
+  const [newTitle, setNewTitle] = useState("");
+  const [newBody, setNewBody] = useState("");
+
+  // Subscribe to the user-saved prompts store
+  const userPrompts = useSyncExternalStore<SavedPrompt[]>(
+    subscribePetalPrompts,
+    getPetalPrompts,
+    () => EMPTY_PROMPTS
+  );
+
+  const canSave = newTitle.trim().length > 0 && newBody.trim().length > 0;
+
+  const resetForm = () => {
+    setNewTitle("");
+    setNewBody("");
+    setMode("list");
+  };
+
+  const handleSave = () => {
+    if (!canSave) return;
+    addPetalPrompt({ title: newTitle, prompt: newBody });
+    resetForm();
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) resetForm();
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+          Prompts <ChevronDown size={11} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={6} className="w-[360px] p-0 overflow-hidden">
+        {mode === "add" ? (
+          // ─── Add new prompt form ───
+          <div className="p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="text-[13px] font-semibold">New prompt</div>
+              <button
+                onClick={resetForm}
+                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Cancel"
+              >
+                <XIcon size={14} />
+              </button>
+            </div>
+            <input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Title — e.g. Find missing K-1s"
+              className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none transition-colors focus:border-foreground/30"
+              autoFocus
+            />
+            <textarea
+              value={newBody}
+              onChange={(e) => setNewBody(e.target.value)}
+              placeholder="The prompt Petal will run when you pick this..."
+              rows={4}
+              className="w-full resize-none rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] leading-relaxed outline-none transition-colors focus:border-foreground/30"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="ghost" size="sm" className="h-7 text-[12px]" onClick={resetForm}>
+                Cancel
+              </Button>
+              <Button size="sm" className="h-7 gap-1 text-[12px]" disabled={!canSave} onClick={handleSave}>
+                <Check size={12} /> Save prompt
+              </Button>
+            </div>
+          </div>
+        ) : (
+          // ─── List view ───
+          <Command>
+            <CommandInput placeholder="Search saved prompts..." className="h-10" />
+            <CommandList className="max-h-[380px]">
+              <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">
+                No prompts match
+              </CommandEmpty>
+
+              {/* User-saved prompts (newest first) */}
+              {userPrompts.length > 0 && (
+                <CommandGroup heading="My prompts">
+                  {userPrompts.map((p) => (
+                    <CommandItem
+                      key={p.id}
+                      value={`${p.title} ${p.prompt}`}
+                      onSelect={() => { onSelect(p.prompt); setOpen(false); }}
+                      className="group flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="flex w-full items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[13px] font-medium">{p.title}</div>
+                          <div className="text-[11px] text-muted-foreground line-clamp-1">{p.prompt}</div>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deletePetalPrompt(p.id); }}
+                          className="shrink-0 rounded p-0.5 text-muted-foreground/40 opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                          aria-label={`Delete ${p.title}`}
+                        >
+                          <XIcon size={11} />
+                        </button>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {/* Default canonical prompts */}
+              {PETAL_SAVED_PROMPTS.map((group) => (
+                <CommandGroup key={group.category} heading={group.category}>
+                  {group.items.map((item) => (
+                    <CommandItem
+                      key={item.title}
+                      value={`${item.title} ${item.prompt}`}
+                      onSelect={() => { onSelect(item.prompt); setOpen(false); }}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="text-[13px] font-medium">{item.title}</div>
+                      <div className="text-[11px] text-muted-foreground line-clamp-1">{item.prompt}</div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+
+            {/* Footer — "Save new prompt" action */}
+            <div className="border-t border-border/60 p-2">
+              <button
+                onClick={() => setMode("add")}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium text-foreground/85 transition-colors hover:bg-muted"
+              >
+                <Plus size={13} className="text-muted-foreground" />
+                Save a new prompt
+              </button>
+            </div>
+          </Command>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Tiny local className util — avoids importing the heavier cn() in this file
+function cnLite(...args: (string | false | null | undefined)[]) {
+  return args.filter(Boolean).join(" ");
+}
+
+function prettyStage(stage: string): string {
+  return stage.split("_").map(w => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+}
+
+/** Shared pill renderer for both the primary row and the More popover. */
+function IntegrationPill({
+  integ,
+  attached,
+  onToggle,
+}: {
+  integ: Integration;
+  attached: boolean;
+  onToggle: (name: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onToggle(integ.name)}
+      className={cnLite(
+        "group flex items-center gap-2 rounded-md border px-3 py-1.5 transition-colors",
+        attached
+          ? "border-foreground/40 bg-muted text-foreground"
+          : "border-border bg-card text-foreground/85 hover:bg-muted"
+      )}
+    >
+      <IntegrationIconChip integ={integ} />
+      <span className="text-[13px]">{integ.name}</span>
+      {attached ? (
+        <XIcon size={12} className="text-muted-foreground" />
+      ) : (
+        <Plus size={12} className="text-muted-foreground/60 transition-colors group-hover:text-foreground" />
+      )}
+    </button>
+  );
+}
+
+/** "+ More" pill that opens a popover with the rest of the CPA integrations. */
+function MoreIntegrationsPopover({
+  attachedSources,
+  onToggle,
+}: {
+  attachedSources: string[];
+  onToggle: (name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const attachedFromMore = MORE_INTEGRATIONS.filter(i => attachedSources.includes(i.name)).length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cnLite(
+            "group flex items-center gap-1.5 rounded-md border px-3 py-1.5 transition-colors",
+            attachedFromMore > 0
+              ? "border-foreground/40 bg-muted text-foreground"
+              : "border-dashed border-border bg-card text-foreground/85 hover:bg-muted"
+          )}
+        >
+          <Plus size={13} className="text-muted-foreground" />
+          <span className="text-[13px]">
+            More{attachedFromMore > 0 ? ` · ${attachedFromMore}` : ""}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="center" sideOffset={6} className="w-[340px] p-0 overflow-hidden">
+        <Command>
+          <CommandInput placeholder="Search integrations..." className="h-10" />
+          <CommandList className="max-h-[320px]">
+            <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">
+              No integrations match
+            </CommandEmpty>
+            <CommandGroup heading="More integrations">
+              {MORE_INTEGRATIONS.map((integ) => {
+                const attached = attachedSources.includes(integ.name);
+                return (
+                  <CommandItem
+                    key={integ.name}
+                    value={integ.name}
+                    onSelect={() => { onToggle(integ.name); /* keep popover open so user can attach multiple */ }}
+                    className="flex items-center gap-2.5 py-2"
+                  >
+                    <IntegrationIconChip integ={integ} />
+                    <span className="flex-1 text-[13px] font-medium">{integ.name}</span>
+                    {attached ? (
+                      <Check size={14} className="text-foreground" />
+                    ) : (
+                      <Plus size={13} className="text-muted-foreground/60" />
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function AIPanelLanding({ onAsk }: { onAsk: (q: string) => void }) {
+  const [input, setInput] = useState("");
+  /** Integrations the user has attached as sources for the next prompt.
+      Matches Harvey's @-mention pattern — clicking a pill adds/removes it. */
+  const [attachedSources, setAttachedSources] = useState<string[]>([]);
+
+  const toggleSource = (name: string) => {
+    setAttachedSources(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    );
+  };
+
+  const send = () => {
+    const q = input.trim();
+    if (!q && attachedSources.length === 0) return;
+    // Prepend @-mentions so they're visible in the user's chat bubble
+    const sourcePrefix = attachedSources.length > 0
+      ? attachedSources.map(s => `@${s}`).join(" ") + " "
+      : "";
+    setInput("");
+    setAttachedSources([]);
+    onAsk(sourcePrefix + (q || "Tell me what's relevant from these sources."));
+  };
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-8 pt-12 pb-16 lg:pt-20">
+        {/* Serif title — matches Harvey's centerpiece */}
+        <h1 className="font-display text-center text-5xl font-medium tracking-tight">
+          Ask Petal
+        </h1>
+
+        {/* Action chips */}
+        <div className="flex justify-center gap-2.5">
+          <button
+            onClick={() => onAsk("Draft a follow-up message for a client")}
+            className="flex items-center gap-2 rounded-md border border-border bg-card px-3.5 py-2 text-[13px] text-foreground/85 transition-colors hover:bg-muted"
+          >
+            <FileTextIcon size={13} className="text-muted-foreground" /> Draft message
+          </button>
+          <button
+            onClick={() => onAsk("Review this tax return for issues")}
+            className="flex items-center gap-2 rounded-md border border-border bg-card px-3.5 py-2 text-[13px] text-foreground/85 transition-colors hover:bg-muted"
+          >
+            <TableIcon size={13} className="text-muted-foreground" /> Review return
+          </button>
+        </div>
+
+        {/* Client scope / Prompts row + main input */}
+        <div className="space-y-2 pt-6">
+          <div className="flex items-center justify-between px-1">
+            <ClientPicker />
+            <PromptsLibrary onSelect={onAsk} />
+          </div>
+
+          <div className="rounded-2xl border border-border bg-muted/30 transition-colors focus-within:border-foreground/30 focus-within:bg-muted/50">
+            {/* Attached source chips — appear when user clicks integration pills below
+                or picks one from the More popover. Resolves from ALL_INTEGRATIONS so
+                long-tail picks render their letter badge correctly. */}
+            {attachedSources.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 px-3 pt-3">
+                {attachedSources.map(name => {
+                  const integ = ALL_INTEGRATIONS[name];
+                  if (!integ) return null;
+                  return (
+                    <span
+                      key={name}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium"
+                    >
+                      <IntegrationIconChip integ={integ} size="size-3.5" />
+                      {name}
+                      <button
+                        onClick={() => toggleSource(name)}
+                        className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+                        aria-label={`Remove ${name}`}
+                      >
+                        <XIcon size={10} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              placeholder="Ask Petal anything. Type @ to add sources."
+              rows={2}
+              className="w-full resize-none bg-transparent px-4 pt-3.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+            />
+            <div className="flex items-center justify-between border-t border-border/40 px-3 py-2">
+              <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+                <button className="flex items-center gap-1.5 transition-colors hover:text-foreground">
+                  <Paperclip size={13} /> Files
+                </button>
+                <button className="flex items-center gap-1.5 transition-colors hover:text-foreground">
+                  <Database size={13} /> Sources
+                </button>
+              </div>
+              <button
+                onClick={send}
+                disabled={!input.trim()}
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                aria-label="Send"
+              >
+                <SendIcon size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Integration cards — click to attach as a source for the next prompt.
+            Attached pills get a highlighted border + × icon; click again to remove.
+            "+ More" at the end opens a popover with the long-tail integrations. */}
+        <div className="flex flex-wrap justify-center gap-2.5">
+          {PETAL_INTEGRATIONS.map(i => (
+            <IntegrationPill
+              key={i.name}
+              integ={i}
+              attached={attachedSources.includes(i.name)}
+              onToggle={toggleSource}
+            />
+          ))}
+          <MoreIntegrationsPopover
+            attachedSources={attachedSources}
+            onToggle={toggleSource}
+          />
+        </div>
+
+        {/* Recent items */}
+        <div className="space-y-2 pt-6">
+          <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground">Recent</h3>
+          <ul className="divide-y divide-border/60">
+            {PETAL_RECENT.map((r, i) => {
+              const I = r.type === "table" ? TableIcon : r.type === "chat" ? MessageSquareTextIcon : FileTextIcon;
+              return (
+                <li key={i}>
+                  <button
+                    onClick={() => onAsk(r.title)}
+                    className="-mx-2 flex w-full items-center justify-between gap-4 rounded px-2 py-3 text-left transition-colors hover:bg-muted/30"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <I size={14} className="shrink-0 text-muted-foreground" />
+                      <span className="truncate text-[14px]">{r.title}</span>
+                    </div>
+                    <span className="shrink-0 text-[12px] text-muted-foreground">{r.date}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  The Panel                                                          */
 /* ------------------------------------------------------------------ */
 export function AIPanel() {
   const { isOpen, isFullPage, close, toggleFullPage, pendingQuestion, clearPendingQuestion, clientContext } = useAIPanel();
 
-  const [messages, setMessages] = useState<Message[]>(demoMessages);
+  // When fullscreen, leave the dashboard sidebar visible by anchoring the panel
+  // to start after it (vs. covering the whole viewport at 100% width).
+  const sidebar = useSidebar();
+  const sidebarOffset = sidebar.isMobile
+    ? "0px"
+    : sidebar.state === "collapsed"
+      ? "var(--sidebar-width-icon, 3rem)"
+      : "var(--sidebar-width, 13.5rem)";
+
+  // Auto-close the panel when the user navigates away. Belt-and-suspenders
+  // with the sidebar's onClick handler (nav-main.tsx) — the sidebar fires
+  // close() *before* the route changes for a clean animation, this effect
+  // catches any other navigation path (back button, programmatic nav, etc.).
+  //
+  // The prev ref ALWAYS updates each effect run — earlier we only updated it
+  // inside the close branch, which left the ref stale when isOpen was false
+  // and caused the panel to immediately self-close on its next open.
+  const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
+  useEffect(() => {
+    const prev = prevPathnameRef.current;
+    prevPathnameRef.current = pathname;
+    if (prev !== pathname && isOpen) {
+      close();
+    }
+  }, [pathname, isOpen, close]);
+
+  // Start empty so the fullscreen Harvey-style landing renders on first open.
+  // (demoMessages is kept around for ad-hoc demos but no longer the default.)
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -937,30 +1620,59 @@ export function AIPanel() {
     <aside
       className="fixed right-0 top-0 bottom-0 z-40 flex flex-col overflow-hidden border-l transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
       style={{
-        width: isOpen ? (isFullPage ? "100%" : 440) : 0,
+        // Fullscreen leaves the dashboard sidebar visible — width = viewport − sidebar
+        width: isOpen
+          ? (isFullPage ? `calc(100% - ${sidebarOffset})` : 440)
+          : 0,
         opacity: isOpen ? 1 : 0,
       }}
     >
       <div className={`flex h-full flex-col rounded-l-2xl bg-card px-3 pt-3 shadow-lg backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isFullPage ? "w-full" : "w-[440px]"}`}>
-        {/* Header */}
-        <div className="flex items-center gap-4 px-4 pb-6 pt-4">
-          <Avatar className="size-11 shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100 text-transparent">.</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[15px] font-medium leading-tight">Ask Docket</h2>
-            <p className="text-muted-foreground text-[13px]">Updated just now</p>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="text-muted-foreground/50 hover:text-muted-foreground size-8" onClick={toggleFullPage} title={isFullPage ? "Collapse" : "Expand"}>
-              {isFullPage ? <MinimizeIcon size={15} /> : <MaximizeIcon size={15} />}
+        {/* Header — full chrome in side panel, minimal close-only bar in fullscreen.
+            In fullscreen the giant centered "Ask Petal" serif title in the landing
+            is the only branding needed; the duplicate small header was noise. */}
+        {isFullPage ? (
+          <div className="flex shrink-0 items-center justify-end px-3 pt-3">
+            {/* Only the full-page ↔ side-panel toggle in fullscreen. Close (X)
+                is intentionally omitted — users navigate away (auto-closes) or
+                collapse to side-panel mode via this button. */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-foreground"
+              onClick={toggleFullPage}
+              title="Collapse to side panel"
+            >
+              <MinimizeIcon size={15} />
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground size-9" onClick={close}>
-              <PanelRightCloseIcon size={18} />
-            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-4 px-4 pb-6 pt-4">
+            <Avatar className="size-11 shrink-0">
+              <AvatarFallback className="bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100 text-transparent">.</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[15px] font-medium leading-tight">Ask Petal</h2>
+              <p className="text-muted-foreground text-[13px]">Updated just now</p>
+            </div>
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="text-muted-foreground/50 hover:text-muted-foreground size-8" onClick={toggleFullPage} title="Expand">
+                <MaximizeIcon size={15} />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-muted-foreground size-9" onClick={close} title="Close">
+                <XIcon size={18} />
+              </Button>
+            </div>
+          </div>
+        )}
 
+        {/* Harvey-style landing for fullscreen + empty state. The moment the user
+            sends a question (or voice results arrive), `messages.length` flips
+            and we fall through to the chat scroll + input bar below. */}
+        {isFullPage && messages.length === 0 && !voiceResults && !pendingQuestion ? (
+          <AIPanelLanding onAsk={(q) => handleSend(q)} />
+        ) : (
+          <>
         {/* Scrollable messages - overscroll-contain prevents scroll bleed to main content */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className={`pb-6 transition-all duration-500 ${isFullPage ? "mx-auto max-w-3xl px-8 space-y-10" : "px-4 space-y-8"}`}>
@@ -1125,6 +1837,8 @@ export function AIPanel() {
           </div>
           <p className="mt-2 text-center text-[11px] text-muted-foreground">All suggestions require your review before sending.</p>
         </div>
+          </>
+        )}
       </div>
     </aside>
   );

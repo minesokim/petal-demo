@@ -1,5 +1,5 @@
 // ============================================================
-// DOCKET UNIFIED COMMS — Multi-channel message data
+// PETAL UNIFIED COMMS — Multi-channel message data
 // ============================================================
 
 export type CommChannel = "portal" | "email" | "sms" | "voice" | "video";
@@ -131,6 +131,21 @@ export function getLastMessageTime(clientId: string): string | null {
   const thread = unifiedThreads[clientId];
   if (!thread || thread.length === 0) return null;
   return thread[thread.length - 1].timestamp;
+}
+
+// Heuristic unread count — messages from the client after the demo's "today" cutoff.
+// Matches the per-channel logic used in the Messages tab so badges stay consistent.
+const UNREAD_CUTOFF_MS = new Date("2026-03-28T00:00:00").getTime();
+export function getUnreadCountForClient(clientId: string): number {
+  const thread = unifiedThreads[clientId];
+  if (!thread) return 0;
+  let count = 0;
+  for (const m of thread) {
+    if (m.sender === "client" && new Date(m.timestamp).getTime() > UNREAD_CUTOFF_MS) {
+      count++;
+    }
+  }
+  return count;
 }
 
 // ============================================================

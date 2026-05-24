@@ -36,7 +36,7 @@ export default function AIPreferencesPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">AI Preferences</h3>
-        <p className="text-sm text-muted-foreground">Configure how Docket&apos;s AI generates drafts, surfaces insights, and communicates.</p>
+        <p className="text-sm text-muted-foreground">Configure how Petal&apos;s AI generates drafts, surfaces insights, and communicates.</p>
       </div>
 
       <Card>
@@ -76,7 +76,7 @@ export default function AIPreferencesPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium">Auto-generate follow-up drafts</div>
-              <p className="text-xs text-muted-foreground">Docket drafts messages for stale or unresponsive clients automatically.</p>
+              <p className="text-xs text-muted-foreground">Petal drafts messages for stale or unresponsive clients automatically.</p>
             </div>
             <Switch checked={autoDraft} onCheckedChange={setAutoDraft} />
           </div>
@@ -93,7 +93,7 @@ export default function AIPreferencesPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">AI Insights</CardTitle>
-          <CardDescription>Choose which proactive insights Docket surfaces on client detail pages.</CardDescription>
+          <CardDescription>Choose which proactive insights Petal surfaces on client detail pages.</CardDescription>
         </CardHeader>
         <CardContent className="divide-y">
           {insightTypes.map((insight) => (
@@ -113,8 +113,8 @@ export default function AIPreferencesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Docket Personality</CardTitle>
-          <CardDescription>Describe how Docket should communicate. This sets the tone for Ask Docket and all AI-generated content.</CardDescription>
+          <CardTitle className="text-sm">Petal Personality</CardTitle>
+          <CardDescription>Describe how Petal should communicate. This sets the tone for Ask Petal and all AI-generated content.</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea value={personality} onChange={(e) => setPersonality(e.target.value)} rows={3} className="resize-none text-sm" />

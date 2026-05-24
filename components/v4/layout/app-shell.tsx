@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * AppShell — the v4 three-pane layout primitive.
  *
- * Layout (per DOCKET-V4-PRD.md §3 and design-references/docket-direction-b-v2.html):
+ * Layout (per PETAL-V4-PRD.md §3 and design-references/petal-direction-b-v2.html):
  *
  *   ┌──────────────────────────────────────────────┐
  *   │ header (48px, full width)                    │

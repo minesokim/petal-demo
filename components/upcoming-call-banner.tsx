@@ -22,38 +22,39 @@ export function UpcomingCallBanner({ clientId, clientName }: { clientId: string;
     <>
       <div
         onClick={() => setShowDetail(true)}
-        className="flex items-center gap-4 rounded-xl border bg-card p-4 cursor-pointer transition-colors hover:bg-muted/30"
+        className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/30 md:gap-4 md:px-4 md:py-3"
       >
         <img
           src={call.platform === "zoom" ? "/images/zoom.webp" : "/images/google-meet.png"}
           alt={call.platform === "zoom" ? "Zoom" : "Google Meet"}
-          className="size-10 rounded-lg"
+          className="size-8 shrink-0 rounded-lg md:size-9"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium">Upcoming: {call.subject}</div>
-          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-            <span>{formatDate(startTime, "EEEE, MMMM d")}</span>
-            <span>&middot;</span>
+          <div className="truncate text-[13px] font-medium">Upcoming: {call.subject}</div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span>{formatDate(startTime, "EEE, MMM d")}</span>
+            <span className="text-muted-foreground/40">&middot;</span>
             <span>{formatDate(startTime, "h:mm a")}</span>
-            <span>&middot;</span>
+            <span className="text-muted-foreground/40">&middot;</span>
             <span>{call.duration} min</span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium">
+            <span className="ml-0.5 rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium">
               {call.platform === "zoom" ? "Zoom" : "Google Meet"}
             </span>
           </div>
         </div>
         <Button
           size="sm"
-          className="h-8 gap-1.5 px-4 text-xs shrink-0"
+          className="h-7 gap-1.5 px-3 text-xs shrink-0"
           onClick={(e) => { e.stopPropagation(); window.open(call.meetingUrl, "_blank"); }}
         >
-          <ExternalLink className="size-3.5" /> Join
+          <ExternalLink className="size-3" /> Join
         </Button>
         <button
           onClick={(e) => { e.stopPropagation(); setDismissed(true); }}
-          className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+          className="shrink-0 rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-muted hover:text-muted-foreground"
+          aria-label="Dismiss meeting reminder"
         >
-          <X className="size-4" />
+          <X className="size-3.5" />
         </button>
       </div>
 

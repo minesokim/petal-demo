@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * WorkspaceBreadcrumb — content for the Header middle slot while on
  * a client workspace surface.
  *
- * Structure per docket-synthesis.html:
+ * Structure per petal-synthesis.html:
  *   [ ← 1 / 14  ⌘T ]  /  Priya Sharma  /  Overview
  *
  * The back chip is a clickable pill that returns to /dashboard/triage

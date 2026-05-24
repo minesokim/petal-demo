@@ -25,7 +25,7 @@ export default function PaymentsSettingsPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">Payments</h3>
-        <p className="text-sm text-muted-foreground">Configure how Docket handles deposits, invoicing, and payment reminders.</p>
+        <p className="text-sm text-muted-foreground">Configure how Petal handles deposits, invoicing, and payment reminders.</p>
       </div>
 
       <Card>

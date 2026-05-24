@@ -40,7 +40,7 @@ const defaultNotifs: NotifCategory[] = [
   {
     section: "AI & Actions",
     items: [
-      { key: "ai_draft", label: "New AI draft ready for review", desc: "When Docket generates a message draft for your approval", inApp: true, email: false, push: false },
+      { key: "ai_draft", label: "New AI draft ready for review", desc: "When Petal generates a message draft for your approval", inApp: true, email: false, push: false },
       { key: "action_generated", label: "Action item generated", desc: "New intake, document complete, pipeline milestone, etc.", inApp: true, email: false, push: false },
       { key: "ai_insight", label: "AI insight flagged", desc: "Audit risk, revenue anomaly, compliance alert, etc.", inApp: true, email: true, push: false },
     ],

@@ -5,7 +5,7 @@ import type { ClientWorkspace, StatChip } from "@/lib/v4/clients";
 /**
  * ClientHeader — top of the client workspace main pane.
  *
- * Reference: design-references/docket-synthesis.html
+ * Reference: design-references/petal-synthesis.html
  *
  * Structure:
  *   [ 38px lg avatar | serif name + meta line ] [ right-aligned action buttons ]

@@ -16,7 +16,7 @@
  * doesn't exist on the server.
  */
 
-const KEY = "docket.v4.triage";
+const KEY = "petal.v4.triage";
 
 export type TriageSession = {
   /** 0-based index of the item Antonio opened into the workspace. */

@@ -1,19 +1,18 @@
 "use client";
 
-import { LayoutGrid, Table2, Columns3 } from "lucide-react";
+import { Table2, Columns3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ViewMode = "cards" | "table" | "pipeline";
+export type ViewMode = "table" | "pipeline";
 
 interface ViewModeToggleProps {
   value: ViewMode;
   onChange: (mode: ViewMode) => void;
 }
 
-const modes: { value: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
-  { value: "cards", icon: LayoutGrid, label: "Cards" },
-  { value: "table", icon: Table2, label: "Table" },
+const modes: { value: ViewMode; icon: typeof Table2; label: string }[] = [
   { value: "pipeline", icon: Columns3, label: "Pipeline" },
+  { value: "table", icon: Table2, label: "Table" },
 ];
 
 export function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {

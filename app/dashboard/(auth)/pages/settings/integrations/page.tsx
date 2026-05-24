@@ -32,7 +32,7 @@ const allIntegrations: Integration[] = [
   { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logo: "/logos/xero.svg", status: "available" },
   { id: "square", name: "Square", description: "Accept in-person payments via Square terminal. Sync transactions with client billing.", logo: "/logos/square.png", status: "available" },
   { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logo: "", status: "coming_soon" },
-  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Docket.", logo: "", status: "coming_soon" },
+  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Petal.", logo: "", status: "coming_soon" },
 ];
 
 function IntegrationLogo({ src, name }: { src: string; name: string }) {

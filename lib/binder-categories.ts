@@ -1,5 +1,5 @@
 // ============================================================
-// DOCKET BINDER — Tax category taxonomy for document organization
+// PETAL BINDER — Tax category taxonomy for document organization
 // ============================================================
 
 import type { MockDocument } from "./documents-mock-data";

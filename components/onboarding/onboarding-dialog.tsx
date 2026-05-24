@@ -56,7 +56,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
           {/* Welcome */}
           {step === "welcome" && (
             <motion.div key="welcome" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center py-6 text-center">
-              <div className="font-display text-3xl font-bold tracking-tight">Welcome to Docket</div>
+              <div className="font-display text-3xl font-bold tracking-tight">Welcome to Petal</div>
               <p className="mt-2 text-sm text-muted-foreground">Let's set up your practice in under 5 minutes.</p>
               <Button className="mt-6" onClick={next}>Get started <ChevronRight className="size-3.5" /></Button>
             </motion.div>
@@ -193,7 +193,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
               </div>
               <div className="font-display text-xl font-bold">You're all set</div>
               <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-                Your practice is ready. Send intake forms, collect documents, and let Docket handle the rest.
+                Your practice is ready. Send intake forms, collect documents, and let Petal handle the rest.
               </p>
               <Button className="mt-6" onClick={() => onOpenChange(false)}>Go to dashboard</Button>
             </motion.div>

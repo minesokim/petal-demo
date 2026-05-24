@@ -18,6 +18,8 @@ import {
 import { NavMain } from "@/components/layout/sidebar/nav-main";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PetalCommand } from "@/components/petal-command";
+import { PetalMark } from "@/components/petal-mark";
 import Link from "next/link";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -38,16 +40,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="hover:text-foreground h-10 group-data-[collapsible=icon]:px-0!" asChild>
-              <Link href="/dashboard/default" className="flex items-center gap-2">
-                <img src="/vazant-logo.webp" alt="Vazant" className="size-7 object-contain" />
-                <span className="text-foreground text-lg tracking-tight group-data-[collapsible=icon]:hidden" style={{ fontFamily: '"P22 Mackinac Pro", Georgia, serif' }}>
-                  Vazant<span className="text-muted-foreground font-normal">.</span>
+            <SidebarMenuButton
+              className="hover:text-foreground h-10 hover:bg-transparent group-data-[collapsible=icon]:px-0!"
+              asChild
+            >
+              <Link href="/dashboard/default" className="flex items-center gap-2.5">
+                <PetalMark className="size-7 shrink-0 text-foreground" />
+                <span className="text-foreground text-lg tracking-tight font-serif group-data-[collapsible=icon]:hidden">
+                  Petal
                 </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="pt-1 pb-1 group-data-[collapsible=icon]:hidden">
+          <PetalCommand />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <ScrollArea className="h-full">

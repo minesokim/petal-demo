@@ -1,4 +1,4 @@
-import { Geist, DM_Sans, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, DM_Sans, Geist_Mono, Spectral, Fraunces } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -14,14 +14,17 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono"
 });
 
-// v4: Fraunces is the development/fallback face for P22 Mackinac Pro (self-hosted in globals.css).
-// Production uses P22 via @font-face; Fraunces sits behind it in the stack.
-//
-// Italic is loaded as a real style (not synthesized). The self-hosted P22 Mackinac
-// files ship roman-only, so when `font-style: italic` is applied the browser would
-// either synthesize-skew the P22 glyphs or reach to the next font in the stack.
-// Loading Fraunces italic explicitly ensures we fall through to real italic letterforms
-// with proper descenders and terminals instead of a skewed-roman artifact.
+// v4: Spectral is the editorial serif for brand, headings, client names, AI insight body.
+// Loads roman + italic so font-style: italic resolves to real letterforms.
+const spectral = Spectral({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-spectral"
+});
+
+// Fraunces is retained for the client portal (app/clientportal), which references
+// it directly via inline fontFamily. Not part of the dashboard serif stack.
 const fraunces = Fraunces({
   subsets: ["latin"],
   style: ["normal", "italic"],
@@ -33,5 +36,6 @@ export const fontVariables = cn(
   geist.variable,
   dmSans.variable,
   geistMono.variable,
+  spectral.variable,
   fraunces.variable
 );

@@ -1,9 +1,9 @@
 /**
  * Client workspace mock data — v4.
  *
- * Reference: design-references/docket-synthesis.html (Priya Sharma
+ * Reference: design-references/petal-synthesis.html (Priya Sharma
  * is the exemplar; Marcus and DeShawn are fleshed out to match the
- * mentor-demo script in DOCKET-V4-PRD.md §11).
+ * mentor-demo script in PETAL-V4-PRD.md §11).
  *
  * Other clients from lib/v4/triage-items.ts render a graceful
  * placeholder workspace until Phase 5 authors them.
@@ -249,7 +249,7 @@ const priya: ClientWorkspace = {
     }
   ],
   activity: [
-    { when: "12 min ago", what: "**Docket flagged** 1099 gap of $14,200 vs intake", tone: "rust" },
+    { when: "12 min ago", what: "**Petal flagged** 1099 gap of $14,200 vs intake", tone: "rust" },
     { when: "12 min ago", what: "Priya uploaded **1099-NEC TikTok.pdf**" },
     { when: "3 days ago", what: "Priya uploaded **W-2 Whole Foods**" },
     { when: "Mar 27", what: "Antonio sent portal message re: 1099" },
@@ -408,7 +408,7 @@ const marcus: ClientWorkspace = {
     }
   ],
   activity: [
-    { when: "2 days ago", what: "**Docket flagged** 1099 issued to SSN vs EIN on file", tone: "rust" },
+    { when: "2 days ago", what: "**Petal flagged** 1099 issued to SSN vs EIN on file", tone: "rust" },
     { when: "2 days ago", what: "Marcus uploaded **1099-NEC Strategic Consulting.pdf**" },
     { when: "4 days ago", what: "Marcus uploaded draft **K-1 Chen Holdings**" },
     { when: "Mar 11", what: "2024 **1120S** filed with IRS" },
@@ -570,7 +570,7 @@ const deshawn: ClientWorkspace = {
   ],
   activity: [
     { when: "1 hour ago", what: "DeShawn uploaded **W-2 SoCal Logistics.pdf**" },
-    { when: "1 hour ago", what: "**Docket flagged** HoH 8867 due-diligence gap", tone: "rust" },
+    { when: "1 hour ago", what: "**Petal flagged** HoH 8867 due-diligence gap", tone: "rust" },
     { when: "Feb 14", what: "Antonio sent intake follow-up reminder" },
     { when: "Feb 12", what: "Intake started · 7216 consent captured", tone: "positive" }
   ],

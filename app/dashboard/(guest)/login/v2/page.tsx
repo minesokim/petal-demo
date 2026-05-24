@@ -28,7 +28,7 @@ export default function Page() {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="antonio@docket.tax" required />
+              <Input id="email" type="email" placeholder="antonio@petal.tax" required />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">

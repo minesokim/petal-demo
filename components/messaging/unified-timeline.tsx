@@ -14,6 +14,8 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 interface UnifiedTimelineProps {
   messages: UnifiedMessage[];
   client: Client;
+  /** Forwarded to message renderers — tightens spacing/text in popup mode. */
+  compact?: boolean;
 }
 
 function formatMessageTime(timestamp: string): string {
@@ -50,7 +52,7 @@ function SystemCardIcon({ type }: { type: string }) {
   }
 }
 
-export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
+export function UnifiedTimeline({ messages, client, compact = false }: UnifiedTimelineProps) {
   if (messages.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
@@ -108,6 +110,15 @@ export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
               const isVoice = msg.channel === "voice" || msg.channel === "video";
               const isEmail = msg.channel === "email";
 
+              // Email — full-width Apple-Mail-style row, no chat-bubble wrapping
+              if (isEmail) {
+                return (
+                  <div key={msg.id}>
+                    <EmailMessage message={msg} client={client} compact={compact} />
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={msg.id}
@@ -127,13 +138,13 @@ export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
                   <div className={cn("max-w-[75%] space-y-1", !isClient && "items-end")}>
                     {/* Channel + time */}
                     <div className={cn("flex items-center gap-1.5", !isClient && "justify-end")}>
-                      {msg.channel !== "portal" && <ChannelBadge channel={msg.channel} />}
+                      <ChannelBadge channel={msg.channel} />
                       <span className="text-[10px] text-muted-foreground/60">
                         {formatMessageTime(msg.timestamp)}
                       </span>
                     </div>
 
-                    {/* Message bubble */}
+                    {/* Message bubble — flat, work-tool colors (not consumer chat) */}
                     <div
                       className={cn(
                         "rounded-2xl px-3.5 py-2.5",
@@ -141,15 +152,11 @@ export function UnifiedTimeline({ messages, client }: UnifiedTimelineProps) {
                           ? "rounded-lg border bg-card px-4 py-3"
                           : isClient
                             ? "bg-muted/60"
-                            : "bg-primary text-primary-foreground",
-                        isEmail && isClient && "rounded-lg border bg-card px-4 py-3",
-                        isEmail && !isClient && "rounded-lg border bg-primary/5 text-foreground px-4 py-3"
+                            : "border border-border/60 bg-foreground/[0.04] text-foreground"
                       )}
                     >
                       {isVoice ? (
                         <VoiceMessage message={msg} />
-                      ) : isEmail ? (
-                        <EmailMessage message={msg} />
                       ) : (
                         <>
                           <p className="text-sm leading-relaxed">{msg.content}</p>

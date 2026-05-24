@@ -1,47 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMemo, useState, useSyncExternalStore, useCallback } from "react";
+import { AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Check, Calendar } from "lucide-react";
-import { type Client, type ReturnStage, stageLabels, pendingIntakeContext } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { type Client, type ReturnStage } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { InsightDot } from "@/components/insights";
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
-import { getOneLineInsightForClient } from "@/lib/insights-mock-data";
-
-function formatCallTimeShort(dateStr: string) {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  if (isToday) return `Today ${timeStr}`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-function isCallPast(dateStr: string) { return new Date(dateStr) < new Date(); }
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function formatLastActive(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  const d = new Date(dateStr);
-  const now = new Date();
-  const days = Math.floor(
-    (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+import { ClientCard } from "@/components/ui/client-card";
+import { PendingClientCard } from "@/components/clients/pending-client-card";
+import { getUnreadCountForClient } from "@/lib/comms-mock-data";
+import {
+  setClientStage,
+  getAllStageOverrides,
+  subscribePipelineStages,
+} from "@/lib/pipeline-stage-store";
+import { sortClients, type SortMode, type Density } from "@/lib/pipeline-smart-sort";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Rows3, LayoutGrid } from "lucide-react";
 
 type PipelineStageKey = ReturnStage | "pending";
 
@@ -49,61 +31,35 @@ const pipelineStages: {
   key: PipelineStageKey;
   label: string;
   dot: string;
-  headerBg: string;
 }[] = [
-  {
-    key: "pending",
-    label: "Pending Review",
-    dot: "bg-rose-400",
-    headerBg: "bg-rose-50 dark:bg-rose-950/20",
-  },
-  {
-    key: "new_intake",
-    label: "New Intake",
-    dot: "bg-zinc-400",
-    headerBg: "bg-zinc-100 dark:bg-zinc-900/30",
-  },
-  {
-    key: "collecting_docs",
-    label: "Collecting Docs",
-    dot: "bg-amber-500",
-    headerBg: "bg-amber-50 dark:bg-amber-950/30",
-  },
-  {
-    key: "in_preparation",
-    label: "In Preparation",
-    dot: "bg-blue-500",
-    headerBg: "bg-blue-50 dark:bg-blue-950/30",
-  },
-  {
-    key: "client_review",
-    label: "Client Review",
-    dot: "bg-purple-500",
-    headerBg: "bg-purple-50 dark:bg-purple-950/30",
-  },
-  {
-    key: "pay_and_sign",
-    label: "Pay & Sign",
-    dot: "bg-orange-500",
-    headerBg: "bg-orange-50 dark:bg-orange-950/30",
-  },
-  {
-    key: "filed",
-    label: "Filed",
-    dot: "bg-emerald-500",
-    headerBg: "bg-emerald-50 dark:bg-emerald-950/30",
-  },
-  {
-    key: "extended",
-    label: "Extended (Oct 15)",
-    dot: "bg-orange-500",
-    headerBg: "bg-orange-50 dark:bg-orange-950/30",
-  },
+  { key: "pending", label: "Pending Review", dot: "bg-rose-400" },
+  { key: "new_intake", label: "New Intake", dot: "bg-sky-400" },
+  { key: "collecting_docs", label: "Collecting Docs", dot: "bg-amber-500" },
+  { key: "in_preparation", label: "In Preparation", dot: "bg-blue-500" },
+  { key: "client_review", label: "Client Review", dot: "bg-purple-500" },
+  { key: "pay_and_sign", label: "Pay & Sign", dot: "bg-orange-500" },
+  { key: "filed", label: "Filed", dot: "bg-emerald-500" },
+  { key: "extended", label: "Extended (Oct 15)", dot: "bg-orange-500" },
 ];
+
+const SORT_LABELS: Record<SortMode, string> = {
+  smart: "Smart",
+  stale: "Stale",
+  recent: "Recent",
+  name: "Name",
+};
+
+// Stable empty snapshot for SSR
+const EMPTY_OVERRIDES: Record<string, ReturnStage> = {};
 
 interface ClientsPipelineViewProps {
   clients: Client[];
   acceptedIds: string[];
+  declinedIds?: string[];
+  assignedTiers?: Record<string, string>;
+  onAssignTier?: (clientId: string, tier: string) => void;
+  onAccept?: (clientId: string) => void;
+  onDecline?: (clientId: string) => void;
   onOpenDetail: (client: Client) => void;
   filterStage?: string;
 }
@@ -111,201 +67,247 @@ interface ClientsPipelineViewProps {
 export function ClientsPipelineView({
   clients,
   acceptedIds,
+  declinedIds = [],
+  assignedTiers = {},
+  onAssignTier,
+  onAccept,
+  onDecline,
   onOpenDetail,
   filterStage = "all",
 }: ClientsPipelineViewProps) {
-  // Group clients by pipeline stage.
-  // Pending clients get their own column at the start.
-  // ready_to_prep clients are folded into in_preparation for a cleaner pipeline.
-  const columns = useMemo(() => {
-    const allCols = pipelineStages.map((stage) => ({
-      ...stage,
-      clients: clients.filter((c) => {
-        const isPending =
-          c.clientStatus === "pending" && !acceptedIds.includes(c.id);
+  // Subscribe to stage overrides so cards re-flow into the right column after drag / AI moves
+  const overrides = useSyncExternalStore<Record<string, ReturnStage>>(
+    subscribePipelineStages,
+    getAllStageOverrides,
+    () => EMPTY_OVERRIDES
+  );
 
-        if (stage.key === "pending") {
-          return isPending;
-        }
-        // Non-pending clients only
+  const effectiveStage = useCallback(
+    (c: Client): ReturnStage => overrides[c.id] ?? c.returnStage,
+    [overrides]
+  );
+
+  const [sortMode, setSortMode] = useState<SortMode>("smart");
+  const [density, setDensity] = useState<Density>("comfortable");
+  const [highlightedCol, setHighlightedCol] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [draggingOver, setDraggingOver] = useState<string | null>(null);
+
+  // Group clients by stage (using EFFECTIVE stage from store) then sort each column
+  const columns = useMemo(() => {
+    const allCols = pipelineStages.map(stage => ({
+      ...stage,
+      clients: clients.filter(c => {
+        const isPending = c.clientStatus === "pending" && !acceptedIds.includes(c.id);
+        if (stage.key === "pending") return isPending && !declinedIds.includes(c.id);
         if (isPending) return false;
 
+        const stg = effectiveStage(c);
         if (stage.key === "in_preparation") {
-          return (
-            c.returnStage === "in_preparation" ||
-            c.returnStage === "ready_to_prep"
-          );
+          return stg === "in_preparation" || stg === "ready_to_prep";
         }
-        return c.returnStage === stage.key;
+        return stg === stage.key;
       }),
     }));
+
+    // Apply sort to each column
+    allCols.forEach(col => {
+      col.clients = sortClients(col.clients, sortMode, col.key as ReturnStage | "pending");
+    });
+
     if (filterStage && filterStage !== "all") {
       return allCols.filter(col => col.key === filterStage);
     }
     return allCols;
-  }, [clients, acceptedIds, filterStage]);
+  }, [clients, acceptedIds, declinedIds, filterStage, effectiveStage, sortMode]);
 
-  const [highlightedCol, setHighlightedCol] = useState<string | null>(null);
+  // ─── Drag handlers ───
+  const handleDragOver = (e: React.DragEvent, colKey: PipelineStageKey) => {
+    if (colKey === "pending") return; // pending column doesn't accept drops
+    if (!draggingId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggingOver !== colKey) setDraggingOver(colKey);
+  };
+
+  const handleDragLeave = (colKey: PipelineStageKey) => {
+    if (draggingOver === colKey) setDraggingOver(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, colKey: PipelineStageKey) => {
+    e.preventDefault();
+    setDraggingOver(null);
+    setDraggingId(null);
+    if (colKey === "pending") return;
+    const clientId = e.dataTransfer.getData("text/plain");
+    if (!clientId) return;
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+    const fromStage = effectiveStage(client);
+    if (fromStage === colKey) return; // no-op same column
+
+    setClientStage(clientId, colKey as ReturnStage, "manual", client.returnStage);
+    // Light feedback — no Undo toast on manual moves (drag implies intent)
+  };
 
   return (
-    <DualScrollContainer>
-    <div className="flex gap-3 min-w-max pb-4">
-      {columns.map((col) => {
-        const isDimmed = highlightedCol !== null && highlightedCol !== col.key;
-        return (
-        <div key={col.key} className={cn(
-          "w-[240px] shrink-0 transition-all duration-300",
-          isDimmed && "opacity-30 blur-[1px]"
-        )}>
-          {/* Column header — clickable to highlight */}
-          <button
-            onClick={() => setHighlightedCol(highlightedCol === col.key ? null : col.key)}
-            className={cn(
-              "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
-              highlightedCol === col.key && "border-border/60 shadow-sm"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 rounded-full", col.dot)} />
-              <span className="text-[13px] font-medium text-foreground">{col.label}</span>
-            </div>
-            <Badge variant="outline" className="text-[10px]">
-              {col.clients.length}
-            </Badge>
-          </button>
+    <>
+      {/* ── Toolbar — Sort + Density ── */}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                Sort: <span className="font-medium">{SORT_LABELS[sortMode]}</span>
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuRadioGroup value={sortMode} onValueChange={v => setSortMode(v as SortMode)}>
+                <DropdownMenuRadioItem value="smart">
+                  Smart
+                  <span className="ml-auto text-[10px] text-muted-foreground">stage-aware</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="stale">
+                  Stale
+                  <span className="ml-auto text-[10px] text-muted-foreground">oldest first</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="recent">
+                  Recent
+                  <span className="ml-auto text-[10px] text-muted-foreground">newest first</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="name">
+                  Name
+                  <span className="ml-auto text-[10px] text-muted-foreground">A → Z</span>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Column cards */}
-          <div className="space-y-2">
-            {col.clients.map((client) => {
-              const docPercent = client.documentsRequired
-                ? Math.round(
-                    (client.documentsSubmitted / client.documentsRequired) *
-                      100
-                  )
-                : 0;
-              const isPendingClient = client.clientStatus === "pending" && !acceptedIds.includes(client.id);
-              const clientInsight = getOneLineInsightForClient(client.id);
-
-              return (
-                <div
-                  key={client.id}
-                  className="group/card cursor-pointer rounded-lg border bg-white p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/20"
-                  onClick={() => onOpenDetail(client)}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Avatar className="size-7 shrink-0">
-                      <AvatarImage
-                        src={client.avatar}
-                        alt={client.fullName}
-                      />
-                      <AvatarFallback className="text-[9px]">
-                        {getInitials(client.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium truncate leading-tight">
-                        {client.fullName}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground truncate leading-tight">
-                        {client.businessName || client.serviceTier}
-                      </p>
-                    </div>
-                    {isPendingClient && (
-                      <Badge variant="outline" className="text-[9px] shrink-0">New</Badge>
-                    )}
-                    {clientInsight && (
-                      <InsightDot
-                        severity={clientInsight.severity}
-                        title={clientInsight.title}
-                        className="shrink-0"
-                      />
-                    )}
-                    {!clientInsight && (client.urgency === "urgent" ||
-                      client.urgency === "high") && (
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          client.urgency === "urgent"
-                            ? "bg-red-500"
-                            : "bg-amber-500"
-                        )}
-                      />
-                    )}
-                  </div>
-
-                  {isPendingClient ? (
-                    /* Pending client: show intake context */
-                    <div className="mt-2 space-y-1">
-                      {(() => {
-                        const ctx = pendingIntakeContext[client.id];
-                        return ctx ? (
-                          <p className="text-[10px] text-muted-foreground">
-                            Requested: <span className="font-medium text-foreground/80">{ctx.service}</span>
-                          </p>
-                        ) : null;
-                      })()}
-                      <div className="flex items-center gap-1 text-[10px]">
-                        <Check className="size-2.5 text-emerald-500" />
-                        <span className="text-emerald-600 dark:text-emerald-400">Deposit paid</span>
-                      </div>
-                      {client.scheduledCall && (
-                        <div className="flex items-center gap-1 text-[10px]">
-                          <Calendar className={cn("size-2.5", isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500")} />
-                          <span className={cn(isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400 font-medium" : "text-muted-foreground")}>
-                            {formatCallTimeShort(client.scheduledCall)}
-                            {isCallPast(client.scheduledCall) && " · Missed"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Active client: show doc progress + last active */
-                    <>
-                      <div className="mt-2.5 flex items-center gap-2">
-                        <div className="h-1 flex-1 rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-1 rounded-full transition-all",
-                              docPercent >= 100 ? "bg-emerald-500" : "bg-primary"
-                            )}
-                            style={{ width: `${Math.min(docPercent, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">
-                          {client.documentsSubmitted}/{client.documentsRequired}
-                        </span>
-                      </div>
-
-                      <div className="mt-1.5 flex items-center justify-between">
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatLastActive(client.lastPortalLogin)}
-                        </p>
-                        <Link
-                          href={`/dashboard/clients/${client.id}/overview`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground opacity-0 group-hover/card:opacity-100"
-                        >
-                          Open <ArrowUpRight className="size-2.5" />
-                        </Link>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-
-            {col.clients.length === 0 && (
-              <div className="rounded-lg border border-dashed bg-muted/20 px-3 py-6 text-center">
-                <p className="text-[10px] text-muted-foreground">
-                  No clients
-                </p>
-              </div>
-            )}
+          {/* Density toggle — segmented icon control */}
+          <div className="flex items-center rounded-md border bg-card p-0.5">
+            <button
+              onClick={() => setDensity("comfortable")}
+              title="Comfortable"
+              className={cn(
+                "flex size-7 items-center justify-center rounded transition-colors",
+                density === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <LayoutGrid className="size-3.5" />
+            </button>
+            <button
+              onClick={() => setDensity("compact")}
+              title="Compact"
+              className={cn(
+                "flex size-7 items-center justify-center rounded transition-colors",
+                density === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Rows3 className="size-3.5" />
+            </button>
           </div>
         </div>
-        );
-      })}
-    </div>
-    </DualScrollContainer>
+      </div>
+
+      <DualScrollContainer>
+        <div className="flex gap-3 min-w-max pb-4">
+          {columns.map(col => {
+            const isDimmed = highlightedCol !== null && highlightedCol !== col.key;
+            const isDropTarget = draggingOver === col.key;
+            return (
+              <div
+                key={col.key}
+                className={cn(
+                  "w-[300px] shrink-0 transition-all duration-300",
+                  isDimmed && "opacity-30 blur-[1px]"
+                )}
+                onDragOver={(e) => handleDragOver(e, col.key)}
+                onDragLeave={() => handleDragLeave(col.key)}
+                onDrop={(e) => handleDrop(e, col.key)}
+              >
+                {/* Column header — clickable to highlight */}
+                <button
+                  onClick={() => setHighlightedCol(highlightedCol === col.key ? null : col.key)}
+                  className={cn(
+                    "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
+                    highlightedCol === col.key && "border-border/60 shadow-sm"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={cn("size-1.5 rounded-full", col.dot)} />
+                    <span className="text-[13px] font-medium text-foreground">{col.label}</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    {col.clients.length}
+                  </Badge>
+                </button>
+
+                {/* Column container — dashed wrap visually groups the cards.
+                    Highlights when drag is hovering this column. */}
+                <div
+                  className={cn(
+                    "rounded-xl border border-dashed border-border/50 bg-muted/10 p-2.5 min-h-[280px] transition-colors",
+                    isDropTarget && "border-foreground/40 bg-muted/40"
+                  )}
+                >
+                  <div className={cn(density === "comfortable" ? "space-y-3 [zoom:0.85]" : "space-y-1.5")}>
+                    {col.key === "pending" ? (
+                      <AnimatePresence mode="popLayout">
+                        {col.clients.map(client => (
+                          <PendingClientCard
+                            key={client.id}
+                            client={client}
+                            assignedTier={assignedTiers[client.id]}
+                            onAssignTier={tier => onAssignTier?.(client.id, tier)}
+                            onAccept={() => onAccept?.(client.id)}
+                            onDecline={() => onDecline?.(client.id)}
+                            onOpen={() => onOpenDetail(client)}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    ) : (
+                      col.clients.map(client => (
+                        <div
+                          key={client.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", client.id);
+                            e.dataTransfer.effectAllowed = "move";
+                            setDraggingId(client.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggingId(null);
+                            setDraggingOver(null);
+                          }}
+                          className={cn(
+                            "cursor-grab active:cursor-grabbing transition-opacity",
+                            draggingId === client.id && "opacity-40"
+                          )}
+                        >
+                          <ClientCard
+                            client={client}
+                            onOpenDetail={onOpenDetail}
+                            staticSize
+                            density={density}
+                            unreadCount={getUnreadCountForClient(client.id)}
+                          />
+                        </div>
+                      ))
+                    )}
+
+                    {col.clients.length === 0 && (
+                      <div className="flex h-[220px] items-center justify-center">
+                        <p className="text-[10px] text-muted-foreground">No clients</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </DualScrollContainer>
+    </>
   );
 }

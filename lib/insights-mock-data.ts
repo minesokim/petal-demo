@@ -1,9 +1,9 @@
 // ============================================================
-// DOCKET INSIGHTS - Mock Data for AI Intelligence Layer
+// PETAL INSIGHTS - Mock Data for AI Intelligence Layer
 // ============================================================
 
 import type {
-  DocketInsight,
+  PetalInsight,
   MorningBriefingData,
   TrackingBadgeData,
   ActivityEvent,
@@ -93,7 +93,7 @@ export const morningBriefing: MorningBriefingData = {
 // CLIENT INSIGHTS
 // ============================================================
 
-export const clientInsights: Record<string, DocketInsight> = {
+export const clientInsights: Record<string, PetalInsight> = {
   // Tyrone Mitchell - Warning (stale, pattern of extending)
   c17: {
     id: "insight-c17",
@@ -193,7 +193,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     ],
     actions: [
       { id: "call-deshawn", label: "Call DeShawn", variant: "primary", action: "initiate_call" },
-      { id: "ask-docket-dd", label: "Learn more with Docket", variant: "secondary", action: "ask_docket" },
+      { id: "ask-petal-dd", label: "Learn more with Petal", variant: "secondary", action: "ask_petal" },
     ],
     draftMessage: {
       id: "draft-deshawn",
@@ -221,7 +221,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     timestamp: "2026-03-28T07:45:00",
     actions: [
       { id: "sign-efile", label: "Sign & e-file", variant: "primary", action: "ero_sign" },
-      { id: "review-docket", label: "Review with Docket", variant: "secondary", action: "ask_docket" },
+      { id: "review-petal", label: "Review with Petal", variant: "secondary", action: "ask_petal" },
     ],
   },
 
@@ -258,7 +258,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     timestamp: "2026-03-28T09:00:00",
     actions: [
       { id: "sign-efile", label: "Sign & e-file", variant: "primary", action: "ero_sign" },
-      { id: "review-docket", label: "Review with Docket", variant: "secondary", action: "ask_docket" },
+      { id: "review-petal", label: "Review with Petal", variant: "secondary", action: "ask_petal" },
     ],
   },
 
@@ -298,7 +298,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     ],
     actions: [
       { id: "message-marcus", label: "Message Marcus", variant: "primary", action: "open_thread" },
-      { id: "ask-docket", label: "Ask Docket", variant: "secondary", action: "ask_docket" },
+      { id: "ask-petal", label: "Ask Petal", variant: "secondary", action: "ask_petal" },
     ],
   },
 
@@ -353,7 +353,7 @@ export const clientInsights: Record<string, DocketInsight> = {
     ],
     actions: [
       { id: "prep-extension", label: "Mark as extended", variant: "primary", action: "file_extension" },
-      { id: "review-complexity", label: "Review complexity with Docket", variant: "secondary", action: "ask_docket" },
+      { id: "review-complexity", label: "Review complexity with Petal", variant: "secondary", action: "ask_petal" },
     ],
   },
 
@@ -433,19 +433,19 @@ export const clientInsights: Record<string, DocketInsight> = {
 // HELPER FUNCTIONS
 // ============================================================
 
-export function getInsightForClient(clientId: string): DocketInsight | undefined {
+export function getInsightForClient(clientId: string): PetalInsight | undefined {
   return clientInsights[clientId]
 }
 
-export function getAllInsights(): DocketInsight[] {
+export function getAllInsights(): PetalInsight[] {
   return Object.values(clientInsights)
 }
 
 export function getInsightsByPriority(): {
-  needsApproval: DocketInsight[]
-  atRisk: DocketInsight[]
-  inProgress: DocketInsight[]
-  onTrack: DocketInsight[]
+  needsApproval: PetalInsight[]
+  atRisk: PetalInsight[]
+  inProgress: PetalInsight[]
+  onTrack: PetalInsight[]
 } {
   const insights = getAllInsights()
 

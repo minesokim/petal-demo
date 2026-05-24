@@ -13,12 +13,12 @@ import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
   AlertTriangle, ChevronRight, Shield, Check, X,
-  TrendingDown, Calculator, Brain, Download, ClipboardList, Upload
+  TrendingDown, Calculator, Brain, Download, ClipboardList, Upload, Plus, PanelLeftOpen
 } from "lucide-react";
 import Link from "next/link";
 import { clients, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
-import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { PetalInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
 import {
   complianceAlerts, anomalyAlerts, deductionSuggestions,
@@ -35,13 +35,17 @@ import { EroSignatureDialog } from "@/components/ero-signature-dialog";
 import { useAIPanelAsk } from "@/components/ai-panel";
 import { useToast } from "@/components/ui/toast-notification";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
-import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { Form8867Dialog } from "@/components/compliance/form-8867-dialog";
 import { Form8867Viewer } from "@/components/compliance/form-8867-viewer";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
 import { BillingCard } from "@/components/billing/billing-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { ClientAskPetal } from "@/components/client-ask-petal";
+import { getClientNotes, type ClientNote } from "@/lib/documents-mock-data";
+import { StageActionCard, getStageActionDescriptor } from "@/components/stage-action-card";
 
 export default function ClientOverviewPage() {
   const params = useParams();
@@ -50,6 +54,7 @@ export default function ClientOverviewPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [eroOpen, setEroOpen] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(false);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
@@ -61,8 +66,8 @@ export default function ClientOverviewPage() {
   const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const { showToast } = useToast();
-  let askDocket = (_q: string) => {};
-  try { askDocket = useAIPanelAsk(); } catch {}
+  let askPetal = (_q: string) => {};
+  try { askPetal = useAIPanelAsk(); } catch {}
 
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
@@ -79,8 +84,8 @@ export default function ClientOverviewPage() {
       setEroOpen(true);
       return;
     }
-    if (action.action === "ask_docket") {
-      askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`);
+    if (action.action === "ask_petal") {
+      askPetal(`Tell me more about ${client.fullName}'s situation — what do I need to know?`);
       return;
     }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
@@ -116,10 +121,411 @@ export default function ClientOverviewPage() {
     : clientFeedActions;
   const filteredActions = clientActions.filter(a => a.type !== "signature_needed");
 
+  // Unified next-action descriptor — drives the StageActionCard rendered at the
+  // top of the Snapshot tab AND the top of the compact-mode sidebar.
+  const hasOpenFlags = !!clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical");
+  const stageAction = getStageActionDescriptor({
+    stage: currentStage,
+    client,
+    transitioning,
+    stageOverride,
+    hasOpenFlags,
+    onSignEFile: () => setEroOpen(true),
+    onCompletePrep: () => setCompletePrepOpen(true),
+    onBeginPrep: () => {
+      setTransitioning(true);
+      setTimeout(() => {
+        setStageOverride("in_preparation");
+        setStageOverrideGlobal(client.id, "in_preparation");
+        setTransitioning(false);
+        showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`);
+      }, 1500);
+    },
+  });
+
+  // Mirrors the popup's "promote metadata when no hero" pattern. When the
+  // chat-minimized main column would otherwise be sparse (no insight, no
+  // stage CTA, no compliance), promote Intake Summary + Contact + Notes UP
+  // from the sidebar into the main column so it doesn't read as half-empty.
+  const hasLeftContent = !!clientInsight || !!stageAction || clientCompliance.length > 0;
+
+  const intakeSummaryCardJSX = (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-sm">Intake Summary</CardTitle>
+        <Link href={`/dashboard/clients/${client.id}/intake`}>
+          <Button variant="ghost" size="sm" className="text-xs gap-1">Full <ChevronRight className="size-3" /></Button>
+        </Link>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
+            <div className="text-xs font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div>
+            <div className="text-xs font-medium mt-0.5">{client.serviceTier}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
+            <div className="text-xs font-medium mt-0.5 capitalize">{client.type}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div>
+            <div className="text-xs font-medium mt-0.5">{stageLabels[currentStage] || currentStage}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div>
+            <div className="text-xs font-medium mt-0.5 tabular-nums">{client.documentsSubmitted} / {client.documentsRequired}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div>
+            <div className="text-xs font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
+          </div>
+        </div>
+        {/* (Notes paragraph removed — duplicated the dedicated Notes card.) */}
+      </CardContent>
+    </Card>
+  );
+
+  const contactCardJSX = (
+    <Card>
+      <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
+      <CardContent className="space-y-2.5">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
+      </CardContent>
+    </Card>
+  );
+
+  const notesCardJSX = (
+    <Card>
+      <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
+      <CardContent>
+        <NotesPanel client={client} />
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4 lg:flex-row lg:h-[calc(100vh-200px)]">
+      {/* Left: Ask Petal chat — hidden when minimized */}
+      {!chatMinimized && (
+        <div className="flex min-h-[600px] min-w-0 flex-1 flex-col lg:min-h-0">
+          <ClientAskPetal
+            client={client}
+            onInsightAction={handleInsightAction}
+            onInsightFlag={(title, description) => {
+              setFlaggedItems(prev => [...prev, {
+                id: `flag-${Date.now()}`,
+                clientId: client.id,
+                title,
+                description,
+                source: "ai_insight",
+                priority: "high",
+                createdAt: new Date().toISOString(),
+                status: "open",
+              }]);
+              showToast("success", "Flagged for review", `${title} added to your flags`);
+            }}
+            onMinimize={() => setChatMinimized(true)}
+          />
+        </div>
+      )}
+      {/* Right: Overview details — scrollable on lg, expands when chat is minimized */}
+      {/* [zoom:0.85] shrinks the whole right section (tabs + cards + text) by 15%
+          when chat is visible. Original column width restored — zoom does the
+          shrinking so width AND content both scale together. */}
+      <aside className={`${chatMinimized ? "flex-1" : "lg:w-[380px] lg:shrink-0 [zoom:0.85]"} lg:overflow-y-auto lg:pr-1`}>
+        <div className="space-y-6">
       {/* Prep Workspace button — portaled into layout header */}
       <PrepWorkspacePortal visible={currentStage === "in_preparation"} onOpen={() => setPrepWorkspaceOpen(true)} />
+
+      {chatMinimized && (
+        // ────── COMPACT 2-COLUMN LAYOUT (chat hidden) ──────
+        <>
+          <div className="sticky top-0 z-10 -mt-1 flex items-center bg-background pb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => setChatMinimized(false)}
+              title="Show chat"
+            >
+              <PanelLeftOpen className="size-4" />
+              <span className="text-xs">Show chat</span>
+            </Button>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+            {/* MAIN COLUMN — AI insight hero, flags, billing.
+                Action items (stage CTAs, compliance) and all metadata live in the sidebar. */}
+            <main className="min-w-0 space-y-5">
+              {/* AI Insight hero — front and center since the chat is hidden.
+                  Fresh-generated animation: starts blurred + faded out, slides in
+                  smoothly. Gives the user the feeling the AI just produced it
+                  rather than presenting a pre-baked card. */}
+              {/* AI Insight hero — only renders when an insight exists. For
+                  clients without insights (new intakes, etc.) the chat-minimized
+                  view simply omits the hero; the Ask-Petal welcome lives in the
+                  chat-visible state (ClientAskPetal) only. */}
+              {clientInsight && !stageOverride && (
+                <div className="[zoom:0.85]">
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, filter: "blur(8px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+                  >
+                  <PetalInsightCard
+                    insight={clientInsight}
+                    defaultExpanded
+                    hideAskPetal
+                    onAction={handleInsightAction}
+                    onFlag={(title, description) => {
+                      setFlaggedItems(prev => [...prev, {
+                        id: `flag-${Date.now()}`,
+                        clientId: client.id,
+                        title,
+                        description,
+                        source: "ai_insight",
+                        priority: "high",
+                        createdAt: new Date().toISOString(),
+                        status: "open",
+                      }]);
+                      showToast("success", "Flagged for review", `${title} added to your flags`);
+                    }}
+                  />
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Compliance cards (Form 8867 etc.) moved to the sidebar action zone — alongside StageActionCard. */}
+
+              {/* Pending client */}
+              {client.clientStatus === "pending" && (
+                <div className="rounded-xl border bg-card p-5 space-y-4">
+                  <div className="rounded-lg bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/50 px-4 py-3">
+                    <h3 className="text-base font-bold text-amber-900 dark:text-amber-100">Assign a service tier to accept this client</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {client.fullName.split(" ")[0]} completed intake and paid the $50 deposit. Select a tier to start their return.
+                    </p>
+                  </div>
+                  {client.notes && <p className="text-xs text-foreground/70 leading-relaxed">{client.notes}</p>}
+                  {(() => {
+                    const ctx = pendingIntakeContext[client.id];
+                    return ctx ? (
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span>{ctx.filing}</span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span>{ctx.income.join(", ")}</span>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span>Requested {ctx.service}</span>
+                      </div>
+                    ) : null;
+                  })()}
+                  <div className="space-y-2">
+                    <select className="w-full h-10 rounded-lg border bg-background px-3 text-sm outline-none">
+                      <option value="">Assign service tier...</option>
+                      {serviceTierOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <Button className="flex-1 h-10" onClick={() => showToast("success", "Client accepted", `${client.fullName} has been added to your pipeline.`)}>Accept Client</Button>
+                      <Button variant="outline" className="h-10 px-6" onClick={() => showToast("info", "Client declined", `${client.fullName} has been removed.`)}>Decline</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stage CTAs (Sign & e-file / Begin Prep / Complete Prep) moved
+                  to the top of the sidebar in compact mode so they're never
+                  hidden away. The transitioning indicator (brief spinner) stays
+                  inline here so the user sees the in-progress state. */}
+              <AnimatePresence>
+                {transitioning && (
+                  <motion.div
+                    key="transitioning-compact"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex items-center gap-2.5 rounded-xl border bg-muted/30 px-4 py-3"
+                  >
+                    <motion.div
+                      className="size-4 rounded-full border-2 border-primary border-t-transparent"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span className="text-sm text-muted-foreground">Moving to preparation...</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Flags / Open items */}
+              {currentStage !== "filed" && (
+                <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+              )}
+
+              {/* Billing — financial snapshot */}
+              <BillingCard client={client} />
+
+              {/* When there's no hero content (no insight, no stage CTA, no
+                  compliance), promote Intake Summary + Contact + Notes UP into
+                  the main column so it doesn't read as half-empty. They're
+                  removed from the sidebar in that case. */}
+              {!hasLeftContent && intakeSummaryCardJSX}
+              {!hasLeftContent && contactCardJSX}
+              {!hasLeftContent && notesCardJSX}
+            </main>
+
+            {/* RIGHT SIDEBAR — sticky stack of metadata cards.
+                No self-start so the column stretches to row height for symmetric bottoms. */}
+            <aside className="space-y-4 lg:sticky lg:top-12">
+              {/* ── ACTION ITEMS — always at the top so they're never hidden ── */}
+
+              {/* Stage CTA: Sign & e-file / Begin Prep / Complete Prep */}
+              {stageAction && <StageActionCard {...stageAction} />}
+
+              {/* Compliance (Form 8867 due diligence etc.) — also an action item */}
+              {clientCompliance.map(a => (
+                <ComplianceCard key={a.id} alert={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} />
+              ))}
+
+              {/* ── METADATA STACK ──
+                  Intake / Contact / Notes only render here when there IS hero
+                  content. Otherwise they're promoted into the main column. */}
+
+              {/* Intake Summary — stacked 2-col layout for narrow sidebar */}
+              {hasLeftContent && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-sm">Intake Summary</CardTitle>
+                  <Link href={`/dashboard/clients/${client.id}/intake`}>
+                    <Button variant="ghost" size="sm" className="text-xs gap-1">Full <ChevronRight className="size-3" /></Button>
+                  </Link>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
+                      <div className="text-xs font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div>
+                      <div className="text-xs font-medium mt-0.5">{client.serviceTier}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
+                      <div className="text-xs font-medium mt-0.5 capitalize">{client.type}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div>
+                      <div className="text-xs font-medium mt-0.5">{stageLabels[currentStage] || currentStage}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div>
+                      <div className="text-xs font-medium mt-0.5 tabular-nums">{client.documentsSubmitted} / {client.documentsRequired}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div>
+                      <div className="text-xs font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
+                    </div>
+                  </div>
+                  {/* (Notes paragraph removed — duplicated the dedicated Notes card below.) */}
+                </CardContent>
+              </Card>
+              )}
+
+              {/* Documents — progress + last login */}
+              {(() => {
+                const dp = client.documentsRequired > 0 ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100) : 0;
+                const lastLogin = client.lastPortalLogin
+                  ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                  : "Never";
+                return (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                      <CardTitle className="text-sm">Documents</CardTitle>
+                      <Link href={`/dashboard/clients/${client.id}/documents`}>
+                        <Button variant="ghost" size="sm" className="text-xs gap-1">View <ChevronRight className="size-3" /></Button>
+                      </Link>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm">
+                          <span className="font-display text-xl tabular-nums">{client.documentsSubmitted}</span>
+                          <span className="text-muted-foreground"> of {client.documentsRequired}</span>
+                        </span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{dp}%</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className={`h-full transition-all ${dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500"}`} style={{ width: `${dp}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                        <span className="text-muted-foreground">Last portal login</span>
+                        <span className={`tabular-nums ${client.lastPortalLogin ? "text-foreground" : "text-amber-600"}`}>{lastLogin}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Return Progress — workflow timeline */}
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
+                <CardContent>
+                  <TrackingTimeline items={timelineItems} />
+                </CardContent>
+              </Card>
+
+              {/* Contact — only in sidebar when hero exists; otherwise promoted to main */}
+              {hasLeftContent && (
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
+                <CardContent className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
+                </CardContent>
+              </Card>
+              )}
+
+              {/* Notes — only in sidebar when hero exists; otherwise promoted to main */}
+              {hasLeftContent && (
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
+                <CardContent>
+                  <NotesPanel client={client} />
+                </CardContent>
+              </Card>
+              )}
+            </aside>
+          </div>
+        </>
+      )}
+
+      {!chatMinimized && (
+      <Tabs defaultValue="snapshot" className="space-y-4">
+        <div className="sticky top-0 z-10 flex items-center gap-2 bg-background">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="snapshot">Snapshot</TabsTrigger>
+            <TabsTrigger value="status">Status</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="status" className="space-y-6">
+      {/* Billing — financial snapshot */}
+      <BillingCard client={client} />
+
+      {/* Return Progress — workflow timeline */}
+      <Card>
+        <CardHeader><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
+        <CardContent>
+          <TrackingTimeline items={timelineItems} />
+        </CardContent>
+      </Card>
 
       {/* Pending client — blocking action */}
       {client.clientStatus === "pending" && (
@@ -162,21 +568,7 @@ export default function ClientOverviewPage() {
         </div>
       )}
 
-      {/* AI Insight — hides after stage override (e.g., extension filed) */}
-      {clientInsight && !stageOverride && (
-        <DocketInsightCard
-          insight={clientInsight}
-          defaultExpanded={true}
-          onAction={handleInsightAction}
-          onSendMessage={(messageId, channel) => {
-            showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
-          }}
-          onEditMessage={(messageId) => {
-            showToast("info", "Editing draft", `Opening editor for ${messageId}`);
-          }}
-          onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_insight", priority: "high", createdAt: new Date().toISOString(), status: "open" }])}
-        />
-      )}
+      {/* AI Insight moved to Ask Petal tab. */}
 
       {/* Chart library components saved in components/ui/ for future use:
           - stats-4.tsx (area sparklines)
@@ -190,135 +582,105 @@ export default function ClientOverviewPage() {
 
       {/* Compliance cards (8867 due diligence) — second card, below insight */}
       {clientCompliance.map(a => (
-        <ComplianceCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+        <ComplianceCard key={a.id} alert={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} />
       ))}
 
-      {/* Upcoming call notification */}
-      <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
+      {/* Stage CTAs (Ready / Complete Prep / Sign & e-file) now live as the
+          first card in the Snapshot tab via <StageActionCard>, so they're not
+          duplicated here in the Status tab. */}
 
-      {/* Flags */}
-      {currentStage !== "filed" && (
-        <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
-      )}
+        </TabsContent>
 
-      {/* Ready to Prep / Transition — animated */}
-      <AnimatePresence mode="wait">
-        {currentStage === "ready_to_prep" && !transitioning && !stageOverride && (
-          <motion.div
-            key="ready-card"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                <CheckCircle className="size-4 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">Ready to begin preparation</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  All {client.documentsRequired} documents received. Confirm to move {client.fullName.split(" ")[0]} into preparation.
-                </div>
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> {client.documentsSubmitted}/{client.documentsRequired} docs received</div>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Deposit paid</div>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Engagement signed</div>
-                </div>
-              </div>
+        <TabsContent value="notes" className="space-y-3">
+          <NotesPanel client={client} />
+        </TabsContent>
+
+        <TabsContent value="snapshot" className="space-y-6">
+      {/* Single-column snapshot for narrow sidebar */}
+      <div className="space-y-4">
+        {/* ── ACTION ITEMS — always at the top so they're never hidden ── */}
+        {stageAction && <StageActionCard {...stageAction} />}
+        {clientCompliance.map(a => (
+          <ComplianceCard key={a.id} alert={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} />
+        ))}
+
+        {/* 1. Intake Summary — most-useful first-glance metadata */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-sm">Intake Summary</CardTitle>
+            <Link href={`/dashboard/clients/${client.id}/intake`}>
+              <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
+              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
+              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div><div className="text-sm font-medium mt-0.5">{stageLabels[client.returnStage]}</div></div>
+              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
             </div>
-            <Button
-              className="mt-3 w-full"
-              onClick={() => {
-                setTransitioning(true);
-                setTimeout(() => {
-                  setStageOverride("in_preparation");
-                  setStageOverrideGlobal(client.id, "in_preparation");
-                  setTransitioning(false);
-                  showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`);
-                }, 1500);
-              }}
-            >
-              <FileText className="size-3.5" /> Begin Preparation
-            </Button>
-          </motion.div>
+          </CardContent>
+        </Card>
+
+        {/* 2. Document Tracker — progress + last login */}
+        {(() => {
+          const docPercent = client.documentsRequired > 0
+            ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100)
+            : 0;
+          const lastLogin = client.lastPortalLogin
+            ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "Never";
+          return (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-sm">Documents</CardTitle>
+                <Link href={`/dashboard/clients/${client.id}/documents`}>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1">View checklist <ChevronRight className="size-3" /></Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm">
+                    <span className="font-display text-xl tabular-nums">{client.documentsSubmitted}</span>
+                    <span className="text-muted-foreground"> of {client.documentsRequired} received</span>
+                  </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">{docPercent}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full transition-all ${docPercent >= 100 ? "bg-emerald-500" : docPercent >= 50 ? "bg-foreground/70" : "bg-amber-500"}`}
+                    style={{ width: `${docPercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                  <span className="text-muted-foreground">Last portal login</span>
+                  <span className={`tabular-nums ${client.lastPortalLogin ? "text-foreground" : "text-amber-600"}`}>{lastLogin}</span>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+        {/* 3. Flags — open items + AI-flagged review */}
+        {currentStage !== "filed" && (
+          <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
         )}
 
-        {transitioning && (
-          <motion.div
-            key="transitioning"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center gap-2.5 rounded-xl border bg-muted/30 px-4 py-3"
-          >
-            <motion.div
-              className="size-4 rounded-full border-2 border-primary border-t-transparent"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-            />
-            <span className="text-sm text-muted-foreground">Moving to preparation...</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* 4. Contact — email + phone */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5" /> {client.email}</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5" /> {client.phone}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Collecting Docs — show progress toward ready */}
-      {currentStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
-        <div className="rounded-xl border p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-muted">
-              <Clock className="size-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Waiting on documents</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {client.documentsRequired - client.documentsSubmitted} documents still needed from {client.fullName.split(" ")[0]}.
-              </div>
-              <div className="mt-2.5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
-                  <span className="text-[10px] font-medium tabular-nums">{docPercent}%</span>
-                </div>
-                <Progress value={docPercent} className="h-1.5" />
-              </div>
-            </div>
-          </div>
-        </div>
+        </TabsContent>
+      </Tabs>
       )}
 
-      {/* Complete Preparation for in_preparation clients */}
-      {(currentStage === "in_preparation") && !transitioning && (
-        <div className="rounded-xl border p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-blue-50">
-              <FileText className="size-4 text-blue-600" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">In preparation</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Resolve all flags, then complete preparation to send {client.fullName.split(" ")[0]} their return for review.
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
-                  <div className="flex items-center gap-1 text-[10px] text-amber-600"><AlertTriangle className="size-3" /> Open flags need resolution</div>
-                ) : (
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> All flags resolved</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <Button
-            className="mt-3 w-full"
-            onClick={() => setCompletePrepOpen(true)}
-          >
-            <CheckCircle className="size-3.5" /> Complete Preparation
-          </Button>
-        </div>
-      )}
-
-      {/* Complete Preparation Dialog */}
+      {/* Dialogs — always rendered so they work in both layouts */}
       <Dialog open={completePrepOpen} onOpenChange={setCompletePrepOpen}>
         <DialogContent className="sm:max-w-md">
           <div className="space-y-4">
@@ -431,198 +793,6 @@ export default function ClientOverviewPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ERO Signature for pay_and_sign clients */}
-      {currentStage === "pay_and_sign" && (
-        <div className="rounded-xl border p-4">
-          <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">8879 ready for ERO signature</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Client has paid and signed. Your countersignature is needed to file.</div>
-              <div className="mt-2 flex gap-1.5">
-                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Paid</div>
-                <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Client signed</div>
-                <div className="flex items-center gap-1 text-[10px] text-amber-600"><Clock className="size-3" /> ERO pending</div>
-              </div>
-            </div>
-          </div>
-          <Button className="mt-3 w-full" onClick={() => setEroOpen(true)}>
-            <Shield className="size-3.5" /> Sign as ERO & file
-          </Button>
-        </div>
-      )}
-
-      {/* Docket Insight */}
-      {hasIntel && (
-        <div className="space-y-3">
-          {/* Anomalies */}
-          {clientAnomalies.map(a => (
-            <AnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
-          ))}
-          {/* Deductions */}
-          {clientDeductions.map(a => (
-            <DeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
-          ))}
-          {/* Extensions */}
-          {currentStage === "extended" ? (
-            <div className="rounded-xl border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-orange-500" />
-                  <span className="text-sm font-semibold">Extended to October 15, 2026</span>
-                </div>
-                <Badge className="bg-orange-100 text-orange-700">Extended</Badge>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Form 4868 filed. {client.fullName.split(" ")[0]} has until October 15 to complete filing.
-                {(() => {
-                  const daysLeft = Math.floor((new Date("2026-10-15").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                  return daysLeft > 0 ? ` ${daysLeft} days remaining.` : " Deadline passed.";
-                })()}
-              </p>
-            </div>
-          ) : clientExtensions.map(a => (
-            <div key={a.id} className="rounded-xl border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-amber-500" />
-                  <span className="text-sm font-semibold">Extension likelihood</span>
-                </div>
-                <span className="font-display text-2xl tabular-nums tracking-tight">{a.probability}%</span>
-              </div>
-              <Progress value={a.probability} className="mt-3 h-2" indicatorColor={a.probability >= 80 ? "bg-red-500" : "bg-amber-500"} />
-              <div className="mt-3 space-y-1">
-                {a.factors.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" /> {f}
-                  </div>
-                ))}
-              </div>
-              {a.probability >= 70 && (
-                <Button className="mt-3 w-full" onClick={() => setExtensionDialogOpen(true)}>
-                  <FileText className="size-3.5" /> File Extension (Form 4868)
-                </Button>
-              )}
-            </div>
-          ))}
-          {/* Estimated Tax */}
-          {clientEstimates.map(calc => (
-            <div key={calc.id} className="rounded-xl border p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2"><Calculator className="size-4 text-primary" /><span className="text-sm font-semibold">2026 quarterly estimates</span></div>
-                <span className="font-display text-xl tabular-nums tracking-tight">${calc.totalEstimated.toLocaleString()}</span>
-              </div>
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {(["q1", "q2", "q3", "q4"] as const).map(q => (
-                  <div key={q} className="rounded-lg border p-2 text-center">
-                    <div className="font-display text-sm tabular-nums">${calc.quarterlyAmounts[q].toLocaleString()}</div>
-                    <div className="text-[10px] text-muted-foreground">{q.toUpperCase()}</div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{calc.basis}</p>
-              <Button size="sm" className="mt-3" onClick={() => setSentBilling("calc")} disabled={sentBilling === "calc"}>
-                <Calculator className="size-3.5" /> {sentBilling === "calc" ? "Sent!" : "Send to client"}
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Two-column layout for details */}
-      <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">
-        {/* Left column — billing + intel overflow */}
-        <div className="space-y-5">
-          {/* Billing — uses shared BillingCard */}
-          <BillingCard client={client} />
-
-          {/* Intake snapshot — compact */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm">Intake Summary</CardTitle>
-              <Link href={`/dashboard/clients/${client.id}/intake`}>
-                <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-4">
-                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
-                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
-                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div><div className="text-sm font-medium mt-0.5">{client.documentsSubmitted} / {client.documentsRequired}</div></div>
-                <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
-              </div>
-              {client.notes && (
-                <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2">
-                  <div className="text-xs text-muted-foreground">{client.notes}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Client Review enhancement */}
-          {client.returnStage === "client_review" && client.returnSentDate && (() => {
-            const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
-            const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
-            return (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>Sent {daysSinceSent}d ago</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "today" : `${lastLogin}d ago`) : "never"}</span>
-                {daysSinceSent > 5 && (
-                  <>
-                    <span className="text-muted-foreground/30">·</span>
-                    <span className="text-amber-600">{daysSinceSent}d without response</span>
-                  </>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Right column — timeline + contact + notes */}
-        <div className="space-y-5">
-          {/* Return Timeline */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
-            <CardContent>
-              <TrackingTimeline items={timelineItems} />
-            </CardContent>
-          </Card>
-
-          {/* Contact — compact */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5" /> {client.email}</div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5" /> {client.phone}</div>
-            </CardContent>
-          </Card>
-
-          {/* Filing Details — compact */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Filing Details</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <div>Filing Status: <span className="font-medium text-foreground">{client.filingStatus.toUpperCase()}</span></div>
-              <div>Last Portal Login: <span className="font-medium text-foreground">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
-            </CardContent>
-          </Card>
-
-          {/* Context Notes — compact */}
-          {client.notes && (
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-xs leading-relaxed text-muted-foreground">{client.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      {/* Contextual Actions */}
-      <ContextualActions stage={client.returnStage} clientId={client.id} onEroSign={() => setEroOpen(true)} onDownload={() => showToast("success", "Tax return downloaded", `${client.fullName} — 2025 Federal Return`)} />
-
-      {/* Dialogs */}
       <ActionExecutionSheet action={selectedAction} open={sheetOpen} onOpenChange={setSheetOpen} />
       <ExtractionDialog extraction={selectedExtraction} open={!!selectedExtraction} onOpenChange={(open) => !open && setSelectedExtraction(null)} />
       <EroSignatureDialog client={client} open={eroOpen} onOpenChange={setEroOpen} onComplete={() => {
@@ -704,6 +874,100 @@ export default function ClientOverviewPage() {
           </div>
         </DialogContent>
       </Dialog>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+// ── Notes Panel ──
+
+function NotesPanel({ client }: { client: typeof clients[0] }) {
+  const [notes, setNotes] = useState<ClientNote[]>(() => {
+    const list = getClientNotes(client.id);
+    if (client.notes && !list.some(n => n.content === client.notes)) {
+      list.push({
+        id: `seed-${client.id}`,
+        clientId: client.id,
+        content: client.notes,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      });
+    }
+    return list;
+  });
+  const [newNote, setNewNote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
+  const addNote = () => {
+    if (!newNote.trim()) return;
+    setNotes(prev => [{
+      id: `n${Date.now()}`,
+      clientId: client.id,
+      content: newNote.trim(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, ...prev]);
+    setNewNote("");
+  };
+
+  const saveEdit = () => {
+    setNotes(prev => prev.map(n => n.id === editingId ? { ...n, content: editContent, updatedAt: new Date().toISOString() } : n));
+    setEditingId(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <Textarea
+          placeholder={`Private notes about ${client.fullName.split(" ")[0]}...`}
+          value={newNote}
+          onChange={e => setNewNote(e.target.value)}
+          className="min-h-[72px] text-sm"
+        />
+        <Button size="sm" onClick={addNote} disabled={!newNote.trim()} className="w-full">
+          <Plus className="size-3.5" /> Add note
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {notes.length === 0 && (
+          <div className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
+            No notes yet.
+          </div>
+        )}
+        {notes.map(note => (
+          <div key={note.id} className="rounded-lg border bg-card p-3">
+            {editingId === note.id ? (
+              <div className="space-y-2">
+                <Textarea value={editContent} onChange={e => setEditContent(e.target.value)} className="min-h-[60px] text-sm" />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={saveEdit}>Save</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm leading-relaxed">{note.content}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">
+                    {note.id.startsWith("seed-")
+                      ? "From intake"
+                      : <>
+                          {new Date(note.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {note.createdAt !== note.updatedAt && " · edited"}
+                        </>
+                    }
+                  </span>
+                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => { setEditingId(note.id); setEditContent(note.content); }}>
+                    <Pen className="size-3" /> Edit
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -711,7 +975,7 @@ export default function ClientOverviewPage() {
 // ── Intelligence Cards (matching popup dialog) ──
 
 // TIER 1: CRITICAL
-function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function ComplianceCard({ alert, onAskPetal, clientName }: { alert: typeof complianceAlerts[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   const [form8867Open, setForm8867Open] = useState(false);
   const { showToast } = useToast();
@@ -739,7 +1003,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
           </div>
         </div>
         {isForm8867 && (
-          <Form8867Viewer clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} />
+          <Form8867Viewer clientName={clientName} clientId={alert.clientId} open={form8867Open} onOpenChange={setForm8867Open} />
         )}
       </div>
     );
@@ -782,6 +1046,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
       {isForm8867 && (
         <Form8867Dialog
           clientName={clientName}
+          clientId={alert.clientId}
           open={form8867Open}
           onOpenChange={setForm8867Open}
           onComplete={() => {
@@ -796,7 +1061,7 @@ function ComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof comp
 }
 
 // TIER 2: ATTENTION
-function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
+function AnomalyCard({ alert, onAskPetal, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskPetal: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
   const [status, setStatus] = useState(alert.status);
   const { showToast } = useToast();
   return (
@@ -834,8 +1099,8 @@ function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof
           Flag for review
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setStatus("proceeded"); showToast("info", "Proceeded", "Marked as reviewed."); }}>Proceed</Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
-          Ask Docket
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskPetal(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
+          Ask Petal
         </Button>
       </div>
         </motion.div>
@@ -845,7 +1110,7 @@ function AnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof
 }
 
 // TIER 3: OPPORTUNITY
-function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function DeductionCard({ suggestion, onAskPetal, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
   return (
@@ -871,8 +1136,8 @@ function DeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: ty
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
           <X className="size-3 mr-1" /> Dismiss
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
-          Ask Docket
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskPetal(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
+          Ask Petal
         </Button>
       </div>
     </div>

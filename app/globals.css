@@ -2,23 +2,8 @@
 
 @plugin "tailwindcss-animate";
 
-/* v4: P22 Mackinac Pro — editorial serif for brand, client names, AI insight body.
-   Fraunces loads via next/font/google as fallback (see lib/fonts.ts). */
-@font-face {
-  font-family: "P22 Mackinac Pro";
-  src: url("/fonts/p22-mackinac-book.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "P22 Mackinac Pro";
-  src: url("/fonts/p22-mackinac-medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
+/* v4: Spectral — editorial serif for brand, client names, AI insight body.
+   Loaded via next/font/google in lib/fonts.ts. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -86,7 +71,7 @@
   --fc-today-bg-color: var(--base-50);
 
   /* ═══════════════════════════════════════════
-     v4 DESIGN TOKENS (DOCKET-V4-PRD.md §2)
+     v4 DESIGN TOKENS (PETAL-V4-PRD.md §2)
      Warm editorial palette — cream paper, warm ink, rust accent.
      These are the tokens for v4 screens (triage, client workspace).
      v3 tokens above remain for legacy pages until migrated.
@@ -133,13 +118,13 @@
      here — see design-references/client-portal/components/tokens.jsx
      for the source of truth. */
 
-  /* v4 font stacks (P22 via @font-face above, Fraunces/DM Sans/Geist Mono via next/font/google).
+  /* v4 font stacks (Spectral/DM Sans/Geist Mono via next/font/google).
      Namespaced with `-stack` so @theme inline can expose them as font-serif / font-mono / font-sans
      without producing circular var() references. */
   /* Fallback strings inside var() are required: next/font registers
      --font-* on <body>, not :root, so without a fallback the nested
      var() resolves to empty at :root → whole stack becomes invalid. */
-  --serif-stack: "P22 Mackinac Pro", var(--font-fraunces, "Fraunces"), Georgia, serif;
+  --serif-stack: var(--font-spectral, "Spectral"), Georgia, serif;
   --sans-stack: var(--font-dm-sans, "DM Sans"), -apple-system, BlinkMacSystemFont, sans-serif;
   --mono-stack: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SF Mono", monospace;
 

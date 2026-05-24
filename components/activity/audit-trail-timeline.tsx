@@ -8,9 +8,10 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Mail, MailOpen, MousePointerClick, MessageSquare, MessageCircle,
   LogIn, Upload, FileCheck, Phone, CreditCard, Calendar, GitBranch,
-  Brain, Sparkles, AlertTriangle, Send, FileText, Check, Pen,
+  Brain, AlertTriangle, Send, FileText, Check, Pen,
   Receipt, ChevronDown,
 } from "lucide-react";
+import { PetalMark } from "@/components/petal-mark";
 import type { ActivityEvent, ActivityEventType, ActivityChannel } from "@/lib/mock-data";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 
@@ -29,7 +30,7 @@ const eventConfig: Record<string, { icon: React.ElementType; color: string }> = 
   payment_received: { icon: CreditCard, color: "text-emerald-600" },
   appointment_scheduled: { icon: Calendar, color: "text-violet-600" },
   stage_changed: { icon: GitBranch, color: "text-blue-600" },
-  ai_extraction: { icon: Sparkles, color: "text-emerald-600" },
+  ai_extraction: { icon: PetalMark, color: "text-emerald-600" },
   ai_classification: { icon: Brain, color: "text-emerald-600" },
   ai_flag: { icon: AlertTriangle, color: "text-amber-600" },
   message_sent: { icon: Send, color: "text-blue-600" },

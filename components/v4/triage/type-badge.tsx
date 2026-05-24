@@ -5,7 +5,7 @@ import type { TriageItemType } from "@/lib/v4/triage-items";
 /**
  * TypeBadge — 22px square mono glyph identifying triage item category.
  *
- * Colors per docket-direction-b-v2.html:
+ * Colors per petal-direction-b-v2.html:
  *   MSG    warning (amber)
  *   FILE   rust
  *   FLAG   error (red)

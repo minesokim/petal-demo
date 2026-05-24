@@ -3,8 +3,8 @@ import { WorkspaceView } from "@/components/v4/workspace/workspace-view";
 /**
  * Client workspace — Overview tab.
  *
- * Reference: DOCKET-V4-PRD.md §5.2 and
- *            design-references/docket-synthesis.html
+ * Reference: PETAL-V4-PRD.md §5.2 and
+ *            design-references/petal-synthesis.html
  *
  * Phase 3 renders only the Overview tab at /dashboard/client/[id].
  * Other tabs (Documents, Messages, etc.) will get their own routes

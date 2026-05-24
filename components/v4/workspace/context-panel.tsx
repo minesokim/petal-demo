@@ -13,7 +13,7 @@ import type {
 /**
  * ContextPanel — 320px right-hand column on the client workspace.
  *
- * Sections per docket-synthesis.html:
+ * Sections per petal-synthesis.html:
  *   1. Recent messages   (3 previews, unread → rust left border)
  *   2. Activity          (timeline dots, dashed-separator rows)
  *   3. Compliance        (safety rows with ok/miss/pending states)

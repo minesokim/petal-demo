@@ -1,5 +1,5 @@
 // ============================================================
-// DOCKET - Preparer Dashboard Mock Data
+// PETAL - Preparer Dashboard Mock Data
 // Founding client: Antonio Vazquez, Vazant Consulting
 // ============================================================
 
@@ -12,7 +12,7 @@ export type ActionType = 'missing_docs' | 'stale_client' | 'review_ready' | 'pay
 export type ClientStatus = 'pending' | 'active' | 'declined'
 
 // ============================================================
-// DOCKET INSIGHTS - AI Intelligence Layer Types
+// PETAL INSIGHTS - AI Intelligence Layer Types
 // ============================================================
 
 export type InsightSeverity = 'insight' | 'concern' | 'alert'
@@ -121,7 +121,7 @@ export interface InsightSupplementary {
   barSecondaryColor?: string
 }
 
-export interface DocketInsight {
+export interface PetalInsight {
   id: string
   clientId: string
   severity: InsightSeverity

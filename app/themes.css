@@ -1,7 +1,9 @@
 body {
     @apply overscroll-none bg-transparent antialiased;
     --text-family: var(--font-dm-sans), var(--font-lato), -apple-system, BlinkMacSystemFont, sans-serif;
-    --display-family: "P22 Mackinac Pro", Georgia, serif;
+    /* AI / insight serif: New York on Apple devices (system + ui-serif),
+       Spectral via Google Fonts for cross-platform parity, Georgia as last resort. */
+    --display-family: "New York", ui-serif, var(--font-spectral, "Spectral"), Georgia, serif;
 }
 
 /* Theme presets */

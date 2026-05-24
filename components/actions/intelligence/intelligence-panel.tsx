@@ -8,8 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Check, X, AlertTriangle, TrendingDown, FileText,
-  Calculator, Mail, Clock, ChevronRight, DollarSign, Brain, Sparkles
+  Calculator, Mail, Clock, ChevronRight, DollarSign, Brain
 } from "lucide-react";
+import { PetalMark } from "@/components/petal-mark";
 import { ExtractionDialog } from "@/components/documents/extraction-dialog";
 import { type DocumentExtraction } from "@/lib/actions-mock-data";
 import {
@@ -102,7 +103,7 @@ function ComplianceFlagCard({ alert }: { alert: typeof complianceAlerts[0] }) {
 // ============================================================
 // Anomaly Alert Card — clean data display
 // ============================================================
-function AnomalyAlertCard({ alert, onAskDocket }: { alert: typeof anomalyAlerts[0]; onAskDocket?: () => void }) {
+function AnomalyAlertCard({ alert, onAskPetal }: { alert: typeof anomalyAlerts[0]; onAskPetal?: () => void }) {
   const [status, setStatus] = useState(alert.status);
   if (status !== "pending") return null;
 
@@ -141,9 +142,9 @@ function AnomalyAlertCard({ alert, onAskDocket }: { alert: typeof anomalyAlerts[
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatus("proceeded")}>
           Proceed
         </Button>
-        {onAskDocket && (
-          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskDocket}>
-            Ask Docket
+        {onAskPetal && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskPetal}>
+            Ask Petal
           </Button>
         )}
       </div>
@@ -154,7 +155,7 @@ function AnomalyAlertCard({ alert, onAskDocket }: { alert: typeof anomalyAlerts[
 // ============================================================
 // Deduction Suggestion Card
 // ============================================================
-function DeductionSuggestionCard({ suggestion, onAskDocket }: { suggestion: typeof deductionSuggestions[0]; onAskDocket?: () => void }) {
+function DeductionSuggestionCard({ suggestion, onAskPetal }: { suggestion: typeof deductionSuggestions[0]; onAskPetal?: () => void }) {
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
 
@@ -181,9 +182,9 @@ function DeductionSuggestionCard({ suggestion, onAskDocket }: { suggestion: type
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
           <X className="size-3 mr-1" /> Dismiss
         </Button>
-        {onAskDocket && (
-          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskDocket}>
-            Ask Docket
+        {onAskPetal && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={onAskPetal}>
+            Ask Petal
           </Button>
         )}
       </div>
@@ -302,8 +303,8 @@ function IrsNoticeCard({ notice }: { notice: typeof irsNotices[0] }) {
 // ============================================================
 export function IntelligencePanel() {
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
-  let askDocket = (_q: string) => {};
-  try { askDocket = useAIPanelAsk(); } catch {}
+  let askPetal = (_q: string) => {};
+  try { askPetal = useAIPanelAsk(); } catch {}
 
   return (
     <div className="space-y-6">
@@ -313,7 +314,7 @@ export function IntelligencePanel() {
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Extraction</h3>
           <div className="rounded-lg border bg-card p-4 space-y-2">
             <div className="flex items-center gap-3 mb-1">
-              <Sparkles className="size-4 text-primary" />
+              <PetalMark className="size-4 text-primary" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Extracted Documents</div>
                 <div className="text-[11px] text-muted-foreground">Review fields, then push to OLT</div>
@@ -344,7 +345,7 @@ export function IntelligencePanel() {
               <AnomalyAlertCard
                 key={aa.id}
                 alert={aa}
-                onAskDocket={() => askDocket(`Explain the ${aa.metric} anomaly for ${aa.clientName}. Prior year: $${aa.priorYear.toLocaleString()}, current: $${aa.currentYear.toLocaleString()}.`)}
+                onAskPetal={() => askPetal(`Explain the ${aa.metric} anomaly for ${aa.clientName}. Prior year: $${aa.priorYear.toLocaleString()}, current: $${aa.currentYear.toLocaleString()}.`)}
               />
             ))}
           </div>
@@ -360,7 +361,7 @@ export function IntelligencePanel() {
               <DeductionSuggestionCard
                 key={ds.id}
                 suggestion={ds}
-                onAskDocket={() => askDocket(`Tell me more about the ${ds.deductionType} deduction for ${ds.clientName} under ${ds.section}.`)}
+                onAskPetal={() => askPetal(`Tell me more about the ${ds.deductionType} deduction for ${ds.clientName} under ${ds.section}.`)}
               />
             ))}
           </div>

@@ -1,5 +1,5 @@
 // ============================================================
-// DOCKET AUDIT TRAIL — Per-client activity events
+// PETAL AUDIT TRAIL — Per-client activity events
 // ============================================================
 
 import type { ActivityEvent } from "./mock-data";

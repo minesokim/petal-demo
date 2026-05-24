@@ -1,23 +1,23 @@
-# Docket v4 — Product Specification
+# Petal v4 — Product Specification
 
 **Version:** v4 Synthesis (April 17, 2026)
 **Author:** David Viramontes, Noctworks
 **Audience:** Claude Code, Haokun Yang (backend), Antonio Vazquez (founding client review)
 **Reference mockups (visual source of truth):**
-- `/design-references/docket-direction-b-v2.html` (triage workflow, primary home)
-- `/design-references/docket-synthesis.html` (client workspace, deep work surface)
+- `/design-references/petal-direction-b-v2.html` (triage workflow, primary home)
+- `/design-references/petal-synthesis.html` (client workspace, deep work surface)
 
 ---
 
 ## 1. Product Overview
 
-Docket is an AI native practice management platform for solo enrolled agents and small tax firms. The product replaces TaxDome, Canopy, and Karbon for solo EAs managing 20 to 200 individual and small business clients per year.
+Petal is an AI native practice management platform for solo enrolled agents and small tax firms. The product replaces TaxDome, Canopy, and Karbon for solo EAs managing 20 to 200 individual and small business clients per year.
 
 **Positioning:** The AI native operating system for solo tax professionals.
 
 **Primary user:** Antonio Vazquez. Solo EA in Riverside, California. Manages 23 active clients across individual 1040s, Schedule C sole proprietors, S corps, partnerships. Works 60+ hour weeks during tax season (Feb 1 to April 15). Billable time is the constraint. Compliance exposure is the risk.
 
-**Core thesis:** Tax work during season is a queue, not a dashboard. Antonio does not need situational awareness. He needs to process items one by one until the queue is empty. When an item needs deeper context, he drops into the full client workspace. When done, he returns to the queue. Everything Docket does is in service of that round trip.
+**Core thesis:** Tax work during season is a queue, not a dashboard. Antonio does not need situational awareness. He needs to process items one by one until the queue is empty. When an item needs deeper context, he drops into the full client workspace. When done, he returns to the queue. Everything Petal does is in service of that round trip.
 
 **Differentiation vs. TaxDome / Canopy:**
 1. Triage first workflow instead of dashboard first
@@ -94,7 +94,7 @@ Three font families, carried over from v3. Each has a specific role. Do not mix 
 }
 ```
 
-**P22 Mackinac Pro (serif):** used for the Docket brand mark, client names in workspace headers (e.g., "Priya Sharma" at 32px), AI insight body copy with italic accent on key phrases, and editorial moments like "inbox zero by 4pm". Paid font, already licensed for v3. Self hosted at `/public/fonts/p22-mackinac-book.woff2` and `/public/fonts/p22-mackinac-medium.woff2`. Weights available: 400 (Book), 500 (Medium). Never use for body text, buttons, labels, or form fields.
+**P22 Mackinac Pro (serif):** used for the Petal brand mark, client names in workspace headers (e.g., "Priya Sharma" at 32px), AI insight body copy with italic accent on key phrases, and editorial moments like "inbox zero by 4pm". Paid font, already licensed for v3. Self hosted at `/public/fonts/p22-mackinac-book.woff2` and `/public/fonts/p22-mackinac-medium.woff2`. Weights available: 400 (Book), 500 (Medium). Never use for body text, buttons, labels, or form fields.
 
 Fallback to Fraunces (Google Fonts, free) in development environments where P22 is not installed. The design reference HTML files use Fraunces for this reason. Production uses P22 Mackinac.
 
@@ -171,11 +171,11 @@ Use `lucide-react` or equivalent thin stroke icon set. 1.5px stroke width. 16px 
 
 ### 3.1 The two modes
 
-Docket has two primary modes of operation. Every pixel serves one mode or makes the transition between them clear.
+Petal has two primary modes of operation. Every pixel serves one mode or makes the transition between them clear.
 
-**Mode A: Triage (home).** A queue of items that need Antonio's attention. Each item has a type, a client, an action, a time cost, and a severity. Antonio processes items. The queue shrinks. Goal is inbox zero by a chosen time (default 4 PM). Reference: `docket-direction-b-v2.html`.
+**Mode A: Triage (home).** A queue of items that need Antonio's attention. Each item has a type, a client, an action, a time cost, and a severity. Antonio processes items. The queue shrinks. Goal is inbox zero by a chosen time (default 4 PM). Reference: `petal-direction-b-v2.html`.
 
-**Mode B: Client workspace (deep work).** A rich single client view with tabs for Overview, Documents, Messages, Return, Billing, Timeline, Compliance. Full context for one client. Antonio goes here when a triage item needs more than a quick action. Reference: `docket-synthesis.html`.
+**Mode B: Client workspace (deep work).** A rich single client view with tabs for Overview, Documents, Messages, Return, Billing, Timeline, Compliance. Full context for one client. Antonio goes here when a triage item needs more than a quick action. Reference: `petal-synthesis.html`.
 
 ### 3.2 The round trip
 
@@ -199,7 +199,7 @@ Views
   Pipeline          (kanban view)
   Documents         (count)
   Calendar
-  Ask Docket        (command palette, ⌘K)
+  Ask Petal        (command palette, ⌘K)
 
 Firm
   Automations
@@ -209,7 +209,7 @@ Firm
 
 ### 3.4 Header (persistent)
 
-Left: Docket brand mark + wordmark
+Left: Petal brand mark + wordmark
 Middle: context dependent breadcrumb (triage state) or client chip (workspace state)
 Right: command palette (⌘K), notification bell if unread, user avatar
 
@@ -220,7 +220,7 @@ Keyboard shortcut reference in monospace uppercase. Date and tax season deadline
 ### 3.6 Mode transitions
 
 ```
-User opens Docket
+User opens Petal
   → Lands on Triage (Mode A)
   → Sees queue of 14 items grouped by urgency horizon
 
@@ -250,7 +250,7 @@ Works in client workspace
 
 This is how Antonio spends 80% of his time during tax season.
 
-1. Open Docket at 7 AM. Lands on Triage.
+1. Open Petal at 7 AM. Lands on Triage.
 2. Queue shows 14 items grouped by "Right now" (2), "Today" (8), "Later this week" (4).
 3. Goal display: "inbox zero by 4 PM · est 2h 20m at current pace"
 4. First item pre selected. Detail pane shows message, AI insight with source attribution, drafted reply.
@@ -275,7 +275,7 @@ When Antonio is preparing Marcus Chen's complex S corp return.
 The most demo worthy flow.
 
 1. Client sends SMS ("I have my TikTok 1099 but don't know how to upload it").
-2. Item appears in triage with Docket drafted reply already prepared.
+2. Item appears in triage with Petal drafted reply already prepared.
 3. AI insight surfaces: actual 1099 shows $34,200 vs intake estimate $20,000.
 4. Drafted reply answers her question AND surfaces the gap AND offers a call.
 5. Antonio reviews, hits R to send as himself. Message goes out. Item resolved.
@@ -300,7 +300,7 @@ For each screen, reference the HTML mockup file that visually defines the target
 
 ### 5.1 Triage (home)
 
-**Reference:** `docket-direction-b-v2.html` (full implementation)
+**Reference:** `petal-direction-b-v2.html` (full implementation)
 
 **Layout:** Three pane grid. 200px nav + 440px queue list + flexible detail pane. Header 48px, status bar 28px.
 
@@ -315,7 +315,7 @@ For each screen, reference the HTML mockup file that visually defines the target
 - Breadcrumb with J/K arrows, item position (1/14), client chip, service tier, context line (intake date, year client), estimated time to resolve
 - Title tag (MESSAGE · CRITICAL · NEEDS GAP REVIEW style)
 - Serif title with one italic rust accent on operative word
-- Numbered workflow sections: 1. Context, 2. Docket noticed (insight), 3. Draft (ready to send)
+- Numbered workflow sections: 1. Context, 2. Petal noticed (insight), 3. Draft (ready to send)
 - Each section has its own component treatment
 - Action bar at bottom with primary action, secondary actions, keyboard hints
 - "Up next" preview chip showing what J will land on
@@ -329,7 +329,7 @@ For each screen, reference the HTML mockup file that visually defines the target
 
 ### 5.2 Client workspace (deep work)
 
-**Reference:** `docket-synthesis.html` (full implementation)
+**Reference:** `petal-synthesis.html` (full implementation)
 
 **Layout:** Three pane grid. 200px nav + flexible main + 320px context panel.
 
@@ -371,7 +371,7 @@ For each screen, reference the HTML mockup file that visually defines the target
 - Channel filter pills: All, Portal, Email, SMS, Calls, Video
 - Conversation thread (center)
 - Each message: sender avatar, channel badge, content, timestamp, attachments
-- Incoming messages with AI drafted reply shown below in distinct card: "Drafted by Docket, review before sending" with Send as Antonio / Edit / Change tone / Change channel buttons
+- Incoming messages with AI drafted reply shown below in distinct card: "Drafted by Petal, review before sending" with Send as Antonio / Edit / Change tone / Change channel buttons
 - Voice/video calls: expandable entry showing duration, full transcript with speaker labels, AI summary, action items (each with Accept/Decline), follow up task suggestions
 
 ### 5.5 Compliance tab (per client) — NEW, critical feature
@@ -476,7 +476,7 @@ For each screen, reference the HTML mockup file that visually defines the target
 
 **Center panel:** Document viewer (current document with extracted fields, navigation)
 
-**Right panel:** Ask Docket contextual (pre loaded with this client's context, suggestion chips: "§179 treatment?", "Reasonable comp benchmark?", "QBI calculation?")
+**Right panel:** Ask Petal contextual (pre loaded with this client's context, suggestion chips: "§179 treatment?", "Reasonable comp benchmark?", "QBI calculation?")
 
 **Bottom bar:** Step indicator (Review → Analyze → Check compliance → Send), "Send for client review" with pre flight check
 
@@ -521,9 +521,9 @@ Every client Overview has at most one "Needs attention" AI insight at the top. T
 
 ### 6.2 AI drafted messages
 
-When a client sends a message or an insight requires outreach, Docket drafts a reply. The draft:
+When a client sends a message or an insight requires outreach, Petal drafts a reply. The draft:
 
-- Appears in a distinct card labeled "Drafted by Docket · review before sending"
+- Appears in a distinct card labeled "Drafted by Petal · review before sending"
 - Has clear rationale ("answers her question · surfaces the gap · offers a call")
 - Shows character count for SMS (e.g., "SMS · 340 / 480 chars")
 - Has four buttons: Send as Antonio, Edit draft, Change tone, Change channel
@@ -551,7 +551,7 @@ Universal search and command across the product.
 - Jump to any client by name
 - Jump to any document
 - Run any action (draft message, schedule appointment, run safe harbor calc, generate 4868, etc.)
-- Ask Docket questions ("Which clients are at risk?", "What's the §179 limit for 2025?", "Who needs to pay this week?")
+- Ask Petal questions ("Which clients are at risk?", "What's the §179 limit for 2025?", "Who needs to pay this week?")
 - Recent commands
 - Contextual suggestions based on current screen
 
@@ -572,7 +572,7 @@ Runs overnight. Surfaces at top of Triage as a dismissible banner.
 
 ## 7. Compliance Engine
 
-This is Docket's defensive moat. TaxDome and Canopy do not have this. Harvey has it for legal, we have it for tax.
+This is Petal's defensive moat. TaxDome and Canopy do not have this. Harvey has it for legal, we have it for tax.
 
 ### 7.1 Data model
 
@@ -628,7 +628,7 @@ Every compliance dimension is a structured record with:
 Every action that touches a compliance dimension logs an event. Events are append only. They include:
 
 - Timestamp
-- Actor (Antonio, client, Docket AI, Haokun if supporting)
+- Actor (Antonio, client, Petal AI, Haokun if supporting)
 - Action description
 - Before/after state
 - Evidence artifact if applicable
@@ -642,7 +642,7 @@ One click PDF generation. Includes:
 - Every compliance dimension with status, authority, evidence
 - Every evidence artifact embedded (signed PDFs, screenshots)
 - Full audit trail with hash chain verification
-- Signature of Docket's cryptographic verification
+- Signature of Petal's cryptographic verification
 
 This is the artifact Antonio hands to an auditor.
 
@@ -650,7 +650,7 @@ This is the artifact Antonio hands to an auditor.
 
 ## 8. Mock Client Roster
 
-23 active clients + 3 pending. Each is purpose built to showcase a specific Docket capability. See v4 spec Part 1 for full details. Summary:
+23 active clients + 3 pending. Each is purpose built to showcase a specific Petal capability. See v4 spec Part 1 for full details. Summary:
 
 | # | Name | Stage | Key feature showcased |
 |---|------|-------|----------------------|
@@ -766,7 +766,7 @@ Goal: 15 minute live demo of every flagship feature for the mentor's class of 1,
 
 **Minute 12 to 14: Client portal (Maria's view)** Show Antonio's branded portal. Clean, calm, professional. "Your client sees your brand, not ours. No AI chatbot. No dollar figures speculated. Just their preparer."
 
-**Minute 14 to 15: Close** "This is Docket. Your practice, protected. Your clients, engaged. Your license, defended. Every preparer in this room can have this within 30 days."
+**Minute 14 to 15: Close** "This is Petal. Your practice, protected. Your clients, engaged. Your license, defended. Every preparer in this room can have this within 30 days."
 
 ---
 
@@ -776,7 +776,7 @@ The v4 spec document generated earlier had some elements that conflict with the 
 
 **Dashboard as home → Triage as home.** The earlier spec had a "morning narrative" as the primary surface with action tabs (Need You / Waiting / In Progress / Done) as a kanban style view. The synthesis direction replaces this with a queue oriented triage interface where items (not clients) are the unit of work. Clients are still the object of work, but Antonio processes them one item at a time.
 
-**"Ask Docket" as sidebar feature → Command palette (⌘K).** The earlier spec killed the sidebar and moved Ask Docket to ⌘K. Synthesis keeps this decision.
+**"Ask Petal" as sidebar feature → Command palette (⌘K).** The earlier spec killed the sidebar and moved Ask Petal to ⌘K. Synthesis keeps this decision.
 
 **Kept:** All the AI insight patterns, the compliance tab, the intake form design, the client portal, the mock data roster, the demo script, and the phase structure.
 
@@ -812,7 +812,7 @@ Things that need resolution before or during Phase 1.
 
 When using this PRD with Claude Code:
 
-1. **Keep this file at repo root** as `DOCKET-V4-PRD.md`. Reference it in every Claude Code session with `@DOCKET-V4-PRD.md`.
+1. **Keep this file at repo root** as `PETAL-V4-PRD.md`. Reference it in every Claude Code session with `@PETAL-V4-PRD.md`.
 
 2. **Keep the HTML mockups** at `/design-references/` as visual source of truth. When building any UI component, Claude Code should open the referenced HTML file to match tokens, spacing, and behavior exactly.
 

@@ -8,7 +8,7 @@ import type { TriageItem } from "@/lib/v4/triage-items";
 /**
  * DetailPane — flex-right surface for the currently selected queue item.
  *
- * Layout (docket-direction-b-v2.html):
+ * Layout (petal-direction-b-v2.html):
  *   sticky breadcrumb → header (tag + serif title + sub) →
  *   sections (context · insight · draft) → up-next → sticky actions
  *
@@ -45,7 +45,7 @@ export function DetailPane({ item, position, total, nextItem, onPrev, onNext }: 
       ) : null}
 
       {item.insight ? (
-        <Section num={2} label="Docket noticed" hint="expand reasoning ⇧R">
+        <Section num={2} label="Petal noticed" hint="expand reasoning ⇧R">
           <InsightCard insight={item.insight} />
         </Section>
       ) : null}
@@ -321,7 +321,7 @@ function DraftCard({ draft }: { draft: NonNullable<TriageItem["draft"]> }) {
       <div className="flex items-center justify-between border-b border-hairline bg-bg px-3.5 py-2.5">
         <div className="flex items-center gap-2.5 font-mono text-[10px]">
           <span className="flex items-center gap-1.5 font-medium tracking-[0.12em] text-rust uppercase before:block before:size-[5px] before:rounded-full before:bg-rust">
-            Docket drafted
+            Petal drafted
           </span>
           <span className="tracking-[0.02em] text-ink-4">{draft.rationale}</span>
         </div>

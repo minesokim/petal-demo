@@ -1,14 +1,14 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { MessageSquare, Mail, Smartphone, PhoneCall, Video } from "lucide-react";
+import { Globe, Mail, Smartphone, PhoneCall, Video } from "lucide-react";
 import type { CommChannel } from "@/lib/comms-mock-data";
 
 const channelConfig: Record<CommChannel, { icon: React.ElementType; label: string; className: string }> = {
   portal: {
-    icon: MessageSquare,
+    icon: Globe,
     label: "Portal",
-    className: "text-muted-foreground",
+    className: "text-purple-600 dark:text-purple-400",
   },
   email: {
     icon: Mail,

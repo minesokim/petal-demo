@@ -2,7 +2,7 @@
  * Triage queue — v4 mock data.
  *
  * Every item is derived from the 14 items in
- * design-references/docket-direction-b-v2.html so the queue list
+ * design-references/petal-direction-b-v2.html so the queue list
  * renders exactly like the mockup. Clients cross-reference real
  * records in lib/mock-data.ts where they exist (Priya, Anthony,
  * Marcus, DeShawn, etc. are in that roster). Phase 3+ replaces the

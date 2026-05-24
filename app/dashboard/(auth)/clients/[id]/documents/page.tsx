@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   groupDocumentsByCategory,
   type MockDocument,
 } from "@/lib/documents-mock-data";
+import { subscribeForm8867 } from "@/lib/form-8867-store";
 import { Check, CheckCircle, FileText, FolderDown } from "lucide-react";
 import { useToast } from "@/components/ui/toast-notification";
 
@@ -26,6 +27,10 @@ export default function ClientDocumentsPage() {
   const [viewerDoc, setViewerDoc] = useState<MockDocument | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const { showToast } = useToast();
+
+  // Subscribe to Form 8867 store so newly-filed forms appear immediately in this tab
+  // (getClientDocuments / groupDocumentsByCategory already merge in 8867 completions).
+  useSyncExternalStore(subscribeForm8867, () => null, () => null);
 
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 

@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Check, Send, DollarSign } from "lucide-react";
+import { Check, Send } from "lucide-react";
 import { getClientPaymentSummary, type Client } from "@/lib/mock-data";
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export function BillingCard({ client }: { client: Client }) {
   const [sentBilling, setSentBilling] = useState<string | null>(null);
   const ps = getClientPaymentSummary(client.id);
+  const percent = ps.totalFee > 0 ? Math.round((ps.totalPaid / ps.totalFee) * 100) : 0;
 
   const events: { date: string; label: string; type: "paid" | "sent" | "pending" | "overdue" }[] = [];
   if (ps.deposit?.paidDate) events.push({ date: ps.deposit.paidDate, label: `Deposit paid — $${ps.deposit.amount}`, type: "paid" });
@@ -18,75 +21,93 @@ export function BillingCard({ client }: { client: Client }) {
   if (ps.balance?.sentDate && ps.balance.status !== "paid") events.push({ date: ps.balance.sentDate, label: `Balance invoice sent — $${ps.balance.amount}`, type: ps.balance.status === "overdue" ? "overdue" : "sent" });
   events.sort((a, b) => a.date.localeCompare(b.date));
 
+  const remainingLabel = ps.fullyPaid
+    ? "Paid in full"
+    : ps.hasOverdue
+      ? `$${ps.totalOwed} overdue`
+      : `$${ps.totalOwed} remaining`;
+  const remainingClass = ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground";
+  const barClass = ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : "bg-foreground/80";
+
+  const showBalance = ps.balance && ps.balance.status !== "not_applicable";
+  const showActions = !ps.fullyPaid && (
+    ps.deposit?.status === "overdue" ||
+    ps.balance?.status === "pending" ||
+    ps.balance?.status === "sent"
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="text-sm font-semibold">{client.serviceTier} Return</div>
-            <div className="text-xs text-muted-foreground">Total fee: ${client.feeAmount}</div>
+    <div className="overflow-hidden rounded-xl border bg-card">
+      {/* Header — title + total */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold">{client.serviceTier} Return</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">Total fee · ${ps.totalFee.toLocaleString()}</p>
           </div>
           <div className="text-right">
-            <div className="text-xl tracking-tight"><span className="font-display">${ps.totalPaid}</span> <span className="text-sm font-sans font-normal text-muted-foreground">of ${ps.totalFee}</span></div>
-            <div className={`text-xs font-medium ${ps.fullyPaid ? "text-emerald-600" : ps.hasOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-              {ps.fullyPaid ? "Paid in full" : ps.hasOverdue ? `$${ps.totalOwed} overdue` : `$${ps.totalOwed} remaining`}
+            <div className="font-display text-2xl leading-none tracking-tight tabular-nums">
+              ${ps.totalPaid.toLocaleString()}
+              <span className="ml-1 align-baseline text-[11px] font-sans font-normal text-muted-foreground">of ${ps.totalFee.toLocaleString()}</span>
             </div>
+            <p className={`mt-1.5 text-[11px] font-medium ${remainingClass}`}>{remainingLabel}</p>
           </div>
         </div>
-        <Progress value={(ps.totalPaid / ps.totalFee) * 100} className="h-2" indicatorColor={ps.fullyPaid ? "bg-emerald-500" : ps.hasOverdue ? "bg-red-500" : undefined} />
+        <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className={`h-full transition-all ${barClass}`} style={{ width: `${percent}%` }} />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="rounded-xl border p-3 flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium">Deposit</div>
-            <div className="text-xs text-muted-foreground">${ps.deposit?.amount || 50}</div>
-          </div>
-          {ps.deposit?.status === "paid" ? (
-            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.deposit.paidDate && new Date(ps.deposit.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-          ) : ps.deposit?.status === "overdue" ? (
-            <Badge variant="destructive">Overdue</Badge>
-          ) : (
-            <Badge variant="secondary">Pending</Badge>
-          )}
-        </div>
-        {ps.balance && ps.balance.status !== "not_applicable" && (
-          <div className="rounded-xl border p-3 flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium">Remaining Balance</div>
-              <div className="text-xs text-muted-foreground">${ps.balance.amount}</div>
-            </div>
-            {ps.balance.status === "paid" ? (
-              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">Paid {ps.balance.paidDate && new Date(ps.balance.paidDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</Badge>
-            ) : ps.balance.status === "sent" ? (
-              <Badge variant="secondary">Invoice sent</Badge>
-            ) : (
-              <Badge variant="outline">Not yet invoiced</Badge>
-            )}
-          </div>
+      {/* Line items */}
+      <div className="border-t border-border/40 px-5 py-3.5">
+        <Line
+          label="Deposit"
+          amount={ps.deposit?.amount ?? 0}
+          status={
+            ps.deposit?.status === "paid" && ps.deposit.paidDate
+              ? { text: `Paid ${formatDate(ps.deposit.paidDate)}`, tone: "positive" }
+              : ps.deposit?.status === "overdue"
+                ? { text: "Overdue", tone: "danger" }
+                : { text: "Pending", tone: "muted" }
+          }
+        />
+        {showBalance && ps.balance && (
+          <Line
+            label="Balance"
+            amount={ps.balance.amount}
+            status={
+              ps.balance.status === "paid" && ps.balance.paidDate
+                ? { text: `Paid ${formatDate(ps.balance.paidDate)}`, tone: "positive" }
+                : ps.balance.status === "sent"
+                  ? { text: "Invoice sent", tone: "muted" }
+                  : { text: "Not invoiced", tone: "muted" }
+            }
+          />
         )}
       </div>
 
+      {/* Activity timeline */}
       {events.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground">Payment Timeline</div>
-          {events.map((e, i) => (
-            <div key={i} className="flex items-center gap-3 text-xs">
-              <div className={`size-2 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/30"}`} />
-              <span className="text-muted-foreground">{new Date(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-              <span>{e.label}</span>
-            </div>
-          ))}
+        <div className="border-t border-border/40 px-5 py-3.5">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Activity</div>
+          <div className="space-y-1.5">
+            {events.map((e, i) => (
+              <div key={i} className="flex items-center gap-3 text-xs">
+                <div className={`size-1.5 shrink-0 rounded-full ${e.type === "paid" ? "bg-emerald-500" : e.type === "overdue" ? "bg-red-500" : "bg-muted-foreground/40"}`} />
+                <span className="w-12 shrink-0 tabular-nums text-muted-foreground/70">{formatDate(e.date)}</span>
+                <span className="text-foreground/80">{e.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {!ps.fullyPaid && (
-        <div className="flex gap-2">
+      {/* Actions */}
+      {showActions && (
+        <div className="flex flex-wrap gap-2 border-t border-border/40 bg-muted/30 px-5 py-3">
           {ps.deposit?.status === "overdue" && (
             sentBilling === "reminder" ? (
-              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                <Check className="size-3.5" /> Reminder sent
-              </div>
+              <SentChip text="Reminder sent" />
             ) : (
               <Button size="sm" onClick={() => setSentBilling("reminder")}>
                 <Send className="size-3.5" /> Send payment reminder
@@ -95,20 +116,16 @@ export function BillingCard({ client }: { client: Client }) {
           )}
           {ps.balance?.status === "pending" && (
             sentBilling === "invoice" ? (
-              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                <Check className="size-3.5" /> Invoice sent
-              </div>
+              <SentChip text="Invoice sent" />
             ) : (
               <Button size="sm" variant="outline" onClick={() => setSentBilling("invoice")}>
-                <DollarSign className="size-3.5" /> Send invoice
+                <Send className="size-3.5" /> Send invoice
               </Button>
             )
           )}
           {ps.balance?.status === "sent" && (
             sentBilling === "resend" ? (
-              <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                <Check className="size-3.5" /> Invoice resent
-              </div>
+              <SentChip text="Invoice resent" />
             ) : (
               <Button size="sm" variant="outline" onClick={() => setSentBilling("resend")}>
                 <Send className="size-3.5" /> Resend invoice
@@ -117,6 +134,30 @@ export function BillingCard({ client }: { client: Client }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function Line({ label, amount, status }: { label: string; amount: number; status: { text: string; tone: "positive" | "danger" | "muted" } }) {
+  const toneClass =
+    status.tone === "positive" ? "text-emerald-600"
+      : status.tone === "danger" ? "text-red-500"
+      : "text-muted-foreground";
+  return (
+    <div className="flex items-center justify-between gap-3 py-1">
+      <div className="flex items-baseline gap-2">
+        <span className="text-sm text-foreground">{label}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">${amount.toLocaleString()}</span>
+      </div>
+      <span className={`text-xs tabular-nums ${toneClass}`}>{status.text}</span>
+    </div>
+  );
+}
+
+function SentChip({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 duration-300 animate-in fade-in slide-in-from-bottom-1 dark:bg-emerald-950/20 dark:text-emerald-400">
+      <Check className="size-3.5" /> {text}
     </div>
   );
 }

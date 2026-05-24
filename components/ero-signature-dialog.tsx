@@ -115,7 +115,7 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
               </div>
 
               <Button className="w-full" disabled={!checked} onClick={handleSign}>
-                <Shield className="size-3.5" /> Sign as ERO & file return
+                <Shield className="size-3.5" /> Sign & e-file
               </Button>
             </motion.div>
           )}

@@ -69,7 +69,7 @@ export const useProfileStore = create<ProfileState>(() => ({
     role: "Developer",
     location: "San Francisco, US",
     joinedDate: "March 2025",
-    email: "antonio@docket.tax",
+    email: "antonio@petal.tax",
     phone: "+1 (609) 972-22-22",
     department: "No department",
     teams: 7,

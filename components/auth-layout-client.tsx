@@ -3,7 +3,7 @@
 import React from "react";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/layout/header";
-import { AIPanelProvider, AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
+import { AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
 import { ToastProvider } from "@/components/ui/toast-notification";
 
 function MainContent({ children }: { children: React.ReactNode }) {
@@ -28,12 +28,11 @@ function MainContent({ children }: { children: React.ReactNode }) {
 }
 
 export function AuthLayoutClient({ children }: { children: React.ReactNode }) {
+  // AIPanelProvider is hoisted to (auth)/layout.tsx so it also wraps the sidebar.
   return (
-    <AIPanelProvider>
-      <ToastProvider>
-        <MainContent>{children}</MainContent>
-        <AIPanel />
-      </ToastProvider>
-    </AIPanelProvider>
+    <ToastProvider>
+      <MainContent>{children}</MainContent>
+      <AIPanel />
+    </ToastProvider>
   );
 }

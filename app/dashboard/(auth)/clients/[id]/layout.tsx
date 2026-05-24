@@ -12,6 +12,8 @@ import { ArrowLeft, Building2, MoreHorizontal, Mail, Phone, FileText, Download, 
 import { clients, stageLabels } from "@/lib/mock-data";
 import { getClientDocuments } from "@/lib/documents-mock-data";
 import { useAIPanel } from "@/components/ai-panel";
+import { getUnreadCountForClient } from "@/lib/comms-mock-data";
+import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 
 export default function ClientDetailLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -36,78 +38,62 @@ export default function ClientDetailLayout({ children }: { children: React.React
   }
 
   const docCount = getClientDocuments(clientId).length;
+  const unreadMessages = getUnreadCountForClient(clientId);
 
-  const tabs = [
+  type Tab = { label: string; href: string; badge?: number; notification?: number };
+  const tabs: Tab[] = [
     { label: "Overview", href: `/dashboard/clients/${clientId}/overview` },
     { label: "Intake", href: `/dashboard/clients/${clientId}/intake` },
     { label: `Documents`, href: `/dashboard/clients/${clientId}/documents`, badge: docCount },
-    { label: "Messages", href: `/dashboard/clients/${clientId}/messages` },
+    { label: "Messages", href: `/dashboard/clients/${clientId}/messages`, notification: unreadMessages },
     { label: "Activity", href: `/dashboard/clients/${clientId}/activity` },
-    { label: "Notes", href: `/dashboard/clients/${clientId}/notes` },
   ];
 
   const activeTab = tabs.find(t => pathname.startsWith(t.href))?.href || tabs[0].href;
 
   return (
     <div className="space-y-0">
-      {/* Back link */}
-      <Link href="/dashboard/clients" className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1 text-sm transition-colors">
-        <ArrowLeft className="size-3.5" /> Back to clients
-      </Link>
-
-      {/* Client header */}
-      <div className="flex flex-col gap-3 py-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-start gap-3 md:gap-4">
-          <Avatar className="size-11 md:size-14">
-            <AvatarImage src={client.avatar} alt={client.fullName} />
-            <AvatarFallback className="text-lg">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-display">{client.fullName}</h1>
-              {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
-            </div>
-            <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm">
-              {client.businessName && <span>{client.businessName}</span>}
-              {client.businessName && <span>&middot;</span>}
-              <span>{stageLabels[client.returnStage]}</span>
-              <span>&middot;</span>
-              <span>Client since 2025</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5 md:gap-2">
-              <Badge>{stageLabels[client.returnStage]}</Badge>
-              <Badge variant="outline">{client.serviceTier}</Badge>
-              <Badge variant="outline">${client.feeAmount}</Badge>
-              {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
-              {client.urgency === "high" && <Badge className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">High Priority</Badge>}
-            </div>
-          </div>
+      {/* Client header — condensed single row */}
+      <div className="flex items-center gap-3 py-2">
+        <Avatar className="size-9 shrink-0">
+          <AvatarImage src={client.avatar} alt={client.fullName} />
+          <AvatarFallback className="text-xs">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+        </Avatar>
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-lg font-display">{client.fullName}</h1>
+          {client.type === "business" && <Building2 className="size-4 shrink-0 text-muted-foreground" />}
         </div>
-        <div className="flex items-center gap-2" id="client-header-actions">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge>{stageLabels[client.returnStage]}</Badge>
+          <Badge variant="outline">{client.serviceTier}</Badge>
+          <Badge variant="outline">${client.feeAmount}</Badge>
+          {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
+          {client.urgency === "high" && <Badge className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">High Priority</Badge>}
+        </div>
+        <div className="ml-auto flex items-center gap-2" id="client-header-actions">
           {client.returnStage === "in_preparation" && !pathname.endsWith("/overview") && (
-            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm" asChild>
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 h-8 text-xs" asChild>
               <Link href={`/dashboard/clients/${clientId}/overview?prepWorkspace=true`}>
-                <ClipboardList className="size-4" />
+                <ClipboardList className="size-3.5" />
                 Prep Workspace
               </Link>
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
+              <Button variant="ghost" size="icon" className="size-8"><MoreHorizontal className="size-4" /></Button>
             </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem><Mail className="mr-2 size-3.5" /> Send message</DropdownMenuItem>
-            <DropdownMenuItem><Phone className="mr-2 size-3.5" /> Schedule call</DropdownMenuItem>
-            <DropdownMenuItem><FileText className="mr-2 size-3.5" /> Request documents</DropdownMenuItem>
-            <DropdownMenuItem><Download className="mr-2 size-3.5" /> Export client data</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive"><UserX className="mr-2 size-3.5" /> Archive client</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem><Mail className="mr-2 size-3.5" /> Send message</DropdownMenuItem>
+              <DropdownMenuItem><Phone className="mr-2 size-3.5" /> Schedule call</DropdownMenuItem>
+              <DropdownMenuItem><FileText className="mr-2 size-3.5" /> Request documents</DropdownMenuItem>
+              <DropdownMenuItem><Download className="mr-2 size-3.5" /> Export client data</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive"><UserX className="mr-2 size-3.5" /> Archive client</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
 
       {/* Sub-tabs — sticky */}
       <LayoutGroup>
@@ -129,16 +115,29 @@ export default function ClientDetailLayout({ children }: { children: React.React
                   transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
                 />
               )}
-              <span className="relative z-10">
+              <span className="relative z-10 inline-flex items-center gap-1.5">
                 {tab.label}
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className="text-muted-foreground ml-1.5 text-xs tabular-nums">{tab.badge}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">{tab.badge}</span>
+                )}
+                {tab.notification !== undefined && tab.notification > 0 && (
+                  <span
+                    className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white tabular-nums"
+                    aria-label={`${tab.notification} unread message${tab.notification === 1 ? "" : "s"}`}
+                  >
+                    {tab.notification > 9 ? "9+" : tab.notification}
+                  </span>
                 )}
               </span>
             </Link>
           ))}
         </div>
       </LayoutGroup>
+
+      {/* Sticky meeting banner — visible across every client sub-page when a call is scheduled */}
+      <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pt-3 backdrop-blur-md md:-mx-6 md:px-6 [&:has(>div:empty)]:hidden">
+        <UpcomingCallBanner clientId={clientId} clientName={client.fullName} />
+      </div>
 
       {/* Tab content — animated on route change */}
       <AnimatePresence mode="wait">
@@ -148,7 +147,7 @@ export default function ClientDetailLayout({ children }: { children: React.React
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -4 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="pt-6"
+          className="pt-3"
         >
           {children}
         </motion.div>

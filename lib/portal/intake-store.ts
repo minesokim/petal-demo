@@ -3,7 +3,7 @@
 /**
  * Intake store — single Zustand slice that holds every client-facing
  * answer plus the current step and a coarse auth flag. Persists to
- * localStorage under `docket.v4.portal.intake` so a client who
+ * localStorage under `petal.v4.portal.intake` so a client who
  * closes their browser mid-intake resumes where they left off.
  *
  * Selectors (getNextStep / getPrevStep / getStepPosition) live in
@@ -39,7 +39,7 @@ type Store = IntakeState & {
   markDepositPaid: (amount?: number) => void;
 };
 
-const PERSIST_KEY = "docket.v4.portal.intake";
+const PERSIST_KEY = "petal.v4.portal.intake";
 
 export const useIntakeStore = create<Store>()(
   persist(

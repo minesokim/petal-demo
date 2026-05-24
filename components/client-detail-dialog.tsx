@@ -1,11 +1,21 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
-import { type Client, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { type Client, type ReturnStage, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { setStageOverride as setStageOverrideGlobal, getStageOverride } from "@/lib/stage-overrides";
+import {
+  subscribePipelineStages,
+  getAllStageOverrides,
+  clearClientStage,
+} from "@/lib/pipeline-stage-store";
+import { IntakeView } from "@/components/clients/intake-view";
+
+// Stable empty snapshot — keeps useSyncExternalStore happy on SSR
+const EMPTY_STAGE_OVERRIDES: Record<string, ReturnStage> = {};
 import { getThread, getClientDrafts, type ChatMessage as ChatMessageType } from "@/lib/messages-data";
 import { AIDraftCard } from "@/components/messaging/ai-draft-card";
 import { MessageInput } from "@/components/messaging/message-input";
@@ -16,7 +26,7 @@ import {
   feedActions, irsNotices,
   type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
-import { DocketInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { PetalInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
@@ -57,9 +67,9 @@ import { DocumentChecklist } from "@/components/documents/document-checklist";
 import { DocumentGroup } from "@/components/documents/document-group";
 import { DocumentViewerDialog } from "@/components/documents/document-viewer-dialog";
 import { OpenItemsSection } from "@/components/issues/open-items-section";
-import { UnifiedTimeline } from "@/components/messaging/unified-timeline";
-import { ChannelSelector } from "@/components/messaging/channel-selector";
-import { getUnifiedThread, type UnifiedMessage, type CommChannel } from "@/lib/comms-mock-data";
+import { ClientMessagesView } from "@/components/messaging/client-messages-view";
+import { StageActionCard, getStageActionDescriptor } from "@/components/stage-action-card";
+import { getUnreadCountForClient } from "@/lib/comms-mock-data";
 import { getClientActivity } from "@/lib/activity-mock-data";
 import { ActivityFilterBar, type FilterOption } from "@/components/activity/activity-filter-bar";
 import { AuditTrailTimeline } from "@/components/activity/audit-trail-timeline";
@@ -95,7 +105,25 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [selectedAction, setSelectedAction] = useState<FeedAction | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
-  const [stageOverride, setStageOverride] = useState<string | null>(() => client ? (getStageOverride(client.id) || null) : null);
+  // Live subscription to the unified stage store — drag-and-drop, button
+  // advancements, and AI moves ALL flow through pipeline-stage-store, so this
+  // popup re-renders whenever any of them write.
+  const allOverrides = useSyncExternalStore<Record<string, ReturnStage>>(
+    subscribePipelineStages,
+    getAllStageOverrides,
+    () => EMPTY_STAGE_OVERRIDES
+  );
+  const stageOverride: string | null = client ? (allOverrides[client.id] ?? null) : null;
+  // Wrapper so existing call sites (`setStageOverride("client_review")`) keep
+  // working without rewriting all of them. Null clears the override.
+  const setStageOverride = (next: string | null) => {
+    if (!client) return;
+    if (next === null) {
+      clearClientStage(client.id);
+    } else {
+      setStageOverrideGlobal(client.id, next);
+    }
+  };
   const [transitioning, setTransitioning] = useState(false);
   const { showToast } = useToast();
   const [sentCalc, setSentCalc] = useState(false);
@@ -113,18 +141,52 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const [viewerDoc, setViewerDoc] = useState<MockDocument | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activityFilter, setActivityFilter] = useState<FilterOption>("all");
-  let askDocket = (_q: string) => {};
-  try { askDocket = useAIPanelAsk(); } catch {}
+  let askPetal = (_q: string) => {};
+  try { askPetal = useAIPanelAsk(); } catch {}
+  const router = useRouter();
 
-  // Sync stage override from global store when client changes or dialog opens
+  // (Previously polled stage-overrides on open — no longer needed since
+  // stageOverride is now a live subscription via useSyncExternalStore.)
+
+  // Always reset to Overview when the dialog opens or the client changes.
+  // (Earlier had stage-aware default tab logic — reverted per design call.
+  // Overview is the universal landing tab regardless of stage.)
   useEffect(() => {
     if (client && open) {
-      const globalOverride = getStageOverride(client.id);
-      if (globalOverride) setStageOverride(globalOverride);
+      setActiveTab("overview");
     }
   }, [client?.id, open]);
 
   if (!client) return null;
+
+  // Effective stage drives the badge label, accent color, default tab, etc.
+  // Re-derived from the live store subscription above so drag/AI/button moves
+  // all reflect in real time.
+  const effectiveStage: ReturnStage = (stageOverride as ReturnStage | null) ?? client.returnStage;
+
+  // Stage color — subtle DIAGONAL gradient (top-left to bottom-right) wash.
+  // Using INLINE STYLE instead of Tailwind classes because Tailwind v4's JIT
+  // scanner doesn't reliably pick up arbitrary opacity in dynamic class
+  // strings (which was making the gradient invisible). Raw rgba ensures the
+  // gradient always paints regardless of class-generation behavior.
+  const stageColorRGB: Record<string, string> = {
+    new_intake: "56, 189, 248",     // sky-400
+    collecting_docs: "245, 158, 11", // amber-500
+    ready_to_prep: "59, 130, 246",   // blue-500
+    in_preparation: "59, 130, 246",  // blue-500
+    client_review: "168, 85, 247",   // purple-500
+    pay_and_sign: "249, 115, 22",    // orange-500
+    filed: "16, 185, 129",           // emerald-500
+    extended: "249, 115, 22",        // orange-500
+  };
+  const stageRGB = stageColorRGB[effectiveStage] ?? "161, 161, 170"; // zinc-400 fallback
+  // Fade stops AT 35% so the bottom edge of the header is fully transparent —
+  // otherwise the still-partially-colored bottom-left meets the white content
+  // below in a visible horizontal seam. With "to bottom right", the color
+  // mainly hangs in the top-left quadrant and dissolves before the header ends.
+  const headerGradientStyle: React.CSSProperties = {
+    background: `linear-gradient(to bottom right, rgba(${stageRGB}, 0.13) 0%, transparent 35%)`,
+  };
 
   const currentStage = stageOverride || client.returnStage;
   const clientInsight = getInsightForClient(client.id);
@@ -133,9 +195,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const handleInsightAction = (action: InsightAction) => {
     if (action.action === "file_extension") { setExtensionDialogOpen(true); return; }
     if (action.action === "ero_sign") { setEroOpen(true); return; }
-    if (action.action === "ask_docket") {
+    if (action.action === "ask_petal") {
       onOpenChange(false);
-      setTimeout(() => askDocket(`Tell me more about ${client.fullName}'s situation — what do I need to know?`), 300);
+      router.push(`/dashboard/clients/${client.id}/overview`);
       return;
     }
     showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
@@ -171,45 +233,176 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const clientDocs = getClientDocuments(client.id);
   const clientIntelligence = getDocumentIntelligence(client.id);
 
+  // Unified "what to do next" descriptor — drives StageActionCard in the popup Overview tab
+  const hasOpenFlags = !!clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical");
+  const stageAction = getStageActionDescriptor({
+    stage: currentStage,
+    client,
+    transitioning,
+    stageOverride,
+    hasOpenFlags,
+    onSignEFile: () => setEroOpen(true),
+    onCompletePrep: () => setCompletePrepOpen(true),
+    onBeginPrep: () => {
+      setTransitioning(true);
+      setTimeout(() => {
+        setStageOverride("in_preparation");
+        setStageOverrideGlobal(client.id, "in_preparation");
+        setTransitioning(false);
+        showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`);
+      }, 1500);
+    },
+  });
+
+  // Decides where Intake Summary lives in the Overview tab's 60/40 split.
+  // - When the LEFT column has hero content (insight / stage CTA / compliance),
+  //   Intake Summary stays in the RIGHT column alongside Documents / Contact / Notes.
+  // - When LEFT is empty (Ashley new_intake, Linda filed), Intake Summary is
+  //   PROMOTED into the LEFT column so the split stays balanced.
+  const hasLeftContent = !!clientInsight || !!stageAction || clientCompliance.length > 0;
+
+  // Single JSX definition reused in either column based on hasLeftContent.
+  const intakeSummaryCard = (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-sm">Intake Summary</CardTitle>
+        <Link href={`/dashboard/clients/${client.id}/intake`}>
+          <Button variant="ghost" size="sm" className="text-xs gap-1">View full intake <ChevronRight className="size-3" /></Button>
+        </Link>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
+            <div className="text-sm font-medium mt-1">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div>
+            <div className="text-sm font-medium mt-1">{client.serviceTier}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
+            <div className="text-sm font-medium mt-1 capitalize">{client.type}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div>
+            <div className="text-sm font-medium mt-1">{stageLabels[currentStage] || currentStage}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div>
+            <div className="text-sm font-medium mt-1 tabular-nums">{client.documentsSubmitted} / {client.documentsRequired}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div>
+            <div className="text-sm font-medium mt-1">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
+          </div>
+        </div>
+        {/* (Notes paragraph removed — duplicated the dedicated Notes card.) */}
+      </CardContent>
+    </Card>
+  );
+
+  // Contact card — promoted to LEFT column when no hero (same swap pattern).
+  const contactCard = (
+    <Card>
+      <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
+      <CardContent className="space-y-2.5">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
+      </CardContent>
+    </Card>
+  );
+
+  // Notes card — promoted to LEFT column when no hero.
+  const notesCard = (
+    <Card>
+      <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
+      <CardContent>
+        <EditableNotes initialNotes={client.notes} />
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none overflow-hidden p-0 flex flex-col md:h-[90vh] md:max-h-[90vh] md:max-w-3xl md:rounded-lg">
-        {/* Header */}
-        <div className="flex items-start gap-3 border-b px-4 py-3 md:gap-4 md:px-6 md:py-4">
-          <Avatar className="size-10 md:size-14">
+      <DialogContent
+        showCloseButton={false}
+        className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none overflow-hidden p-0 flex flex-col md:h-[90vh] md:max-h-[90vh] md:max-w-5xl md:rounded-lg"
+      >
+        {/* Header — single coherent block. Diagonal gradient wash in the stage
+            color (top-left → bottom-right) via inline style. Subtle enough to
+            read as ambient light, not a colored block. Extra py for vertical
+            breathing room so avatar + name + meta + buttons all feel centered. */}
+        <div
+          className="flex items-center gap-3 px-4 py-3 md:px-5 md:rounded-t-lg"
+          style={headerGradientStyle}
+        >
+          <Avatar className="size-9 shrink-0">
             <AvatarImage src={client.avatar} alt={client.fullName} />
-            <AvatarFallback className="text-lg">{getInitials(client.fullName)}</AvatarFallback>
+            <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
           </Avatar>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <DialogTitle className="text-lg font-display">{client.fullName}</DialogTitle>
-              {client.type === "business" && <Building2 className="size-4 text-muted-foreground" />}
-            </div>
-            {client.businessName && <p className="text-sm text-muted-foreground">{client.businessName}</p>}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge>{stageLabels[client.returnStage]}</Badge>
-              <Badge variant="outline">{client.serviceTier}</Badge>
-              <Badge variant="outline">${client.feeAmount}</Badge>
-              {client.urgency === "urgent" && <Badge variant="destructive">Urgent</Badge>}
-              {client.urgency === "high" && <Badge variant="secondary">High Priority</Badge>}
-              {currentStage === "in_preparation" && (
-                <Button size="sm" className="ml-auto gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs whitespace-nowrap" onClick={() => setPrepWorkspaceOpen(true)}>
-                  <ClipboardList className="size-3.5" />
-                  Prep Workspace
-                </Button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <DialogTitle className="text-[15px] font-display truncate">{client.fullName}</DialogTitle>
+              {client.type === "business" && <Building2 className="size-3.5 shrink-0 text-muted-foreground" />}
+              {client.businessName && (
+                <>
+                  <span className="text-muted-foreground/40 shrink-0">·</span>
+                  <span className="text-[12px] text-muted-foreground truncate">{client.businessName}</span>
+                </>
               )}
-              <Button size="sm" variant="ghost" className={`h-7 text-xs ${currentStage !== "in_preparation" ? "ml-auto" : ""}`} asChild>
-                <Link href={`/dashboard/clients/${client.id}/overview`}>
-                  Open full page <ArrowUpRight className="ml-1 size-3" />
-                </Link>
-              </Button>
             </div>
-            {/* Tracking badges */}
-            {clientTrackingBadges.length > 0 && (
-              <div className="mt-2">
+            {/* Meta row — stage chip + tier/fee + urgency + tracking badges.
+                All pills are the SAME shape (rounded-full, py-0.5, text-[10px])
+                so they line up cleanly. Plain "tier · $fee" text is centered
+                inline with the pills. */}
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium leading-none text-background">
+                {stageLabels[effectiveStage]}
+              </span>
+              <span className="text-[11px] leading-none text-muted-foreground">{client.serviceTier} · ${client.feeAmount}</span>
+              {client.urgency === "urgent" && (
+                <span className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-[10px] font-medium leading-none text-destructive-foreground">Urgent</span>
+              )}
+              {client.urgency === "high" && (
+                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium leading-none text-foreground">High</span>
+              )}
+              {clientTrackingBadges.length > 0 && (
                 <TrackingBadgeGroup badges={clientTrackingBadges} maxVisible={4} />
-              </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {currentStage === "in_preparation" && (
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 text-xs"
+                onClick={() => setPrepWorkspaceOpen(true)}
+              >
+                <ClipboardList className="size-3.5" /> Prep
+              </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground hover:text-foreground"
+              asChild
+              title="Open full page"
+            >
+              <Link href={`/dashboard/clients/${client.id}/overview`}>
+                <ArrowUpRight className="size-3.5" />
+                <span>Open full page</span>
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-foreground"
+              onClick={() => onOpenChange(false)}
+              title="Close"
+            >
+              <X className="size-4" />
+            </Button>
           </div>
         </div>
 
@@ -278,95 +471,104 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
 
         {/* Tabbed content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-          {/* Sticky tab bar */}
-          <div className="sticky top-0 z-10 bg-background border-b px-3 pt-2 pb-0 shrink-0 md:px-6 overflow-x-auto mobile-scroll-tabs md:overflow-visible">
+          {/* Sticky tab bar — pulled up close to the header for compact density.
+              pt-0.5 (minimal top breathing room) instead of pt-2. */}
+          <div className="sticky top-0 z-10 bg-background border-b px-3 pt-0.5 pb-0 shrink-0 md:px-6 overflow-x-auto mobile-scroll-tabs md:overflow-visible">
             <TabsList variant="fill" className="w-full">
-              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => (
-                <TabsTrigger key={tab} value={tab} className="relative">
-                  {activeTab === tab && (
-                    <motion.span
-                      layoutId="active-dialog-tab"
-                      className="absolute inset-0 rounded-t-md bg-muted"
-                      transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
-                    />
-                  )}
-                  <span className="relative z-10 capitalize">{tab}</span>
-                </TabsTrigger>
-              ))}
+              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => {
+                const notif = tab === "messages" ? getUnreadCountForClient(client.id) : 0;
+                return (
+                  <TabsTrigger key={tab} value={tab} className="relative">
+                    {activeTab === tab && (
+                      <motion.span
+                        layoutId="active-dialog-tab"
+                        className="absolute inset-0 rounded-t-md bg-muted"
+                        transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
+                      />
+                    )}
+                    <span className="relative z-10 inline-flex items-center gap-1.5 capitalize">
+                      {tab}
+                      {notif > 0 && (
+                        <span
+                          className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white tabular-nums"
+                          aria-label={`${notif} unread message${notif === 1 ? "" : "s"}`}
+                        >
+                          {notif > 9 ? "9+" : notif}
+                        </span>
+                      )}
+                    </span>
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
+          </div>
+
+          {/* Sticky meeting banner — under the tab bar, above the scroll area.
+              Matches the full-page client view placement. */}
+          <div className="shrink-0 bg-background px-4 pt-3 md:px-6 [&:has(>div:empty)]:hidden empty:hidden">
+            <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
           </div>
 
           {/* Scrollable tab content */}
           <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-6 pt-4 md:px-6">
             {/* OVERVIEW TAB */}
-            <TabsContent value="overview" className="space-y-5">
-              {/* AI Insight — hides after stage override */}
-              {clientInsight && !stageOverride && (
-                <DocketInsightCard
-                  insight={clientInsight}
-                  defaultExpanded={true}
-                  onAction={handleInsightAction}
-                  onSendMessage={(messageId, channel) => {
-                    showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
-                  }}
-                  onEditMessage={(messageId) => {
-                    showToast("info", "Editing draft", `Opening editor for ${messageId}`);
-                  }}
-                  onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_insight", priority: "high", createdAt: new Date().toISOString(), status: "open" }])}
-                />
-              )}
-
-              {/* Compliance cards (8867) — second card, below insight */}
+            <TabsContent
+              value="overview"
+              className="space-y-5 md:space-y-0 md:grid md:grid-cols-[3fr_2fr] md:gap-5 md:items-start"
+            >
+              {/* ── LEFT COLUMN (60%) — action work when it exists; otherwise
+                  promotes Intake Summary up here so the split stays balanced
+                  and the popup doesn't feel half-empty. ── */}
+              <div className="space-y-5 min-w-0">
+              {/* ── ACTION ITEMS — always at the top so they're never hidden ── */}
+              {stageAction && <StageActionCard {...stageAction} />}
               {clientCompliance.map(a => (
                 <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
               ))}
 
-              {/* Upcoming Call */}
-              <UpcomingCallBanner clientId={client.id} clientName={client.fullName} />
-
-              {/* Flags — hidden for filed clients */}
-              {currentStage !== "filed" && (
-                <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+              {/* AI Insight — always renders when one exists.
+                  (Previously hid when a stageOverride was set, but that gate
+                  was firing for normal drag-and-drop moves too, accidentally
+                  swallowing the insight for any dragged client.)
+                  Fresh-generated animation matches the full-page client view. */}
+              {clientInsight && (
+                // [zoom:0.92] matches the same 15% scale-down used by
+                // ClientAskPetal on the full page, so the insight card reads
+                // at a consistent size across surfaces.
+                <div className="[zoom:0.92]">
+                  <motion.div
+                    initial={{ opacity: 0, y: 12, filter: "blur(8px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+                  >
+                    <PetalInsightCard
+                      insight={clientInsight}
+                      defaultExpanded={true}
+                      onAction={handleInsightAction}
+                      onSendMessage={(messageId, channel) => {
+                        showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);
+                      }}
+                      onEditMessage={(messageId) => {
+                        showToast("info", "Editing draft", `Opening editor for ${messageId}`);
+                      }}
+                      onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_insight", priority: "high", createdAt: new Date().toISOString(), status: "open" }])}
+                    />
+                  </motion.div>
+                </div>
               )}
 
-              {/* Ready to Prep / Transition — animated (synced with full page) */}
-              <AnimatePresence mode="wait">
-                {currentStage === "ready_to_prep" && !transitioning && !stageOverride && (
-                  <motion.div
-                    key="ready-card"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                        <CheckCircle className="size-4 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold">Ready to begin preparation</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          All {client.documentsRequired} documents received. Confirm to move {client.fullName.split(" ")[0]} into preparation.
-                        </div>
-                        <div className="mt-2 flex items-center gap-3">
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> {client.documentsSubmitted}/{client.documentsRequired} docs</div>
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Deposit paid</div>
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Engagement signed</div>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      className="mt-3 w-full"
-                      onClick={() => {
-                        setTransitioning(true);
-                        setTimeout(() => { setStageOverride("in_preparation"); setStageOverrideGlobal(client.id, "in_preparation"); setTransitioning(false); showToast("success", "Preparation started", `${client.fullName.split(" ")[0]} has been moved to In Preparation.`); }, 1500);
-                      }}
-                    >
-                      <FileText className="size-3.5" /> Begin Preparation
-                    </Button>
-                  </motion.div>
-                )}
+              {/* Flags — hidden for filed clients. [zoom:0.92] matches the
+                  same 15% scale-down used on the AI Insight card above so the
+                  popup left column reads at a consistent density. */}
+              {currentStage !== "filed" && (
+                <div className="[zoom:0.92]">
+                  <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+                </div>
+              )}
+
+              {/* Ready / Complete Prep / Sign & e-file CTAs now live in <StageActionCard> at the top.
+                  Keep only the brief transitioning spinner here. */}
+              <AnimatePresence>
                 {transitioning && (
                   <motion.div
                     key="transitioning"
@@ -410,32 +612,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* Complete Preparation for in_preparation clients */}
-              {(currentStage === "in_preparation") && !transitioning && (
-                <div className="rounded-xl border p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-blue-50">
-                      <FileText className="size-4 text-blue-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold">In preparation</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        Resolve all flags, then complete preparation to send for review.
-                      </div>
-                      <div className="mt-2">
-                        {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
-                          <div className="flex items-center gap-1 text-[10px] text-amber-600"><AlertTriangle className="size-3" /> Open flags need resolution</div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> All flags resolved</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Button className="mt-3 w-full" onClick={() => setCompletePrepOpen(true)}>
-                    <CheckCircle className="size-3.5" /> Complete Preparation
-                  </Button>
-                </div>
-              )}
+              {/* Complete Preparation CTA now lives in <StageActionCard> at the top. */}
 
               {/* Complete Preparation Dialog */}
               <Dialog open={completePrepOpen} onOpenChange={setCompletePrepOpen}>
@@ -537,36 +714,17 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </DialogContent>
               </Dialog>
 
-              {/* ERO Signature for pay_and_sign clients */}
-              {currentStage === "pay_and_sign" && (
-                <div className="rounded-xl border p-4">
-                  <div className="flex items-start gap-3">
-                    <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold">8879 ready for ERO signature</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">Client has paid and signed. Your countersignature is needed to file.</div>
-                      <div className="mt-2 flex gap-1.5">
-                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Paid</div>
-                        <div className="flex items-center gap-1 text-[10px] text-emerald-600"><Check className="size-3" /> Client signed</div>
-                        <div className="flex items-center gap-1 text-[10px] text-amber-600"><Clock className="size-3" /> ERO pending</div>
-                      </div>
-                    </div>
-                  </div>
-                  <Button className="mt-3 w-full" onClick={() => setEroOpen(true)}>
-                    <Shield className="size-3.5" /> Sign as ERO & file
-                  </Button>
-                </div>
-              )}
+              {/* Sign & e-file CTA now lives in <StageActionCard> at the top. */}
 
 
               {/* Intelligence Cards — synced with full page */}
               {hasIntel && (
                 <div className="space-y-3">
                   {clientAnomalies.filter(a => a.status === "pending").map(a => (
-                    <DialogAnomalyCard key={a.id} alert={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
+                    <DialogAnomalyCard key={a.id} alert={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} onFlag={(title, desc) => setFlaggedItems(prev => [...prev, { id: `flag-${Date.now()}`, clientId: client.id, title, description: desc, source: "ai_anomaly", priority: "high", createdAt: new Date().toISOString(), status: "open" }])} />
                   ))}
                   {clientDeductions.filter(a => a.status === "pending").map(a => (
-                    <DialogDeductionCard key={a.id} suggestion={a} onAskDocket={(q) => askDocket(q)} clientName={client.fullName} />
+                    <DialogDeductionCard key={a.id} suggestion={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} />
                   ))}
                   {/* Extension predictions */}
                   {currentStage === "extended" ? (
@@ -607,23 +765,65 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* Quick stats */}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span><strong className="text-foreground">{client.documentsSubmitted}/{client.documentsRequired}</strong> docs</span>
-                <span><strong className="text-foreground">${client.feeAmount}</strong> fee</span>
-                <span>Deposit: <strong className={client.depositPaid ? "text-emerald-600" : "text-red-500"}>{client.depositPaid ? "Paid" : "Unpaid"}</strong></span>
-                <Progress value={docPercent} className="h-1.5 flex-1" indicatorColor={docPercent >= 100 ? "bg-emerald-500" : undefined} />
+              {/* When no hero exists, promote Intake Summary + Contact + Notes
+                  into the LEFT column so the 60/40 split is visually balanced
+                  (no dead space). Right column keeps Documents + Return Progress. */}
+              {!hasLeftContent && intakeSummaryCard}
+              {!hasLeftContent && contactCard}
+              {!hasLeftContent && notesCard}
               </div>
+              {/* ── RIGHT COLUMN (40%) — context cards: intake (when hero in left), docs, contact, notes ── */}
+              <div className="space-y-5 min-w-0">
+              {/* Billing moved to its own dedicated Billing tab (cleaner separation;
+                  the Billing card was duplicated work alongside the Billing tab). */}
 
-              {/* Return Progress timeline */}
-              <div className="rounded-xl border p-4">
-                <span className="text-sm font-semibold">Return Progress</span>
-                <div className="mt-3">
+              {/* Intake Summary — rendered here when hero content fills LEFT.
+                  Otherwise promoted to the LEFT column (see end of left wrapper). */}
+              {hasLeftContent && intakeSummaryCard}
+
+              {/* ── DOCUMENTS — progress + last portal login ── */}
+              {(() => {
+                const dp = client.documentsRequired > 0 ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100) : 0;
+                const lastLogin = client.lastPortalLogin
+                  ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                  : "Never";
+                return (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                      <CardTitle className="text-sm">Documents</CardTitle>
+                      <Link href={`/dashboard/clients/${client.id}/documents`}>
+                        <Button variant="ghost" size="sm" className="text-xs gap-1">View checklist <ChevronRight className="size-3" /></Button>
+                      </Link>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm">
+                          <span className="font-display text-xl tabular-nums">{client.documentsSubmitted}</span>
+                          <span className="text-muted-foreground"> of {client.documentsRequired} received</span>
+                        </span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{dp}%</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className={`h-full transition-all ${dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500"}`} style={{ width: `${dp}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                        <span className="text-muted-foreground">Last portal login</span>
+                        <span className={`tabular-nums ${client.lastPortalLogin ? "text-foreground" : "text-amber-600"}`}>{lastLogin}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* ── RETURN PROGRESS — workflow timeline ── */}
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
+                <CardContent>
                   <TrackingTimeline items={timelineItems} />
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              {/* Client Review stage enhancement */}
+              {/* Client Review stage enhancement — only when relevant */}
               {client.returnStage === "client_review" && client.returnSentDate && (() => {
                 const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
                 const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
@@ -642,29 +842,22 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 );
               })()}
 
-              {/* Contact */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Contact</div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-4" /> {client.email}</div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="size-4" /> {client.phone}</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Filing</div>
-                  <div className="text-sm text-muted-foreground">Status: <span className="text-foreground font-medium">{client.filingStatus.toUpperCase()}</span></div>
-                  <div className="text-sm text-muted-foreground">Last login: <span className="text-foreground font-medium">{client.lastPortalLogin ? new Date(client.lastPortalLogin).toLocaleDateString() : "Never"}</span></div>
-                </div>
+              {/* Contact + Notes — only here when there's hero content in LEFT.
+                  Otherwise both are promoted into the LEFT column for balance. */}
+              {hasLeftContent && contactCard}
+              {hasLeftContent && notesCard}
               </div>
-
-              {/* Notes - editable */}
-              <EditableNotes initialNotes={client.notes} />
-
-              {/* Contextual Actions — based on stage */}
-              <ContextualActions stage={client.returnStage} onEroSign={() => setEroOpen(true)} />
             </TabsContent>
 
-            {/* INTAKE TAB */}
+            {/* INTAKE TAB — same shared IntakeView as the full-page intake.
+                "popup" variant tightens padding for the dialog's narrower columns. */}
             <TabsContent value="intake" className="space-y-4">
+              <IntakeView clientId={client.id} clientFullName={client.fullName} variant="popup" />
+            </TabsContent>
+
+            {/* (Legacy inline intake renderer below — kept temporarily as dead
+                code so we can revert quickly if needed. Safe to delete.) */}
+            <TabsContent value="__intake_legacy" className="space-y-4 hidden">
               {(() => {
                 const intakeMap: Record<string, { submitted: string; service: string; filing: string; spouse?: string; dependents: string[]; income: string[]; selfEmployment?: { business: string; revenue: string }; deductions: string[]; lifeEvents: string[]; priorYear: string; states: string[]; slot: string }> = {
                   c1: { submitted: "Mar 20, 2026", service: "Complex Return", filing: "Married Filing Jointly", spouse: "Sofia Rodriguez", dependents: ["Isabella Rodriguez (7)", "Lucas Rodriguez (5)"], income: ["W-2 Employee", "Investments / Crypto"], deductions: ["Mortgage interest", "Childcare expenses", "Charitable donations"], lifeEvents: [], priorYear: "Filed with Antonio last year", states: ["California"], slot: "Mon, Mar 24 · 9:00 AM" },
@@ -840,9 +1033,11 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               <DialogMessagesTab client={client} />
             </TabsContent>
 
-            {/* BILLING TAB */}
+            {/* BILLING TAB — uses the same modern BillingCard design as the
+                full-page view (Premium Return / progress / Deposit + Balance /
+                Activity timeline / Send invoice). Replaces the older BillingTab. */}
             <TabsContent value="billing" className="space-y-4">
-              <BillingTab client={client} sentBilling={sentBilling} setSentBilling={setSentBilling} />
+              <BillingCard client={client} />
             </TabsContent>
 
             {/* NOTES TAB */}
@@ -1071,50 +1266,18 @@ function EditableNotes({ initialNotes }: { initialNotes: string }) {
   );
 }
 
-// Generated doc list for clients without explicit document data
 // ── Unified Messages Tab for Dialog ──
+// Thin wrapper — renders the SAME ClientMessagesView used on the full page.
+// `compact` shrinks the channel selector ~15% and tightens spacing.
+// Negative top margin pulls the selector up against the dialog tab bar so the
+// gap between them is minimal (otherwise the parent's pt-4 + TabsContent's
+// default mt-2 add ~24px of dead space).
 function DialogMessagesTab({ client }: { client: Client }) {
-  const baseThread = getUnifiedThread(client.id);
-  const [localMsgs, setLocalMsgs] = useState<UnifiedMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [composeChannel, setComposeChannel] = useState<Exclude<CommChannel, "voice">>("portal");
-  const thread = [...baseThread, ...localMsgs];
-
-  const suggestSms = !client.lastPortalLogin ||
-    (Date.now() - new Date(client.lastPortalLogin).getTime()) / 86400000 > 7;
-
-  const sendMsg = () => {
-    if (!input.trim()) return;
-    setLocalMsgs(prev => [...prev, {
-      id: `sent-${Date.now()}`,
-      sender: "preparer",
-      channel: composeChannel,
-      content: input,
-      timestamp: new Date().toISOString(),
-    }]);
-    setInput("");
-  };
-
+  // -mt-3 pulls the timeline up under the tabs strip (intentional, tightens spacing).
+  // No -mb-* so the compose area keeps breathing room from the popup's bottom edge.
   return (
-    <div className="flex flex-col -mb-6" style={{ minHeight: 'calc(90vh - 220px)' }}>
-      <div className="flex-1 min-h-0 overflow-y-auto pb-3">
-        <UnifiedTimeline messages={thread} client={client} />
-      </div>
-      <div className="shrink-0 border-t pt-2 pb-6 bg-background space-y-2 mt-auto">
-        <ChannelSelector value={composeChannel} onChange={setComposeChannel} suggestSms={suggestSms} />
-        <div className="flex items-center gap-2">
-          <input
-            placeholder={composeChannel === "email" ? "Compose email..." : composeChannel === "sms" ? "Type a text..." : `Message ${client.fullName.split(" ")[0]}...`}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMsg()}
-            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none"
-          />
-          <Button size="icon" className="size-9 shrink-0" onClick={sendMsg} disabled={!input.trim()}>
-            <Send className="size-4" />
-          </Button>
-        </div>
-      </div>
+    <div className="-mt-3">
+      <ClientMessagesView client={client} containerHeight="calc(90vh - 220px)" compact />
     </div>
   );
 }
@@ -1251,9 +1414,9 @@ function ClientMessagesInline({ clientId, clientAvatar, clientName }: { clientId
   );
 }
 
-// ── Inline Docket Insight Cards ──
+// ── Inline Petal Insight Cards ──
 
-function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeof complianceAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function InlineComplianceCard({ alert, onAskPetal, clientName }: { alert: typeof complianceAlerts[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   return (
     <div className={`rounded-lg border p-4 ${status === "acknowledged" ? "opacity-60" : ""}`}>
@@ -1275,14 +1438,14 @@ function InlineComplianceCard({ alert, onAskDocket, clientName }: { alert: typeo
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => setStatus("acknowledged")}><Check className="size-3.5" /> Acknowledge</Button>
           <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain ${alert.title} compliance requirement for ${clientName}`)}>Ask Docket</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskPetal(`Explain ${alert.title} compliance requirement for ${clientName}`)}>Ask Petal</Button>
         </div>
       )}
     </div>
   );
 }
 
-function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function InlineAnomalyCard({ alert, onAskPetal, clientName }: { alert: typeof anomalyAlerts[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(alert.status);
   return (
     <div className={`rounded-lg border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
@@ -1311,14 +1474,14 @@ function InlineAnomalyCard({ alert, onAskDocket, clientName }: { alert: typeof a
         <div className="mt-3 flex gap-2">
           <Button size="sm" variant="outline" onClick={() => setStatus("flagged")}>Flag for review</Button>
           <Button size="sm" variant="ghost" onClick={() => setStatus("proceeded")}>Proceed</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>Ask Docket</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskPetal(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>Ask Petal</Button>
         </div>
       )}
     </div>
   );
 }
 
-function InlineDeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function InlineDeductionCard({ suggestion, onAskPetal, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
   return (
     <div className={`rounded-lg border p-4 ${status !== "pending" ? "opacity-60" : ""}`}>
@@ -1340,7 +1503,7 @@ function InlineDeductionCard({ suggestion, onAskDocket, clientName }: { suggesti
         <div className="mt-3 flex gap-2">
           <Button size="sm" onClick={() => setStatus("applied")}><Check className="size-3.5" /> Apply</Button>
           <Button size="sm" variant="outline" onClick={() => setStatus("dismissed")}><X className="size-3.5" /> Dismiss</Button>
-          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}: ${suggestion.description}`)}>Ask Docket</Button>
+          <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={() => onAskPetal(`Tell me about ${suggestion.deductionType} for ${clientName}: ${suggestion.description}`)}>Ask Petal</Button>
         </div>
       )}
     </div>
@@ -1577,7 +1740,7 @@ function ContextualActions({ stage, onEroSign }: { stage: string; onEroSign: () 
 }
 
 // ── Intelligence Cards (synced with full page) ──
-function DialogAnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskDocket: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
+function DialogAnomalyCard({ alert, onAskPetal, clientName, onFlag }: { alert: typeof anomalyAlerts[0]; onAskPetal: (q: string) => void; clientName: string; onFlag?: (title: string, desc: string) => void }) {
   const [status, setStatus] = useState(alert.status);
   const { showToast } = useToast();
   if (status !== "pending") return null;
@@ -1609,15 +1772,15 @@ function DialogAnomalyCard({ alert, onAskDocket, clientName, onFlag }: { alert: 
           Flag for review
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setStatus("proceeded"); showToast("info", "Proceeded", "Marked as reviewed."); }}>Proceed</Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
-          Ask Docket
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskPetal(`Explain the ${alert.metric} anomaly for ${clientName}: ${alert.changePercent}% change`)}>
+          Ask Petal
         </Button>
       </div>
     </div>
   );
 }
 
-function DialogDeductionCard({ suggestion, onAskDocket, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskDocket: (q: string) => void; clientName: string }) {
+function DialogDeductionCard({ suggestion, onAskPetal, clientName }: { suggestion: typeof deductionSuggestions[0]; onAskPetal: (q: string) => void; clientName: string }) {
   const [status, setStatus] = useState(suggestion.status);
   if (status !== "pending") return null;
   return (
@@ -1639,8 +1802,8 @@ function DialogDeductionCard({ suggestion, onAskDocket, clientName }: { suggesti
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => setStatus("dismissed")}>
           Dismiss
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskDocket(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
-          Ask Docket
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground ml-auto" onClick={() => onAskPetal(`Tell me about ${suggestion.deductionType} for ${clientName}`)}>
+          Ask Petal
         </Button>
       </div>
     </div>
@@ -1667,7 +1830,7 @@ function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceA
             <Button size="sm" variant="outline" className="h-7 text-xs mt-2" onClick={() => setForm8867Open(true)}>View completed form</Button>
           </div>
         </div>
-        <Form8867Viewer clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} />
+        <Form8867Viewer clientName={clientName} clientId={alert.clientId} open={form8867Open} onOpenChange={setForm8867Open} />
       </div>
     );
   }
@@ -1701,7 +1864,7 @@ function DialogComplianceCard({ alert, clientName }: { alert: typeof complianceA
         </div>
       </div>
       {isForm8867 && (
-        <Form8867Dialog clientName={clientName} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {
+        <Form8867Dialog clientName={clientName} clientId={alert.clientId} open={form8867Open} onOpenChange={setForm8867Open} onComplete={() => {
           setStatus("acknowledged");
           showToast("success", "Due diligence complete", `Form 8867 completed for ${clientName}`);
           setTimeout(() => setForm8867Open(true), 300);

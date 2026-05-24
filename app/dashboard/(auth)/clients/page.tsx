@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useToast } from "@/components/ui/toast-notification";
 
-const VIEW_MODE_KEY = "docket-clients-view-mode";
+const VIEW_MODE_KEY = "petal-clients-view-mode";
 
 
 const sortOptions: { key: SortKey; label: string }[] = [
@@ -41,7 +41,7 @@ export default function ClientsPage() {
   const { showToast } = useToast();
   const [declinedIds, setDeclinedIds] = useState<string[]>([]);
   const [assignedTiers, setAssignedTiers] = useState<Record<string, string>>({});
-  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [viewMode, setViewMode] = useState<ViewMode>("pipeline");
   const [activeFilter, setActiveFilter] = useState<BucketFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -52,8 +52,12 @@ export default function ClientsPage() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(VIEW_MODE_KEY);
-      if (stored === "cards" || stored === "table" || stored === "pipeline") {
+      if (stored === "table" || stored === "pipeline") {
         setViewMode(stored);
+      } else if (stored === "cards") {
+        // Migrate legacy "cards" preference to pipeline (Cards view has been merged into Pipeline)
+        setViewMode("pipeline");
+        try { localStorage.setItem(VIEW_MODE_KEY, "pipeline"); } catch {}
       }
     } catch {}
   }, []);
@@ -250,159 +254,6 @@ export default function ClientsPage() {
         />
       )}
 
-      {/* Cards View (original) */}
-      {viewMode === "cards" && (
-        <DualScrollContainer>
-        <div className={cn(
-          "flex gap-3 pb-4",
-          columnData.length > 3 ? "min-w-max" : ""
-        )}>
-          {columnData.map((col) => {
-            const isDimmed = highlightedColumn !== null && highlightedColumn !== col.key;
-            return (
-            <div key={col.key} className={cn(
-              columnData.length > 3
-                ? "w-[280px] shrink-0"
-                : columnData.length === 1
-                ? "w-[320px]"
-                : "w-[280px] shrink-0 sm:w-[320px]",
-              "transition-all duration-300",
-              isDimmed && "opacity-30 blur-[1px]"
-            )}>
-              {/* Column header — clickable to highlight */}
-              <button
-                onClick={() => setHighlightedColumn(highlightedColumn === col.key ? null : col.key)}
-                className={cn(
-                  "mb-3 flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all cursor-pointer border border-border/30",
-                  highlightedColumn === col.key && "border-border/60 shadow-sm"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`size-1.5 rounded-full ${col.dot}`} />
-                  <span className="text-[13px] font-medium text-foreground">{col.label}</span>
-                </div>
-                <span className="text-[11px] text-muted-foreground tabular-nums">{col.clients.length}</span>
-              </button>
-
-              {/* Column cards */}
-              <div className="space-y-3">
-                {col.key === "pending" ? (
-                  // Pending clients get special accept/decline cards (exclude already accepted)
-                  <AnimatePresence mode="popLayout">
-                  {col.clients.filter(c => !acceptedIds.includes(c.id)).map((client) => (
-                    <motion.div
-                      key={client.id}
-                      layout
-                      initial={{ opacity: 1, scale: 1 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, padding: 0, overflow: "hidden" }}
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                      className="rounded-2xl border bg-background p-4 shadow-sm cursor-pointer"
-                      onClick={() => setDetailClient(client)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="size-10 shrink-0">
-                          <AvatarImage src={client.avatar} alt={client.fullName} />
-                          <AvatarFallback className="text-xs">{client.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold">{client.fullName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {client.businessName || `${client.serviceTier} - $${client.feeAmount}`}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-[10px]">New</Badge>
-                      </div>
-
-                      {/* Intake context */}
-                      {(() => {
-                        const ctx = pendingIntakeContext[client.id];
-                        return (
-                          <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Check className="size-3 text-emerald-500" /> Intake completed
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Check className="size-3 text-emerald-500" /> $50 deposit paid
-                            </div>
-                            {ctx && (
-                              <>
-                                <div className="flex items-center gap-2">
-                                  <FileText className="size-3 text-primary" />
-                                  <span>{ctx.service} &middot; {ctx.filing}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <FileText className="size-3 text-muted-foreground/50" />
-                                  <span>Income: {ctx.income.join(", ")}</span>
-                                </div>
-                              </>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <Calendar className={`size-3 ${client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-500" : "text-blue-500"}`} />
-                              <span className={client.scheduledCall && isCallPast(client.scheduledCall) ? "text-red-600 dark:text-red-400" : ""}>
-                                Call: {client.scheduledCall ? formatCallTime(client.scheduledCall) : "Not scheduled"}
-                                {client.scheduledCall && isCallPast(client.scheduledCall) && " · Missed"}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Notes */}
-                      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{client.notes}</p>
-
-                      {/* Tier assignment */}
-                      {!acceptedIds.includes(client.id) && (
-                        <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                          <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {(() => {
-                              const ic = pendingIntakeContext[client.id];
-                              return ic ? `Client requested: ${ic.service}` : "Assign service tier";
-                            })()}
-                          </label>
-                          <select
-                            value={assignedTiers[client.id] || ""}
-                            onChange={(e) => setAssignedTiers(prev => ({ ...prev, [client.id]: e.target.value }))}
-                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground outline-none transition-colors focus:border-primary"
-                          >
-                            {serviceTierOptions.map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {/* Accept / Decline */}
-                      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" className="flex-1" onClick={() => { setAcceptedIds(prev => [...prev, client.id]); showToast("success", `${client.fullName} accepted`, `Moved to ${assignedTiers[client.id] || "Active Clients"}`); }} disabled={!assignedTiers[client.id]}>
-                          <Check className="size-3.5" /> Accept
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => setDeclinedIds(prev => [...prev, client.id])}>
-                          <X className="size-3.5" /> Decline
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                  </AnimatePresence>
-                ) : (
-                  // Regular clients get the standard card
-                  col.clients.map((client) => (
-                    <ClientCard
-                      key={client.id}
-                      client={client}
-                      onOpenDetail={setDetailClient}
-                      defaultExpanded
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-            );
-          })}
-        </div>
-        </DualScrollContainer>
-      )}
-
       {/* Table View */}
       {viewMode === "table" && (
         <ClientsTableView
@@ -422,6 +273,11 @@ export default function ClientsPage() {
         <ClientsPipelineView
           clients={searchFiltered}
           acceptedIds={acceptedIds}
+          declinedIds={declinedIds}
+          assignedTiers={assignedTiers}
+          onAssignTier={(id, tier) => setAssignedTiers(prev => ({ ...prev, [id]: tier }))}
+          onAccept={handleAccept}
+          onDecline={handleDecline}
           onOpenDetail={setDetailClient}
           filterStage={pipelineFilter}
         />

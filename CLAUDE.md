@@ -1,8 +1,8 @@
-# Docket — Development Context
+# Petal — Development Context
 
 ## What is this project?
 
-Docket is an AI-native tax practice management platform. This repo (`vazant-dashboard-v2`) is the **preparer-facing dashboard**. There is a separate client-facing portal app.
+Petal is an AI-native tax practice management platform. This repo (`vazant-dashboard-v2`) is the **preparer-facing dashboard**. There is a separate client-facing portal app.
 
 **Current state**: Feature-complete UI mockup running on mock data. No real backend yet. All data lives in `lib/mock-data.ts`, `lib/documents-mock-data.ts`, `lib/actions-mock-data.ts`, and `lib/messages-data.ts`.
 
@@ -23,7 +23,7 @@ Docket is an AI-native tax practice management platform. This repo (`vazant-dash
 
 ## Project Structure
 
-> Note: This repo was scaffolded from a dashboard template. Only the paths below are Docket-relevant. Other directories (academy, ecommerce, hotel, etc.) are unused template sections.
+> Note: This repo was scaffolded from a dashboard template. Only the paths below are Petal-relevant. Other directories (academy, ecommerce, hotel, etc.) are unused template sections.
 
 ```
 app/dashboard/(auth)/
@@ -54,11 +54,11 @@ app/dashboard/(auth)/
     audit/           — Coming soon placeholder
 
 components/
-  ai-panel.tsx              — Ask Docket sidebar
+  ai-panel.tsx              — Ask Petal sidebar
   time-tracker.tsx          — Floating time tracker
   client-detail-dialog.tsx  — Modal client view (popup on card/row click)
   ero-signature-dialog.tsx  — 8879 signing flow
-  docket-command.tsx        — Command palette navigation
+  petal-command.tsx        — Command palette navigation
   clients/                  — Client view components
     view-mode-toggle.tsx    — Cards/Table/Pipeline toggle
     clients-filter-pills.tsx — Workflow bucket filter pills

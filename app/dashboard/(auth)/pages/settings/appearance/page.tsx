@@ -11,7 +11,7 @@ export default function AppearancePage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">Appearance</h3>
-        <p className="text-sm text-muted-foreground">Customize how Docket looks on your device.</p>
+        <p className="text-sm text-muted-foreground">Customize how Petal looks on your device.</p>
       </div>
 
       <Card>

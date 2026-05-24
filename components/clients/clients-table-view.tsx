@@ -11,6 +11,7 @@ import { type Client, stageLabels, pendingIntakeContext } from "@/lib/mock-data"
 import { cn } from "@/lib/utils";
 import { CompactInsightIndicator } from "@/components/insights";
 import { getOneLineInsightForClient } from "@/lib/insights-mock-data";
+import { getUnreadCountForClient } from "@/lib/comms-mock-data";
 
 function formatCallTime(dateStr: string) {
   const d = new Date(dateStr);
@@ -329,12 +330,26 @@ function ClientRow({
           )}
         />
         <div className="flex items-center gap-3 pl-1">
-          <Avatar className="size-8 shrink-0">
-            <AvatarImage src={client.avatar} alt={client.fullName} />
-            <AvatarFallback className="text-[10px]">
-              {getInitials(client.fullName)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative shrink-0">
+            <Avatar className="size-8">
+              <AvatarImage src={client.avatar} alt={client.fullName} />
+              <AvatarFallback className="text-[10px]">
+                {getInitials(client.fullName)}
+              </AvatarFallback>
+            </Avatar>
+            {(() => {
+              const unread = getUnreadCountForClient(client.id);
+              if (unread === 0) return null;
+              return (
+                <span
+                  className="absolute -right-0.5 -top-0.5 flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white ring-2 ring-background tabular-nums"
+                  aria-label={`${unread} unread message${unread === 1 ? "" : "s"}`}
+                >
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              );
+            })()}
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium truncate font-display">

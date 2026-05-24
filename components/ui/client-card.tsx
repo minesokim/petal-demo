@@ -3,12 +3,19 @@
 import * as React from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { type Client, stageLabels, getClientPaymentSummary } from "@/lib/mock-data";
+import { type Client, type ReturnStage, stageLabels, getClientPaymentSummary } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getOneLineInsightForClient, getAdvisoryForFiledClient } from "@/lib/insights-mock-data";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import {
+  subscribePipelineStages,
+  getAllStageOverrides,
+} from "@/lib/pipeline-stage-store";
+
+// Stable empty snapshot for SSR (kept module-level so identity is stable)
+const EMPTY_OVERRIDES: Record<string, ReturnStage> = {};
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -25,10 +32,32 @@ interface ClientCardProps {
   client: Client;
   onOpenDetail?: (client: Client) => void;
   defaultExpanded?: boolean;
+  /** When true, hides the expand chevron (card stays at fixed size). */
+  staticSize?: boolean;
+  /** Optional unread message count — shown as a small badge in the header. */
+  unreadCount?: number;
+  /** Pipeline density. "compact" = single-line row (~36px); "comfortable" = full card. */
+  density?: "comfortable" | "compact";
 }
 
-export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: ClientCardProps) {
+export function ClientCard({
+  client,
+  onOpenDetail,
+  defaultExpanded = false,
+  staticSize = false,
+  unreadCount = 0,
+  density = "comfortable",
+}: ClientCardProps) {
   const [expanded, setExpanded] = React.useState(defaultExpanded);
+
+  // Effective stage — honors drag-and-drop overrides from pipeline-stage-store.
+  // The card's badge + stage-driven UI always reflects what the user dragged.
+  const overrides = React.useSyncExternalStore<Record<string, ReturnStage>>(
+    subscribePipelineStages,
+    getAllStageOverrides,
+    () => EMPTY_OVERRIDES
+  );
+  const effectiveStage: ReturnStage = overrides[client.id] ?? client.returnStage;
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(client.returnStage);
   const stagePercent = Math.round(((stageIndex + 1) / 7) * 100);
@@ -47,6 +76,33 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
 
   const lastActiveColor = lastActive !== null && lastActive <= 3 ? "text-foreground" : lastActive !== null && lastActive <= 7 ? "text-amber-600" : "text-red-500";
 
+  // ─── Compact density — single-line row used in pipeline "Compact" view ───
+  if (density === "compact") {
+    return (
+      <div
+        onClick={() => onOpenDetail?.(client)}
+        className="group flex h-9 cursor-pointer items-center gap-2 rounded-md border bg-white px-2.5 text-[12px] transition-colors hover:bg-muted/50"
+      >
+        <Avatar className="size-5 shrink-0">
+          {client.avatar && <AvatarImage src={client.avatar} alt={client.fullName} />}
+          <AvatarFallback className="text-[8px] font-medium">{getInitials(client.fullName)}</AvatarFallback>
+        </Avatar>
+        <span className="min-w-0 flex-1 truncate font-medium">{client.fullName}</span>
+        {unreadCount > 0 && (
+          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-semibold leading-none text-white">
+            {unreadCount}
+          </span>
+        )}
+        <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+          {client.documentsSubmitted}/{client.documentsRequired}
+        </span>
+        <span className={cn("shrink-0 text-[10px] tabular-nums", lastActiveColor)}>
+          {lastActiveLabel}
+        </span>
+      </div>
+    );
+  }
+
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("[data-expand-toggle]")) return;
     if ((e.target as HTMLElement).closest("[data-full-page-link]")) return;
@@ -54,18 +110,45 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
   };
 
   return (
-    <div className="rounded-lg bg-white border p-2.5 shadow-sm transition-shadow hover:shadow-md">
+    <div className={cn(
+      "relative rounded-lg bg-white border p-2.5 shadow-sm transition-shadow hover:shadow-md",
+      // Pipeline mode: every card is exactly the same height for clean vertical
+      // rhythm. Height is tall enough to fit the longest content (insight line +
+      // footer) without clipping the Open button. Main area is flex-1 +
+      // overflow-hidden so any excessively long content truncates internally
+      // rather than pushing the footer off-screen.
+      staticSize && "flex h-[220px] flex-col overflow-hidden"
+    )}>
+      {/* "Open full page" link lives in the footer (see end of card) — kept
+          out of the top-right so the name + stage badge have full room and
+          don't truncate to ellipses on narrow pipeline cards.
+          Main area is flex-1 + overflow-hidden + min-h-0 so it absorbs the
+          available space inside the fixed 220px height, clipping its OWN
+          content if it's somehow taller. Footer stays pinned at the bottom. */}
       {/* Main card area - clickable to open detail */}
       <div
-        className="cursor-pointer rounded-lg bg-white px-3.5 py-3"
+        className={cn(
+          "cursor-pointer rounded-lg bg-white px-3.5 py-3",
+          staticSize && "min-h-0 flex-1 overflow-hidden"
+        )}
         onClick={handleCardClick}
       >
         {/* Header row */}
         <div className="flex items-center gap-3">
-          <Avatar className="size-10 shrink-0">
-            <AvatarImage src={client.avatar} alt={client.fullName} />
-            <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
-          </Avatar>
+          <div className="relative shrink-0">
+            <Avatar className="size-10">
+              <AvatarImage src={client.avatar} alt={client.fullName} />
+              <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
+            </Avatar>
+            {unreadCount > 0 && (
+              <span
+                className="absolute -right-0.5 -top-0.5 flex size-[18px] items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold leading-none text-white ring-2 ring-card tabular-nums"
+                aria-label={`${unreadCount} unread message${unreadCount === 1 ? "" : "s"}`}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold leading-tight truncate">{client.fullName}</h3>
             <p className="text-xs text-muted-foreground leading-tight truncate">
@@ -74,14 +157,14 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
           </div>
           <Badge
             variant={
-              client.returnStage === "filed" ? "default" :
-              client.returnStage === "pay_and_sign" ? "default" :
-              client.returnStage === "collecting_docs" ? "secondary" :
+              effectiveStage === "filed" ? "default" :
+              effectiveStage === "pay_and_sign" ? "default" :
+              effectiveStage === "collecting_docs" ? "secondary" :
               "outline"
             }
             className="shrink-0 text-[10px]"
           >
-            {stageLabels[client.returnStage]}
+            {stageLabels[effectiveStage]}
           </Badge>
         </div>
 
@@ -177,8 +260,10 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
         </AnimatePresence>
       </div>
 
-      {/* Footer */}
-      <div className="mt-2 flex items-center justify-between px-1">
+      {/* Footer — shrink-0 so it always sits at the bottom of the 180px card
+          and the Open button is never clipped, even when the main area has
+          a tall insight/flag line above. */}
+      <div className="mt-2 flex shrink-0 items-center justify-between px-1">
         <span className="text-xs text-muted-foreground">
           {(() => {
             const ps = getClientPaymentSummary(client.id);
@@ -190,19 +275,22 @@ export function ClientCard({ client, onOpenDetail, defaultExpanded = false }: Cl
         </span>
 
         <div className="flex items-center gap-1">
-          {/* Open full page link */}
+          {/* Open full page — bordered link in the footer. Decent visual
+              hierarchy (border + subtle shadow + same height as a small button)
+              so it reads as a real affordance, not a tiny text-link. */}
           <Link
             href={`/dashboard/clients/${client.id}/overview`}
             data-full-page-link
             onClick={(e) => e.stopPropagation()}
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground/80 shadow-sm transition-colors hover:border-foreground/30 hover:bg-muted hover:text-foreground"
             title="Open full page"
           >
-            <ExternalLink className="size-3.5" />
+            <ExternalLink className="size-3" />
+            <span>Open full page</span>
           </Link>
 
           {/* Expand toggle */}
-          {!defaultExpanded && (
+          {!defaultExpanded && !staticSize && (
             <button
               data-expand-toggle
               onClick={(e) => {

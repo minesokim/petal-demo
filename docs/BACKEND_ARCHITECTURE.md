@@ -1,4 +1,4 @@
-# Docket Backend Architecture — Convex
+# Petal Backend Architecture — Convex
 
 ## Decision: Convex
 

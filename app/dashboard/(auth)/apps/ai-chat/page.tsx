@@ -173,7 +173,7 @@ export default function Page() {
             { icon: "searching", text: "Searching client records, documents, and activity logs" },
           ],
           answer:
-            "This is a demo of the Docket AI Assistant. In the full version, I have real-time access to all 203 client records, document statuses, communication history, and calendar data to give you precise, actionable answers.\n\nEvery suggestion I make appears for your review first. I never send messages or take actions without your approval.",
+            "This is a demo of the Petal AI Assistant. In the full version, I have real-time access to all 203 client records, document statuses, communication history, and calendar data to give you precise, actionable answers.\n\nEvery suggestion I make appears for your review first. I never send messages or take actions without your approval.",
           timestamp: "Just now",
         },
       ]);
@@ -191,7 +191,7 @@ export default function Page() {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <h2 className="text-sm font-semibold">Docket AI</h2>
+          <h2 className="text-sm font-semibold">Petal AI</h2>
           <p className="text-muted-foreground text-xs">Your practice assistant</p>
         </div>
         <Button variant="ghost" size="icon" className="size-8">

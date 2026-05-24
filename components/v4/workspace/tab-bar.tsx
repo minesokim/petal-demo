@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 /**
  * TabBar — 7 tabs under the client header, sticky top.
  *
- * Per DOCKET-V4-PRD.md §5.2 and design-references/docket-synthesis.html.
+ * Per PETAL-V4-PRD.md §5.2 and design-references/petal-synthesis.html.
  * Active tab: rust underline, ink copy, weight 550.
  * Inactive tabs link to /client/[id]/{slug} routes; in Phase 3 only
  * overview exists, others render a 404-style stub from the [slug] route.

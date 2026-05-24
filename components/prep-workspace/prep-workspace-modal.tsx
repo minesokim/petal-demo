@@ -287,7 +287,7 @@ function SummaryLineItem({ label, source, amount, priorYear, verified, onToggleV
 // ═══════════════════════════════════════════════
 // PREP SUMMARY (center panel)
 // ═══════════════════════════════════════════════
-function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDocClick: (docId: string) => void; onAskDocket: (q: string) => void }) {
+function PrepSummary({ client, onDocClick, onAskPetal }: { client: Client; onDocClick: (docId: string) => void; onAskPetal: (q: string) => void }) {
   const docs = getClientDocuments(client.id);
   const allIntel = getDocumentIntelligence(client.id);
   const insight = getInsightForClient(client.id);
@@ -430,7 +430,7 @@ function PrepSummary({ client, onDocClick, onAskDocket }: { client: Client; onDo
                     variant={action.variant === "primary" ? "default" : "outline"}
                     className="h-7 text-xs"
                     onClick={() => {
-                      if (action.action === "ask_docket") onAskDocket(`Tell me about ${insight.title} for ${client.fullName}`);
+                      if (action.action === "ask_petal") onAskPetal(`Tell me about ${insight.title} for ${client.fullName}`);
                     }}
                   >
                     {action.label}
@@ -607,9 +607,9 @@ function DocPreview({ doc }: { doc: MockDocument }) {
 // ═══════════════════════════════════════════════
 // RIGHT SIDEBAR
 // ═══════════════════════════════════════════════
-function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAskDocket }: {
+function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAskPetal }: {
   client: Client; showingSummary: boolean; selectedDoc: MockDocument | null;
-  onCompletePrep: () => void; onAskDocket: (question?: string) => void;
+  onCompletePrep: () => void; onAskPetal: (question?: string) => void;
 }) {
   const flags = getOpenIssues(client.id);
   const ps = getClientPaymentSummary(client.id);
@@ -657,8 +657,8 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
         )}
 
         <div className="border-t border-border/30 px-5 py-3">
-          <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskDocket(`Tell me about ${selectedDoc.fileName.replace(/_/g, " ")} for ${client.fullName}`)}>
-            <MessageSquare className="size-3.5" /> Ask Docket about this document
+          <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskPetal(`Tell me about ${selectedDoc.fileName.replace(/_/g, " ")} for ${client.fullName}`)}>
+            <MessageSquare className="size-3.5" /> Ask Petal about this document
           </Button>
         </div>
       </motion.div>
@@ -747,8 +747,8 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
                     >
                       <div className="pl-9 pr-2 pb-2.5 space-y-2">
                         {flag.description && <p className="text-[11px] text-muted-foreground leading-relaxed">{flag.description}</p>}
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onAskDocket(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
-                          Ask Docket
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => onAskPetal(`Explain the "${flag.title}" flag for ${client.fullName}`)}>
+                          Ask Petal
                         </Button>
                       </div>
                     </motion.div>
@@ -781,10 +781,10 @@ function PrepSidebar({ client, showingSummary, selectedDoc, onCompletePrep, onAs
         </div>
       </div>
 
-      {/* Ask Docket */}
+      {/* Ask Petal */}
       <div className="border-b border-border/30 px-5 py-4">
-        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskDocket()}>
-          <MessageSquare className="size-3.5" /> Ask Docket
+        <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => onAskPetal()}>
+          <MessageSquare className="size-3.5" /> Ask Petal
         </Button>
       </div>
 
@@ -973,12 +973,12 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showingSummary, setShowingSummary] = useState(true);
   const [showingIntake, setShowingIntake] = useState(false);
-  const [docketOpen, setDocketOpen] = useState(false);
-  const [docketFullscreen, setDocketFullscreen] = useState(false);
-  const [docketHasOpened, setDocketHasOpened] = useState(false);
-  const [docketMessages, setDocketMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
-  const [docketInput, setDocketInput] = useState("");
-  const [docketTyping, setDocketTyping] = useState(false);
+  const [petalOpen, setPetalOpen] = useState(false);
+  const [petalFullscreen, setPetalFullscreen] = useState(false);
+  const [petalHasOpened, setPetalHasOpened] = useState(false);
+  const [petalMessages, setPetalMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [petalInput, setPetalInput] = useState("");
+  const [petalTyping, setPetalTyping] = useState(false);
   const selectedDoc = selectedDocId ? getDocumentById(selectedDocId) : null;
   const { showToast } = useToast();
   const prepDays = Math.floor((Date.now() - new Date(client.lastActivity).getTime()) / (1000 * 60 * 60 * 24));
@@ -988,8 +988,8 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
   const fullPrepBrief = `Marcus has 3 restaurant locations under Golden Dragon LLC, but total Schedule C revenue dropped 40% from $238,000 to $142,000. His notes mention one location closed. The Pasadena location (Golden Dragon #3) appears to have closed in Q2 2025 based on the expense records cutting off in June. You need verbal confirmation from Marcus that the closure is permanent before filing, because the IRS will flag a 40% revenue drop on a multi-location Schedule C without explanation.\n\nNew this year: Marcus has a $12,000 1099-NEC from Restaurant Consulting Group. This is new income not present in 2024 and will likely need its own Schedule C or allocation to the existing one. Ask Marcus if this is a separate business activity or related to Golden Dragon.\n\nThe W-2 from Golden Dragon shows wages of $58,000, down from $96,000 last year. This is consistent with the location closure but make sure the wage reduction is proportional to the actual closure timeline, not an error. Equipment disposal of $23,000 from the Riverside location needs special depreciation treatment. Verify whether this was a sale, abandonment, or trade-in, as each has different tax implications.\n\nMarcus has a call scheduled for March 30 at 2pm. Recommend covering:\n1. Confirm Pasadena closure date and circumstances\n2. Consulting income classification\n3. Equipment disposal method\n4. Review all three P&Ls side by side`;
 
   // Word-by-word streaming with reasoning steps
-  const simulateDocketResponse = (question: string) => {
-    setDocketMessages(prev => [...prev, { role: "user", text: question }]);
+  const simulatePetalResponse = (question: string) => {
+    setPetalMessages(prev => [...prev, { role: "user", text: question }]);
 
     const q = question.toLowerCase();
     let response = `Based on ${firstName}'s documents, here's what I found:\n\nAll ${client.documentsSubmitted} documents have been received and processed. The key items to review during preparation are the income sources and any flagged anomalies shown in the prep summary.\n\nWant me to look at something specific?`;
@@ -1009,21 +1009,21 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
     }
 
     // Phase 1: Reasoning steps
-    setDocketMessages(prev => [...prev, { role: "assistant", text: "__reasoning__" }]);
+    setPetalMessages(prev => [...prev, { role: "assistant", text: "__reasoning__" }]);
 
     // Phase 2: After reasoning, stream the response word by word
     setTimeout(() => {
       // Remove reasoning placeholder, start streaming
-      setDocketMessages(prev => prev.filter(m => m.text !== "__reasoning__"));
+      setPetalMessages(prev => prev.filter(m => m.text !== "__reasoning__"));
       const words = response.split(" ");
       let currentText = "";
       const streamId = `stream-${Date.now()}`;
-      setDocketMessages(prev => [...prev, { role: "assistant", text: "" }]);
+      setPetalMessages(prev => [...prev, { role: "assistant", text: "" }]);
 
       words.forEach((word, i) => {
         setTimeout(() => {
           currentText += (i === 0 ? "" : " ") + word;
-          setDocketMessages(prev => {
+          setPetalMessages(prev => {
             const updated = [...prev];
             updated[updated.length - 1] = { role: "assistant", text: currentText };
             return updated;
@@ -1033,24 +1033,24 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
     }, 2000); // 2s for reasoning
   };
 
-  const handleAskDocket = (question?: string) => {
+  const handleAskPetal = (question?: string) => {
     if (question) {
       // Specific question from a button — open panel and ask
-      setDocketOpen(true);
-      simulateDocketResponse(question);
+      setPetalOpen(true);
+      simulatePetalResponse(question);
       return;
     }
-    // Toggle behavior for the sidebar Ask Docket button
-    if (docketOpen) {
-      setDocketOpen(false);
-      setDocketFullscreen(false);
+    // Toggle behavior for the sidebar Ask Petal button
+    if (petalOpen) {
+      setPetalOpen(false);
+      setPetalFullscreen(false);
       return;
     }
-    setDocketOpen(true);
-    if (!docketHasOpened) {
+    setPetalOpen(true);
+    if (!petalHasOpened) {
       // First open only — auto-send the comprehensive question
-      setDocketHasOpened(true);
-      simulateDocketResponse(`What should I know before prepping ${client.fullName}'s return?`);
+      setPetalHasOpened(true);
+      simulatePetalResponse(`What should I know before prepping ${client.fullName}'s return?`);
     }
   };
 
@@ -1113,7 +1113,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
           <AnimatePresence mode="wait">
             {showingSummary ? (
               <motion.div key="summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto">
-                <PrepSummary client={client} onDocClick={handleDocSelect} onAskDocket={handleAskDocket} />
+                <PrepSummary client={client} onDocClick={handleDocSelect} onAskPetal={handleAskPetal} />
               </motion.div>
             ) : showingIntake ? (
               <motion.div key="intake" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 min-h-0 overflow-y-auto p-6">
@@ -1135,40 +1135,40 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
               showingSummary={showingSummary}
               selectedDoc={selectedDoc}
               onCompletePrep={onCompletePrep}
-              onAskDocket={handleAskDocket}
+              onAskPetal={handleAskPetal}
             />
           </div>
 
-          {/* Docket Chat (attached side panel) */}
+          {/* Petal Chat (attached side panel) */}
           <AnimatePresence>
-            {docketOpen && (
+            {petalOpen && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: docketFullscreen ? "100%" : 340, opacity: 1 }}
+                animate={{ width: petalFullscreen ? "100%" : 340, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className={cn("border-l border-border/40 flex flex-col overflow-hidden", docketFullscreen ? "absolute inset-0 z-10 bg-background border-l-0" : "shrink-0")}
+                className={cn("border-l border-border/40 flex flex-col overflow-hidden", petalFullscreen ? "absolute inset-0 z-10 bg-background border-l-0" : "shrink-0")}
               >
-                {/* Docket header */}
+                {/* Petal header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold">Ask Docket</span>
+                    <span className="text-xs font-semibold">Ask Petal</span>
                     <span className="text-[10px] text-muted-foreground">· {firstName}</span>
                   </div>
                   <div className="flex items-center gap-0.5">
-                    <Button variant="ghost" size="icon-sm" onClick={() => setDocketFullscreen(!docketFullscreen)}>
-                      {docketFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+                    <Button variant="ghost" size="icon-sm" onClick={() => setPetalFullscreen(!petalFullscreen)}>
+                      {petalFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
                     </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => { setDocketOpen(false); setDocketFullscreen(false); }}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => { setPetalOpen(false); setPetalFullscreen(false); }}>
                       <X className="size-3.5" />
                     </Button>
                   </div>
                 </div>
 
                 {/* Messages */}
-                <div className={cn("flex-1 overflow-y-auto space-y-4", docketFullscreen ? "px-6 py-6 mx-auto max-w-3xl" : "px-4 py-3")}>
-                  {docketMessages.length === 0 && !docketTyping && (
+                <div className={cn("flex-1 overflow-y-auto space-y-4", petalFullscreen ? "px-6 py-6 mx-auto max-w-3xl" : "px-4 py-3")}>
+                  {petalMessages.length === 0 && !petalTyping && (
                     <div className="py-6 text-center">
                       <p className="text-xs text-muted-foreground mb-3">Ask about {client.fullName.split(" ")[0]}'s return</p>
                       <div className="space-y-1.5">
@@ -1181,7 +1181,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                         ].map((suggestion, i) => (
                           <button
                             key={i}
-                            onClick={() => simulateDocketResponse(suggestion)}
+                            onClick={() => simulatePetalResponse(suggestion)}
                             className="block w-full text-left rounded-lg border px-3 py-2 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
                           >
                             {suggestion}
@@ -1190,7 +1190,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                       </div>
                     </div>
                   )}
-                  {docketMessages.map((msg, i) => {
+                  {petalMessages.map((msg, i) => {
                     // Reasoning placeholder
                     if (msg.text === "__reasoning__") {
                       return (
@@ -1218,14 +1218,14 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                     if (msg.role === "user") {
                       return (
                         <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex justify-end mb-6">
-                          <div className={cn("rounded-full bg-muted px-4 py-2 text-foreground max-w-[85%]", docketFullscreen ? "text-sm" : "text-xs")}>
+                          <div className={cn("rounded-full bg-muted px-4 py-2 text-foreground max-w-[85%]", petalFullscreen ? "text-sm" : "text-xs")}>
                             {msg.text}
                           </div>
                         </motion.div>
                       );
                     }
                     // AI response with rich formatting
-                    const isLastAssistant = i === docketMessages.length - 1 || docketMessages.slice(i + 1).every(m => m.role === "user");
+                    const isLastAssistant = i === petalMessages.length - 1 || petalMessages.slice(i + 1).every(m => m.role === "user");
                     return (
                       <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-6">
                         <FormattedInsightText text={msg.text} />
@@ -1239,7 +1239,7 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                                 "Explain the revenue drop",
                                 `Draft a follow-up message to ${firstName}`,
                               ].map((s, si) => (
-                                <button key={si} onClick={() => simulateDocketResponse(s)} className="rounded-full border px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
+                                <button key={si} onClick={() => simulatePetalResponse(s)} className="rounded-full border px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                                   {s}
                                 </button>
                               ))}
@@ -1252,17 +1252,17 @@ export function PrepWorkspaceModal({ client, open, onOpenChange, onCompletePrep 
                 </div>
 
                 {/* Input */}
-                <div className={cn("border-t shrink-0", docketFullscreen ? "px-6 py-3 mx-auto max-w-3xl w-full" : "px-3 py-2.5")}>
+                <div className={cn("border-t shrink-0", petalFullscreen ? "px-6 py-3 mx-auto max-w-3xl w-full" : "px-3 py-2.5")}>
                   <div className="flex items-center gap-2">
                     <input
-                      value={docketInput}
-                      onChange={e => setDocketInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}
-                      placeholder={docketFullscreen ? `Ask about ${firstName}'s return...` : "Ask about this return..."}
-                      className={cn("flex-1 rounded-lg border bg-background outline-none focus:ring-1 focus:ring-ring", docketFullscreen ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-xs")}
+                      value={petalInput}
+                      onChange={e => setPetalInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && petalInput.trim()) { simulatePetalResponse(petalInput.trim()); setPetalInput(""); } }}
+                      placeholder={petalFullscreen ? `Ask about ${firstName}'s return...` : "Ask about this return..."}
+                      className={cn("flex-1 rounded-lg border bg-background outline-none focus:ring-1 focus:ring-ring", petalFullscreen ? "px-4 py-2.5 text-sm" : "px-3 py-1.5 text-xs")}
                     />
-                    <Button size="icon" className={cn("shrink-0", docketFullscreen ? "size-9" : "size-7")} disabled={!docketInput.trim()} onClick={() => { if (docketInput.trim()) { simulateDocketResponse(docketInput.trim()); setDocketInput(""); } }}>
-                      <Send className={docketFullscreen ? "size-4" : "size-3"} />
+                    <Button size="icon" className={cn("shrink-0", petalFullscreen ? "size-9" : "size-7")} disabled={!petalInput.trim()} onClick={() => { if (petalInput.trim()) { simulatePetalResponse(petalInput.trim()); setPetalInput(""); } }}>
+                      <Send className={petalFullscreen ? "size-4" : "size-3"} />
                     </Button>
                   </div>
                 </div>

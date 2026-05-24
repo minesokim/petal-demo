@@ -1,865 +1,700 @@
 "use client";
 
 import { format } from "date-fns";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import {
-  ChevronRightIcon, VideoIcon, PhoneIcon,
-  ClockIcon, BotIcon,
-  SendIcon, FileTextIcon, ArrowUpRightIcon, CalendarIcon, MessageSquareIcon, MicIcon
+  ChevronRightIcon, ChevronDownIcon, CalendarIcon, MessageSquareIcon,
+  ArrowRightIcon, ArrowUpIcon, ShieldCheckIcon, FileTextIcon, EyeIcon, FileWarningIcon,
+  AlertCircleIcon, PenIcon, MailIcon,
 } from "lucide-react";
-import { ClientCard } from "@/components/ui/client-card";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { clients, actionItems, type Client, type InsightAction } from "@/lib/mock-data";
-import { initialTodos, type TodoItem } from "@/lib/actions-mock-data";
-import { MorningBriefing } from "@/components/insights";
-import { morningBriefing, intelligenceBrief } from "@/lib/insights-mock-data";
-import type { IntelligenceBriefItem } from "@/lib/mock-data";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "motion/react";
+import { clients, type Client } from "@/lib/mock-data";
+import { PetalMark } from "@/components/petal-mark";
 import Link from "next/link";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { IntelligencePanel } from "@/components/actions/intelligence/intelligence-panel";
-import { BatchPanel } from "@/components/actions/batch/batch-panel";
-import { VoiceDumpDialog } from "@/components/actions/voice/voice-dump-dialog";
-import { useAIPanelAsk } from "@/components/ai-panel";
+import { useState, useMemo } from "react";
 import { useToast } from "@/components/ui/toast-notification";
-// Pipeline stages removed — replaced by summary bar in header
+import { cn } from "@/lib/utils";
+
+// ─── Mock content for the Command Center cards ───
 
 const todayAppointments = [
-  { name: "Sarah Mitchell", avatar: "/images/avatars/10.png", time: "10:00 - 10:30 AM", type: "phone" as const, note: "New client intro call", clientId: "c21" },
-  { name: "David Park", avatar: "/images/avatars/11.png", time: "3:00 - 4:00 PM", type: "video" as const, note: "S-Corp return review", clientId: "c11" },
-  { name: "Miguel Sandoval", avatar: "/images/avatars/09.png", time: "4:00 - 4:30 PM", type: "phone" as const, note: "Discuss incorporation", clientId: "c9" },
+  { name: "Sarah Mitchell", avatar: "/images/avatars/10.png", time: "10:00 AM", note: "New client intro call", clientId: "c21" },
+  { name: "David Park", avatar: "/images/avatars/11.png", time: "3:00 PM", note: "S-Corp return review", clientId: "c11" },
+  { name: "Miguel Sandoval", avatar: "/images/avatars/09.png", time: "4:00 PM", note: "Discuss incorporation", clientId: "c9" },
 ];
 
-const messages = [
-  { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "Hi Antonio! I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM", unreadCount: 2 },
-  { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm instead of 2?", time: "8:15 AM", unreadCount: 1 },
-  { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday", unreadCount: 3 },
+const recentMessages = [
+  { name: "Priya Sharma", avatar: "/images/avatars/02.png", message: "I have my TikTok 1099 but I'm not sure how to upload it.", time: "2:30 PM" },
+  { name: "David Park", avatar: "/images/avatars/11.png", message: "Can we push the call to 3pm?", time: "8:15 AM" },
+  { name: "Carlos & Elena Mendez", avatar: "/images/avatars/03.png", message: "Elena wants to know about the paint booth deduction.", time: "Yesterday" },
 ];
 
-// need_you: ERO sign(2: Rodriguez,Aisha) + new_intake(3: Vladimir,Ashley,Fatima) + ready_to_prep(2: Miguel,Anthony) = 7
-// waiting: collecting_docs(4: Priya,DeShawn,Jasmine,Tyrone) + client_review(2: Roberto,MeiLin) = 6
-// in_progress: in_preparation(4: Marcus,DuBois,David,Mendez) = 4
-// complete: filed(3: Linda,Karen,Rachel) = 3
-// Total: 7+6+4+3 = 20 active clients
-const summaryTabs = [
-  { key: "need_you", label: "Need You", count: 7, color: "bg-red-500", cssColor: "#ef4444", circleClass: "bg-red-500/12 border-red-400/30 text-red-600" },
-  { key: "waiting", label: "Waiting", count: 6, color: "bg-amber-500", cssColor: "#f59e0b", circleClass: "bg-amber-500/12 border-amber-400/30 text-amber-600" },
-  { key: "in_progress", label: "In Progress", count: 4, color: "bg-blue-500", cssColor: "#3b82f6", circleClass: "bg-blue-500/12 border-blue-400/30 text-blue-600" },
-  { key: "complete", label: "Done", count: 3, color: "bg-emerald-500", cssColor: "#10b981", circleClass: "bg-emerald-500/12 border-emerald-400/30 text-emerald-600" },
-];
-
-type ActionClient = {
-  initials: string;
+// ─── Team activity: workload distribution across Antonio's team — Petal AI counted as a member ───
+type TeamMember = {
   name: string;
-  detail: string;
-  urgency: "red" | "amber" | "green" | "none";
+  role: string;
+  initials: string;
+  avatar?: string;
+  returns: number;
+  isAI: boolean;
 };
+const TEAM_MEMBERS: TeamMember[] = [
+  { name: "Petal",            role: "AI · across all clients",        initials: "P",  returns: 86, isAI: true },
+  { name: "Antonio Vazquez",  role: "EA · owner",                     initials: "AV", avatar: "/images/avatars/04.png", returns: 28, isAI: false },
+  { name: "Maria Rodriguez",  role: "Bookkeeper · part-time",         initials: "MR", avatar: "/images/avatars/05.png", returns: 12, isAI: false },
+  { name: "James Chen",       role: "Junior preparer · seasonal",     initials: "JC", avatar: "/images/avatars/06.png", returns: 9,  isAI: false },
+];
+const TEAM_MAX = Math.max(...TEAM_MEMBERS.map(m => m.returns));
 
-const actionGroups: Record<string, { label: string; clients: ActionClient[] }[]> = {
-  need_you: [
-    { label: "Sign & file", clients: [
-      { initials: "JR", name: "James & Sofia Rodriguez", detail: "Paid $500 + signed · your ERO countersignature needed", urgency: "amber" },
-      { initials: "AJ", name: "Aisha Johnson", detail: "Paid $350 + signed · your ERO countersignature needed", urgency: "amber" },
-    ]},
-    { label: "New intakes", clients: [
-      { initials: "VP", name: "Vladimir Petrov", detail: "0 of 16 docs · deposit unpaid · never logged in", urgency: "red" },
-      { initials: "AK", name: "Ashley Kim", detail: "Intake sent · 2 days ago · deposit pending", urgency: "none" },
-      { initials: "FA", name: "Fatima Al-Hassan", detail: "Intake sent · yesterday · nudge in 1 day", urgency: "none" },
-    ]},
-    { label: "Ready to prep", clients: [
-      { initials: "MS", name: "Miguel Sandoval", detail: "9 of 9 docs · ready for prep", urgency: "none" },
-      { initials: "AR", name: "Anthony Russo", detail: "9 of 9 docs · cap gains calc needed", urgency: "none" },
-    ]},
-  ],
-  waiting: [
-    { label: "Collecting documents", clients: [
-      { initials: "PS", name: "Priya Sharma", detail: "3 of 7 docs · missing 1099s · $300 remaining", urgency: "amber" },
-      { initials: "DW", name: "DeShawn Williams", detail: "1 of 6 docs · $150 deposit overdue 10 days", urgency: "red" },
-      { initials: "JT", name: "Jasmine Torres", detail: "4 of 8 docs · freelance 1099s · $300 remaining", urgency: "amber" },
-      { initials: "TM", name: "Tyrone Mitchell", detail: "2 of 5 docs · 9 days stale · $100 remaining", urgency: "red" },
-    ]},
-    { label: "Client reviewing return", clients: [
-      { initials: "RF", name: "Roberto Fuentes", detail: "1120S · reviewing 5 days · $450 balance invoiced", urgency: "none" },
-      { initials: "MW", name: "Mei-Lin Wu", detail: "Schedule C · reviewing 4 days · $450 balance invoiced", urgency: "none" },
-    ]},
-  ],
-  in_progress: [
-    { label: "Stuck - needs attention", clients: [
-      { initials: "TD", name: "Thomas & Marie DuBois", detail: "Waiting 5 days for crypto docs - consider escalation", urgency: "amber" },
-      { initials: "CM", name: "Carlos & Elena Mendez", detail: "Unresolved paint booth question - Elena awaiting reply", urgency: "amber" },
-      { initials: "DP", name: "David Park", detail: "Call at 3pm today - still missing 2 docs", urgency: "amber" },
-    ]},
-    { label: "In preparation", clients: [
-      { initials: "MC", name: "Marcus Chen", detail: "Schedule C · 3 restaurants · confirm closure before filing", urgency: "none" },
-    ]},
-  ],
-  complete: [
-    { label: "Filed & accepted", clients: [
-      { initials: "LN", name: "Linda Nakamura", detail: "1040 · filed Mar 15 · paid in full", urgency: "green" },
-      { initials: "KO", name: "Karen O'Brien", detail: "1040 · filed Mar 10 · paid in full", urgency: "green" },
-      { initials: "RG", name: "Rachel Goldstein", detail: "1040 MFJ · filed Mar 12 · paid in full", urgency: "green" },
-    ]},
-  ],
-};
+// ─── Filing-readiness 84-day daily trend (deterministic, sigmoid + weekly oscillation) ───
+const READINESS_DAYS = 84;
+const READINESS_TREND: number[] = Array.from({ length: READINESS_DAYS }, (_, i) => {
+  const t = i / (READINESS_DAYS - 1);
+  const base = 22 + 48 * (1 / (1 + Math.exp(-7 * (t - 0.45))));   // S-curve growth 22 → 70
+  const weekly = Math.sin(i * 0.9) * 2.2;                          // ~7-day oscillation
+  const jitter = ((i * 23) % 11) / 2 - 2.5;                        // deterministic noise
+  return Math.max(15, Math.min(80, Math.round((base + weekly + jitter) * 10) / 10));
+});
 
-// ── Hand-drawn organic circle SVG ──
-function OrganicCircle({ color, size = 32 }: { color: string; size?: number }) {
-  // Hand-drawn wobbly circle path — intentionally imperfect
-  const path = "M20.5,4 C28,3.5 35,8 36.5,16 C38,24 33,33 24,36 C15,39 6,34 4,25 C2,16 7,6 16,4.5 C18,4.2 19.5,4 20.5,4 Z";
+// 6 evenly spaced x-axis labels ending today (2026-05-24)
+const READINESS_TICK_LABELS: string[] = (() => {
+  const end = new Date(2026, 4, 24);
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(end);
+    d.setDate(end.getDate() - (READINESS_DAYS - 1) + Math.round((i / 5) * (READINESS_DAYS - 1)));
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  });
+})();
+
+/**
+ * Bars + dotted trend line — matching the "Active clients" reference:
+ * bars are spaced (40/60 bar/gap), the trend line is a SMOOTHED Catmull-Rom
+ * curve OFFSET ABOVE the bars so the two visuals don't collide, and dashes
+ * are true round dots (1px stroke + round caps + sparse gaps).
+ */
+function ReadinessChart({ data }: { data: number[] }) {
+  const W = 700;
+  const H = 140;
+  const PAD_TOP = 18;
+  const PAD_BOT = 4;
+  const LINE_OFFSET = 32;                         // line floats above bars
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const slotW = W / data.length;
+  const barW = Math.max(1.2, slotW * 0.4);        // thinner bars, more gap
+
+  const yFor = (v: number) => H - PAD_BOT - ((v - min) / range) * (H - PAD_TOP - PAD_BOT);
+
+  // Heavy moving average (17-pt window = 35-pt avg) flattens daily noise into a trend signal
+  const window = 17;
+  const smoothed = data.map((_, i) => {
+    const start = Math.max(0, i - window);
+    const end = Math.min(data.length, i + window + 1);
+    const slice = data.slice(start, end);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+
+  // Subsample to 8 evenly-spaced control points so Catmull-Rom produces a flowing S,
+  // not a wave that tracks every minor bump in the underlying data.
+  const SAMPLE_COUNT = 8;
+  const linePts = Array.from({ length: SAMPLE_COUNT }, (_, k) => {
+    const idx = Math.round((k / (SAMPLE_COUNT - 1)) * (smoothed.length - 1));
+    return {
+      x: idx * slotW + slotW / 2,
+      y: Math.max(2, yFor(smoothed[idx]) - LINE_OFFSET),
+    };
+  });
+
+  // Catmull-Rom → cubic Bezier conversion for organic curvature
+  const linePath = linePts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    const p0 = linePts[Math.max(0, i - 2)];
+    const p1 = linePts[i - 1];
+    const p2 = p;
+    const p3 = linePts[Math.min(linePts.length - 1, i + 1)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    return `${acc} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }, "");
+
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" className="absolute inset-0">
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className="h-32 w-full"
+      role="img"
+      aria-label="Filing readiness — 84-day trend"
+    >
+      {data.map((v, i) => {
+        const x = i * slotW + slotW / 2;
+        const y = yFor(v);
+        const opacity = 0.3 + (i / (data.length - 1)) * 0.35;   // subtle 0.30 → 0.65 ramp
+        return (
+          <rect
+            key={i}
+            x={x - barW / 2}
+            y={y}
+            width={barW}
+            height={Math.max(0, H - PAD_BOT - y)}
+            fill={`rgba(70,70,70,${opacity.toFixed(2)})`}
+          />
+        );
+      })}
       <path
-        d={path}
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d={linePath}
         fill="none"
-        strokeDasharray="120"
-        strokeDashoffset="120"
-        style={{ animation: "draw-circle 400ms ease-out forwards" }}
+        stroke="rgba(40,40,40,0.85)"
+        strokeWidth="2"
+        strokeDasharray="1 5"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
       />
-      <style>{`@keyframes draw-circle { to { stroke-dashoffset: 0; } }`}</style>
     </svg>
   );
 }
 
-// ── Pipeline Strip with organic circles + animated underline ──
-function PipelineStrip({ tabs, activeTab, onTabChange }: {
-  tabs: typeof summaryTabs;
-  activeTab: string;
-  onTabChange: (key: string) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-  const [underline, setUnderline] = useState({ left: 0, width: 0, color: tabs[0].cssColor });
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  const updateUnderline = useCallback((key: string) => {
-    const label = labelRefs.current[key];
-    const container = containerRef.current;
-    if (!label || !container) return;
-    const containerRect = container.getBoundingClientRect();
-    const labelRect = label.getBoundingClientRect();
-    const tab = tabs.find(t => t.key === key);
-    setUnderline({
-      left: labelRect.left - containerRect.left,
-      width: labelRect.width,
-      color: tab?.cssColor || tabs[0].cssColor,
-    });
-  }, [tabs]);
-
-  useEffect(() => {
-    const target = hoveredKey || activeTab;
-    if (!mounted) {
-      const timer = setTimeout(() => { updateUnderline(target); setMounted(true); }, 150);
-      return () => clearTimeout(timer);
-    }
-    updateUnderline(target);
-  }, [activeTab, hoveredKey, mounted, updateUnderline]);
-
-  useEffect(() => {
-    const onResize = () => updateUnderline(hoveredKey || activeTab);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [activeTab, hoveredKey, updateUnderline]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative flex items-center gap-4 overflow-x-auto mobile-scroll-tabs md:gap-6 md:overflow-visible"
-      onMouseLeave={() => setHoveredKey(null)}
-    >
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab.key;
-        const count = tab.count;
-        return (
-          <button
-            key={tab.key}
-            onClick={() => onTabChange(tab.key)}
-            onMouseEnter={() => setHoveredKey(tab.key)}
-            className="flex items-center gap-2 cursor-pointer select-none pb-px shrink-0"
-          >
-            {/* Number */}
-            <span className={`text-[17px] font-semibold tabular-nums transition-colors duration-200 ${isActive ? "" : "text-muted-foreground/50"}`} style={{ color: isActive ? tab.cssColor : undefined }}>
-              {count}
-            </span>
-            {/* Label */}
-            <span
-              ref={el => { labelRefs.current[tab.key] = el; }}
-              className={`text-[15px] transition-colors duration-200 ${
-                isActive ? "text-foreground font-medium" : "text-muted-foreground/60"
-              }`}
-            >
-              {tab.label}
-            </span>
-          </button>
-        );
-      })}
-
-      {/* Animated underline — lightsaber draw from left */}
-      <div
-        className="absolute bottom-0 h-[2px] rounded-full"
-        style={{
-          left: underline.left,
-          width: underline.width,
-          backgroundColor: underline.color,
-          transform: mounted ? "scaleX(1)" : "scaleX(0)",
-          transformOrigin: "left",
-          transition: "left 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1), background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), transform 450ms cubic-bezier(0.0, 0, 0.2, 1)",
-        }}
-      />
-    </div>
-  );
-}
-
 export default function Page() {
-  const [activeTab, setActiveTab] = useState("need_you");
-  const [viewMode, setViewMode] = useState<"clients" | "actions">("actions");
   const [detailClient, setDetailClient] = useState<Client | null>(null);
-  const [selectedAppointment, setSelectedAppointment] = useState<typeof todayAppointments[0] | null>(null);
-  const [todos, setTodos] = useState<TodoItem[]>(initialTodos);
-  const [newTodoText, setNewTodoText] = useState("");
-  const [sentDrafts, setSentDrafts] = useState<Set<string>>(new Set());
-  const [editingDraft, setEditingDraft] = useState<string | null>(null);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [openInsightId, setOpenInsightId] = useState<string | null>("brief-1");
-  const [newTodoClient, setNewTodoClient] = useState<string>("");
-  const [showClientPicker, setShowClientPicker] = useState(false);
   const { showToast } = useToast();
-  let askDocket = (_q: string) => {};
-  try { askDocket = useAIPanelAsk(); } catch {}
 
-  const handleInsightAction = (action: InsightAction) => {
-    showToast("success", `Action: ${action.label}`, `Executing ${action.action}...`);
-  };
+  // ─── Derive stats from real client data ───
+  const stats = useMemo(() => {
+    const total = clients.length;
+    const filed = clients.filter(c => c.returnStage === "filed").length;
+    const inPrep = clients.filter(c => c.returnStage === "in_preparation" || c.returnStage === "ready_to_prep").length;
+    const collecting = clients.filter(c => c.returnStage === "collecting_docs").length;
+    const review = clients.filter(c => c.returnStage === "client_review").length;
+    const paySign = clients.filter(c => c.returnStage === "pay_and_sign").length;
+    const newIntake = clients.filter(c => c.returnStage === "new_intake").length;
+    const readinessPct = total > 0 ? Math.round(((filed + paySign + review + inPrep) / total) * 100) : 0;
+    const atRisk = clients.filter(c => c.urgency === "high" || c.urgency === "urgent").slice(0, 3);
+    const daysToDeadline = 42;
+    // Workflow-stage order — clients move through these states in this sequence,
+    // and Missing documents is the first place returns get stuck.
+    const bottlenecks = [
+      { label: "Missing documents", count: collecting, sub: `${collecting} reminders drafted` },
+      { label: "Awaiting signature", count: paySign, sub: `${paySign} nudges scheduled` },
+      { label: "In review", count: review + inPrep, sub: `${inPrep} with AI pre-review complete` },
+      { label: "Notice response", count: 2, sub: "2 responses drafted" },
+    ];
+    const bottlenecksMax = Math.max(...bottlenecks.map(b => b.count), 1);
+    return { total, filed, inPrep, collecting, review, paySign, newIntake, readinessPct, atRisk, daysToDeadline, bottlenecks, bottlenecksMax };
+  }, []);
 
-  const toggleTodo = (id: string) => setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  const addTodo = () => {
-    if (!newTodoText.trim()) return;
-    const matchedClient = newTodoClient ? clients.find(c => c.id === newTodoClient) : null;
-    setTodos(prev => [{
-      id: `t-${Date.now()}`,
-      text: newTodoText.trim(),
-      done: false,
-      source: "manual" as const,
-      createdAt: new Date().toISOString(),
-      ...(matchedClient && { clientId: matchedClient.id, clientName: matchedClient.fullName }),
-    }, ...prev]);
-    setNewTodoText("");
-    setNewTodoClient("");
-    setShowClientPicker(false);
-  };
-  const pendingTodoCount = todos.filter(t => !t.done).length;
-
-  const tabHues: Record<string, { border: string; bg: string }> = {
-    need_you: { border: "border-red-500", bg: "bg-red-50/40 dark:bg-red-950/15" },
-    waiting: { border: "border-amber-500", bg: "bg-amber-50/40 dark:bg-amber-950/15" },
-    in_progress: { border: "border-blue-500", bg: "bg-blue-50/40 dark:bg-blue-950/15" },
-    complete: { border: "border-emerald-500", bg: "bg-emerald-50/40 dark:bg-emerald-950/15" },
-    todos: { border: "border-violet-500", bg: "bg-violet-50/40 dark:bg-violet-950/15" },
-  };
+  // ─── Clients needing review today ───
+  const needsReviewToday = useMemo(() => {
+    return clients
+      .filter(c => c.returnStage === "client_review" || c.returnStage === "pay_and_sign" || (c.urgency === "high" && c.returnStage === "in_preparation"))
+      .slice(0, 5)
+      .map(c => ({
+        client: c,
+        action: c.returnStage === "client_review" ? "Review return"
+          : c.returnStage === "pay_and_sign" ? "Sign as ERO"
+          : "Resolve flags",
+        status: c.returnStage === "pay_and_sign" ? { label: "ERO ready", tone: "success" as const }
+          : c.urgency === "urgent" ? { label: "urgent flag", tone: "danger" as const }
+          : c.urgency === "high" ? { label: "high priority", tone: "warning" as const }
+          : { label: "AI pre-review done", tone: "muted" as const },
+        date: c.returnStage === "pay_and_sign" ? "Today" : c.returnStage === "client_review" ? "Today" : "Mar 8",
+      }));
+  }, []);
 
   return (
     <div className="space-y-4">
-      {/* ── Section 1: Morning Intelligence ── */}
-      <motion.div
-        className="rounded-[20px_20px_20px_6px] bg-card border border-border/40 px-4 py-4 md:px-7 md:py-6 shadow-sm"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-      >
-        {/* Timestamp */}
-        <motion.p
-          className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          {format(new Date(), "EEEE, MMMM d · h:mm a")}
-        </motion.p>
-
-        {/* Greeting */}
-        <motion.h1
-          className="text-xl md:text-[28px] tracking-[-0.02em] font-display mt-3 text-foreground"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-        >
-          {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"}, Antonio
-        </motion.h1>
-
-        {/* Stat row */}
-        <motion.div
-          className="grid grid-cols-3 gap-3 mt-4 pb-5 border-b border-border/30 md:flex md:items-baseline md:gap-7"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-        >
-          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Deadline</span><span className="text-[15px] font-semibold text-foreground">18 days</span></div>
-          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Filed</span><span className="text-[15px] font-semibold text-foreground">3 of 20</span></div>
-          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Collected</span><span className="text-[15px] font-semibold text-emerald-600">$2,850</span></div>
-          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Outstanding</span><span className="text-[15px] font-semibold text-foreground">$4,200</span></div>
-          <div><span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/60 block mb-1">Overdue</span><span className="text-[15px] font-semibold text-red-500">1</span></div>
-        </motion.div>
-
-        {/* Editorial intro */}
-        <motion.p
-          className="text-[14.5px] text-muted-foreground/70 mt-5 mb-5 pb-5 border-b border-border/20 leading-relaxed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-        >
-          Two returns are ready to file right now. Priya&apos;s 1099 doesn&apos;t match her intake. And the Rodriguez refund is going to be smaller than they expect.
-        </motion.p>
-
-        {/* Insight compartments — collapsible, expanded by default */}
+      {/* ─── Header ─── */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          {intelligenceBrief.map((item, index) => {
-            const isOpen = openInsightId === item.id;
-
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 + index * 0.08 }}
-                className={`py-4 ${index < intelligenceBrief.length - 1 ? "border-b border-border/50" : ""}`}
-              >
-                {/* Title row — click to toggle (accordion) */}
-                <button
-                  onClick={() => setOpenInsightId(isOpen ? null : item.id)}
-                  className="flex w-full items-center gap-2.5 text-left group/title rounded-lg px-3 py-2 -mx-3 transition-all duration-200 hover:bg-muted/40"
-                >
-                  {item.urgent && (
-                    <span className="size-[7px] rounded-full bg-red-500 shrink-0" />
-                  )}
-                  <span className="flex-1 text-[17px] font-semibold text-foreground group-hover/title:text-foreground/70 transition-colors font-display">
-                    {item.title}
-                  </span>
-                  <svg
-                    width={10} height={10} viewBox="0 0 10 10"
-                    className={`shrink-0 text-muted-foreground/30 transition-all duration-200 group-hover/title:text-muted-foreground/60 ${isOpen ? "rotate-90" : ""}`}
-                  >
-                    <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" fill="none" strokeWidth="1.3" strokeLinecap="round" />
-                  </svg>
-                </button>
-
-                {/* Body — smooth expand/collapse */}
-                <AnimatePresence initial={false}>
-                {isOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="overflow-hidden"
-                  >
-                  <div className="mt-3 pl-0">
-                    <motion.p
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.3 }}
-                      className="text-[14px] leading-[1.8] text-foreground/75"
-                    >
-                      {item.content}
-                    </motion.p>
-
-                    {/* Filing pace — line graph */}
-                    {item.id === "brief-3" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.55 }}
-                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[11px] font-medium text-foreground/60">Filing pace</span>
-                          <span className="text-[10px] text-muted-foreground">18 days to deadline</span>
-                        </div>
-                        <svg width="100%" height={220} viewBox="0 0 480 220" className="block">
-                          {/* Grid lines */}
-                          {[0, 1, 2, 3, 4].map(i => (
-                            <line key={i} x1={45} y1={20 + i * 44} x2={465} y2={20 + i * 44} stroke="currentColor" strokeWidth="0.5" className="text-border/30" />
-                          ))}
-                          {/* Y-axis labels */}
-                          {[20, 15, 10, 5, 0].map((v, i) => (
-                            <text key={v} x={36} y={25 + i * 44} textAnchor="end" className="fill-muted-foreground/40" fontSize="11">{v}</text>
-                          ))}
-                          {/* X-axis labels */}
-                          {["Jan", "Feb", "Mar", "Apr"].map((m, i) => (
-                            <text key={m} x={45 + i * 140} y={210} textAnchor="start" className="fill-muted-foreground/40" fontSize="11">{m}</text>
-                          ))}
-                          {/* Last year line — full season */}
-                          <polyline
-                            points="45,196 115,172 185,148 255,124 325,100 395,56 465,20"
-                            fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                            className="text-muted-foreground/20"
-                          />
-                          {/* This year line — partial */}
-                          <polyline
-                            points="45,196 115,185 185,176 255,170"
-                            fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"
-                          />
-                          <circle cx={255} cy={170} r={4.5} fill="#ef4444" opacity="0.8" />
-                          {/* Annotation */}
-                          <text x={267} y={166} className="fill-red-500/70" fontSize="11" fontWeight="500">3 filed</text>
-                          <text x={465} y={16} textAnchor="end" className="fill-muted-foreground/30" fontSize="11">18 filed</text>
-                        </svg>
-                        <div className="flex items-center gap-5 mt-2">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-[2px] bg-red-500/60 rounded" />
-                            <span className="text-[10px] text-foreground/60">2026</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-[2px] bg-muted-foreground/20 rounded" />
-                            <span className="text-[10px] text-muted-foreground/40">2025</span>
-                          </div>
-                          <span className="text-[10px] text-red-500/60 ml-auto">2 returns behind pace</span>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Rodriguez income — horizontal comparison */}
-                    {item.id === "brief-4" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.55 }}
-                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-[11px] font-medium text-foreground/60">Household income</span>
-                          <span className="text-[10px] text-blue-500/70 font-medium">&rarr; 24% bracket + NIIT</span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[11px] text-muted-foreground/60">2024</span>
-                              <span className="text-[12px] font-medium text-muted-foreground/60 tabular-nums">$167K</span>
-                            </div>
-                            <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
-                              <div className="h-full rounded-full bg-blue-400/30" style={{ width: "59%" }} />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[11px] text-foreground/70 font-medium">2025</span>
-                              <span className="text-[12px] font-semibold text-blue-600 tabular-nums">$285K</span>
-                            </div>
-                            <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
-                              <div className="h-full rounded-full bg-blue-500/60" style={{ width: "100%" }} />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-3">
-                          <span className="text-[10px] text-blue-500/60">+$118K</span>
-                          <span className="text-[10px] text-muted-foreground/40">&middot;</span>
-                          <span className="text-[10px] text-muted-foreground/50">22% &rarr; 24% bracket</span>
-                          <span className="text-[10px] text-muted-foreground/40">&middot;</span>
-                          <span className="text-[10px] text-red-400/60">New: NIIT on rental</span>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Referral potential for Ashley */}
-                    {item.id === "brief-5" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.6 }}
-                        className="mt-4 rounded-xl border border-border/30 bg-muted/20 p-5"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[11px] font-medium text-foreground/60">Referral potential</span>
-                          <span className="text-[10px] text-violet-500/70 font-medium">Creator niche</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <span className="text-[20px] font-semibold text-foreground tabular-nums">$350</span>
-                            <span className="text-[10px] text-muted-foreground block mt-0.5">Priya&apos;s fee</span>
-                          </div>
-                          <div>
-                            <span className="text-[20px] font-semibold text-foreground/50 tabular-nums">$350</span>
-                            <span className="text-[10px] text-muted-foreground block mt-0.5">Ashley (if converts)</span>
-                          </div>
-                          <div>
-                            <span className="text-[20px] font-semibold text-violet-500 tabular-nums">$5K+</span>
-                            <span className="text-[10px] text-muted-foreground block mt-0.5">Network (3-yr value)</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {item.implication && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.4, delay: 0.7 }}
-                        className="text-[12.5px] text-muted-foreground mt-3 leading-relaxed"
-                      >
-                        &rarr; {item.implication}
-                      </motion.p>
-                    )}
-
-                    {/* Reference + deep dive */}
-                    <div className="flex items-center gap-3 mt-4">
-                      {item.refs && item.refs.length > 0 && (
-                        <span className="text-[11px] text-muted-foreground/50">
-                          {item.refs.join(" · ")}
-                        </span>
-                      )}
-                      {item.deepDiveQuery && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-[11px] gap-1.5"
-                          onClick={(e) => { e.stopPropagation(); askDocket(item.deepDiveQuery!); }}
-                        >
-                          Ask Docket <ArrowUpRightIcon className="size-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  </motion.div>
-                )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <motion.div
-          className="mt-4 pt-4 border-t border-border/20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 1 }}
-        >
-          <p className="text-[10px] text-muted-foreground/40">
-            20 clients · 142 documents · 34 messages · 3 prior-year returns
+          <h1 className="font-display text-3xl tracking-tight md:text-4xl">Command Center</h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground">
+            Tax Season {new Date().getFullYear() + 1} <span className="text-muted-foreground/40">·</span> {stats.daysToDeadline} days left
           </p>
-        </motion.div>
-      </motion.div>
-
-      {/* ── Section 2: Actions + Sidebar ── */}
-      <div className="flex flex-col gap-6 mt-6 md:mt-10 md:flex-row">
-      {/* Left: Pipeline + Action Feed (70%) */}
-      <div className="min-w-0 space-y-5 md:flex-[7]">
-        {/* Pipeline — organic circles with animated underline */}
-        <PipelineStrip
-          tabs={summaryTabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-
-        {/* Section heading — editorial, not dashboard */}
-        <h3 className="text-[19px] font-medium text-foreground tracking-tight font-display">
-          {summaryTabs.find(t => t.key === activeTab)?.label}
-        </h3>
-
-        {/* Content */}
-        <div>
-            <div className="space-y-4">
-              {(actionGroups[activeTab] || []).map((group) => (
-                <div key={group.label}>
-                  <div className="px-1 pt-2 pb-2.5">
-                    <span className="text-[12px] text-muted-foreground/60">{group.label}</span>
-                  </div>
-                  <div className="space-y-2">
-                  {group.clients.map((actionClient, ci) => {
-                    const matchedAction = actionItems.find(a =>
-                      !a.isResolved && a.clientName.includes(actionClient.name.split(" ")[0])
-                    );
-                    const matchedClientForAvatar = clients.find(c =>
-                      c.fullName.includes(actionClient.name.split(" ")[0]) ||
-                      actionClient.initials === c.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-                    );
-                    const accentBg = actionClient.urgency === "red" ? "bg-red-300/60" : actionClient.urgency === "amber" ? "bg-amber-300/60" : actionClient.urgency === "green" ? "bg-emerald-300/60" : "";
-                    return (
-                      <div key={`${group.label}-${ci}`} className="relative rounded-xl border border-border/40 p-4 transition-all duration-200 hover:bg-muted/40 hover:border-border/70 hover:shadow-sm">
-                        {accentBg && <div className={`absolute left-0 top-3 bottom-3 w-[2.5px] rounded-full ${accentBg}`} />}
-                        <button onClick={() => matchedClientForAvatar && setDetailClient(matchedClientForAvatar)} className="flex w-full items-center gap-3 text-left">
-                          <Avatar className="size-9 shrink-0">
-                            {matchedClientForAvatar && <AvatarImage src={matchedClientForAvatar.avatar} alt={actionClient.name} />}
-                            <AvatarFallback className="text-[10px]">{actionClient.initials}</AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[15px] font-medium leading-tight font-display">{actionClient.name}</div>
-                            <div className="text-muted-foreground text-[12.5px] mt-0.5">{actionClient.detail}</div>
-                          </div>
-                        </button>
-                        {matchedAction?.aiDraft && (
-                          <div className="mt-3 ml-11">
-                            {sentDrafts.has(matchedAction.id) ? (
-                              <motion.div
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="flex items-center gap-2 text-xs font-medium text-emerald-600"
-                              >
-                                <motion.svg
-                                  width="12" height="12" viewBox="0 0 14 14" fill="none"
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.1 }}
-                                >
-                                  <path d="M3 7L5.5 9.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </motion.svg>
-                                Sent to {actionClient.name.split(" ")[0]}
-                              </motion.div>
-                            ) : (
-                              <>
-                                {editingDraft === matchedAction.id ? (
-                                  <textarea
-                                    defaultValue={matchedAction.aiDraft}
-                                    className="w-full rounded-lg border bg-background px-3 py-2 text-xs leading-relaxed outline-none focus:ring-1 focus:ring-primary resize-none"
-                                    rows={3}
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <p className="text-[12.5px] leading-[1.7] text-muted-foreground">{matchedAction.aiDraft}</p>
-                                )}
-                                <div className="mt-2.5 flex gap-2">
-                                  <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => { setSentDrafts(p => new Set([...p, matchedAction.id])); setEditingDraft(null); showToast("sent", `Message sent to ${actionClient.name.split(" ")[0]}`, "Delivered via portal and email"); }}>
-                                    <SendIcon className="size-3" /> {editingDraft === matchedAction.id ? "Send edited" : "Send as Antonio"}
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground" onClick={() => setEditingDraft(editingDraft === matchedAction.id ? null : matchedAction.id)}>
-                                    <FileTextIcon className="size-3" /> {editingDraft === matchedAction.id ? "Cancel" : "Edit"}
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  </div>
-                </div>
-              ))}
-            </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => showToast("info", "Brief me", "Petal is generating your morning brief...")}
+          >
+            Brief me
+          </Button>
+          <Button
+            size="sm"
+            className="bg-foreground text-background hover:bg-foreground/90"
+            onClick={() => showToast("info", "Analytics", "Full firm analytics coming soon")}
+          >
+            View all analytics
+          </Button>
         </div>
       </div>
 
-      {/* Right: Today + Messages (30%) */}
-      <div className="flex flex-col gap-5 min-w-0 pt-5 border-t border-border/30 md:flex-[3] md:pt-1 md:border-t-0 md:border-l md:border-border/30 md:pl-6">
-        {/* Today */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[13px] font-medium text-foreground">Today</span>
-            <Link href="/dashboard/apps/calendar" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              Calendar &rarr;
-            </Link>
+      {/* ─── AI banner ─── */}
+      <Link
+        href="/dashboard/actions"
+        className="group flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/30"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-foreground/[0.05]">
+            <PetalMark className="size-4 text-foreground/70" />
+          </span>
+          <div className="text-[13px]">
+            <span className="font-medium">Petal drafted 14 actions</span>
+            <span className="text-muted-foreground"> ready for your review</span>
           </div>
-          <div className="space-y-2">
-            {todayAppointments.map((apt) => (
-              <button
-                key={apt.name}
-                onClick={() => setSelectedAppointment(apt)}
-                className="flex w-full items-center gap-3 rounded-xl border border-border/40 p-3 text-left transition-all duration-200 hover:bg-muted/40 hover:border-border/70 hover:shadow-sm"
-              >
-                <Avatar className="size-7 shrink-0">
-                  <AvatarImage src={apt.avatar} alt={apt.name} />
-                  <AvatarFallback className="text-[9px]">{apt.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[12.5px] font-medium leading-tight">{apt.name}</div>
-                  <div className="text-muted-foreground flex items-center gap-1 text-[11px] mt-0.5">
-                    {apt.type === "video" ? <VideoIcon className="size-2.5" /> : <PhoneIcon className="size-2.5" />}
-                    {apt.time}
+        </div>
+        <span className="flex items-center gap-1 text-[12px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+          Open queue <ArrowRightIcon className="size-3" />
+        </span>
+      </Link>
+
+      {/* ─── Top hero row: Filing readiness (7) leads, Today's brief (5) on the right ─── */}
+      <div className="grid gap-4 md:grid-cols-12">
+        {/* ── Today's brief ── (narrower — clickable narrative, sits on the right via md:order-2) */}
+        <Card className="md:col-span-5 md:order-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
+              <PetalMark className="size-3.5 text-foreground/60" /> Today&apos;s brief
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col">
+            <ul className="space-y-1">
+              {[
+                {
+                  tone: "urgent" as const,
+                  headline: "Sarah Mitchell's S-Corp",
+                  detail: "Q4 estimates are $2,800 short of safe harbor — review before her 10am intro call.",
+                  href: "/dashboard/clients",
+                },
+                {
+                  tone: "ready" as const,
+                  headline: "ERO signing queue",
+                  detail: "6 returns ready for your signature · 2 marked urgent by clients.",
+                  href: "/dashboard/actions",
+                },
+                {
+                  tone: "info" as const,
+                  headline: "Petal worked overnight",
+                  detail: "Drafted IRS notice responses for 3 clients · summarized 12 new intake forms.",
+                  href: "/dashboard/actions",
+                },
+                {
+                  tone: "alert" as const,
+                  headline: "Doc-collection pile-up",
+                  detail: "12 clients have been waiting on docs for >14 days · nudges ready to send.",
+                  href: "/dashboard/clients",
+                },
+                {
+                  tone: "win" as const,
+                  headline: "Yesterday's wins",
+                  detail: "8 returns filed · season pace +12% vs the same week last year.",
+                  href: "/dashboard/actions",
+                },
+              ].map(item => (
+                <li key={item.headline}>
+                  <Link
+                    href={item.href}
+                    className="group -mx-2 flex gap-3 rounded-md p-2 transition-colors hover:bg-muted/40"
+                  >
+                    <span
+                      className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", {
+                        "bg-red-500": item.tone === "urgent",
+                        "bg-emerald-500": item.tone === "ready",
+                        "bg-amber-500": item.tone === "alert",
+                        "bg-blue-500": item.tone === "win",
+                        "bg-foreground/55": item.tone === "info",
+                      })}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-medium text-foreground/90 transition-colors group-hover:text-foreground">
+                        {item.headline}
+                      </div>
+                      <div className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
+                        {item.detail}
+                      </div>
+                    </div>
+                    <ChevronRightIcon className="mt-1.5 size-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/dashboard/actions"
+              className="mt-auto flex items-center gap-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              Read full brief <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* ── Filing readiness ── (wider — chart + at-risk list, hero of the page via md:order-1) */}
+        <Card className="md:col-span-7 md:order-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[15px] font-semibold">Filing readiness</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Hero stat — big number + ↑ growth chip */}
+            <div>
+              <div className="flex items-baseline gap-2.5">
+                <span className="font-display text-[44px] font-medium leading-none tracking-tight tabular-nums">
+                  {stats.readinessPct}%
+                </span>
+                <span className="flex items-baseline gap-0.5 text-[13px] font-medium text-emerald-600">
+                  <ArrowUpIcon className="size-3" /> 6%
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-2 text-[12.5px]">
+                <span className="font-medium text-red-600">{stats.atRisk.length} returns at risk</span>
+                <span className="text-muted-foreground/50">·</span>
+                <span className="text-muted-foreground">+6 pts vs last week</span>
+              </div>
+            </div>
+
+            {/* At-risk list — avatar + name + reason */}
+            <ul className="space-y-1">
+              {stats.atRisk.map(c => {
+                const initials = c.fullName.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
+                const reason = c.returnStage === "collecting_docs" ? `missing ${c.documentsRequired - c.documentsSubmitted} docs`
+                  : c.returnStage === "pay_and_sign" ? "signature pending 3d"
+                  : "position unresolved";
+                return (
+                  <li key={c.id}>
+                    <button
+                      onClick={() => setDetailClient(c)}
+                      className="flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-muted/40"
+                    >
+                      <Avatar className="size-7 shrink-0">
+                        {c.avatar && <AvatarImage src={c.avatar} alt={c.fullName} />}
+                        <AvatarFallback className="bg-foreground/10 text-[9px] font-semibold">{initials}</AvatarFallback>
+                      </Avatar>
+                      <span className="shrink-0 text-[12.5px] font-medium text-foreground/90">{c.fullName}</span>
+                      <span className="shrink-0 text-muted-foreground/60">·</span>
+                      <span className="truncate text-[12px] text-muted-foreground">{reason}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Chart — bars + dashed trend line, with x-axis tick labels */}
+            <div className="space-y-1.5">
+              <ReadinessChart data={READINESS_TREND} />
+              <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
+                {READINESS_TICK_LABELS.map(label => (
+                  <span key={label}>{label}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Compare + period chips — reference: "Compared to Apr 27 – May 3  Daily ▾  This week ▾" */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-muted-foreground">
+                Compared to <span className="text-foreground/70">Dec 9 – Mar 1</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button className="flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground/80 transition-colors hover:bg-muted">
+                  Daily <ChevronDownIcon className="size-3" />
+                </button>
+                <button className="flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground/80 transition-colors hover:bg-muted">
+                  This week <ChevronDownIcon className="size-3" />
+                </button>
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/clients"
+              className="flex items-center gap-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              View all at-risk returns <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+
+      </div>
+
+      {/* ─── Second hero row: Workflow (5) + Team activity (7) — team distribution as the diagonal partner to Filing ─── */}
+      <div className="grid gap-4 md:grid-cols-12">
+        {/* ── Workflow bottlenecks ── (chunky horizontal bars, big display numbers, sub-text right-aligned beneath) */}
+        <Card className="md:col-span-5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[15px] font-semibold">Workflow bottlenecks</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col">
+            <ul className="space-y-7">
+              {stats.bottlenecks.map(item => (
+                <li key={item.label} className="space-y-1.5">
+                  {/* Row: label / full bar / count at the right end of the bar */}
+                  <div className="flex items-center gap-4">
+                    <span className="w-36 shrink-0 text-[13px] text-foreground/85">{item.label}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-foreground/85"
+                        style={{ width: `${(item.count / stats.bottlenecksMax) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-8 shrink-0 text-right text-[17px] font-semibold leading-none tabular-nums">
+                      {item.count}
+                    </span>
                   </div>
+                  {/* Caption beneath, right-aligned to row's right edge */}
+                  <div className="text-right text-[11px] text-muted-foreground">{item.sub}</div>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/dashboard/clients"
+              className="mt-auto flex items-center gap-1 pt-6 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              View all bottlenecks <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* ── Team activity ── (Top-power-users pattern: avatar + role + horizontal bar + count, Petal counted as a member) */}
+        <Card className="md:col-span-7">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-[15px] font-semibold">Team activity</CardTitle>
+            <p className="text-[11.5px] text-muted-foreground">Returns touched · last 30 days</p>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col">
+            <ul className="space-y-4">
+              {TEAM_MEMBERS.map(member => (
+                <li key={member.name} className="flex items-center gap-3">
+                  {member.isAI ? (
+                    <div
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06]"
+                      aria-label="Petal AI"
+                    >
+                      <PetalMark className="size-4 text-foreground/70" />
+                    </div>
+                  ) : (
+                    <Avatar className="size-8 shrink-0">
+                      {member.avatar && <AvatarImage src={member.avatar} alt={member.name} />}
+                      <AvatarFallback className="bg-foreground/10 text-[10px] font-semibold">
+                        {member.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className="w-40 min-w-0 shrink-0">
+                    <div className="truncate text-[13px] font-medium text-foreground/90">{member.name}</div>
+                    <div className="truncate text-[11px] text-muted-foreground">{member.role}</div>
+                  </div>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        member.isAI ? "bg-foreground/55" : "bg-foreground/85"
+                      )}
+                      style={{ width: `${(member.returns / TEAM_MAX) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-20 shrink-0 text-right text-[13px] font-medium tabular-nums">
+                    {member.returns} <span className="text-[11px] font-normal text-muted-foreground">returns</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/dashboard/pages/settings/profile"
+              className="mt-auto flex items-center gap-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              Manage team <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ─── Third hero row: Needs review (7) leads, Defense (5) on the right via md:order-* ─── */}
+      <div className="grid gap-4 md:grid-cols-12">
+        {/* ── Defense layer ── (narrower — sits on the right via md:order-2) */}
+        <Card className="md:col-span-5 md:order-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[15px] font-semibold">Defense layer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {[
+              { icon: ShieldCheckIcon, label: "Active audits", sub: "IRS examinations in progress", count: 1 },
+              { icon: FileWarningIcon, label: "Notices in triage", sub: "Drafts ready for review", count: 2 },
+              { icon: FileTextIcon, label: "Form 8867 due diligence", sub: "Checklists pending", count: 4 },
+              { icon: EyeIcon, label: "8275 disclosures", sub: "Ready to file", count: 1 },
+            ].map(item => (
+              <button
+                key={item.label}
+                onClick={() => showToast("info", item.label, "Coming soon")}
+                className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/40"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04]">
+                  <item.icon className="size-4 text-muted-foreground" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium">{item.label}</div>
+                  <div className="text-[11.5px] text-muted-foreground">{item.sub}</div>
                 </div>
+                <span className="text-[14px] font-semibold tabular-nums">{item.count}</span>
+                <ChevronRightIcon className="size-3.5 text-muted-foreground/60" />
               </button>
             ))}
-          </div>
-        </div>
 
-        {/* Messages */}
-        <div className="border-t border-border/30 pt-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-foreground">Messages</span>
-              <span className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white leading-[0]">3</span>
-            </div>
-            <Link href="/dashboard/apps/chat" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              View all &rarr;
+            <Link
+              href="/dashboard/clients"
+              className="mt-2 flex items-center gap-1 px-2 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              View all defense items <ArrowRightIcon className="size-3" />
             </Link>
-          </div>
-          <div className="space-y-1">
-            {messages.map((msg, i) => (
-              <Link
-                key={i}
-                href="/dashboard/apps/chat"
-                className="flex items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-muted/40 hover:shadow-sm"
-              >
-                <Avatar className="size-7 shrink-0">
-                  <AvatarImage src={msg.avatar} alt={msg.name} />
-                  <AvatarFallback className="text-[9px]">{msg.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12.5px] font-medium leading-tight">{msg.name}</span>
-                    <span className="text-muted-foreground/50 shrink-0 text-[10px]">{msg.time}</span>
-                  </div>
-                  <p className="truncate text-[11px] text-muted-foreground mt-0.5">{msg.message}</p>
-                </div>
-                {msg.unreadCount > 0 && (
-                  <span className="flex size-[16px] shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold leading-none text-white pt-px">
-                    {msg.unreadCount}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* To-do */}
-        <div className="border-t border-border/30 pt-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[13px] font-medium text-foreground">To-do</span>
-            {todos.filter(t => !t.done).length > 0 && (
-              <span className="text-[11px] text-muted-foreground/50">{todos.filter(t => !t.done).length} pending</span>
-            )}
-          </div>
-          <div className="rounded-xl border border-border/40 p-4 space-y-0">
-            {/* Add task */}
-            <div className="py-[7px]">
-              <div className="flex items-start gap-3">
-                <div className="mt-[3px] shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/20" strokeDasharray="2 2" />
-                  </svg>
-                </div>
-                <input
-                  placeholder="Add a task..."
-                  value={newTodoText}
-                  onChange={e => setNewTodoText(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addTodo()}
-                  className="w-full text-[13px] text-foreground/85 bg-transparent outline-none placeholder:text-muted-foreground/30"
-                />
-              </div>
-            </div>
-
-            {/* Pending items — all visible */}
-            <AnimatePresence>
-            {todos.filter(t => !t.done).map(todo => (
-              <motion.div
-                key={todo.id}
-                layout
-                exit={{ opacity: 0, x: -10, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex items-start gap-3 py-[7px] group cursor-pointer"
-                onClick={() => toggleTodo(todo.id)}
-              >
-                <div className="mt-[3px] shrink-0">
-                  <motion.div whileTap={{ scale: 1.4 }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" className="text-muted-foreground/40 transition-colors duration-200 group-hover:text-violet-400" />
-                    </svg>
-                  </motion.div>
-                </div>
-                <span className="text-[13px] leading-relaxed text-foreground/80 border-b border-transparent transition-all duration-200 group-hover:border-violet-300 dark:group-hover:border-violet-600">{todo.text}</span>
-              </motion.div>
-            ))}
-            </AnimatePresence>
-
-            {/* Completed items */}
-            {todos.filter(t => t.done).length > 0 && (
-              <div className="mt-2 pt-2 border-t border-border/20">
+        {/* ── Needs review today ── (wider — leads the row via md:order-1) */}
+        <Card className="md:col-span-7 md:order-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[15px] font-semibold">Needs review today</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-0">
+            {needsReviewToday.map(({ client, action, status, date }) => {
+              const initials = client.fullName.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
+              const statusClasses = status.tone === "danger" ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+                : status.tone === "warning" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                : status.tone === "success" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground";
+              return (
                 <button
-                  onClick={() => setShowCompleted(!showCompleted)}
-                  className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  key={client.id}
+                  onClick={() => setDetailClient(client)}
+                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/40"
                 >
-                  Completed ({todos.filter(t => t.done).length})
-                </button>
-                {showCompleted && (
-                  <div className="mt-1 space-y-0">
-                    {todos.filter(t => t.done).map(todo => (
-                      <div key={todo.id} className="flex items-start gap-3 py-[5px] group cursor-pointer" onClick={() => toggleTodo(todo.id)}>
-                        <div className="mt-[3px] shrink-0">
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="7" r="5.5" fill="currentColor" className="text-violet-400/50 group-hover:text-violet-400 transition-colors" />
-                            <path d="M5 7L6.5 8.5L9 5.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                        <span className="text-[13px] leading-relaxed text-muted-foreground/40 line-through">{todo.text}</span>
-                      </div>
-                    ))}
+                  <Avatar className="size-9 shrink-0">
+                    {client.avatar && <AvatarImage src={client.avatar} alt={client.fullName} />}
+                    <AvatarFallback className="bg-foreground/10 text-[10px] font-semibold">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium truncate">{client.fullName}</div>
+                    <div className="text-[11.5px] text-muted-foreground truncate">
+                      {client.businessName || client.serviceTier} <span className="text-muted-foreground/40">·</span> {action}
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium leading-none", statusClasses)}>
+                    {status.label}
+                  </span>
+                  <span className="w-12 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">{date}</span>
+                </button>
+              );
+            })}
+
+            <Link
+              href="/dashboard/clients"
+              className="mt-2 flex items-center gap-1 px-2 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+            >
+              View all reviews <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* ─── Bottom 3-column row ─── */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* ── Upcoming meetings ── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
+              <CalendarIcon className="size-3.5 text-muted-foreground" /> Upcoming meetings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-0">
+            {todayAppointments.map(appt => (
+              <div key={appt.clientId} className="flex items-center gap-3 rounded-md px-1 py-2">
+                <span className="w-16 shrink-0 text-[11.5px] font-medium tabular-nums text-muted-foreground">{appt.time}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium truncate">{appt.name}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{appt.note}</div>
+                </div>
+              </div>
+            ))}
+            <Link href="/dashboard/apps/calendar" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+              View calendar <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* ── Recent messages ── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
+              <MessageSquareIcon className="size-3.5 text-muted-foreground" /> Recent messages
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-0">
+            {recentMessages.map(msg => {
+              const initials = msg.name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
+              return (
+                <div key={msg.name} className="flex items-start gap-2.5 rounded-md px-1 py-2">
+                  <Avatar className="size-7 shrink-0">
+                    {msg.avatar && <AvatarImage src={msg.avatar} alt={msg.name} />}
+                    <AvatarFallback className="bg-foreground/10 text-[9px] font-semibold">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[13px] font-medium truncate">{msg.name}</span>
+                      <span className="shrink-0 text-[10.5px] text-muted-foreground tabular-nums">{msg.time}</span>
+                    </div>
+                    <div className="text-[11.5px] text-muted-foreground line-clamp-1">{msg.message}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <Link href="/dashboard/apps/chat" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+              Go to inbox <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* ── Action center ── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
+              <ShieldCheckIcon className="size-3.5 text-muted-foreground" /> Action center
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-0">
+            {[
+              { icon: PetalMark, label: "AI drafts awaiting approval", count: 11 },
+              { icon: AlertCircleIcon, label: "Positions cited this week", count: 34 },
+              { icon: PenIcon, label: "Evidence chains complete", count: 27 },
+              { icon: FileWarningIcon, label: "Notices triaged", count: 8 },
+              { icon: MailIcon, label: "Reversible actions pending", count: 4 },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-2.5 rounded-md px-1 py-2">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground">
+                  <item.icon className="size-3.5" />
+                </span>
+                <span className="flex-1 truncate text-[12.5px] text-foreground/85">{item.label}</span>
+                <span className="shrink-0 text-[13px] font-semibold tabular-nums">{item.count}</span>
+              </div>
+            ))}
+            <Link href="/dashboard/actions" className="mt-3 flex items-center gap-1 px-1 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+              View all actions <ArrowRightIcon className="size-3" />
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-2 text-[11px] text-muted-foreground">
+        <span>© {new Date().getFullYear() + 1} Petal, Inc.</span>
+        <span>Data as of {format(new Date(), "MMMM d, yyyy")}</span>
+      </div>
+
+      {/* Client detail dialog */}
       <ClientDetailDialog
         client={detailClient}
         open={!!detailClient}
-        onOpenChange={(open) => !open && setDetailClient(null)}
+        onOpenChange={(o) => !o && setDetailClient(null)}
       />
-
-      {/* Appointment Detail Dialog */}
-      {selectedAppointment && (
-        <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{selectedAppointment.name}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-12">
-                  <AvatarImage src={selectedAppointment.avatar} alt={selectedAppointment.name} />
-                  <AvatarFallback>{selectedAppointment.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="text-base font-semibold">{selectedAppointment.name}</div>
-                  <div className="text-sm text-muted-foreground">{selectedAppointment.note}</div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <ClockIcon className="size-4 text-muted-foreground" />
-                  <div className="font-medium">Today, {selectedAppointment.time}</div>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  {selectedAppointment.type === "video" ? <VideoIcon className="size-4 text-muted-foreground" /> : <PhoneIcon className="size-4 text-muted-foreground" />}
-                  <div className="font-medium">{selectedAppointment.type === "video" ? "Google Meet" : "Phone call"}</div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex gap-2">
-                {selectedAppointment.type === "video" && (
-                  <Button className="flex-1"><VideoIcon className="size-3.5" /> Join Meeting</Button>
-                )}
-                {selectedAppointment.type === "phone" && (
-                  <Button className="flex-1"><PhoneIcon className="size-3.5" /> Call</Button>
-                )}
-                <Button variant="outline" className="flex-1" asChild>
-                  <Link href={`/dashboard/clients/${selectedAppointment.clientId}/overview`}>
-                    View Client
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

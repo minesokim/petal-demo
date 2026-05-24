@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=1400"/>
-<title>Docket v4 — Client Portal Mobile</title>
+<title>Petal v4 — Client Portal Mobile</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;1,400&family=Manrope:wght@400;500;700&family=Caveat:wght@400;500&display=swap" rel="stylesheet">
@@ -58,13 +58,13 @@ const TWEAKS = /*EDITMODE-BEGIN*/{
 
 function App() {
   const [tab, setTab] = React.useState(() => {
-    try { return localStorage.getItem('docket:tab') || 'canvas'; } catch { return 'canvas'; }
+    try { return localStorage.getItem('petal:tab') || 'canvas'; } catch { return 'canvas'; }
   });
   const [tweaksOn, setTweaksOn] = React.useState(false);
   const [tweaks, setTweaks] = React.useState(TWEAKS);
 
   React.useEffect(() => {
-    try { localStorage.setItem('docket:tab', tab); } catch {}
+    try { localStorage.setItem('petal:tab', tab); } catch {}
   }, [tab]);
 
   // Tweaks protocol
@@ -108,7 +108,7 @@ function App() {
             fontFamily: t.serif, fontSize: 14, color: t.rustInk,
           }}>D</div>
           <span style={{ fontFamily: t.serif, fontSize: 16, color: t.ink, letterSpacing: -0.2 }}>
-            Docket v4 · Client Portal
+            Petal v4 · Client Portal
           </span>
         </div>
 

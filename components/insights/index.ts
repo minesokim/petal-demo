@@ -1,7 +1,7 @@
-// Docket Insights - AI Intelligence Layer Components
-// These components power the ambient AI commentary throughout Docket
+// Petal Insights - AI Intelligence Layer Components
+// These components power the ambient AI commentary throughout Petal
 
-export { DocketInsightCard, CompactInsight } from "./docket-insight"
+export { PetalInsightCard, CompactInsight } from "./petal-insight"
 export { DraftMessageCard, InlineDraftPreview } from "./draft-message"
 export { ActivityTimeline, DetailedActivityTimeline } from "./activity-timeline"
 export {

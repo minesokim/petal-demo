@@ -1,62 +1,134 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Download, X, Pen, Check } from "lucide-react";
+import { Download, X, Pen, Loader2 } from "lucide-react";
 import { Form8867Dialog } from "./form-8867-dialog";
+import {
+  getForm8867Completion,
+  subscribeForm8867,
+  type Form8867Completion,
+} from "@/lib/form-8867-store";
+import { fillForm8867 } from "@/lib/fill-form-8867";
 
 interface Form8867ViewerProps {
   clientName: string;
+  clientId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// The 13 questions with mock completed answers
-const COMPLETED_ANSWERS: { section: string; question: string; answer: string; notes?: string }[] = [
-  { section: "Identity Verification", question: "Taxpayer identity verified via government-issued photo ID?", answer: "Yes", notes: "Verified via driver's license uploaded to portal" },
-  { section: "Identity Verification", question: "SSN/ITIN verified for taxpayer and all dependents?", answer: "Yes", notes: "SSN verified against intake form submission" },
-  { section: "Filing Status", question: "HOH status verified — qualifying person lived with taxpayer for more than half the year?", answer: "Yes" },
-  { section: "Filing Status", question: "Taxpayer provided more than half the cost of maintaining the household?", answer: "Yes" },
-  { section: "Earned Income Credit", question: "Each qualifying child meets age, relationship, and residency requirements?", answer: "Yes" },
-  { section: "Earned Income Credit", question: "Taxpayer's investment income does not exceed the EITC limit?", answer: "Yes" },
-  { section: "Earned Income Credit", question: "All sources of earned income verified, including self-employment?", answer: "Yes", notes: "W-2 from Amazon warehouse confirmed as sole income source" },
-  { section: "Child Tax Credit", question: "Each child claimed for CTC is under 17 at the end of the tax year?", answer: "Yes" },
-  { section: "Child Tax Credit", question: "Child's citizenship or residency status verified?", answer: "Yes" },
-  { section: "Income Verification", question: "All sources of income reported verified?", answer: "Yes", notes: "Single W-2, no additional 1099s or unreported income" },
-  { section: "Income Verification", question: "Taxpayer provided all relevant financial information?", answer: "Yes" },
-  { section: "Preparer Knowledge", question: "Reasonable inquiries made to determine accuracy of information?", answer: "Yes" },
-  { section: "Preparer Knowledge", question: "Inquiries and taxpayer responses documented?", answer: "Yes" },
-];
-
-export function Form8867Viewer({ clientName, open, onOpenChange }: Form8867ViewerProps) {
+/**
+ * Renders the **real, filled IRS Form 8867 PDF** for a client's saved
+ * completion. Pulls answers from `form-8867-store`, fills `public/forms/f8867.pdf`
+ * via pdf-lib, and streams the resulting PDF into an iframe.
+ *
+ * This is the document the preparer must retain for 3 years under IRC §6695(g).
+ * The "Download" button gives them a copy on disk.
+ */
+export function Form8867Viewer({ clientName, clientId, open, onOpenChange }: Form8867ViewerProps) {
   const [editOpen, setEditOpen] = useState(false);
-  const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-  // Group by section
-  const sections = COMPLETED_ANSWERS.reduce<Record<string, typeof COMPLETED_ANSWERS>>((acc, a) => {
-    if (!acc[a.section]) acc[a.section] = [];
-    acc[a.section]!.push(a);
-    return acc;
-  }, {});
+  // Subscribe to the store so the viewer re-renders when the form is updated
+  const completion = useSyncExternalStore<Form8867Completion | undefined>(
+    subscribeForm8867,
+    () => (clientId ? getForm8867Completion(clientId) : undefined),
+    () => undefined
+  );
+
+  // Generate the filled PDF blob URL whenever the completion changes
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !completion) {
+      setPdfUrl(null);
+      setPdfError(null);
+      return;
+    }
+
+    let cancelled = false;
+    let createdUrl: string | null = null;
+
+    setPdfError(null);
+    setPdfUrl(null);
+
+    (async () => {
+      try {
+        const bytes = await fillForm8867(completion);
+        if (cancelled) return;
+        // Copy into ArrayBuffer for BlobPart compatibility
+        const buf = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(buf).set(bytes);
+        const blob = new Blob([buf], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        createdUrl = url;
+        setPdfUrl(url);
+      } catch (err) {
+        if (cancelled) return;
+        setPdfError(err instanceof Error ? err.message : "Failed to render Form 8867");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [open, completion]);
+
+  function downloadPdf() {
+    if (!pdfUrl || !completion) return;
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = `Form 8867 - ${completion.clientName} - ${completion.answers.taxYear}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex !h-[88vh] !w-[780px] !max-w-[780px] flex-col gap-0 overflow-hidden p-0" showCloseButton={false}>
+        <DialogContent
+          className="flex !h-[92vh] !w-[920px] !max-w-[95vw] flex-col gap-0 overflow-hidden p-0"
+          showCloseButton={false}
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-5 py-2.5 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <h2 className="text-sm font-semibold">Form 8867</h2>
-              <Badge className="bg-emerald-100 text-emerald-700 text-[10px] shrink-0">Complete</Badge>
+              {completion ? (
+                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[10px] shrink-0">
+                  Filed
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  Not yet completed
+                </Badge>
+              )}
+              <span className="text-[11px] text-muted-foreground truncate">
+                {clientName} · {completion?.answers.taxYear ?? new Date().getFullYear()}
+              </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setEditOpen(true)}>
-                <Pen className="size-3" /> Edit
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pen className="size-3" />
+                {completion ? "Amend" : "Complete"}
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={downloadPdf}
+                disabled={!pdfUrl}
+              >
                 <Download className="size-3" /> Download
               </Button>
               <Button variant="ghost" size="icon-sm" onClick={() => onOpenChange(false)}>
@@ -65,103 +137,75 @@ export function Form8867Viewer({ clientName, open, onOpenChange }: Form8867Viewe
             </div>
           </div>
 
-          {/* Form content — styled like a printed document */}
-          <div className="flex-1 overflow-y-auto bg-muted/10">
-            <div className="mx-auto max-w-lg my-6 bg-white rounded-lg shadow-sm border p-8 space-y-6">
-              {/* Form header */}
-              <div className="text-center space-y-1">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Department of the Treasury — Internal Revenue Service</div>
-                <h1 className="text-lg font-bold">Form 8867</h1>
-                <p className="text-xs text-muted-foreground">Paid Preparer's Due Diligence Checklist</p>
-                <p className="text-xs text-muted-foreground">For Returns Claiming EITC, CTC/ACTC/ODC, AOTC, and/or HOH Filing Status</p>
-              </div>
-
-              <Separator />
-
-              {/* Preparer & taxpayer info */}
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Taxpayer</div>
-                  <div className="font-medium">{clientName}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Preparer</div>
-                  <div className="font-medium">Antonio Vazquez, EA</div>
-                  <div className="text-muted-foreground">PTIN: P01234567</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Tax Year</div>
-                  <div className="font-medium">2025</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Date Completed</div>
-                  <div className="font-medium">{today}</div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Questions by section */}
-              {Object.entries(sections).map(([sectionName, questions], si) => (
-                <div key={sectionName}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Part {si + 1}: {sectionName}
-                  </h3>
-                  <div className="space-y-3">
-                    {questions.map((q, qi) => (
-                      <div key={qi} className="flex items-start gap-3">
-                        <div className="mt-0.5 flex size-5 items-center justify-center rounded border border-emerald-300 bg-emerald-50 shrink-0">
-                          <Check className="size-3 text-emerald-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs leading-relaxed">{q.question}</p>
-                          {q.notes && (
-                            <p className="text-[11px] text-muted-foreground mt-0.5 italic">Note: {q.notes}</p>
-                          )}
-                        </div>
-                        <span className="text-xs font-medium text-emerald-600 shrink-0">{q.answer}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {si < Object.keys(sections).length - 1 && <Separator className="mt-4" />}
-                </div>
-              ))}
-
-              {/* Signature */}
-              <Separator />
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preparer Declaration</h3>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  I have complied with the due diligence requirements under Treasury Regulations section 1.6695-2 for each credit and/or Head of Household filing status checked above.
-                </p>
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div>
-                    <div className="border-b border-foreground/20 pb-1 mb-1">
-                      <span className="text-xs font-medium">Antonio Vazquez, EA</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">Preparer Signature</span>
-                  </div>
-                  <div>
-                    <div className="border-b border-foreground/20 pb-1 mb-1">
-                      <span className="text-xs font-medium">{today}</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">Date</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* PDF viewer */}
+          <div className="flex-1 overflow-hidden bg-neutral-100 dark:bg-neutral-900 min-h-0">
+            {!completion ? (
+              <EmptyState onComplete={() => setEditOpen(true)} />
+            ) : pdfError ? (
+              <ErrorState message={pdfError} />
+            ) : !pdfUrl ? (
+              <LoadingState />
+            ) : (
+              <iframe
+                src={pdfUrl}
+                className="h-full w-full border-0"
+                title={`Form 8867 - ${completion.clientName}`}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit questionnaire */}
+      {/* Amend / Complete questionnaire */}
       <Form8867Dialog
         clientName={clientName}
+        clientId={clientId}
         open={editOpen}
         onOpenChange={setEditOpen}
-        onComplete={() => {}}
-        readOnly
+        onComplete={() => setEditOpen(false)}
       />
     </>
+  );
+}
+
+// ─── States ───
+
+function LoadingState() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        <span className="text-xs">Generating filled Form 8867…</span>
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex h-full items-center justify-center p-6">
+      <div className="max-w-sm rounded-lg border bg-card p-4 text-center">
+        <div className="text-sm font-medium">Couldn't render Form 8867</div>
+        <div className="mt-1 text-xs text-muted-foreground">{message}</div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ onComplete }: { onComplete: () => void }) {
+  return (
+    <div className="flex h-full items-center justify-center p-6">
+      <div className="max-w-sm rounded-lg border bg-card p-5 text-center space-y-3">
+        <div className="text-sm font-semibold">Form 8867 not yet completed</div>
+        <p className="text-xs text-muted-foreground">
+          The Paid Preparer&apos;s Due Diligence Checklist needs to be completed
+          before this return can be e-filed. Required for any return claiming EIC,
+          CTC/ACTC/ODC, AOTC, or HOH filing status.
+        </p>
+        <Button size="sm" onClick={onComplete}>
+          Complete Form 8867
+        </Button>
+      </div>
+    </div>
   );
 }

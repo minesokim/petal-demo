@@ -25,7 +25,7 @@ export function generateMeta({
   canonical: string;
 }): Metadata {
   return {
-    title: `${title}${additionalTitle ? " — Docket" : ""}`,
+    title: `${title}${additionalTitle ? " — Petal" : ""}`,
     description: description,
     metadataBase: new URL(`https://vazant-dashboard-v3.vercel.app`),
     alternates: {

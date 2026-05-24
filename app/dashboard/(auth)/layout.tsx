@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { AuthLayoutClient } from "@/components/auth-layout-client";
+import { AIPanelProvider } from "@/components/ai-panel";
 
 export default async function AuthLayout({
   children
@@ -20,7 +21,7 @@ export default async function AuthLayout({
       defaultOpen={defaultOpen}
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 64)",
+          "--sidebar-width": "calc(var(--spacing) * 54)",
           "--header-height": "calc(var(--spacing) * 14)",
           "--content-padding": "calc(var(--spacing) * 4)",
           "--content-margin": "calc(var(--spacing) * 1.5)",
@@ -28,8 +29,12 @@ export default async function AuthLayout({
             "calc(100vh - var(--header-height) - (var(--content-padding) * 2) - (var(--content-margin) * 2))"
         } as React.CSSProperties
       }>
-      <AppSidebar variant="inset" />
-      <AuthLayoutClient>{children}</AuthLayoutClient>
+      {/* AIPanelProvider wraps BOTH sidebar and content so the Ask Petal entry
+          in the sidebar nav (NavMain → useAIPanel) can open the panel. */}
+      <AIPanelProvider>
+        <AppSidebar variant="inset" />
+        <AuthLayoutClient>{children}</AuthLayoutClient>
+      </AIPanelProvider>
     </SidebarProvider>
   );
 }

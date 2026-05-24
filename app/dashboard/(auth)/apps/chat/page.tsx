@@ -497,8 +497,8 @@ export default function ChatPage() {
                     >
                       {isVoice ? (
                         <VoiceMessage message={msg} />
-                      ) : isEmail ? (
-                        <EmailMessage message={msg} />
+                      ) : isEmail && selected?.client ? (
+                        <EmailMessage message={msg} client={selected.client} />
                       ) : (
                         <>
                           <p className="text-sm leading-relaxed">{msg.content}</p>

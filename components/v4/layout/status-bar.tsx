@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * StatusBar — 28px bottom bar, persistent across both modes.
  *
- * Per DOCKET-V4-PRD.md §3.5 and design-references/docket-direction-b-v2.html:
+ * Per PETAL-V4-PRD.md §3.5 and design-references/petal-direction-b-v2.html:
  *   [ ⌘T back to triage (N)?  |  J K navigate | ⏎ open | R respond | S snooze |
  *     ⌫ archive | ⌘K command  |  April 17 · 18 days to deadline ]   [ SYNCED 2 MIN AGO ]
  *

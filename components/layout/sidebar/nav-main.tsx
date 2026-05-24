@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { motion, LayoutGroup } from "motion/react";
+import { useAIPanel } from "@/components/ai-panel";
+import { PetalMark } from "@/components/petal-mark";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -35,6 +37,7 @@ import {
   FolderIcon,
   GaugeIcon,
   GraduationCapIcon,
+  HomeIcon,
   ImagesIcon,
   KeyIcon,
   MailIcon,
@@ -93,7 +96,7 @@ export const navItems: NavGroup[] = [
       {
         title: "Overview",
         href: "/dashboard/default",
-        icon: GaugeIcon
+        icon: HomeIcon
       },
       {
         title: "Clients",
@@ -408,17 +411,66 @@ export const _originalNavItems: NavGroup[] = [
   }
 ];
 
+/**
+ * Ask Petal sidebar entry — opens the AI panel in fullscreen mode.
+ *
+ * Replaces the old top-right "Ask Petal" button in the header. Uses the same
+ * AIPanelContext, but always opens the panel in its fullscreen layout (centered
+ * input, full-width chat). Active highlight binds to `isOpen && isFullPage`
+ * rather than the URL pathname, because the panel is an overlay, not a route.
+ */
+function AskPetalMenuItem() {
+  const { isOpen, isFullPage, openFullScreen, close } = useAIPanel();
+  const active = isOpen && isFullPage;
+
+  return (
+    <SidebarMenuItem>
+      <div className="relative">
+        {active && (
+          <motion.span
+            layoutId="active-sidebar-item"
+            className="absolute inset-0 rounded-md bg-[#e8e4dc]/70"
+            transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.9 }}
+          />
+        )}
+        <SidebarMenuButton
+          className={cn(
+            "relative z-10 hover:bg-[#e8e4dc]/50 text-foreground/70 [&>svg]:text-foreground/70",
+            active ? "font-medium" : ""
+          )}
+          isActive={false}
+          tooltip="Ask Petal"
+          onClick={() => (active ? close() : openFullScreen())}
+        >
+          <PetalMark />
+          <span className="ml-0.5">Ask Petal</span>
+        </SidebarMenuButton>
+      </div>
+    </SidebarMenuItem>
+  );
+}
+
 export function NavMain() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
+  // Close Ask Petal synchronously when the user clicks a sidebar entry, so
+  // the slide-out animation plays in sync with the page navigation rather
+  // than racing it. Avoids the "navigation gets stuck, need to click twice"
+  // bug where the panel was still covering the route transition.
+  const { isOpen: aiOpen, close: closeAI } = useAIPanel();
+  const handleNavClick = () => {
+    if (aiOpen) closeAI();
+  };
 
   return (
     <>
-      {navItems.map((nav) => (
+      {navItems.map((nav, navIndex) => (
         <SidebarGroup key={nav.title}>
           {nav.title && <SidebarGroupLabel>{nav.title}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">
             <LayoutGroup><SidebarMenu>
+              {/* Ask Petal — only in the first nav group, at the very top */}
+              {navIndex === 0 && <AskPetalMenuItem />}
               {nav.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {Array.isArray(item.items) && item.items.length > 0 ? (
@@ -467,6 +519,7 @@ export function NavMain() {
                                 <SidebarMenuSubButton
                                   className="hover:text-foreground active:text-foreground hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/10"
                                   isActive={pathname === subItem.href}
+                                  onClick={handleNavClick}
                                   asChild>
                                   <Link href={subItem.href} target={subItem.newTab ? "_blank" : ""}>
                                     <span>{subItem.title}</span>
@@ -496,6 +549,7 @@ export function NavMain() {
                         )}
                         isActive={false}
                         tooltip={item.title}
+                        onClick={handleNavClick}
                         asChild>
                         <Link href={item.href} target={item.newTab ? "_blank" : ""}>
                           {item.icon && <item.icon />}
