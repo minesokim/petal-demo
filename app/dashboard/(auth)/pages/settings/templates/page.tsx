@@ -9,6 +9,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Plus, X, Eye, FileText, Pencil, Check, Download } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast-notification";
+import { useSession } from "@/lib/session-context";
+import { getFirmOwner, memberSignatureLine } from "@/lib/firm-mock-data";
 
 interface ChecklistTemplate {
   tier: string;
@@ -35,12 +37,16 @@ const legalDocs: LegalDoc[] = [
 ];
 
 // ── Document content matching portal text ──
+// All three templates show firm-wide letterhead = the firm owner + firm name,
+// regardless of which member is logged in. (These are legal documents.)
 function EngagementLetterContent() {
+  const { firm } = useSession();
+  const ownerSig = memberSignatureLine(getFirmOwner());
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
-        <h1 className="font-display text-lg tracking-tight">Vazant Tax Consulting</h1>
-        <p className="text-[10px] text-muted-foreground">Antonio Vazquez, EA · Montclair, CA 91763</p>
+        <h1 className="font-display text-lg tracking-tight">{firm.name}</h1>
+        <p className="text-[10px] text-muted-foreground">{ownerSig} · Montclair, CA 91763</p>
       </div>
       <Separator />
       <h2 className="text-sm font-semibold">Engagement Letter — Tax Preparation Services</h2>
@@ -58,7 +64,7 @@ function EngagementLetterContent() {
         </div>
         <div>
           <div className="border-b border-foreground/20 pb-1 mb-1"><span className="text-xs text-muted-foreground">Preparer Signature</span></div>
-          <p className="text-xs text-muted-foreground">Antonio Vazquez, EA</p>
+          <p className="text-xs text-muted-foreground">{ownerSig}</p>
           <p className="text-xs text-muted-foreground">Date: _______________</p>
         </div>
       </div>
@@ -67,6 +73,8 @@ function EngagementLetterContent() {
 }
 
 function ConsentFormContent() {
+  const { firm } = useSession();
+  const ownerSig = memberSignatureLine(getFirmOwner());
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
@@ -76,7 +84,7 @@ function ConsentFormContent() {
       <Separator />
       <p className="text-xs text-foreground/80 leading-relaxed">Federal law requires this consent form be provided to you. Unless authorized by law, we cannot disclose your tax return information to third parties for purposes other than the preparation and filing of your tax return without your consent.</p>
       <p className="text-xs text-foreground/80 leading-relaxed">You are not required to complete this form. If you choose not to complete this form, it will not affect our ability to prepare your tax return.</p>
-      <p className="text-xs text-foreground/80 leading-relaxed"><strong>I, [Client Name],</strong> hereby authorize Antonio Vazquez, EA (Vazant Tax Consulting) to disclose my tax return information as necessary for the purpose of tax return preparation and related tax advisory services for the 2025 tax year.</p>
+      <p className="text-xs text-foreground/80 leading-relaxed"><strong>I, [Client Name],</strong> hereby authorize {ownerSig} ({firm.name}) to disclose my tax return information as necessary for the purpose of tax return preparation and related tax advisory services for the 2025 tax year.</p>
       <p className="text-xs text-foreground/80 leading-relaxed">This consent is valid for one year from the date signed below and may be revoked at any time by notifying the tax preparer in writing.</p>
       <Separator />
       <div>
@@ -89,10 +97,11 @@ function ConsentFormContent() {
 }
 
 function PrivacyPolicyContent() {
+  const { firm } = useSession();
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
-        <h1 className="font-display text-lg tracking-tight">Vazant Tax Consulting</h1>
+        <h1 className="font-display text-lg tracking-tight">{firm.name}</h1>
         <h2 className="text-sm font-semibold">Privacy Policy</h2>
       </div>
       <Separator />
@@ -102,7 +111,7 @@ function PrivacyPolicyContent() {
       <p className="text-xs text-foreground/80 leading-relaxed"><strong>Data Retention:</strong> We retain your tax records for a minimum of 7 years as required by IRS regulations. After this period, records are securely destroyed.</p>
       <p className="text-xs text-foreground/80 leading-relaxed"><strong>Your Rights:</strong> You have the right to access, correct, or request deletion of your personal information at any time by contacting us directly.</p>
       <Separator />
-      <p className="text-[10px] text-muted-foreground">Last updated: January 10, 2026 · Vazant Tax Consulting · Montclair, CA</p>
+      <p className="text-[10px] text-muted-foreground">Last updated: January 10, 2026 · {firm.name} · Montclair, CA</p>
     </div>
   );
 }

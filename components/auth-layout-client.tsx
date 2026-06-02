@@ -3,6 +3,7 @@
 import React from "react";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/layout/header";
+import { PetalCommandPalette } from "@/components/petal-command-palette";
 import { AIPanel, useAIPanel, useAIPanelAsk } from "@/components/ai-panel";
 import { ToastProvider } from "@/components/ui/toast-notification";
 
@@ -29,10 +30,13 @@ function MainContent({ children }: { children: React.ReactNode }) {
 
 export function AuthLayoutClient({ children }: { children: React.ReactNode }) {
   // AIPanelProvider is hoisted to (auth)/layout.tsx so it also wraps the sidebar.
+  // SessionProvider is also hoisted to (auth)/layout.tsx so the sidebar nav-user
+  // can read it.
   return (
     <ToastProvider>
       <MainContent>{children}</MainContent>
       <AIPanel />
+      <PetalCommandPalette />
     </ToastProvider>
   );
 }

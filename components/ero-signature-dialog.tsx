@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Loader2, FileText, DollarSign, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type Client, stageLabels } from "@/lib/mock-data";
+import { useSession, useCanPerform } from "@/lib/session-context";
 
 type SignState = "review" | "signing" | "signed";
 
@@ -24,6 +25,15 @@ interface EroSignatureDialogProps {
 export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: EroSignatureDialogProps) {
   const [state, setState] = useState<SignState>("review");
   const [checked, setChecked] = useState(false);
+  // Only roles with sign_returns can countersign 8879 (owner, preparer).
+  // Other roles see a "can't sign" inline notice instead of the action button.
+  const { user } = useSession();
+  const canSign = useCanPerform("sign_returns");
+  // Per-member PTIN: each preparer signs with their own IRS-issued number.
+  // Fallback to the firm's EFIN-holder if for some reason the active user
+  // doesn't have one (shouldn't happen for signing roles, but defense-in-depth).
+  const signerName = user.credential ? `${user.fullName}, ${user.credential}` : user.fullName;
+  const signerPtin = user.ptin ?? "—";
 
   if (!client) return null;
 
@@ -105,18 +115,29 @@ export function EroSignatureDialog({ client, open, onOpenChange, onComplete }: E
               <Separator />
 
               {/* ERO confirmation */}
-              <div className="rounded-xl border p-4">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <Checkbox checked={checked} onCheckedChange={(v) => setChecked(v === true)} className="mt-0.5" />
-                  <div className="text-xs leading-relaxed text-muted-foreground">
-                    I, <span className="font-semibold text-foreground">Antonio Vazquez, EA</span> (PTIN: P01234567), confirm I have reviewed this return, verified the information is complete and accurate, and am signing as the Electronic Return Originator under IRS regulations.
+              {canSign ? (
+                <>
+                  <div className="rounded-xl border p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox checked={checked} onCheckedChange={(v) => setChecked(v === true)} className="mt-0.5" />
+                      <div className="text-xs leading-relaxed text-muted-foreground">
+                        I, <span className="font-semibold text-foreground">{signerName}</span> (PTIN: {signerPtin}), confirm I have reviewed this return, verified the information is complete and accurate, and am signing as the Electronic Return Originator under IRS regulations.
+                      </div>
+                    </label>
                   </div>
-                </label>
-              </div>
 
-              <Button className="w-full" disabled={!checked} onClick={handleSign}>
-                <Shield className="size-3.5" /> Sign & e-file
-              </Button>
+                  <Button className="w-full" disabled={!checked} onClick={handleSign}>
+                    <Shield className="size-3.5" /> Sign & e-file
+                  </Button>
+                </>
+              ) : (
+                <div className="rounded-xl border border-amber-200/70 bg-amber-50/60 p-4 text-[12.5px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
+                  <div className="font-medium">You can't sign as ERO</div>
+                  <p className="mt-0.5 text-amber-900/80 dark:text-amber-200/80">
+                    Your role doesn't include 8879 signing. Hand this off to a preparer or the firm owner to e-file.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
 

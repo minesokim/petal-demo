@@ -1,17 +1,16 @@
-import { BellIcon, ClockIcon } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import { Bell } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { notifications, type Notification } from "./data";
 
@@ -23,55 +22,68 @@ const Notifications = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="icon-sm" variant="ghost" className="relative">
-          <BellIcon />
+        <Button size="icon-sm" variant="ghost" className="relative text-foreground/80 hover:text-foreground">
+          <Bell className={cn("size-[17px]", unreadCount > 0 && "fill-current")} strokeWidth={1.75} />
           {unreadCount > 0 && (
-            <span className="bg-destructive absolute -end-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-white">{unreadCount}</span>
+            <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-background">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align={isMobile ? "center" : "end"} className="ms-4 w-80 p-0">
-        <DropdownMenuLabel className="bg-background dark:bg-muted sticky top-0 z-10 p-0">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div className="text-sm font-semibold">Notifications</div>
-            <span className="text-[10px] text-muted-foreground">{unreadCount} unread</span>
-          </div>
-        </DropdownMenuLabel>
+      <DropdownMenuContent
+        align={isMobile ? "center" : "end"}
+        sideOffset={8}
+        className="flex max-h-[min(420px,72vh)] w-[336px] flex-col overflow-hidden rounded-xl p-0 shadow-lg"
+      >
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b px-3.5 py-2">
+          <span className="text-[13px] font-semibold tracking-tight">Notifications</span>
+          {unreadCount > 0 && (
+            <button className="text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground">
+              Mark all read
+            </button>
+          )}
+        </div>
 
-        <ScrollArea className="h-[380px]">
+        {/* Scrolling list */}
+        <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto">
           {notifications.map((item: Notification) => (
-            <DropdownMenuItem
+            <button
               key={item.id}
-              className="group flex cursor-pointer items-start gap-3 rounded-none border-b px-4 py-3 focus:bg-muted/50"
+              className={cn(
+                "flex w-full gap-2.5 px-3.5 py-2 text-left transition-colors hover:bg-muted/60",
+                item.unread_message && "bg-blue-50/40 dark:bg-blue-950/10"
+              )}
             >
-              <Avatar className="size-8 shrink-0 mt-0.5">
+              <Avatar className="mt-0.5 size-7 shrink-0">
                 <AvatarImage src={item.avatar} alt={item.title} />
                 <AvatarFallback className="text-[10px]">{item.title.charAt(0)}</AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0 space-y-0.5">
-                <div className="flex items-start justify-between gap-2">
-                  <span className={`text-[13px] leading-tight ${item.unread_message ? "font-semibold" : "font-medium"}`}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className={cn("flex-1 truncate text-[13px]", item.unread_message ? "font-semibold" : "font-medium text-foreground/90")}>
                     {item.title}
                   </span>
-                  {item.unread_message && (
-                    <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
-                  )}
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/70">{item.date}</span>
+                  {item.unread_message && <span className="size-1.5 shrink-0 rounded-full bg-blue-500" />}
                 </div>
-                <p className="text-xs text-muted-foreground leading-snug">{item.desc}</p>
+                <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-muted-foreground">{item.desc}</p>
                 {item.type === "confirm" && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button size="xs">Sign as ERO</Button>
+                  <div className="mt-2">
+                    <Button size="xs" className="h-6 px-2.5 text-[11px]">Sign as ERO</Button>
                   </div>
                 )}
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 pt-0.5">
-                  <ClockIcon className="size-2.5" />
-                  {item.date}
-                </div>
               </div>
-            </DropdownMenuItem>
+            </button>
           ))}
-        </ScrollArea>
+        </div>
+
+        {/* Footer */}
+        <button className="shrink-0 border-t bg-background py-2 text-center text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground">
+          View all notifications
+        </button>
       </DropdownMenuContent>
     </DropdownMenu>
   );

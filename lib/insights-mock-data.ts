@@ -11,7 +11,7 @@ import type {
 } from "./mock-data"
 
 // ============================================================
-// INTELLIGENCE BRIEF — Senior partner morning debrief
+// INTELLIGENCE BRIEF - Senior partner morning debrief
 // ============================================================
 
 export const intelligenceBrief: IntelligenceBriefItem[] = [
@@ -104,7 +104,7 @@ export const clientInsights: Record<string, PetalInsight> = {
     content: "Tyrone has 2 of 5 docs uploaded with 18 days to deadline. He opened the reminder email on 3/22 but didn't click the upload link. He hasn't logged into the portal in 9 days. Last year he also went dark mid-season and you ended up filing an extension. His Uber 1099 and mileage log are still missing. Given the pattern, recommend a direct call rather than another automated message. If he's extending again, better to file Form 4868 now rather than last minute.",
     timestamp: "2026-03-28T06:00:00",
     supplementary: [
-      { label: "Extension Probability", value: "62%", type: "kpi", highlightColor: "amber", detail: "Same pattern as last year — went dark mid-season, ended up extending" },
+      { label: "Extension Probability", value: "62%", type: "kpi", highlightColor: "amber", detail: "Same pattern as last year - went dark mid-season, ended up extending" },
       { label: "Documents", value: "2 of 5", detail: "Missing: Uber 1099-NEC, mileage log, health insurance", type: "stat" },
       { label: "Days Inactive", value: "9 days", detail: "Last portal login March 19", type: "stat" },
     ],
@@ -158,7 +158,7 @@ export const clientInsights: Record<string, PetalInsight> = {
     clientId: "c9",
     severity: "insight",
     category: "prep_ready",
-    title: "All docs in, ready for prep — business up 18%",
+    title: "All docs in, ready for prep - business up 18%",
     content: "All 9 documents received and validated. Schedule C income is $142,000 (up 18% from $120,000 last year - business is growing). Estimated tax payments total $28,000 across 4 quarters. He wants to discuss incorporation during your 4 PM call today. Recommend prepping a simple S-Corp vs LLC comparison before the call. His return is straightforward once you decide the entity question.",
     timestamp: "2026-03-28T07:00:00",
     supplementary: [
@@ -189,7 +189,7 @@ export const clientInsights: Record<string, PetalInsight> = {
     timestamp: "2026-03-28T08:00:00",
     supplementary: [
       { label: "Penalty Risk", value: "$600/return", detail: "EITC + CTC + AOTC + HOH each require Form 8867 due diligence", type: "highlight", highlightColor: "red" },
-      { label: "Deposit Outstanding", value: "$150", detail: "10 days overdue — cannot begin preparation", type: "highlight", highlightColor: "amber" },
+      { label: "Deposit Outstanding", value: "$150", detail: "10 days overdue - cannot begin preparation", type: "highlight", highlightColor: "amber" },
     ],
     actions: [
       { id: "call-deshawn", label: "Call DeShawn", variant: "primary", action: "initiate_call" },
@@ -290,7 +290,7 @@ export const clientInsights: Record<string, PetalInsight> = {
     clientId: "c1",
     severity: "concern",
     category: "anomaly",
-    title: "3-year client, restaurant owner — 40% revenue drop needs confirmation",
+    title: "3-year client, restaurant owner - 40% revenue drop needs confirmation",
     content: "Marcus Chen has been with the firm since 2023, filing MFJ with his wife. He owns Golden Dragon LLC, a 3-location restaurant business in the Inland Empire. This year his Schedule C revenue dropped 40% from $238,000 to $142,000 because one location (Pasadena) appears to have closed in Q2. He also has a new $12,000 consulting 1099-NEC that wasn't present last year. W-2 wages dropped proportionally from $96,000 to $58,000. There's a $23,000 equipment disposal from the Riverside location that needs classification. He has a call scheduled March 30 at 2pm to cover all open items.",
     timestamp: "2026-03-28T07:30:00",
     supplementary: [
@@ -388,7 +388,7 @@ export const clientInsights: Record<string, PetalInsight> = {
     content: "Mei-Lin's Schedule C return is complete with the 20% QBI deduction applied to her consulting income. Return was sent for review 4 days ago. She logged in once since then but hasn't signed off. Her return is straightforward - $78,000 consulting income, standard deductions, health insurance premium deduction. Expected refund of $1,450. She'll also need to make quarterly estimated payments for 2026 based on her Schedule C net income.",
     timestamp: "2026-03-28T08:30:00",
     supplementary: [
-      { label: "QBI Deduction (Section 199A)", value: "$2,400", detail: "20% QBI on $48K net income — $9,600 deduction applied", type: "highlight", highlightColor: "emerald" },
+      { label: "QBI Deduction (Section 199A)", value: "$2,400", detail: "20% QBI on $48K net income - $9,600 deduction applied", type: "highlight", highlightColor: "emerald" },
       { label: "Expected Refund", value: "$1,450", type: "highlight", highlightColor: "blue" },
       { label: "2026 Quarterly Estimates", value: "$12,800 total", detail: "Schedule C net $48K + SE tax. Safe harbor (100% prior year).", type: "quarterly", quarterlyAmounts: { q1: 3200, q2: 3200, q3: 3200, q4: 3200 } },
     ],

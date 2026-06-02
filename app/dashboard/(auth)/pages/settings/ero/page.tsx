@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Check, FileSignature, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "@/lib/session-context";
 
 export default function EroSettingsPage() {
+  const { user } = useSession();
+  const defaultSignature = user.credential ? `${user.fullName}, ${user.credential}` : user.fullName;
   const [eroConfirmed, setEroConfirmed] = useState(true);
-  const [signatureName, setSignatureName] = useState("Antonio Vazquez, EA");
+  const [signatureName, setSignatureName] = useState(defaultSignature);
   const [verified, setVerified] = useState(true);
 
   return (
@@ -49,11 +52,11 @@ export default function EroSettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl border p-3">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">PTIN</div>
-              <div className="mt-1 font-mono text-sm font-semibold">P01234567</div>
+              <div className="mt-1 font-mono text-sm font-semibold">{user.ptin ?? "—"}</div>
             </div>
             <div className="rounded-xl border p-3">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">EFIN</div>
-              <div className="mt-1 font-mono text-sm font-semibold">123456</div>
+              <div className="mt-1 font-mono text-sm font-semibold">{user.efin ?? "—"}</div>
             </div>
           </div>
 

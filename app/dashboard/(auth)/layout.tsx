@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { AuthLayoutClient } from "@/components/auth-layout-client";
 import { AIPanelProvider } from "@/components/ai-panel";
+import { SessionProvider } from "@/lib/session-context";
 
 export default async function AuthLayout({
   children
@@ -29,12 +30,16 @@ export default async function AuthLayout({
             "calc(100vh - var(--header-height) - (var(--content-padding) * 2) - (var(--content-margin) * 2))"
         } as React.CSSProperties
       }>
-      {/* AIPanelProvider wraps BOTH sidebar and content so the Ask Petal entry
+      {/* SessionProvider wraps everything in the auth shell so both the sidebar
+          (NavUser) and the header (UserMenu) can read the current firm member.
+          AIPanelProvider wraps BOTH sidebar and content so the Ask Petal entry
           in the sidebar nav (NavMain → useAIPanel) can open the panel. */}
-      <AIPanelProvider>
-        <AppSidebar variant="inset" />
-        <AuthLayoutClient>{children}</AuthLayoutClient>
-      </AIPanelProvider>
+      <SessionProvider>
+        <AIPanelProvider>
+          <AppSidebar variant="inset" />
+          <AuthLayoutClient>{children}</AuthLayoutClient>
+        </AIPanelProvider>
+      </SessionProvider>
     </SidebarProvider>
   );
 }

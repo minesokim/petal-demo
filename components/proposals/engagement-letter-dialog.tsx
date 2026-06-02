@@ -10,6 +10,8 @@ import { Check, Download, Send, FileText, Pen } from "lucide-react";
 import { type Client } from "@/lib/mock-data";
 import { useToast } from "@/components/ui/toast-notification";
 import { motion } from "motion/react";
+import { getFirmOwner, memberSignatureLine } from "@/lib/firm-mock-data";
+import { useSession } from "@/lib/session-context";
 
 const filingStatusLabels: Record<string, string> = {
   single: "Single",
@@ -35,6 +37,13 @@ interface EngagementLetterDialogProps {
 export function EngagementLetterDialog({ client, open, onOpenChange }: EngagementLetterDialogProps) {
   const [sent, setSent] = useState(false);
   const { showToast } = useToast();
+  const { firm } = useSession();
+  // Engagement letters are legally binding firm documents. They show the
+  // firm owner's name on the letterhead and signature, not whichever
+  // member happened to draft/send them. (The "sender" identity gets
+  // captured in the audit trail separately.)
+  const owner = getFirmOwner();
+  const ownerSignature = memberSignatureLine(owner);
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const depositAmount = 50;
   const balanceAmount = client.feeAmount - depositAmount;
@@ -71,8 +80,8 @@ export function EngagementLetterDialog({ client, open, onOpenChange }: Engagemen
           >
             {/* Letterhead */}
             <div>
-              <h1 className="font-display text-lg tracking-tight">Vazant Tax Consulting</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Antonio Vazquez, EA · PTIN: P01234567</p>
+              <h1 className="font-display text-lg tracking-tight">{firm.name}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">{ownerSignature}{owner.ptin ? ` · PTIN: ${owner.ptin}` : ""}</p>
               <p className="text-xs text-muted-foreground">1234 Business Ave, Montclair, CA 91763</p>
             </div>
 
@@ -91,7 +100,7 @@ export function EngagementLetterDialog({ client, open, onOpenChange }: Engagemen
                 Dear {client.fullName.split(" ")[0]},
               </p>
               <p className="text-sm leading-relaxed text-foreground/80 mt-2">
-                Thank you for choosing Vazant Tax Consulting for your {new Date().getFullYear() - 1} tax preparation. This letter confirms the terms of our engagement.
+                Thank you for choosing {firm.name} for your {new Date().getFullYear() - 1} tax preparation. This letter confirms the terms of our engagement.
               </p>
             </div>
 
@@ -142,7 +151,7 @@ export function EngagementLetterDialog({ client, open, onOpenChange }: Engagemen
             <div className="rounded-lg border p-4">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">IRC Section 7216 Consent</h3>
               <p className="text-xs leading-relaxed text-foreground/70">
-                By signing below, you consent to Vazant Tax Consulting's use of your tax return information for the purpose of preparing your current year return, providing tax advisory services, and communicating with the IRS or state tax agencies on your behalf. This consent is valid for the duration of this engagement and may be revoked in writing at any time. Your information will not be shared with third parties except as required by law or with your explicit written consent.
+                By signing below, you consent to {firm.name}&apos;s use of your tax return information for the purpose of preparing your current year return, providing tax advisory services, and communicating with the IRS or state tax agencies on your behalf. This consent is valid for the duration of this engagement and may be revoked in writing at any time. Your information will not be shared with third parties except as required by law or with your explicit written consent.
               </p>
             </div>
 
@@ -159,7 +168,7 @@ export function EngagementLetterDialog({ client, open, onOpenChange }: Engagemen
                 <div className="border-b border-foreground/20 pb-1 mb-1">
                   <span className="text-xs text-muted-foreground">Preparer Signature</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Antonio Vazquez, EA</p>
+                <p className="text-xs text-muted-foreground">{ownerSignature}</p>
                 <p className="text-xs text-muted-foreground">Date: {today}</p>
               </div>
             </div>

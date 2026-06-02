@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowUp, Plus, History, Search, Copy, Share2, RefreshCw, MoreHorizontal, PanelRightClose, MessageSquare } from "lucide-react";
+import { ArrowUp, Plus, History, Search, Copy, Share2, RefreshCw, MoreHorizontal, PanelRightClose, MessageSquare, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PetalInsightCard } from "@/components/insights";
 import { getInsightForClient } from "@/lib/insights-mock-data";
 import { useToast } from "@/components/ui/toast-notification";
+import { DOC_DND_MIME, type DraggedDoc, prettyDocName } from "@/lib/dnd";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   getClientChatHistory,
@@ -131,25 +132,29 @@ function formatSessionDate(date: Date) {
 
 const SUGGESTED_QUESTIONS = [
   "What tasks are pending for this client?",
-  "What recent meetings or communications have we had?",
+  "What did we discuss in our last meeting?",
   "Draft a follow-up message",
 ];
 
 export function ClientAskPetal({
   client,
   compact = false,
+  hideInsight = false,
   onInsightAction,
   onInsightFlag,
   onMinimize,
 }: {
   client: Client;
   compact?: boolean;
+  hideInsight?: boolean;
   onInsightAction?: (action: InsightAction) => void;
   onInsightFlag?: (title: string, description: string) => void;
   onMinimize?: () => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<DraggedDoc[]>([]);
+  const [dropActive, setDropActive] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [sessionStartedAt, setSessionStartedAt] = useState<Date | null>(null);
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
@@ -157,15 +162,20 @@ export function ClientAskPetal({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
-  const insight = getInsightForClient(client.id);
+  const insight = hideInsight ? null : getInsightForClient(client.id);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
   const handleSend = (text?: string) => {
-    const msg = (text ?? input).trim();
+    const base = (text ?? input).trim();
+    const attached = attachments.length > 0
+      ? `(Context: ${attachments.map(a => prettyDocName(a.fileName)).join(", ")})`
+      : "";
+    const msg = [base, attached].filter(Boolean).join(" ");
     if (!msg) return;
+    setAttachments([]);
     const userId = `u-${Date.now()}`;
     const aiId = `a-${Date.now() + 1}`;
     if (!sessionStartedAt) setSessionStartedAt(new Date());
@@ -217,6 +227,7 @@ export function ClientAskPetal({
   const newChat = () => {
     setMessages([]);
     setInput("");
+    setAttachments([]);
     setIsTyping(false);
     setSessionStartedAt(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -236,10 +247,52 @@ export function ClientAskPetal({
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
   };
 
+  // ── Drag-and-drop: the whole panel is a drop target for document cards ──
+  const dragHasDoc = (dt: DataTransfer) =>
+    dt.types.includes(DOC_DND_MIME) || dt.types.includes("text/plain");
+
+  const handleDocDragOver = (e: React.DragEvent) => {
+    if (!dragHasDoc(e.dataTransfer)) return;
+    // Authorizing the drop REQUIRES preventDefault on every dragover event.
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!dropActive) setDropActive(true);
+  };
+
+  const handleDocDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropActive(false);
+  };
+
+  const handleDocDrop = (e: React.DragEvent) => {
+    setDropActive(false);
+    const raw = e.dataTransfer.getData(DOC_DND_MIME) || e.dataTransfer.getData("text/plain");
+    if (!raw) return;
+    e.preventDefault();
+    try {
+      const doc = JSON.parse(raw) as DraggedDoc;
+      if (!doc || !doc.id || !doc.fileName) return;
+      setAttachments(prev => (prev.some(p => p.id === doc.id) ? prev : [...prev, doc]));
+      textareaRef.current?.focus();
+    } catch { /* not a doc payload — ignore */ }
+  };
+
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
+    <div
+      className="relative flex h-full min-h-0 flex-col"
+      onDragOver={handleDocDragOver}
+      onDragLeave={handleDocDragLeave}
+      onDrop={handleDocDrop}
+    >
+      {/* Full-panel drop overlay — drop a document anywhere on Ask Petal to attach it */}
+      {dropActive && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-lg border-2 border-dashed border-emerald-500/60 bg-emerald-50/80 dark:bg-emerald-950/40">
+          <div className="flex items-center gap-2 rounded-full bg-background px-4 py-2 text-[13px] font-medium text-foreground shadow-sm">
+            <Paperclip className="size-4 text-emerald-600" /> Drop to attach as context
+          </div>
+        </div>
+      )}
       {/* Header row: greeting (only when there's an insight to show — otherwise
           the centered Ask-Petal block in the middle of the scroll area carries
           the heading on its own and the top stays clean) + action pills */}
@@ -381,7 +434,9 @@ export function ClientAskPetal({
                   Ask Petal about {client.fullName.split(" ")[0]}
                 </h2>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  Petal needs more data before insights land. Ask anything below to get started.
+                  {hideInsight
+                    ? `Ask anything about ${client.fullName.split(" ")[0]} — their documents, history, meetings, or what to do next.`
+                    : "Petal needs more data before insights land. Ask anything below to get started."}
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap justify-center gap-1.5">
@@ -552,29 +607,49 @@ export function ClientAskPetal({
 
       {/* Input bar */}
       <div className="shrink-0 pt-2">
-        <div className="relative flex items-end gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-3 transition-colors focus-within:border-foreground/30 focus-within:bg-muted/60">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={e => { setInput(e.target.value); autoGrow(e.target); }}
-            onKeyDown={e => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Ask anything about this client..."
-            rows={2}
-            className="min-h-[56px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-snug outline-none placeholder:text-muted-foreground/60"
-          />
-          <Button
-            size="icon"
-            onClick={() => handleSend()}
-            disabled={!input.trim() && !isTyping}
-            className="size-9 shrink-0 rounded-full bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600"
-          >
-            <ArrowUp className="size-4" />
-          </Button>
+        <div className="relative rounded-2xl border border-border bg-muted/40 px-4 py-3 transition-colors focus-within:border-foreground/30 focus-within:bg-muted/60">
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachments.map(a => (
+                <span key={a.id} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-[11px]">
+                  <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+                  <span className="max-w-[170px] truncate">{prettyDocName(a.fileName)}</span>
+                  <button
+                    onClick={() => setAttachments(prev => prev.filter(p => p.id !== a.id))}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    title="Remove"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => { setInput(e.target.value); autoGrow(e.target); }}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Ask anything, or drag a document here to attach..."
+              rows={2}
+              className="min-h-[56px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-snug outline-none placeholder:text-muted-foreground/60"
+            />
+            <Button
+              size="icon"
+              onClick={() => handleSend()}
+              disabled={!input.trim() && attachments.length === 0}
+              className="size-9 shrink-0 rounded-full bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600"
+            >
+              <ArrowUp className="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

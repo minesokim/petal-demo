@@ -10,6 +10,7 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { UnifiedMessage } from "@/lib/comms-mock-data";
 import type { Client } from "@/lib/mock-data";
+import { useSessionSafe } from "@/lib/session-context";
 
 interface EmailMessageProps {
   message: UnifiedMessage;
@@ -18,12 +19,6 @@ interface EmailMessageProps {
       where vertical space is at a premium vs. the full-page messages view. */
   compact?: boolean;
 }
-
-const PREPARER = {
-  name: "Antonio Vazquez",
-  email: "antonio@vazantconsulting.com",
-  avatar: "/images/avatars/antonio.jpg",
-};
 
 function formatEmailDate(timestamp: string) {
   const d = parseISO(timestamp);
@@ -41,6 +36,15 @@ export function EmailMessage({ message, client, compact = false }: EmailMessageP
   const [recipientsExpanded, setRecipientsExpanded] = useState(false);
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const { showToast } = useToast();
+
+  // Outbound sender = the active firm member; fall back to the owner if this
+  // component renders outside the session provider (isolated previews/tests).
+  const { user: sessionUser } = useSessionSafe();
+  const PREPARER = {
+    name: sessionUser.fullName,
+    email: sessionUser.email,
+    avatar: sessionUser.avatar,
+  };
 
   // Compact-mode size tokens — pulled out so the JSX stays readable.
   const sz = {

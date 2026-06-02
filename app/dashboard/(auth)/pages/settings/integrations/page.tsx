@@ -1,209 +1,249 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+/**
+ * Integrations settings — the connector grid.
+ *
+ * Shows every integration in the 2026 CPA stack grouped by category:
+ * tax prep, bookkeeping, banking, payroll, documents, e-sign, payments,
+ * spend management, calendar, communication, tax research, tax planning,
+ * IRS, state agencies, FinCEN BOI, industry POS.
+ *
+ * Connected ones show a green dot + last-sync timestamp + Configure button.
+ * Disconnected ones show a Connect CTA. Both states share the same brand-
+ * colored logo badge so the grid is scannable.
+ */
+
+import * as React from "react";
+import { Check, RefreshCw, Settings2, Unplug } from "lucide-react";
+import { formatDistanceToNowStrict, parseISO } from "date-fns";
+
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast-notification";
 import {
-  Check, Settings2, Unplug, RefreshCw, Clock, Mail
-} from "lucide-react";
+  CATEGORY_LABEL,
+  INTEGRATIONS,
+  type Integration,
+  type IntegrationCategory,
+} from "@/lib/integrations-mock-data";
 
-interface Integration {
-  id: string;
-  name: string;
-  description: string;
-  logo: string;
-  status: "connected" | "available" | "coming_soon";
-  connectedAs?: string;
-  lastSync?: string;
-  settingsUrl?: string;
-  badge?: string;
-}
-
-const allIntegrations: Integration[] = [
-  { id: "gcal", name: "Google Calendar", description: "Sync appointments and meeting links. Changes in either direction stay in sync.", logo: "/logos/google-calendar.svg", status: "connected", connectedAs: "antonio@vazantconsulting.com", lastSync: "2 min ago", settingsUrl: "https://calendar.google.com/calendar/r/settings" },
-  { id: "stripe", name: "Stripe", description: "Collect deposits, send invoices, and process payments. Webhooks auto-update client records.", logo: "/logos/stripe.svg", status: "connected", connectedAs: "vazantconsulting", lastSync: "Just now", settingsUrl: "https://dashboard.stripe.com" },
-  { id: "gmeet", name: "Google Meet", description: "Auto-generate meeting links for video appointments. Links attached to calendar events.", logo: "/logos/google-meet.svg", status: "connected", connectedAs: "Via Google Calendar", lastSync: "Auto", settingsUrl: "https://meet.google.com" },
-  { id: "gmail", name: "Gmail", description: "Sync email threads with client communications. Emails appear alongside portal messages.", logo: "/logos/gmail.svg", status: "available", badge: "New" },
-  { id: "zoom", name: "Zoom", description: "Video call links for appointments. Alternative to Google Meet for clients who prefer Zoom.", logo: "/logos/zoom.svg", status: "available" },
-  { id: "quickbooks", name: "QuickBooks Online", description: "Accounting sync. Import P&L, balance sheets, and client financials directly.", logo: "/logos/quickbooks.svg", status: "available" },
-  { id: "xero", name: "Xero", description: "Accounting sync for Xero users. Import financials and reconcile with tax prep.", logo: "/logos/xero.svg", status: "available" },
-  { id: "square", name: "Square", description: "Accept in-person payments via Square terminal. Sync transactions with client billing.", logo: "/logos/square.png", status: "available" },
-  { id: "olt", name: "OLT Tax Software", description: "Tax prep software sync. Auto-advance pipeline when returns are completed.", logo: "", status: "coming_soon" },
-  { id: "irs", name: "IRS e-file (MeF)", description: "Direct e-filing after ERO signing. Submit returns without leaving Petal.", logo: "", status: "coming_soon" },
-];
-
-function IntegrationLogo({ src, name }: { src: string; name: string }) {
-  if (src) {
-    return (
-      <Image
-        src={src}
-        alt={name}
-        width={28}
-        height={28}
-        className="size-7 object-contain"
-      />
-    );
-  }
-  // Fallback text abbreviation
-  const abbr = name.includes("OLT") ? "OLT" : name.includes("IRS") ? "IRS" : name.slice(0, 2).toUpperCase();
+/** Brand-colored logo badge — same primitive used in the SourceChip. */
+function LogoBadge({ integration, size = 40 }: { integration: Integration; size?: number }) {
   return (
-    <div className="flex size-7 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
-      {abbr}
-    </div>
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-xl font-bold leading-none"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: integration.brandColor,
+        color: integration.brandText ?? "#FFFFFF",
+        fontSize: size * 0.42,
+      }}
+    >
+      {integration.name.charAt(0).toUpperCase()}
+    </span>
   );
 }
 
+function syncedAgo(iso?: string): string | null {
+  if (!iso) return null;
+  return formatDistanceToNowStrict(parseISO(iso), { addSuffix: false });
+}
+
 export default function IntegrationsPage() {
-  const [connected, setConnected] = useState<Set<string>>(new Set(["gcal", "stripe", "gmeet"]));
-  const [connecting, setConnecting] = useState<string | null>(null);
-  const [emailSync, setEmailSync] = useState(false);
+  const { showToast } = useToast();
+  const [connected, setConnected] = React.useState<Set<string>>(
+    new Set(INTEGRATIONS.filter((i) => i.connected).map((i) => i.id))
+  );
+  const [connecting, setConnecting] = React.useState<string | null>(null);
 
   const handleConnect = (id: string) => {
     setConnecting(id);
     setTimeout(() => {
-      setConnected(prev => new Set([...prev, id]));
+      setConnected((prev) => new Set([...prev, id]));
       setConnecting(null);
-    }, 1500);
+      const name = INTEGRATIONS.find((i) => i.id === id)?.name ?? id;
+      showToast("success", "Connected", `${name} is now syncing.`);
+    }, 800);
   };
 
   const handleDisconnect = (id: string) => {
-    setConnected(prev => { const next = new Set(prev); next.delete(id); return next; });
+    setConnected((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    const name = INTEGRATIONS.find((i) => i.id === id)?.name ?? id;
+    showToast("warning", "Disconnected", `${name} sync stopped.`);
   };
 
-  const connectedIntegrations = allIntegrations.filter(i => connected.has(i.id));
-  const availableIntegrations = allIntegrations.filter(i => !connected.has(i.id) && i.status !== "coming_soon");
-  const comingSoonIntegrations = allIntegrations.filter(i => i.status === "coming_soon");
+  // Group integrations by category for the grid sections.
+  const byCategory = React.useMemo(() => {
+    const map = new Map<IntegrationCategory, Integration[]>();
+    for (const i of INTEGRATIONS) {
+      if (!map.has(i.category)) map.set(i.category, []);
+      map.get(i.category)!.push(i);
+    }
+    return Array.from(map.entries()).map(([cat, items]) => ({
+      category: cat,
+      label: CATEGORY_LABEL[cat],
+      items,
+    }));
+  }, []);
+
+  const connectedCount = connected.size;
+  const cardsProducing = INTEGRATIONS.filter((i) => connected.has(i.id) && i.produces_cards).length;
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">Integrations</h3>
-        <p className="text-sm text-muted-foreground">Connect your tools to streamline your practice.</p>
+        <p className="text-sm text-muted-foreground">
+          Petal reads from every connected tool and surfaces only the conflicts.
+        </p>
       </div>
 
-      {/* Connected */}
-      {connectedIntegrations.length > 0 && (
-        <div>
-          <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connected ({connectedIntegrations.length})</h4>
-          <div className="grid gap-3 md:grid-cols-2">
-            {connectedIntegrations.map(intg => (
-              <Card key={intg.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex items-start gap-4 p-4">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                      <IntegrationLogo src={intg.logo} name={intg.name} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{intg.name}</span>
-                        <Badge variant="outline" className="text-[9px] h-4 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
-                          <Check className="mr-0.5 size-2.5" /> Connected
-                        </Badge>
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{intg.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t bg-muted/20 px-4 py-2.5">
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                      {intg.connectedAs && <span>{intg.connectedAs}</span>}
-                      {intg.lastSync && (
-                        <span className="flex items-center gap-1"><RefreshCw className="size-2.5" /> {intg.lastSync}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {intg.settingsUrl && (
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => window.open(intg.settingsUrl, "_blank")}>
-                          <Settings2 className="size-3" /> Settings
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-muted-foreground hover:text-destructive" onClick={() => handleDisconnect(intg.id)}>
-                        <Unplug className="size-3" /> Disconnect
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Available */}
-      {availableIntegrations.length > 0 && (
-        <div>
-          <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available</h4>
-          <div className="grid gap-3 md:grid-cols-2">
-            {availableIntegrations.map(intg => (
-              <Card key={intg.id}>
-                <CardContent className="flex items-start gap-4 p-4">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                    <IntegrationLogo src={intg.logo} name={intg.name} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{intg.name}</span>
-                      {intg.badge && <Badge variant="secondary" className="text-[9px] h-4">{intg.badge}</Badge>}
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{intg.description}</p>
-                    <Button size="sm" className="mt-3 h-7 text-xs" disabled={connecting === intg.id} onClick={() => handleConnect(intg.id)}>
-                      {connecting === intg.id ? (
-                        <><RefreshCw className="size-3 animate-spin" /> Connecting...</>
-                      ) : (
-                        "Connect"
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Email Sync Beta */}
-      <Card>
-        <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
-            <Mail className="size-5 text-muted-foreground" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Email Sync</span>
-              <Badge variant="secondary" className="text-[9px] h-4">Beta</Badge>
+      {/* Stat strip */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Connected
             </div>
-            <p className="text-xs text-muted-foreground">Sync Gmail or Outlook emails with client message threads.</p>
-          </div>
-          <Switch checked={emailSync} onCheckedChange={setEmailSync} />
-        </CardContent>
-      </Card>
-
-      {/* Coming Soon */}
-      <div>
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Coming Soon</h4>
-        <div className="grid gap-3 md:grid-cols-2">
-          {comingSoonIntegrations.map(intg => (
-            <Card key={intg.id} className="opacity-50">
-              <CardContent className="flex items-start gap-4 p-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50">
-                  <IntegrationLogo src={intg.logo} name={intg.name} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{intg.name}</span>
-                    <Badge variant="outline" className="text-[9px] h-4 flex items-center gap-0.5">
-                      <Clock className="size-2.5" /> Coming soon
-                    </Badge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{intg.description}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="font-display text-xl font-semibold tabular-nums">{connectedCount}</span>
+              <span className="text-[12px] text-muted-foreground">of {INTEGRATIONS.length}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Producing triage cards
+            </div>
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="font-display text-xl font-semibold tabular-nums">{cardsProducing}</span>
+              <span className="text-[12px] text-muted-foreground">sources active</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="px-4 py-3">
+            <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Last sync
+            </div>
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className="font-display text-xl font-semibold tabular-nums">Just now</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Category grids */}
+      {byCategory.map((section) => (
+        <div key={section.category}>
+          <h4 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {section.label}
+            <span className="ml-1.5 tabular-nums text-muted-foreground/60">
+              ({section.items.filter((i) => connected.has(i.id)).length}/{section.items.length})
+            </span>
+          </h4>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {section.items.map((intg) => {
+              const isConnected = connected.has(intg.id);
+              const isConnecting = connecting === intg.id;
+              return (
+                <Card
+                  key={intg.id}
+                  className={cn(
+                    "transition-colors",
+                    isConnected ? "border-emerald-200/60 dark:border-emerald-900/40" : ""
+                  )}
+                >
+                  <CardContent className="p-3.5">
+                    <div className="flex items-start gap-3">
+                      <LogoBadge integration={intg} size={36} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-[13.5px] font-semibold">{intg.name}</span>
+                          {isConnected && (
+                            <Badge
+                              variant="outline"
+                              className="h-4 border-emerald-200 bg-emerald-50 px-1 text-[9px] font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400"
+                            >
+                              <span className="mr-0.5 size-1 rounded-full bg-emerald-500" />
+                              Live
+                            </Badge>
+                          )}
+                          {intg.produces_cards && isConnected && (
+                            <Badge
+                              variant="outline"
+                              className="h-4 border-violet-200 bg-violet-50/70 px-1 text-[9px] font-medium text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-400"
+                              title="Generates triage cards"
+                            >
+                              Cards
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">
+                          {intg.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isConnected ? (
+                      <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2.5">
+                        <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
+                          <RefreshCw className="size-2.5" />
+                          synced {syncedAgo(intg.lastSyncAt)} ago
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-6 gap-1 px-2 text-[10.5px]">
+                            <Settings2 className="size-3" />
+                            Configure
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 gap-1 px-2 text-[10.5px] text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDisconnect(intg.id)}
+                          >
+                            <Unplug className="size-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 border-t border-border/60 pt-2.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-full text-[11.5px]"
+                          disabled={isConnecting}
+                          onClick={() => handleConnect(intg.id)}
+                        >
+                          {isConnecting ? (
+                            <>
+                              <RefreshCw className="size-3 animate-spin" />
+                              Connecting…
+                            </>
+                          ) : (
+                            <>
+                              <Check className="size-3" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

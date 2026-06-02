@@ -1,5 +1,7 @@
 "use client";
 
+import { getFirmOwner, memberSignatureLine } from "@/lib/firm-mock-data";
+
 /**
  * Store for completed Form 8867 (Paid Preparer's Due Diligence Checklist)
  * submissions.
@@ -199,8 +201,11 @@ export function defaultAnswers(): Form8867Answers {
     q13: null,
     q14: null,
     q15: null,
-    preparerName: "Antonio Vazquez, EA",
-    preparerPTIN: "P01234567",
+    // Default to the firm owner's signature line + PTIN. The actual signer
+    // is recorded when the form is signed (a non-owner preparer with their
+    // own PTIN can override before submitting). This is just the seed value.
+    preparerName: memberSignatureLine(getFirmOwner()),
+    preparerPTIN: getFirmOwner().ptin ?? "",
     signatureDate: "",
   };
 }

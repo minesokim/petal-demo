@@ -7,8 +7,11 @@ export { ActivityTimeline, DetailedActivityTimeline } from "./activity-timeline"
 export {
   TrackingBadge,
   TrackingBadgeGroup,
+  AttentionChip,
+  buildAttentionItems,
   generateClientTrackingBadges,
 } from "./tracking-badge"
+export type { AttentionItem } from "./tracking-badge"
 export {
   MorningBriefing,
   CompactBriefingCard,

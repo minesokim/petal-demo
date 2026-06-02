@@ -6,6 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IssueRow } from "./issue-row";
 import { getOpenIssues, getResolvedIssues, type ClientIssue } from "@/lib/issues-mock-data";
+import {
+  addClientFlag,
+  resolveClientFlag,
+  unresolveClientFlag,
+  useClientIssuesStore,
+} from "@/lib/client-issues-store";
 import { ChevronDown, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -15,47 +21,67 @@ interface OpenItemsSectionProps {
 }
 
 export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSectionProps) {
+  // Subscribe to the runtime store so flags added from the triage page
+  // ("Flag this") appear here instantly and vice versa.
+  const { flags: runtimeFlags, resolved: runtimeResolved } = useClientIssuesStore();
+
   const initialOpen = getOpenIssues(clientId);
   const initialResolved = getResolvedIssues(clientId);
 
-  const [openItems, setOpenItems] = useState<ClientIssue[]>(initialOpen);
-  const allOpen = [...openItems, ...additionalItems];
-  const [resolvedItems, setResolvedItems] = useState<ClientIssue[]>(initialResolved);
+  // Merge mock-data + runtime-store flags for THIS client, filtering out
+  // anything resolved in-session.
+  const runtimeOpenForClient = runtimeFlags.filter(
+    (f) => f.clientId === clientId && f.status === "open" && !runtimeResolved.has(f.id)
+  );
+  const allOpen = [
+    ...initialOpen.filter((i) => !runtimeResolved.has(i.id)),
+    ...runtimeOpenForClient,
+    ...additionalItems,
+  ];
+  const allResolved = [
+    ...initialResolved,
+    // Mock-data flags resolved this session show up in resolved list with
+    // a synthesized resolution timestamp.
+    ...initialOpen
+      .filter((i) => runtimeResolved.has(i.id))
+      .map((i) => ({
+        ...i,
+        status: "resolved" as const,
+        resolvedAt: new Date().toISOString(),
+        resolvedNote: "Resolved",
+      })),
+    // Runtime flags that were resolved this session
+    ...runtimeFlags
+      .filter((f) => f.clientId === clientId && runtimeResolved.has(f.id))
+      .map((f) => ({
+        ...f,
+        status: "resolved" as const,
+        resolvedAt: new Date().toISOString(),
+        resolvedNote: "Resolved",
+      })),
+  ];
+
   const [showResolved, setShowResolved] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
-  if (allOpen.length === 0 && resolvedItems.length === 0) return null;
+  if (allOpen.length === 0 && allResolved.length === 0) return null;
 
-  const handleResolve = (id: string, note: string) => {
-    const item = openItems.find((i) => i.id === id);
-    if (!item) return;
-    setOpenItems((prev) => prev.filter((i) => i.id !== id));
-    setResolvedItems((prev) => [
-      { ...item, status: "resolved", resolvedAt: new Date().toISOString(), resolvedNote: note || "Resolved" },
-      ...prev,
-    ]);
+  const handleResolve = (id: string, _note: string) => {
+    resolveClientFlag(id);
   };
 
   const handleUnresolve = (id: string) => {
-    const item = resolvedItems.find((i) => i.id === id);
-    if (!item) return;
-    setResolvedItems((prev) => prev.filter((i) => i.id !== id));
-    setOpenItems((prev) => [...prev, { ...item, status: "open", resolvedAt: undefined, resolvedNote: undefined }]);
+    unresolveClientFlag(id);
   };
 
   const handleAdd = () => {
     if (!newTitle.trim()) return;
-    const newIssue: ClientIssue = {
-      id: `iss-new-${Date.now()}`,
+    addClientFlag({
       clientId,
       title: newTitle.trim(),
-      description: "",
       source: "manual",
-      status: "open",
-      createdAt: new Date().toISOString(),
-    };
-    setOpenItems((prev) => [...prev, newIssue]);
+    });
     setNewTitle("");
     setShowAddForm(false);
   };
@@ -145,7 +171,7 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
         )}
 
         {/* Resolved items */}
-        {resolvedItems.length > 0 && (
+        {allResolved.length > 0 && (
           <div className="mt-3 border-t border-border/30 pt-2">
             <button
               onClick={() => setShowResolved(!showResolved)}
@@ -157,7 +183,7 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
                   showResolved && "rotate-180"
                 )}
               />
-              Resolved ({resolvedItems.length})
+              Resolved ({allResolved.length})
             </button>
 
             <AnimatePresence>
@@ -170,7 +196,7 @@ export function OpenItemsSection({ clientId, additionalItems = [] }: OpenItemsSe
                   className="overflow-hidden"
                 >
                   <div className="divide-y divide-border/20">
-                    {resolvedItems.map((issue) => (
+                    {allResolved.map((issue) => (
                       <IssueRow
                         key={issue.id}
                         issue={issue}

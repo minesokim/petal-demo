@@ -10,32 +10,15 @@ import {
 } from "@/components/ui/tooltip"
 import type { TrackingBadgeData } from "@/lib/mock-data"
 
-// Clean, minimal badge design — no colored backgrounds
-// Severity communicated through subtle text color + optional dot
-const variantStyles: Record<TrackingBadgeData["variant"], {
-  text: string
-  dot: string
-}> = {
-  success: {
-    text: "text-emerald-700 dark:text-emerald-400",
-    dot: "bg-emerald-500",
-  },
-  warning: {
-    text: "text-amber-700 dark:text-amber-400",
-    dot: "bg-amber-500",
-  },
-  danger: {
-    text: "text-red-700 dark:text-red-400",
-    dot: "bg-red-500",
-  },
-  info: {
-    text: "text-foreground/70",
-    dot: "bg-blue-500",
-  },
-  neutral: {
-    text: "text-muted-foreground",
-    dot: "bg-muted-foreground/40",
-  },
+// Soft-fill chips — solid pale background, no stroke, no inner dot.
+// Severity is carried entirely by the fill color, matching the chip
+// system used across the detail surfaces.
+const variantStyles: Record<TrackingBadgeData["variant"], string> = {
+  success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
+  warning: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400",
+  danger: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400",
+  info: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
+  neutral: "bg-muted text-muted-foreground",
 }
 
 interface TrackingBadgeProps {
@@ -44,20 +27,15 @@ interface TrackingBadgeProps {
 }
 
 export function TrackingBadge({ badge, className }: TrackingBadgeProps) {
-  const styles = variantStyles[badge.variant]
-
   const badgeContent = (
     <span
       data-slot="tracking-badge"
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium",
-        "border border-border/60 bg-card",
-        "whitespace-nowrap",
-        styles.text,
+        "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap",
+        variantStyles[badge.variant],
         className
       )}
     >
-      <span className={cn("size-1.5 rounded-full shrink-0", styles.dot)} />
       {badge.label}
     </span>
   )
@@ -102,7 +80,7 @@ export function TrackingBadgeGroup({ badges, maxVisible = 4, className }: Tracki
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-card border border-border/60 text-muted-foreground cursor-help">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground cursor-help">
                 +{hiddenCount}
               </span>
             </TooltipTrigger>
@@ -117,6 +95,85 @@ export function TrackingBadgeGroup({ badges, maxVisible = 4, className }: Tracki
         </TooltipProvider>
       )}
     </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Attention chip — collapses every actionable signal (priority +
+// danger/warning tracking badges) into ONE summary chip with a count.
+// Reassuring/info badges are intentionally excluded: a header should
+// flag what needs action, not enumerate healthy status. The full list
+// is revealed on hover. Fill color = the worst severity present.
+// ────────────────────────────────────────────────────────────
+export type AttentionItem = { label: string; severity: "danger" | "warning" }
+
+export function buildAttentionItems(opts: {
+  urgency?: string
+  badges?: TrackingBadgeData[]
+}): AttentionItem[] {
+  const items: AttentionItem[] = []
+  if (opts.urgency === "urgent") items.push({ label: "Urgent", severity: "danger" })
+  else if (opts.urgency === "high") items.push({ label: "High priority", severity: "warning" })
+  for (const b of opts.badges ?? []) {
+    if (b.variant === "danger") items.push({ label: b.label, severity: "danger" })
+    else if (b.variant === "warning") items.push({ label: b.label, severity: "warning" })
+  }
+  return items
+}
+
+export function AttentionChip({
+  items,
+  size = "sm",
+  className,
+}: {
+  items: AttentionItem[]
+  size?: "sm" | "md"
+  className?: string
+}) {
+  if (items.length === 0) return null
+  const hasDanger = items.some((i) => i.severity === "danger")
+  const fill = hasDanger
+    ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+    : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400"
+  const pad = size === "md" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]"
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            data-slot="attention-chip"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full font-medium cursor-default whitespace-nowrap",
+              pad,
+              fill,
+              // leading-none AFTER pad so tailwind-merge doesn't drop it
+              // (the text-[size] in pad is treated as line-height-bearing).
+              "leading-none",
+              className
+            )}
+          >
+            Needs attention
+            <span className="tabular-nums opacity-60">· {items.length}</span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="start" className="max-w-[240px]">
+          <div className="flex flex-col gap-1.5">
+            {items.map((it, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full shrink-0",
+                    it.severity === "danger" ? "bg-red-500" : "bg-amber-500"
+                  )}
+                />
+                {it.label}
+              </div>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

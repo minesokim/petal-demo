@@ -14,16 +14,23 @@ import { ClientsTableView, type SortKey, type SortDir } from "@/components/clien
 import { ClientsPipelineView } from "@/components/clients/clients-pipeline-view";
 import type { SortMode } from "@/lib/pipeline-smart-sort";
 import { DualScrollContainer } from "@/components/ui/dual-scroll-container";
-import { SearchIcon, ArrowUpDown, Plus, ArrowRightIcon, LayoutGrid, Rows3 } from "lucide-react";
+import { SearchIcon, ArrowUpDown, Plus, LayoutGrid, Rows3 } from "lucide-react";
 import Link from "next/link";
-import { PetalMark } from "@/components/petal-mark";
 import type { Density } from "@/lib/pipeline-smart-sort";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { clients as rawClients, stageLabels, serviceTierOptions, pendingIntakeContext, type Client, type ReturnStage } from "@/lib/mock-data";
 import { applyStageOverrides, setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
+import {
+  applyAssignmentOverrides,
+  getAllAssignmentOverrides,
+  subscribeAssignmentOverrides,
+} from "@/lib/client-assignment-store";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useToast } from "@/components/ui/toast-notification";
+import { useSession } from "@/lib/session-context";
+import { UserCheck } from "lucide-react";
+import { useSyncExternalStore } from "react";
 
 const VIEW_MODE_KEY = "petal-clients-view-mode";
 
@@ -37,8 +44,23 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "fee", label: "Fee amount" },
 ];
 
+// Empty fallback for SSR — keeps server/client render parity.
+const EMPTY_ASSIGNMENT_OVERRIDES: Record<string, string | null> = {};
+
 export default function ClientsPage() {
-  const clients = applyStageOverrides(rawClients) as Client[];
+  // Subscribe to assignment-override changes so reassigning from a client
+  // popup re-renders this page (and the "Assigned to me" toggle's count).
+  // We only read the snapshot to force the subscription; the actual override
+  // application happens in applyAssignmentOverrides below.
+  useSyncExternalStore(
+    subscribeAssignmentOverrides,
+    getAllAssignmentOverrides,
+    () => EMPTY_ASSIGNMENT_OVERRIDES
+  );
+  const clients = applyAssignmentOverrides(
+    applyStageOverrides(rawClients) as Client[]
+  );
+  const { user } = useSession();
   const [search, setSearch] = useState("");
   const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [acceptedIds, setAcceptedIds] = useState<string[]>([]);
@@ -53,6 +75,16 @@ export default function ClientsPage() {
   const [pipelineDensity, setPipelineDensity] = useState<Density>("comfortable");
   const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>("all");
   const [highlightedColumn, setHighlightedColumn] = useState<string | null>(null);
+  // "Assigned to me" — narrows the visible roster to the active user's
+  // book of business. Off by default so owners see everything when they
+  // first land on the page. Petal (ai) is excluded — she's never assigned.
+  const [assignedOnly, setAssignedOnly] = useState(false);
+
+  // Auto-reset assignedOnly when switching to the AI persona — Petal has
+  // no book of business, so the toggle would zero out the list.
+  useEffect(() => {
+    if (user.role === "ai" && assignedOnly) setAssignedOnly(false);
+  }, [user.role, assignedOnly]);
 
   // Load persisted view mode on mount
   useEffect(() => {
@@ -86,12 +118,27 @@ export default function ClientsPage() {
   };
 
 
-  // Search-filtered clients (before bucket filter)
+  // Search-filtered clients (before bucket filter).
+  // Also applies the "Assigned to me" toggle so bucket/pipeline counts
+  // shrink with the visible roster — counts always reflect what's on screen.
   const searchFiltered = clients.filter((c) => {
     if (search && !c.fullName.toLowerCase().includes(search.toLowerCase())) return false;
     if (declinedIds.includes(c.id)) return false;
+    if (assignedOnly && c.assignedTo !== user.id) return false;
     return true;
   });
+
+  // Count of clients assigned to the current user — drives the toggle label
+  // ("Assigned to me · 7") and lets us hide the toggle for the AI persona.
+  const myCount = useMemo(
+    () =>
+      clients.filter(
+        (c) =>
+          c.assignedTo === user.id &&
+          !declinedIds.includes(c.id)
+      ).length,
+    [clients, user.id, declinedIds]
+  );
 
   // Map clients to workflow buckets matching Overview terminology
   const getBucket = (c: Client): BucketFilter => {
@@ -136,6 +183,20 @@ export default function ClientsPage() {
     if (activeFilter === "all") return searchFiltered;
     return searchFiltered.filter((c) => getBucket(c) === activeFilter);
   }, [searchFiltered, activeFilter, acceptedIds]);
+
+  // Table view now uses the same stage-based pills as pipeline, so filter the
+  // table roster by pipeline stage (same mapping the pipeline counts use:
+  // ready_to_prep folds into in_preparation; pending is its own bucket).
+  const tableFiltered = useMemo(() => {
+    if (pipelineFilter === "all") return searchFiltered;
+    return searchFiltered.filter((c) => {
+      const isPending = c.clientStatus === "pending" && !acceptedIds.includes(c.id);
+      if (pipelineFilter === "pending") return isPending;
+      if (isPending) return false;
+      const stage = c.returnStage === "ready_to_prep" ? "in_preparation" : c.returnStage;
+      return stage === pipelineFilter;
+    });
+  }, [searchFiltered, pipelineFilter, acceptedIds]);
 
   // Subtitle counts
   const totalCount = clients.filter(c => c.clientStatus !== "declined" && !declinedIds.includes(c.id)).length;
@@ -212,31 +273,6 @@ export default function ClientsPage() {
         </Button>
       </div>
 
-      {/* ── Petal AI banner — surfaces pending review queue ── */}
-      {pendingCount > 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            setPipelineFilter("pending");
-            setActiveFilter("pending");
-          }}
-          className="group flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/30"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-foreground/[0.05]">
-              <PetalMark className="size-4 text-foreground/70" />
-            </span>
-            <div className="text-[13px]">
-              <span className="font-medium">Petal found {pendingCount} client {pendingCount === 1 ? "file" : "files"} requiring partner review</span>
-              <div className="text-muted-foreground text-[12px]">Review these clients before today&apos;s calls.</div>
-            </div>
-          </div>
-          <span className="flex items-center gap-1 text-[12px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-            Open review queue <ArrowRightIcon className="size-3" />
-          </span>
-        </button>
-      )}
-
       {/* Search + View Toggle + Sort (table only) */}
       <div className="flex items-center justify-between gap-3">
         <div className="relative max-w-md flex-1">
@@ -244,6 +280,7 @@ export default function ClientsPage() {
           <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-white" />
         </div>
         <div className="flex items-center gap-2">
+          <ViewModeToggle value={viewMode} onChange={handleViewModeChange} />
           {/* Sort dropdown — different options per view mode, same position */}
           {viewMode === "table" ? (
             <DropdownMenu>
@@ -302,55 +339,72 @@ export default function ClientsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <ViewModeToggle value={viewMode} onChange={handleViewModeChange} />
         </div>
       </div>
 
-      {/* Filter pills + (pipeline only) density toggle on the right of the same row */}
-      <div className="flex items-center justify-between gap-3">
-        {viewMode === "pipeline" ? (
-          <PipelineFilterPills
-            value={pipelineFilter}
-            onChange={setPipelineFilter}
-            counts={pipelineCounts}
-          />
-        ) : (
-          <ClientsFilterPills
-            value={activeFilter}
-            onChange={setActiveFilter}
-            counts={bucketCounts}
-          />
-        )}
-        {viewMode === "pipeline" && (
-          <div className="flex shrink-0 items-center rounded-md border bg-card p-0.5">
-            <button
-              onClick={() => setPipelineDensity("comfortable")}
-              title="Comfortable"
-              className={cn(
-                "flex size-7 items-center justify-center rounded transition-colors",
-                pipelineDensity === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <LayoutGrid className="size-3.5" />
-            </button>
-            <button
-              onClick={() => setPipelineDensity("compact")}
-              title="Compact"
-              className={cn(
-                "flex size-7 items-center justify-center rounded transition-colors",
-                pipelineDensity === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Rows3 className="size-3.5" />
-            </button>
-          </div>
-        )}
+      {/* Stage bar — stage-based filter pills (shared by table + pipeline) */}
+      <div className="flex min-w-0 items-center gap-2">
+        <PipelineFilterPills
+          value={pipelineFilter}
+          onChange={setPipelineFilter}
+          counts={pipelineCounts}
+        />
       </div>
+
+      {/* Density toggle + Assigned-to-me — left-aligned, below the stage bar */}
+      {(viewMode === "pipeline" || (user.role !== "ai" && myCount > 0)) && (
+        <div className="flex items-center gap-2">
+          {/* Card density — pipeline only (compact vs comfortable cards) */}
+          {viewMode === "pipeline" && (
+            <div className="flex shrink-0 items-center rounded-md border bg-card p-0.5">
+              <button
+                onClick={() => setPipelineDensity("comfortable")}
+                title="Comfortable"
+                className={cn(
+                  "flex size-7 items-center justify-center rounded transition-colors",
+                  pipelineDensity === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LayoutGrid className="size-3.5" />
+              </button>
+              <button
+                onClick={() => setPipelineDensity("compact")}
+                title="Compact"
+                className={cn(
+                  "flex size-7 items-center justify-center rounded transition-colors",
+                  pipelineDensity === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Rows3 className="size-3.5" />
+              </button>
+            </div>
+          )}
+          {/* Assigned-to-me toggle — hidden for the AI persona (Petal has no
+              direct assignments) and for users with zero assigned clients. */}
+          {user.role !== "ai" && myCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setAssignedOnly((v) => !v)}
+              className={cn(
+                "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors",
+                assignedOnly
+                  ? "border-foreground/15 bg-foreground/[0.06] text-foreground"
+                  : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+              )}
+              title={`Show only clients assigned to ${user.shortName}`}
+            >
+              <UserCheck className="size-3.5" />
+              <span>Assigned to me</span>
+              <span className="tabular-nums text-foreground/55">{myCount}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Table View */}
       {viewMode === "table" && (
         <ClientsTableView
-          clients={filtered}
+          clients={tableFiltered}
           acceptedIds={acceptedIds}
           onAccept={handleAccept}
           onDecline={handleDecline}

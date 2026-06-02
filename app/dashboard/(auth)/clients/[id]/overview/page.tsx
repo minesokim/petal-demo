@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
+import { subscribePrepWorkspace, getPrepWorkspaceOpen, setPrepWorkspaceOpen } from "@/lib/prep-workspace-store";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,10 @@ import {
   FileText, DollarSign, Clock, Mail, Phone, Send,
   ExternalLink, Calendar, MessageSquare, Pen, CheckCircle,
   AlertTriangle, ChevronRight, Shield, Check, X,
-  TrendingDown, Calculator, Brain, Download, ClipboardList, Upload, Plus, PanelLeftOpen
+  TrendingDown, Calculator, Brain, Download, ClipboardList, Upload, Plus
 } from "lucide-react";
 import Link from "next/link";
-import { clients, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { clients, stageLabels, stageDotStyles, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { setStageOverride as setStageOverrideGlobal } from "@/lib/stage-overrides";
 import { PetalInsightCard, TrackingBadgeGroup } from "@/components/insights";
 import { getInsightForClient, getTrackingBadgesForClient } from "@/lib/insights-mock-data";
@@ -54,7 +54,7 @@ export default function ClientOverviewPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExtraction, setSelectedExtraction] = useState<DocumentExtraction | null>(null);
   const [eroOpen, setEroOpen] = useState(false);
-  const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(true);
   const [stageOverride, setStageOverride] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [sentBilling, setSentBilling] = useState<string | null>(null);
@@ -62,12 +62,15 @@ export default function ClientOverviewPage() {
   const [returnSummary, setReturnSummary] = useState("");
   const [returnPdf, setReturnPdf] = useState<File | null>(null);
   const [pdfDragOver, setPdfDragOver] = useState(false);
-  const [prepWorkspaceOpen, setPrepWorkspaceOpen] = useState(false);
   const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [flaggedItems, setFlaggedItems] = useState<Array<{ id: string; clientId: string; title: string; description: string; source: string; priority: string; createdAt: string; status: string }>>([]);
   const { showToast } = useToast();
   let askPetal = (_q: string) => {};
   try { askPetal = useAIPanelAsk(); } catch {}
+
+  // Prep Workspace open-state lives in a module store so the command-bar button
+  // opens it instantly (no route navigation when already on Overview).
+  const prepWorkspaceOpen = useSyncExternalStore(subscribePrepWorkspace, getPrepWorkspaceOpen, getPrepWorkspaceOpen);
 
   if (!client) return <div className="text-muted-foreground">Client not found</div>;
 
@@ -92,6 +95,7 @@ export default function ClientOverviewPage() {
   };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ["new_intake", "collecting_docs", "ready_to_prep", "in_preparation", "client_review", "pay_and_sign", "filed"].indexOf(currentStage);
+  const stageDotColor = (stageDotStyles as Record<string, string>)[currentStage] || "bg-blue-500";
   const ps = getClientPaymentSummary(client.id);
 
   const timelineItems: TimelineItem[] = [
@@ -160,50 +164,35 @@ export default function ClientOverviewPage() {
       <CardContent>
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
+            <div className="text-[13px] font-semibold text-foreground">Filing</div>
             <div className="text-xs font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div>
+            <div className="text-[13px] font-semibold text-foreground">Service</div>
             <div className="text-xs font-medium mt-0.5">{client.serviceTier}</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
+            <div className="text-[13px] font-semibold text-foreground">Type</div>
             <div className="text-xs font-medium mt-0.5 capitalize">{client.type}</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div>
+            <div className="text-[13px] font-semibold text-foreground">Stage</div>
             <div className="text-xs font-medium mt-0.5">{stageLabels[currentStage] || currentStage}</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div>
+            <div className="text-[13px] font-semibold text-foreground">Documents</div>
             <div className="text-xs font-medium mt-0.5 tabular-nums">{client.documentsSubmitted} / {client.documentsRequired}</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div>
+            <div className="text-[13px] font-semibold text-foreground">Deposit</div>
             <div className="text-xs font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
           </div>
         </div>
-        {/* (Notes paragraph removed — duplicated the dedicated Notes card.) */}
-      </CardContent>
-    </Card>
-  );
-
-  const contactCardJSX = (
-    <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
-      <CardContent className="space-y-2.5">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
-      </CardContent>
-    </Card>
-  );
-
-  const notesCardJSX = (
-    <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
-      <CardContent>
-        <NotesPanel client={client} />
+        {/* Contact merged in — saves a separate card. Notes live in their own tab. */}
+        <div className="mt-4 flex flex-col gap-2 border-t border-border/40 pt-3 sm:flex-row sm:items-center sm:gap-5">
+          <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -239,25 +228,12 @@ export default function ClientOverviewPage() {
           shrinking so width AND content both scale together. */}
       <aside className={`${chatMinimized ? "flex-1" : "lg:w-[380px] lg:shrink-0 [zoom:0.85]"} lg:overflow-y-auto lg:pr-1`}>
         <div className="space-y-6">
-      {/* Prep Workspace button — portaled into layout header */}
-      <PrepWorkspacePortal visible={currentStage === "in_preparation"} onOpen={() => setPrepWorkspaceOpen(true)} />
+      {/* Prep Workspace button now lives in the client command bar (layout.tsx) on
+          every section; it opens this page's modal via the prep-workspace store. */}
 
       {chatMinimized && (
-        // ────── COMPACT 2-COLUMN LAYOUT (chat hidden) ──────
+        // ────── INTEGRATED 2-COLUMN OVERVIEW (popup-style; chat lives in its own Ask Petal tab) ──────
         <>
-          <div className="sticky top-0 z-10 -mt-1 flex items-center bg-background pb-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
-              onClick={() => setChatMinimized(false)}
-              title="Show chat"
-            >
-              <PanelLeftOpen className="size-4" />
-              <span className="text-xs">Show chat</span>
-            </Button>
-          </div>
-
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
             {/* MAIN COLUMN — AI insight hero, flags, billing.
                 Action items (stage CTAs, compliance) and all metadata live in the sidebar. */}
@@ -271,7 +247,7 @@ export default function ClientOverviewPage() {
                   view simply omits the hero; the Ask-Petal welcome lives in the
                   chat-visible state (ClientAskPetal) only. */}
               {clientInsight && !stageOverride && (
-                <div className="[zoom:0.85]">
+                <div>
                   <motion.div
                     initial={{ opacity: 0, y: 12, filter: "blur(8px)" }}
                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -279,7 +255,6 @@ export default function ClientOverviewPage() {
                   >
                   <PetalInsightCard
                     insight={clientInsight}
-                    defaultExpanded
                     hideAskPetal
                     onAction={handleInsightAction}
                     onFlag={(title, description) => {
@@ -300,7 +275,7 @@ export default function ClientOverviewPage() {
                 </div>
               )}
 
-              {/* Compliance cards (Form 8867 etc.) moved to the sidebar action zone — alongside StageActionCard. */}
+              {/* Stage action + compliance now live at the top of the right rail. */}
 
               {/* Pending client */}
               {client.clientStatus === "pending" && (
@@ -363,143 +338,130 @@ export default function ClientOverviewPage() {
                 )}
               </AnimatePresence>
 
-              {/* Flags / Open items */}
+              {/* Flags / Open items — scaled down 10% to sit quieter than the action block */}
               {currentStage !== "filed" && (
-                <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+                <div className="origin-top-left [zoom:0.9]">
+                  <OpenItemsSection clientId={client.id} additionalItems={flaggedItems as any} />
+                </div>
               )}
 
-              {/* Billing — financial snapshot */}
-              <BillingCard client={client} />
-
-              {/* When there's no hero content (no insight, no stage CTA, no
-                  compliance), promote Intake Summary + Contact + Notes UP into
-                  the main column so it doesn't read as half-empty. They're
-                  removed from the sidebar in that case. */}
-              {!hasLeftContent && intakeSummaryCardJSX}
-              {!hasLeftContent && contactCardJSX}
-              {!hasLeftContent && notesCardJSX}
             </main>
 
-            {/* RIGHT SIDEBAR — sticky stack of metadata cards.
-                No self-start so the column stretches to row height for symmetric bottoms. */}
-            <aside className="space-y-4 lg:sticky lg:top-12">
-              {/* ── ACTION ITEMS — always at the top so they're never hidden ── */}
+            {/* RIGHT — actions at top, then a quiet de-carded facts rail. */}
+            <aside className="space-y-5 text-[13px] lg:sticky lg:top-12">
+              {/* Stage action (Complete Prep / Sign as ERO / Begin Prep) */}
+              {stageAction && (() => {
+                const ActionIcon = stageAction.actionIcon;
+                const status = stageAction.statusItems?.[0];
+                const StatusIcon = status?.icon;
+                return (
+                  <div className="rounded-xl border bg-card p-4">
+                    <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">Next step</div>
+                    <h2 className="text-[14px] font-semibold leading-snug">{stageAction.title}</h2>
+                    <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{stageAction.description}</p>
+                    {status && StatusIcon && (
+                      <div className={cn("mt-2.5 inline-flex items-center gap-1.5 text-[12px] font-medium", status.color)}>
+                        <StatusIcon className="size-3.5" /> {status.label}
+                      </div>
+                    )}
+                    <Button
+                      onClick={stageAction.onAction}
+                      className="mt-3 h-9 w-full gap-1.5 bg-blue-600 text-[13px] font-medium text-white hover:bg-blue-700"
+                    >
+                      <ActionIcon className="size-3.5" /> {stageAction.actionLabel}
+                    </Button>
+                  </div>
+                );
+              })()}
 
-              {/* Stage CTA: Sign & e-file / Begin Prep / Complete Prep */}
-              {stageAction && <StageActionCard {...stageAction} />}
-
-              {/* Compliance (Form 8867 due diligence etc.) — also an action item */}
+              {/* Compliance (8867 due diligence etc.) — also actions */}
               {clientCompliance.map(a => (
                 <ComplianceCard key={a.id} alert={a} onAskPetal={(q) => askPetal(q)} clientName={client.fullName} />
               ))}
 
-              {/* ── METADATA STACK ──
-                  Intake / Contact / Notes only render here when there IS hero
-                  content. Otherwise they're promoted into the main column. */}
+              {(stageAction || clientCompliance.length > 0) && <hr className="border-border/50" />}
 
-              {/* Intake Summary — stacked 2-col layout for narrow sidebar */}
-              {hasLeftContent && (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-sm">Intake Summary</CardTitle>
-                  <Link href={`/dashboard/clients/${client.id}/intake`}>
-                    <Button variant="ghost" size="sm" className="text-xs gap-1">Full <ChevronRight className="size-3" /></Button>
-                  </Link>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div>
-                      <div className="text-xs font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div>
-                      <div className="text-xs font-medium mt-0.5">{client.serviceTier}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
-                      <div className="text-xs font-medium mt-0.5 capitalize">{client.type}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div>
-                      <div className="text-xs font-medium mt-0.5">{stageLabels[currentStage] || currentStage}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Documents</div>
-                      <div className="text-xs font-medium mt-0.5 tabular-nums">{client.documentsSubmitted} / {client.documentsRequired}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div>
-                      <div className="text-xs font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div>
-                    </div>
+              {/* Billing */}
+              <section>
+                <h3 className="mb-2.5 text-[13px] font-semibold text-foreground">Billing</h3>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-medium tabular-nums">${ps.totalFee}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Paid</span><span className="font-medium tabular-nums text-emerald-600">${ps.totalPaid}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Balance due</span>
+                    {ps.fullyPaid ? <span className="font-medium text-emerald-600">Paid in full</span> : <span className="font-medium tabular-nums">${ps.totalOwed}</span>}
                   </div>
-                  {/* (Notes paragraph removed — duplicated the dedicated Notes card below.) */}
-                </CardContent>
-              </Card>
-              )}
+                </div>
+              </section>
 
-              {/* Documents — progress + last login */}
+              <hr className="border-border/50" />
+
+              {/* Documents */}
               {(() => {
                 const dp = client.documentsRequired > 0 ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100) : 0;
                 const lastLogin = client.lastPortalLogin
-                  ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                  ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                   : "Never";
                 return (
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
-                      <CardTitle className="text-sm">Documents</CardTitle>
-                      <Link href={`/dashboard/clients/${client.id}/documents`}>
-                        <Button variant="ghost" size="sm" className="text-xs gap-1">View <ChevronRight className="size-3" /></Button>
-                      </Link>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-sm">
-                          <span className="font-display text-xl tabular-nums">{client.documentsSubmitted}</span>
-                          <span className="text-muted-foreground"> of {client.documentsRequired}</span>
-                        </span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{dp}%</span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div className={`h-full transition-all ${dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500"}`} style={{ width: `${dp}%` }} />
-                      </div>
-                      <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
-                        <span className="text-muted-foreground">Last portal login</span>
-                        <span className={`tabular-nums ${client.lastPortalLogin ? "text-foreground" : "text-amber-600"}`}>{lastLogin}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <section>
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <h3 className="text-[13px] font-semibold text-foreground">Documents</h3>
+                      <Link href={`/dashboard/clients/${client.id}/documents`} className="text-[11px] text-muted-foreground hover:text-foreground">View</Link>
+                    </div>
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <span><span className="font-display text-lg tabular-nums">{client.documentsSubmitted}</span><span className="text-muted-foreground"> of {client.documentsRequired}</span></span>
+                      <span className="text-[11px] tabular-nums text-muted-foreground">{dp}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div className={cn("h-full transition-all", dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500")} style={{ width: `${dp}%` }} />
+                    </div>
+                    <div className="mt-2.5 flex justify-between text-[12px]"><span className="text-muted-foreground">Last portal login</span><span className={cn("tabular-nums", client.lastPortalLogin ? "text-foreground" : "text-amber-600")}>{lastLogin}</span></div>
+                  </section>
                 );
               })()}
 
-              {/* Return Progress — workflow timeline */}
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
-                <CardContent>
-                  <TrackingTimeline items={timelineItems} />
-                </CardContent>
-              </Card>
+              <hr className="border-border/50" />
 
-              {/* Contact — only in sidebar when hero exists; otherwise promoted to main */}
-              {hasLeftContent && (
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm">Contact</CardTitle></CardHeader>
-                <CardContent className="space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="size-3.5 shrink-0" /> <span className="truncate">{client.email}</span></div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="size-3.5 shrink-0" /> {client.phone}</div>
-                </CardContent>
-              </Card>
-              )}
+              {/* Intake */}
+              <section>
+                <div className="mb-2.5 flex items-center justify-between">
+                  <h3 className="text-[13px] font-semibold text-foreground">Intake</h3>
+                  <Link href={`/dashboard/clients/${client.id}/intake`} className="text-[11px] text-muted-foreground hover:text-foreground">Full intake</Link>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">Filing</span><span className="text-right font-medium">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{client.serviceTier}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-medium capitalize">{client.type}</span></div>
+                </div>
+                <div className="mt-2.5 space-y-1.5 border-t border-border/40 pt-2.5 text-[12px] text-muted-foreground">
+                  <div className="flex items-center gap-2"><Mail className="size-3.5 shrink-0" /><span className="truncate">{client.email}</span></div>
+                  <div className="flex items-center gap-2"><Phone className="size-3.5 shrink-0" />{client.phone}</div>
+                </div>
+              </section>
 
-              {/* Notes — only in sidebar when hero exists; otherwise promoted to main */}
-              {hasLeftContent && (
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
-                <CardContent>
-                  <NotesPanel client={client} />
-                </CardContent>
-              </Card>
-              )}
+              <hr className="border-border/50" />
+
+              {/* Progress — compact horizontal stepper (replaces the tall vertical timeline) */}
+              <section>
+                <h3 className="mb-2.5 text-[13px] font-semibold text-foreground">Progress</h3>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-1.5 flex-1 rounded-full",
+                        i === stageIndex ? stageDotColor          // present stage color
+                          : i < stageIndex ? cn(stageDotColor, "opacity-40") // same color, faded
+                          : "bg-muted",                            // future = empty track
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-between text-[12px]">
+                  <span className="font-medium text-foreground">{stageLabels[currentStage] || currentStage}</span>
+                  <span className="tabular-nums text-muted-foreground">{Math.min(stageIndex + 1, 7)} of 7</span>
+                </div>
+              </section>
             </aside>
           </div>
         </>
@@ -614,10 +576,10 @@ export default function ClientOverviewPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
-              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
-              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</div><div className="text-sm font-medium mt-0.5">{stageLabels[client.returnStage]}</div></div>
-              <div><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
+              <div><div className="text-[13px] font-semibold text-foreground">Filing</div><div className="text-sm font-medium mt-0.5">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</div></div>
+              <div><div className="text-[13px] font-semibold text-foreground">Service</div><div className="text-sm font-medium mt-0.5">{client.serviceTier}</div></div>
+              <div><div className="text-[13px] font-semibold text-foreground">Stage</div><div className="text-sm font-medium mt-0.5">{stageLabels[client.returnStage]}</div></div>
+              <div><div className="text-[13px] font-semibold text-foreground">Deposit</div><div className="text-sm font-medium mt-0.5">{client.depositPaid ? <span className="text-emerald-600">Paid</span> : <span className="text-amber-600">Pending</span>}</div></div>
             </div>
           </CardContent>
         </Card>
@@ -693,7 +655,7 @@ export default function ClientOverviewPage() {
 
             {/* Flags status */}
             <div className="rounded-lg border p-3 space-y-2">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Flags</div>
+              <div className="text-[11px] font-medium text-muted-foreground">Flags</div>
               {clientInsight && (clientInsight.severity === "high" || clientInsight.severity === "critical") ? (
                 <div className="flex items-center gap-2 text-xs text-amber-600">
                   <AlertTriangle className="size-3.5" />
@@ -822,7 +784,7 @@ export default function ClientOverviewPage() {
             </div>
 
             <div className="rounded-lg border p-3 space-y-2">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">What this does</div>
+              <div className="text-[11px] font-medium text-muted-foreground">What this does</div>
               <div className="flex items-center gap-2 text-xs">
                 <Check className="size-3.5 text-emerald-600" />
                 <span>Updates {client.fullName.split(" ")[0]}'s deadline to October 15, 2026</span>
@@ -839,7 +801,7 @@ export default function ClientOverviewPage() {
 
             {clientExtensions.length > 0 && (
               <div className="rounded-lg border p-3 space-y-2">
-                <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Why extending</div>
+                <div className="text-[11px] font-medium text-muted-foreground">Why extending</div>
                 {clientExtensions[0]!.factors.map((f, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                     <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground" />
@@ -1224,41 +1186,4 @@ function ContextualActions({ stage, clientId, onEroSign, onDownload }: { stage: 
   );
 }
 
-// Portal the Prep Workspace button into the layout header
-function PrepWorkspacePortal({ visible, onOpen }: { visible: boolean; onOpen: () => void }) {
-  const [container, setContainer] = useState<HTMLElement | null>(null);
-  const wasVisibleOnMount = useState(() => visible)[0]; // capture initial value
-
-  useEffect(() => {
-    const el = document.getElementById("client-header-actions");
-    if (el) setContainer(el);
-  }, []);
-
-  if (!container) return null;
-
-  // If already visible on mount, render without animation
-  // If it becomes visible after mount (Begin Prep clicked), animate in
-  return createPortal(
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          initial={wasVisibleOnMount ? false : { opacity: 0, scale: 0.9, width: 0 }}
-          animate={{ opacity: 1, scale: 1, width: "auto" }}
-          exit={{ opacity: 0, scale: 0.9, width: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="overflow-hidden"
-        >
-          <Button
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 h-10 text-sm whitespace-nowrap"
-            onClick={onOpen}
-          >
-            <ClipboardList className="size-4" />
-            Prep Workspace
-          </Button>
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    container
-  );
-}
 

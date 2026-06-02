@@ -1,4 +1,7 @@
+"use client";
+
 import { LogOut, Settings } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -8,30 +11,43 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { useSession } from "@/lib/session-context";
+import { memberInitials } from "@/lib/firm-mock-data";
+import { RoleBadge, UserSwitcherMenuBlock } from "@/components/user-switcher";
 
 export default function UserMenu() {
+  const { user } = useSession();
+  const initials = memberInitials(user);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src="/images/avatars/01.png" alt="Antonio Vazquez" />
-          <AvatarFallback className="rounded-lg">AV</AvatarFallback>
+          {user.avatar && <AvatarImage src={user.avatar} alt={user.fullName} />}
+          <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-56" align="end">
+      <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-64" align="end">
         <DropdownMenuLabel className="p-0">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <Avatar className="size-8">
-              <AvatarImage src="/images/avatars/01.png" alt="Antonio Vazquez" />
-              <AvatarFallback className="rounded-lg">AV</AvatarFallback>
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.fullName} />}
+              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">Antonio Vazquez</span>
-              <span className="text-muted-foreground truncate text-xs">antonio@vazantconsulting.com</span>
+            <div className="grid min-w-0 flex-1 leading-tight">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-[13px] font-semibold">{user.fullName}</span>
+                {user.credential && (
+                  <span className="shrink-0 text-[10.5px] font-medium text-muted-foreground">
+                    {user.credential}
+                  </span>
+                )}
+              </div>
+              <span className="truncate text-[11px] text-muted-foreground">{user.email}</span>
             </div>
+            <RoleBadge role={user.role} className="shrink-0" />
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -43,6 +59,7 @@ export default function UserMenu() {
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        <UserSwitcherMenuBlock />
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <LogOut />

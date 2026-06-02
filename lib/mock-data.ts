@@ -55,7 +55,10 @@ export type ActivityEventType =
   | 'invoice_sent'
   | 'note_added'
 
-export type ActivityActor = 'antonio' | 'client' | 'ai' | 'system'
+// Activity actor: keep the legacy 'antonio' literal for back-compat with
+// historical mock entries, but allow any firm member id (e.g. 'u-elena') so
+// new events can attribute to the actual member who performed them.
+export type ActivityActor = 'antonio' | 'client' | 'ai' | 'system' | (string & {})
 export type ActivityChannel = 'portal' | 'email' | 'sms' | 'voice' | 'system' | null
 
 export interface ActivityEvent {
@@ -192,6 +195,10 @@ export interface Client {
   extensionDeadline?: string
   extensionFiledDate?: string
   extensionReason?: string
+  /** Firm member id (from lib/firm-mock-data FIRM.members) who owns this
+   *  client. Drives the "Assigned to me" filter + the avatar chip on cards.
+   *  If omitted, the client is unassigned and only owners/preparers see it. */
+  assignedTo?: string
 }
 
 export interface Document {
@@ -266,30 +273,30 @@ export interface PaymentRecord {
 // CLIENTS (20+ realistic tax clients)
 // ============================================================
 export const clients: Client[] = [
-  { id: 'c1', fullName: 'Marcus Chen', email: 'marcus.chen@gmail.com', phone: '(951) 555-0142', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T14:30:00', lastPortalLogin: '2026-03-27T09:15:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Restaurant owner. Needs Schedule C + SE tax. Has 3 locations.', type: 'business', businessName: 'Golden Dragon LLC', avatar: '/images/avatars/01.png' },
-  { id: 'c2', fullName: 'Priya Sharma', email: 'priya.sharma@outlook.com', phone: '(951) 555-0198', filingStatus: 'single', returnStage: 'collecting_docs', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'high', lastActivity: '2026-03-25T11:00:00', lastPortalLogin: '2026-03-22T16:30:00', documentsSubmitted: 3, documentsRequired: 7, notes: 'TikTok creator. Multiple 1099-NECs. First year filing with us.', type: 'individual', avatar: '/images/avatars/02.png' },
-  { id: 'c3', fullName: 'James & Sofia Rodriguez', email: 'jrodriguez@yahoo.com', phone: '(909) 555-0176', filingStatus: 'mfj', returnStage: 'pay_and_sign', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T07:45:00', documentsSubmitted: 13, documentsRequired: 13, notes: 'Rental property income. 2 dependents. Been with us 3 years.', type: 'individual', avatar: '/images/avatars/03.png' },
-  { id: 'c4', fullName: 'DeShawn Williams', email: 'deshawn.w@gmail.com', phone: '(951) 555-0134', filingStatus: 'hoh', returnStage: 'collecting_docs', serviceTier: 'Basic', feeAmount: 150, depositPaid: false, urgency: 'urgent', lastActivity: '2026-03-18T09:30:00', lastPortalLogin: null, documentsSubmitted: 1, documentsRequired: 6, notes: 'New client. Head of household with 2 kids. Needs to upload W-2 still.', type: 'individual', avatar: '/images/avatars/04.png' },
-  { id: 'c5', fullName: 'Linda Nakamura', email: 'linda.n@proton.me', phone: '(626) 555-0155', filingStatus: 'single', returnStage: 'filed', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'low', lastActivity: '2026-03-15T10:00:00', lastPortalLogin: '2026-03-15T10:00:00', documentsSubmitted: 7, documentsRequired: 7, notes: 'W-2 employee + small Etsy shop. Filed and accepted.', type: 'individual', avatar: '/images/avatars/05.png' },
-  { id: 'c6', fullName: 'Roberto Fuentes', email: 'roberto@fuentestrucking.com', phone: '(909) 555-0188', filingStatus: 'mfj', returnStage: 'client_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-26T11:20:00', documentsSubmitted: 15, documentsRequired: 15, notes: 'Trucking company. 1120S + personal. Complex depreciation schedules.', type: 'business', businessName: 'Fuentes Transport Inc', avatar: '/images/avatars/06.png', returnSentDate: '2026-03-25' },
-  { id: 'c7', fullName: 'Ashley Kim', email: 'ashley.kim@icloud.com', phone: '(714) 555-0167', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: false, urgency: 'normal', lastActivity: '2026-03-26T14:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 8, notes: 'OnlyFans creator. Referred by Priya. Needs help with estimated payments.', type: 'individual', avatar: '/images/avatars/07.png' },
-  { id: 'c8', fullName: 'Thomas & Marie DuBois', email: 'tdubois@gmail.com', phone: '(951) 555-0145', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T11:30:00', lastPortalLogin: '2026-03-25T08:00:00', documentsSubmitted: 11, documentsRequired: 14, notes: 'Both W-2 + rental property. Crypto trades this year.', type: 'individual', avatar: '/images/avatars/08.png' },
-  { id: 'c9', fullName: 'Miguel Sandoval', email: 'miguel@sandovalplumbing.com', phone: '(909) 555-0199', filingStatus: 'mfj', returnStage: 'ready_to_prep', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-26T09:00:00', lastPortalLogin: '2026-03-26T08:45:00', documentsSubmitted: 9, documentsRequired: 9, notes: 'Plumbing business. Schedule C. Wants to incorporate this year.', type: 'business', businessName: 'Sandoval Plumbing', avatar: '/images/avatars/09.png' },
-  { id: 'c10', fullName: 'Karen O\'Brien', email: 'kobrien@hotmail.com', phone: '(626) 555-0178', filingStatus: 'single', returnStage: 'filed', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'low', lastActivity: '2026-03-10T14:30:00', lastPortalLogin: '2026-03-10T14:30:00', documentsSubmitted: 4, documentsRequired: 4, notes: 'Simple W-2 return. Filed and accepted. Returning client.', type: 'individual', avatar: '/images/avatars/10.png' },
-  { id: 'c11', fullName: 'David Park', email: 'dpark@parkdental.com', phone: '(714) 555-0123', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'high', lastActivity: '2026-03-28T07:00:00', lastPortalLogin: '2026-03-27T20:00:00', documentsSubmitted: 18, documentsRequired: 20, notes: 'Dental practice S-Corp. Multiple employees. Payroll complexity.', type: 'business', businessName: 'Park Family Dental', avatar: '/images/avatars/11.png' },
-  { id: 'c12', fullName: 'Jasmine Torres', email: 'jas.torres@gmail.com', phone: '(951) 555-0156', filingStatus: 'hoh', returnStage: 'collecting_docs', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-24T13:00:00', lastPortalLogin: '2026-03-24T13:00:00', documentsSubmitted: 4, documentsRequired: 8, notes: 'Freelance graphic designer. 1 dependent. Multiple 1099s.', type: 'individual', avatar: '/images/avatars/12.png' },
-  { id: 'c13', fullName: 'Vladimir Petrov', email: 'vlad@petrovimports.com', phone: '(909) 555-0134', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Premium', feeAmount: 500, depositPaid: false, urgency: 'urgent', lastActivity: '2026-03-20T10:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 16, notes: 'Import/export business. Needs extension likely. Complex international.', type: 'business', businessName: 'Petrov Imports LLC', avatar: '/images/avatars/01.png' },
-  { id: 'c14', fullName: 'Aisha Johnson', email: 'aisha.j@outlook.com', phone: '(626) 555-0189', filingStatus: 'single', returnStage: 'pay_and_sign', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T09:00:00', lastPortalLogin: '2026-03-28T08:30:00', documentsSubmitted: 6, documentsRequired: 6, notes: 'Nurse. W-2 + side hustle selling scrubs online.', type: 'individual', avatar: '/images/avatars/02.png' },
-  { id: 'c15', fullName: 'Carlos & Elena Mendez', email: 'cmendez@mendezauto.com', phone: '(951) 555-0177', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T15:00:00', lastPortalLogin: '2026-03-26T19:00:00', documentsSubmitted: 13, documentsRequired: 14, notes: 'Auto repair shop. 1065 partnership. 4 dependents.', type: 'business', businessName: 'Mendez Auto Repair', avatar: '/images/avatars/03.png' },
-  { id: 'c16', fullName: 'Rachel Goldstein', email: 'rachel.g@gmail.com', phone: '(714) 555-0145', filingStatus: 'mfj', returnStage: 'filed', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'low', lastActivity: '2026-03-12T11:00:00', lastPortalLogin: '2026-03-12T11:00:00', documentsSubmitted: 8, documentsRequired: 8, notes: 'Both W-2. Simple MFJ. Returning client 4th year.', type: 'individual', avatar: '/images/avatars/04.png' },
-  { id: 'c17', fullName: 'Tyrone Mitchell', email: 'tyrone.m@gmail.com', phone: '(909) 555-0167', filingStatus: 'single', returnStage: 'collecting_docs', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'urgent', lastActivity: '2026-03-19T08:00:00', lastPortalLogin: '2026-03-19T08:00:00', documentsSubmitted: 2, documentsRequired: 5, notes: 'Uber/Lyft driver. Needs help tracking mileage. Last year extended.', type: 'individual', avatar: '/images/avatars/05.png' },
-  { id: 'c18', fullName: 'Mei-Lin Wu', email: 'meiwu@wuacupuncture.com', phone: '(626) 555-0134', filingStatus: 'single', returnStage: 'client_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T17:00:00', lastPortalLogin: '2026-03-27T12:00:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Acupuncture practice. Schedule C. Health insurance deduction.', type: 'business', businessName: 'Wu Acupuncture & Wellness', avatar: '/images/avatars/06.png', returnSentDate: '2026-03-26' },
-  { id: 'c19', fullName: 'Anthony Russo', email: 'arusso@gmail.com', phone: '(951) 555-0198', filingStatus: 'mfj', returnStage: 'ready_to_prep', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-25T14:00:00', lastPortalLogin: '2026-03-25T14:00:00', documentsSubmitted: 9, documentsRequired: 9, notes: 'W-2 + investment income. Large stock sales this year. Needs cap gains calc.', type: 'individual', avatar: '/images/avatars/07.png' },
-  { id: 'c20', fullName: 'Fatima Al-Hassan', email: 'fatima@eleganthenna.com', phone: '(714) 555-0189', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: false, urgency: 'normal', lastActivity: '2026-03-27T10:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 7, notes: 'Henna artist. Cash business. New client referral from Elena Mendez.', type: 'business', businessName: 'Elegant Henna Art', avatar: '/images/avatars/08.png' },
+  { id: 'c1', fullName: 'Marcus Chen', email: 'marcus.chen@gmail.com', phone: '(951) 555-0142', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T14:30:00', lastPortalLogin: '2026-03-27T09:15:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Restaurant owner. Needs Schedule C + SE tax. Has 3 locations.', type: 'business', businessName: 'Golden Dragon LLC', avatar: '/images/avatars/01.png', assignedTo: 'u-antonio' },
+  { id: 'c2', fullName: 'Priya Sharma', email: 'priya.sharma@outlook.com', phone: '(951) 555-0198', filingStatus: 'single', returnStage: 'collecting_docs', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'high', lastActivity: '2026-03-25T11:00:00', lastPortalLogin: '2026-03-22T16:30:00', documentsSubmitted: 3, documentsRequired: 7, notes: 'TikTok creator. Multiple 1099-NECs. First year filing with us.', type: 'individual', avatar: '/images/avatars/02.png', assignedTo: 'u-elena' },
+  { id: 'c3', fullName: 'James & Sofia Rodriguez', email: 'jrodriguez@yahoo.com', phone: '(909) 555-0176', filingStatus: 'mfj', returnStage: 'pay_and_sign', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T07:45:00', documentsSubmitted: 13, documentsRequired: 13, notes: 'Rental property income. 2 dependents. Been with us 3 years.', type: 'individual', avatar: '/images/avatars/03.png', assignedTo: 'u-antonio' },
+  { id: 'c4', fullName: 'DeShawn Williams', email: 'deshawn.w@gmail.com', phone: '(951) 555-0134', filingStatus: 'hoh', returnStage: 'collecting_docs', serviceTier: 'Basic', feeAmount: 150, depositPaid: false, urgency: 'urgent', lastActivity: '2026-03-18T09:30:00', lastPortalLogin: null, documentsSubmitted: 1, documentsRequired: 6, notes: 'New client. Head of household with 2 kids. Needs to upload W-2 still.', type: 'individual', avatar: '/images/avatars/04.png', assignedTo: 'u-james' },
+  { id: 'c5', fullName: 'Linda Nakamura', email: 'linda.n@proton.me', phone: '(626) 555-0155', filingStatus: 'single', returnStage: 'filed', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'low', lastActivity: '2026-03-15T10:00:00', lastPortalLogin: '2026-03-15T10:00:00', documentsSubmitted: 7, documentsRequired: 7, notes: 'W-2 employee + small Etsy shop. Filed and accepted.', type: 'individual', avatar: '/images/avatars/05.png', assignedTo: 'u-james' },
+  { id: 'c6', fullName: 'Roberto Fuentes', email: 'roberto@fuentestrucking.com', phone: '(909) 555-0188', filingStatus: 'mfj', returnStage: 'client_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-26T11:20:00', documentsSubmitted: 15, documentsRequired: 15, notes: 'Trucking company. 1120S + personal. Complex depreciation schedules.', type: 'business', businessName: 'Fuentes Transport Inc', avatar: '/images/avatars/06.png', returnSentDate: '2026-03-25', assignedTo: 'u-antonio' },
+  { id: 'c7', fullName: 'Ashley Kim', email: 'ashley.kim@icloud.com', phone: '(714) 555-0167', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: false, urgency: 'normal', lastActivity: '2026-03-26T14:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 8, notes: 'OnlyFans creator. Referred by Priya. Needs help with estimated payments.', type: 'individual', avatar: '/images/avatars/07.png', assignedTo: 'u-maria' },
+  { id: 'c8', fullName: 'Thomas & Marie DuBois', email: 'tdubois@gmail.com', phone: '(951) 555-0145', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T11:30:00', lastPortalLogin: '2026-03-25T08:00:00', documentsSubmitted: 11, documentsRequired: 14, notes: 'Both W-2 + rental property. Crypto trades this year.', type: 'individual', avatar: '/images/avatars/08.png', assignedTo: 'u-elena' },
+  { id: 'c9', fullName: 'Miguel Sandoval', email: 'miguel@sandovalplumbing.com', phone: '(909) 555-0199', filingStatus: 'mfj', returnStage: 'ready_to_prep', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-26T09:00:00', lastPortalLogin: '2026-03-26T08:45:00', documentsSubmitted: 9, documentsRequired: 9, notes: 'Plumbing business. Schedule C. Wants to incorporate this year.', type: 'business', businessName: 'Sandoval Plumbing', avatar: '/images/avatars/09.png', assignedTo: 'u-antonio' },
+  { id: 'c10', fullName: 'Karen O\'Brien', email: 'kobrien@hotmail.com', phone: '(626) 555-0178', filingStatus: 'single', returnStage: 'filed', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'low', lastActivity: '2026-03-10T14:30:00', lastPortalLogin: '2026-03-10T14:30:00', documentsSubmitted: 4, documentsRequired: 4, notes: 'Simple W-2 return. Filed and accepted. Returning client.', type: 'individual', avatar: '/images/avatars/10.png', assignedTo: 'u-james' },
+  { id: 'c11', fullName: 'David Park', email: 'dpark@parkdental.com', phone: '(714) 555-0123', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'high', lastActivity: '2026-03-28T07:00:00', lastPortalLogin: '2026-03-27T20:00:00', documentsSubmitted: 18, documentsRequired: 20, notes: 'Dental practice S-Corp. Multiple employees. Payroll complexity.', type: 'business', businessName: 'Park Family Dental', avatar: '/images/avatars/11.png', assignedTo: 'u-antonio' },
+  { id: 'c12', fullName: 'Jasmine Torres', email: 'jas.torres@gmail.com', phone: '(951) 555-0156', filingStatus: 'hoh', returnStage: 'collecting_docs', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-24T13:00:00', lastPortalLogin: '2026-03-24T13:00:00', documentsSubmitted: 4, documentsRequired: 8, notes: 'Freelance graphic designer. 1 dependent. Multiple 1099s.', type: 'individual', avatar: '/images/avatars/12.png', assignedTo: 'u-elena' },
+  { id: 'c13', fullName: 'Vladimir Petrov', email: 'vlad@petrovimports.com', phone: '(909) 555-0134', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Premium', feeAmount: 500, depositPaid: false, urgency: 'urgent', lastActivity: '2026-03-20T10:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 16, notes: 'Import/export business. Needs extension likely. Complex international.', type: 'business', businessName: 'Petrov Imports LLC', avatar: '/images/avatars/01.png', assignedTo: 'u-antonio' },
+  { id: 'c14', fullName: 'Aisha Johnson', email: 'aisha.j@outlook.com', phone: '(626) 555-0189', filingStatus: 'single', returnStage: 'pay_and_sign', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T09:00:00', lastPortalLogin: '2026-03-28T08:30:00', documentsSubmitted: 6, documentsRequired: 6, notes: 'Nurse. W-2 + side hustle selling scrubs online.', type: 'individual', avatar: '/images/avatars/02.png', assignedTo: 'u-elena' },
+  { id: 'c15', fullName: 'Carlos & Elena Mendez', email: 'cmendez@mendezauto.com', phone: '(951) 555-0177', filingStatus: 'mfj', returnStage: 'in_preparation', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T15:00:00', lastPortalLogin: '2026-03-26T19:00:00', documentsSubmitted: 13, documentsRequired: 14, notes: 'Auto repair shop. 1065 partnership. 4 dependents.', type: 'business', businessName: 'Mendez Auto Repair', avatar: '/images/avatars/03.png', assignedTo: 'u-antonio' },
+  { id: 'c16', fullName: 'Rachel Goldstein', email: 'rachel.g@gmail.com', phone: '(714) 555-0145', filingStatus: 'mfj', returnStage: 'filed', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'low', lastActivity: '2026-03-12T11:00:00', lastPortalLogin: '2026-03-12T11:00:00', documentsSubmitted: 8, documentsRequired: 8, notes: 'Both W-2. Simple MFJ. Returning client 4th year.', type: 'individual', avatar: '/images/avatars/04.png', assignedTo: 'u-james' },
+  { id: 'c17', fullName: 'Tyrone Mitchell', email: 'tyrone.m@gmail.com', phone: '(909) 555-0167', filingStatus: 'single', returnStage: 'collecting_docs', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'urgent', lastActivity: '2026-03-19T08:00:00', lastPortalLogin: '2026-03-19T08:00:00', documentsSubmitted: 2, documentsRequired: 5, notes: 'Uber/Lyft driver. Needs help tracking mileage. Last year extended.', type: 'individual', avatar: '/images/avatars/05.png', assignedTo: 'u-elena' },
+  { id: 'c18', fullName: 'Mei-Lin Wu', email: 'meiwu@wuacupuncture.com', phone: '(626) 555-0134', filingStatus: 'single', returnStage: 'client_review', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T17:00:00', lastPortalLogin: '2026-03-27T12:00:00', documentsSubmitted: 10, documentsRequired: 10, notes: 'Acupuncture practice. Schedule C. Health insurance deduction.', type: 'business', businessName: 'Wu Acupuncture & Wellness', avatar: '/images/avatars/06.png', returnSentDate: '2026-03-26', assignedTo: 'u-antonio' },
+  { id: 'c19', fullName: 'Anthony Russo', email: 'arusso@gmail.com', phone: '(951) 555-0198', filingStatus: 'mfj', returnStage: 'ready_to_prep', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-25T14:00:00', lastPortalLogin: '2026-03-25T14:00:00', documentsSubmitted: 9, documentsRequired: 9, notes: 'W-2 + investment income. Large stock sales this year. Needs cap gains calc.', type: 'individual', avatar: '/images/avatars/07.png', assignedTo: 'u-elena' },
+  { id: 'c20', fullName: 'Fatima Al-Hassan', email: 'fatima@eleganthenna.com', phone: '(714) 555-0189', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: false, urgency: 'normal', lastActivity: '2026-03-27T10:00:00', lastPortalLogin: null, documentsSubmitted: 0, documentsRequired: 7, notes: 'Henna artist. Cash business. New client referral from Elena Mendez.', type: 'business', businessName: 'Elegant Henna Art', avatar: '/images/avatars/08.png', assignedTo: 'u-maria' },
   // Pending clients - completed intake + deposit + scheduled call, awaiting Antonio's accept/decline
-  { id: 'c21', fullName: 'Sarah Mitchell', email: 'sarah.m@gmail.com', phone: '(626) 555-0201', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T10:00:00', lastPortalLogin: '2026-03-28T10:00:00', documentsSubmitted: 0, documentsRequired: 6, notes: 'Freelance photographer. Found Antonio on Nextdoor. Seems straightforward - W-2 from part-time job + 1099s from photography clients.', type: 'individual', avatar: '/images/avatars/10.png', clientStatus: 'pending', scheduledCall: '2026-03-30T10:00:00' },
-  { id: 'c22', fullName: 'Kevin & Lisa Park', email: 'kpark@gmail.com', phone: '(909) 555-0215', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-27T16:00:00', documentsSubmitted: 0, documentsRequired: 12, notes: 'Referred by David Park (brother). Owns a dry cleaning business. Multiple employees. Wants to switch from H&R Block.', type: 'business', businessName: 'Park Cleaners', avatar: '/images/avatars/09.png', clientStatus: 'pending', scheduledCall: '2026-03-29T14:00:00' },
-  { id: 'c23', fullName: 'Daniel Okafor', email: 'dan.okafor@outlook.com', phone: '(714) 555-0233', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T08:00:00', documentsSubmitted: 0, documentsRequired: 4, notes: 'Simple W-2 return. College student with part-time job. Referred by mentor network.', type: 'individual', avatar: '/images/avatars/11.png', clientStatus: 'pending', scheduledCall: '2026-03-31T11:00:00' },
+  { id: 'c21', fullName: 'Sarah Mitchell', email: 'sarah.m@gmail.com', phone: '(626) 555-0201', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Standard', feeAmount: 350, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T10:00:00', lastPortalLogin: '2026-03-28T10:00:00', documentsSubmitted: 0, documentsRequired: 6, notes: 'Freelance photographer. Found Antonio on Nextdoor. Seems straightforward - W-2 from part-time job + 1099s from photography clients.', type: 'individual', avatar: '/images/avatars/10.png', clientStatus: 'pending', scheduledCall: '2026-03-30T10:00:00', assignedTo: 'u-maria' },
+  { id: 'c22', fullName: 'Kevin & Lisa Park', email: 'kpark@gmail.com', phone: '(909) 555-0215', filingStatus: 'mfj', returnStage: 'new_intake', serviceTier: 'Premium', feeAmount: 500, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-27T16:00:00', lastPortalLogin: '2026-03-27T16:00:00', documentsSubmitted: 0, documentsRequired: 12, notes: 'Referred by David Park (brother). Owns a dry cleaning business. Multiple employees. Wants to switch from H&R Block.', type: 'business', businessName: 'Park Cleaners', avatar: '/images/avatars/09.png', clientStatus: 'pending', scheduledCall: '2026-03-29T14:00:00', assignedTo: 'u-maria' },
+  { id: 'c23', fullName: 'Daniel Okafor', email: 'dan.okafor@outlook.com', phone: '(714) 555-0233', filingStatus: 'single', returnStage: 'new_intake', serviceTier: 'Basic', feeAmount: 150, depositPaid: true, urgency: 'normal', lastActivity: '2026-03-28T08:00:00', lastPortalLogin: '2026-03-28T08:00:00', documentsSubmitted: 0, documentsRequired: 4, notes: 'Simple W-2 return. College student with part-time job. Referred by mentor network.', type: 'individual', avatar: '/images/avatars/11.png', clientStatus: 'pending', scheduledCall: '2026-03-31T11:00:00', assignedTo: 'u-maria' },
 ]
 
 // ============================================================
@@ -375,24 +382,24 @@ export const invoices: Invoice[] = [
 // Deposit = $50 standard for all tiers. Balance = feeAmount - deposit.
 // ============================================================
 export const paymentRecords: PaymentRecord[] = [
-  // Filed clients — fully paid
+  // Filed clients - fully paid
   { id: 'pr1d', clientId: 'c5', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-15' },
   { id: 'pr1b', clientId: 'c5', type: 'balance', amount: 300, status: 'paid', paidDate: '2026-03-14' },
   { id: 'pr2d', clientId: 'c10', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-20' },
   { id: 'pr2b', clientId: 'c10', type: 'balance', amount: 100, status: 'paid', paidDate: '2026-03-09' },
   { id: 'pr3d', clientId: 'c16', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-18' },
   { id: 'pr3b', clientId: 'c16', type: 'balance', amount: 300, status: 'paid', paidDate: '2026-03-12' },
-  // Pay & Sign — fully paid (payment gates 8879)
+  // Pay & Sign - fully paid (payment gates 8879)
   { id: 'pr4d', clientId: 'c3', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-15' },
   { id: 'pr4b', clientId: 'c3', type: 'balance', amount: 450, status: 'paid', paidDate: '2026-03-27' },
   { id: 'pr5d', clientId: 'c14', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-10' },
   { id: 'pr5b', clientId: 'c14', type: 'balance', amount: 300, status: 'paid', paidDate: '2026-03-27' },
-  // Client Review — deposit paid, balance invoiced
+  // Client Review - deposit paid, balance invoiced
   { id: 'pr6d', clientId: 'c6', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-20' },
   { id: 'pr6b', clientId: 'c6', type: 'balance', amount: 450, status: 'sent', sentDate: '2026-03-25', dueDate: '2026-04-01' },
   { id: 'pr7d', clientId: 'c18', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-05' },
   { id: 'pr7b', clientId: 'c18', type: 'balance', amount: 300, status: 'sent', sentDate: '2026-03-26', dueDate: '2026-04-05' },
-  // In Preparation — deposit paid, balance not yet invoiced
+  // In Preparation - deposit paid, balance not yet invoiced
   { id: 'pr8d', clientId: 'c1', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-10' },
   { id: 'pr8b', clientId: 'c1', type: 'balance', amount: 450, status: 'pending' },
   { id: 'pr9d', clientId: 'c8', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-25' },
@@ -401,7 +408,7 @@ export const paymentRecords: PaymentRecord[] = [
   { id: 'pr10b', clientId: 'c11', type: 'balance', amount: 450, status: 'pending' },
   { id: 'pr11d', clientId: 'c15', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-18' },
   { id: 'pr11b', clientId: 'c15', type: 'balance', amount: 450, status: 'pending' },
-  // Collecting Docs — deposit paid (except DeShawn)
+  // Collecting Docs - deposit paid (except DeShawn)
   { id: 'pr12d', clientId: 'c2', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-20' },
   { id: 'pr12b', clientId: 'c2', type: 'balance', amount: 300, status: 'not_applicable' },
   { id: 'pr13d', clientId: 'c4', type: 'deposit', amount: 150, status: 'overdue', sentDate: '2026-03-18', dueDate: '2026-03-20' },
@@ -410,12 +417,12 @@ export const paymentRecords: PaymentRecord[] = [
   { id: 'pr14b', clientId: 'c12', type: 'balance', amount: 300, status: 'not_applicable' },
   { id: 'pr15d', clientId: 'c17', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-15' },
   { id: 'pr15b', clientId: 'c17', type: 'balance', amount: 100, status: 'not_applicable' },
-  // Ready to Prep — deposit paid
+  // Ready to Prep - deposit paid
   { id: 'pr16d', clientId: 'c9', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-01-28' },
   { id: 'pr16b', clientId: 'c9', type: 'balance', amount: 450, status: 'not_applicable' },
   { id: 'pr17d', clientId: 'c19', type: 'deposit', amount: 50, status: 'paid', paidDate: '2026-02-10' },
   { id: 'pr17b', clientId: 'c19', type: 'balance', amount: 300, status: 'not_applicable' },
-  // New Intake — unpaid deposits for new clients
+  // New Intake - unpaid deposits for new clients
   { id: 'pr18d', clientId: 'c7', type: 'deposit', amount: 50, status: 'sent', sentDate: '2026-03-26', dueDate: '2026-04-02' },
   { id: 'pr18b', clientId: 'c7', type: 'balance', amount: 300, status: 'not_applicable' },
   { id: 'pr19d', clientId: 'c13', type: 'deposit', amount: 50, status: 'sent', sentDate: '2026-03-20', dueDate: '2026-03-27' },
@@ -478,13 +485,13 @@ export const pendingIntakeContext: Record<string, { filing: string; income: stri
 
 export const serviceTierOptions = [
   { value: "", label: "Assign service tier..." },
-  { value: "Simple Tax Return — $150", label: "Simple Tax Return — $150" },
-  { value: "Complex Return — $350", label: "Complex Return — $350" },
-  { value: "Business Tax Return — $500", label: "Business Tax Return — $500" },
-  { value: "Business Formation Basic — $500", label: "Business Formation Basic — $500" },
-  { value: "Business Formation Full — $1,000", label: "Business Formation Full — $1,000" },
-  { value: "Bookkeeping Monthly — $200", label: "Bookkeeping Monthly — $200/mo" },
-  { value: "Strategic Consultation — $250", label: "Strategic Consultation — $250" },
+  { value: "Simple Tax Return - $150", label: "Simple Tax Return - $150" },
+  { value: "Complex Return - $350", label: "Complex Return - $350" },
+  { value: "Business Tax Return - $500", label: "Business Tax Return - $500" },
+  { value: "Business Formation Basic - $500", label: "Business Formation Basic - $500" },
+  { value: "Business Formation Full - $1,000", label: "Business Formation Full - $1,000" },
+  { value: "Bookkeeping Monthly - $200", label: "Bookkeeping Monthly - $200/mo" },
+  { value: "Strategic Consultation - $250", label: "Strategic Consultation - $250" },
 ]
 
 export const stageLabels: Record<ReturnStage, string> = {
@@ -496,6 +503,35 @@ export const stageLabels: Record<ReturnStage, string> = {
   pay_and_sign: 'Pay & Sign',
   filed: 'Filed',
   extended: 'Extended',
+}
+
+// Soft-fill chip classes per stage — same hues the pipeline uses for its
+// stage dots (new_intake = baby blue, collecting = amber, prep = blue,
+// review = purple, sign = orange, filed = emerald). No stroke; the pale
+// fill + readable text carries the stage identity.
+export const stageChipStyles: Record<ReturnStage, string> = {
+  new_intake: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+  collecting_docs: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+  ready_to_prep: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300',
+  in_preparation: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+  client_review: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300',
+  pay_and_sign: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300',
+  filed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+  extended: 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300',
+}
+
+// Solid stage dot colors (same hues as the chips/pipeline) — used in dense
+// lists where a small colored dot + quiet label keeps the stage cue without
+// the visual mass of a filled pill on every row.
+export const stageDotStyles: Record<ReturnStage, string> = {
+  new_intake: 'bg-sky-500',
+  collecting_docs: 'bg-amber-500',
+  ready_to_prep: 'bg-cyan-500',
+  in_preparation: 'bg-blue-500',
+  client_review: 'bg-purple-500',
+  pay_and_sign: 'bg-orange-500',
+  filed: 'bg-emerald-500',
+  extended: 'bg-orange-500',
 }
 
 export const stageColors: Record<ReturnStage, string> = {

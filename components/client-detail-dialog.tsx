@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
-import { type Client, type ReturnStage, stageLabels, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { type Client, type ReturnStage, stageLabels, stageChipStyles, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { setStageOverride as setStageOverrideGlobal, getStageOverride } from "@/lib/stage-overrides";
 import {
   subscribePipelineStages,
@@ -26,7 +26,7 @@ import {
   feedActions, irsNotices,
   type DocumentExtraction, type FeedAction,
 } from "@/lib/actions-mock-data";
-import { PetalInsightCard, TrackingBadgeGroup } from "@/components/insights";
+import { PetalInsightCard, AttentionChip, buildAttentionItems } from "@/components/insights";
 import { UpcomingCallBanner } from "@/components/upcoming-call-banner";
 import { BillingCard } from "@/components/billing/billing-card";
 import { PrepWorkspaceModal } from "@/components/prep-workspace/prep-workspace-modal";
@@ -184,9 +184,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   // otherwise the still-partially-colored bottom-left meets the white content
   // below in a visible horizontal seam. With "to bottom right", the color
   // mainly hangs in the top-left quadrant and dissolves before the header ends.
-  const headerGradientStyle: React.CSSProperties = {
-    background: `linear-gradient(to bottom right, rgba(${stageRGB}, 0.13) 0%, transparent 35%)`,
-  };
+  // Gradient removed — header reads as a clean, flat block (no top-left wash).
+  const headerGradientStyle: React.CSSProperties = {};
 
   const currentStage = stageOverride || client.returnStage;
   const clientInsight = getInsightForClient(client.id);
@@ -262,7 +261,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   const hasLeftContent = !!clientInsight || !!stageAction || clientCompliance.length > 0;
 
   // Single JSX definition reused in either column based on hasLeftContent.
-  // Intake Summary + Contact merged into one card (popup only — full page keeps them separate).
+  // Intake Summary + Contact merged into one card (both popup and full page).
   // Notes card has its own dedicated tab — no duplicate card on the Overview tab.
   const intakeSummaryCard = (
     <Card>
@@ -312,7 +311,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none overflow-hidden p-0 flex flex-col md:h-[90vh] md:max-h-[90vh] md:max-w-5xl md:rounded-lg"
+        className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none overflow-hidden border-0 p-0 flex flex-col md:h-[90vh] md:max-h-[90vh] md:max-w-5xl md:rounded-lg"
       >
         {/* Header — single coherent block. Diagonal gradient wash in the stage
             color (top-left → bottom-right) via inline style. Subtle enough to
@@ -342,19 +341,13 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 so they line up cleanly. Plain "tier · $fee" text is centered
                 inline with the pills. */}
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="inline-flex items-center rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium leading-none text-background">
+              {/* Soft-fill stage chip (per pipeline stage) · quiet tier·fee ·
+                  one consolidated attention chip. */}
+              <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none", stageChipStyles[effectiveStage])}>
                 {stageLabels[effectiveStage]}
               </span>
               <span className="text-[11px] leading-none text-muted-foreground">{client.serviceTier} · ${client.feeAmount}</span>
-              {client.urgency === "urgent" && (
-                <span className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-[10px] font-medium leading-none text-destructive-foreground">Urgent</span>
-              )}
-              {client.urgency === "high" && (
-                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium leading-none text-foreground">High</span>
-              )}
-              {clientTrackingBadges.length > 0 && (
-                <TrackingBadgeGroup badges={clientTrackingBadges} maxVisible={4} />
-              )}
+              <AttentionChip size="md" items={buildAttentionItems({ urgency: client.urgency, badges: clientTrackingBadges })} />
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -528,7 +521,6 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                   >
                     <PetalInsightCard
                       insight={clientInsight}
-                      defaultExpanded={true}
                       onAction={handleInsightAction}
                       onSendMessage={(messageId, channel) => {
                         showToast("success", `Message sent via ${channel}`, `Draft ${messageId} delivered`);

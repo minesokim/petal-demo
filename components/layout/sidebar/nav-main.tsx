@@ -37,7 +37,13 @@ import {
   FolderIcon,
   GaugeIcon,
   GraduationCapIcon,
+  BarChart3Icon,
+  BlocksIcon,
+  BookOpenIcon,
   HomeIcon,
+  InboxIcon,
+  ShieldCheckIcon,
+  ZapIcon,
   ImagesIcon,
   KeyIcon,
   MailIcon,
@@ -99,6 +105,12 @@ export const navItems: NavGroup[] = [
         icon: HomeIcon
       },
       {
+        title: "Tasks",
+        href: "/dashboard/triage",
+        icon: InboxIcon,
+        isDataBadge: "22"
+      },
+      {
         title: "Clients",
         href: "/dashboard/clients",
         icon: UsersIcon
@@ -118,6 +130,21 @@ export const navItems: NavGroup[] = [
         title: "Documents",
         href: "/dashboard/documents",
         icon: FolderIcon
+      },
+      {
+        title: "Automations",
+        href: "/dashboard/automations",
+        icon: ZapIcon
+      },
+      {
+        title: "Positions",
+        href: "/dashboard/positions",
+        icon: BookOpenIcon
+      },
+      {
+        title: "Apps",
+        href: "/dashboard/apps",
+        icon: BlocksIcon
       },
       {
         title: "Settings",

@@ -14,6 +14,23 @@ import {
 import { PetalMark } from "@/components/petal-mark";
 import type { ActivityEvent, ActivityEventType, ActivityChannel } from "@/lib/mock-data";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { FIRM, memberInitials, type FirmMember } from "@/lib/firm-mock-data";
+
+/** Resolve the activity event's `actor` string to a firm member, if one
+ *  matches. Accepts both legacy short names ("antonio") and real member ids
+ *  ("u-antonio") so we don't break historical mock data. */
+function resolveActorMember(actor: string | undefined): FirmMember | null {
+  if (!actor) return null;
+  // 1. Direct id match (u-antonio, u-elena, ...)
+  const byId = FIRM.members.find((m) => m.id === actor);
+  if (byId) return byId;
+  // 2. Legacy short name match (case-insensitive, matches shortName field)
+  const byShort = FIRM.members.find(
+    (m) => m.shortName.toLowerCase() === actor.toLowerCase()
+  );
+  if (byShort) return byShort;
+  return null;
+}
 
 // Icon + color config for all event types
 const eventConfig: Record<string, { icon: React.ElementType; color: string }> = {
@@ -42,20 +59,36 @@ const eventConfig: Record<string, { icon: React.ElementType; color: string }> = 
   note_added: { icon: Pen, color: "text-muted-foreground" },
 };
 
-// Actor indicator
+// Actor indicator — resolves the actor string to a firm member when possible
+// (so "antonio" or "u-elena" both render their real avatar + name on hover).
 function ActorIndicator({ actor, clientAvatar, clientInitials }: {
   actor?: string;
   clientAvatar: string;
   clientInitials: string;
 }) {
-  switch (actor) {
-    case "antonio":
+  // First try to resolve as a firm member — this catches "antonio",
+  // "u-antonio", "u-elena", "u-james", "u-maria", and Petal ("u-petal").
+  const member = resolveActorMember(actor);
+  if (member) {
+    if (member.role === "ai") {
       return (
-        <Avatar className="size-6">
-          <AvatarImage src="/images/avatars/antonio.jpg" />
-          <AvatarFallback className="text-[8px]">AV</AvatarFallback>
-        </Avatar>
+        <div
+          className="flex size-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/40"
+          title={`${member.fullName} (AI)`}
+        >
+          <PetalMark className="size-3 text-violet-600" />
+        </div>
       );
+    }
+    return (
+      <Avatar className="size-6" title={`${member.fullName} (${member.role.replace("_", " ")})`}>
+        {member.avatar && <AvatarImage src={member.avatar} alt={member.fullName} />}
+        <AvatarFallback className="text-[8px]">{memberInitials(member)}</AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  switch (actor) {
     case "client":
       return (
         <Avatar className="size-6">
@@ -64,9 +97,10 @@ function ActorIndicator({ actor, clientAvatar, clientInitials }: {
         </Avatar>
       );
     case "ai":
+      // Fallback path for legacy mock data that uses bare 'ai' actor
       return (
-        <div className="flex size-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40">
-          <Brain className="size-3 text-emerald-600" />
+        <div className="flex size-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/40">
+          <PetalMark className="size-3 text-violet-600" />
         </div>
       );
     case "system":

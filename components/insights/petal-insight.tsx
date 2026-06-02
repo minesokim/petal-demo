@@ -6,6 +6,7 @@ import { ChevronRight, Flag } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { PetalMark } from "@/components/petal-mark"
 import * as RechartsPrimitive from "recharts"
 import type { PetalInsight, InsightSeverity, InsightAction, InsightSupplementary } from "@/lib/mock-data"
 import { clients } from "@/lib/mock-data"
@@ -446,7 +447,7 @@ interface PetalInsightProps {
 
 export function PetalInsightCard({
   insight,
-  defaultExpanded = true,
+  defaultExpanded = false,
   onAction,
   onSendMessage,
   onEditMessage,
@@ -454,7 +455,9 @@ export function PetalInsightCard({
   hideAskPetal = false,
   className,
 }: PetalInsightProps) {
-  const [isExpanded, setIsExpanded] = React.useState(defaultExpanded)
+  // Collapsed by default — the Petal bar is a one-line read; tap to expand the
+  // reasoning.
+  const [isExpanded, setIsExpanded] = React.useState(false)
   const [showTimeline, setShowTimeline] = React.useState(false)
 
   const dot = severityDot[insight.severity]
@@ -476,22 +479,26 @@ export function PetalInsightCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        "group/insight rounded-xl border border-border/60 bg-card transition-colors hover:border-border",
+        // ONE connected unit: bar + reasoning + draft/action share a single
+        // border with internal dividers, so it reads as a single object
+        // instead of three floating cards.
+        "overflow-hidden rounded-xl border border-border/60 bg-card transition-colors hover:border-border",
         className
       )}
     >
-      {/* Header row — dot, title, time, chevron */}
+      {/* Petal bar — a calm one-line read, on theme with the Ask Petal bar.
+          Collapsed by default; tap to reveal the reasoning (+ stat cards),
+          with Ask Petal pinned at the bottom of that expanded view. */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left"
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
       >
-        <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
-        <h3 className="flex-1 text-[16px] font-semibold leading-snug text-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
+          <PetalMark className="size-3.5 text-foreground/70" />
+        </span>
+        <span className="min-w-0 flex-1 text-[13px] leading-snug text-foreground/90">
           {insight.title}
-        </h3>
-        <time className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground/50 tabular-nums">
-          {formatRelativeTime(insight.timestamp)}
-        </time>
+        </span>
         <svg
           width={10} height={10} viewBox="0 0 10 10"
           className={cn(
@@ -503,7 +510,6 @@ export function PetalInsightCard({
         </svg>
       </button>
 
-      {/* Expandable body */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -514,89 +520,56 @@ export function PetalInsightCard({
             className="overflow-hidden"
           >
             <div className="space-y-3 border-t border-border/40 px-3.5 pt-3 pb-3.5">
-              {/* Narrative */}
-              <p className="text-[14px] leading-relaxed text-foreground/75">
+              {/* Reasoning */}
+              <p className="text-[13px] leading-relaxed text-foreground/70">
                 {highlightInsightText(insight.content, { client: clients.find(c => c.id === insight.clientId) })}
               </p>
-
-              {/* Supplementary data */}
+              {/* Stat cards (only if the insight carries them) */}
               {hasSupplementary && (
                 <SupplementaryCards items={insight.supplementary!} onFlag={onFlag} clientId={insight.clientId} />
               )}
-
-              {/* Draft message */}
-              {insight.draftMessage && (
-                <DraftMessageCard
-                  draft={insight.draftMessage}
-                  client={clients.find(c => c.id === insight.clientId)}
-                  onSend={(channel) => onSendMessage?.(insight.draftMessage!.id, channel)}
-                  onEdit={() => onEditMessage?.(insight.draftMessage!.id)}
-                />
-              )}
-
-              {/* Action buttons */}
-              {((primaryAction && !insight.draftMessage) || !hideAskPetal) && (
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  {primaryAction && !insight.draftMessage && (
-                    <Button
-                      size="sm"
-                      className="h-7 px-3 text-[11px]"
-                      onClick={() => onAction?.(primaryAction)}
-                    >
-                      {primaryAction.label}
-                    </Button>
-                  )}
-                  {!hideAskPetal && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 gap-1 px-3 text-[11px]"
-                      onClick={() => onAction?.(petalAction)}
-                    >
-                      Ask Petal
-                      <svg width={9} height={9} viewBox="0 0 12 12" className="text-muted-foreground">
-                        <path d="M3.5 2L8.5 2L8.5 7" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M8.5 2L3 7.5" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" />
-                      </svg>
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {/* Activity trail */}
-              {insight.activityTrail && insight.activityTrail.length > 0 && (
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowTimeline(!showTimeline)}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+              {/* Ask Petal — lives at the bottom of the expanded view */}
+              {!hideAskPetal && (
+                <div className="pt-0.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-3 text-[11px]"
+                    onClick={() => onAction?.(petalAction)}
                   >
-                    <svg
-                      width={8} height={8} viewBox="0 0 10 10"
-                      className={cn("transition-transform duration-150", showTimeline && "rotate-90")}
-                    >
-                      <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" fill="none" strokeWidth="1.3" strokeLinecap="round" />
+                    Ask Petal
+                    <svg width={9} height={9} viewBox="0 0 12 12" className="text-muted-foreground">
+                      <path d="M3.5 2L8.5 2L8.5 7" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8.5 2L3 7.5" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" />
                     </svg>
-                    {insight.activityTrail.length} activity event{insight.activityTrail.length === 1 ? "" : "s"}
-                  </button>
-                  <AnimatePresence>
-                    {showTimeline && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        <ActivityTimeline events={insight.activityTrail} className="mt-2" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  </Button>
                 </div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Draft message — nested borderless inside the same card, divided by a
+          rule so it reads as part of the one unit, not a separate box. */}
+      {insight.draftMessage && (
+        <DraftMessageCard
+          draft={insight.draftMessage}
+          client={clients.find(c => c.id === insight.clientId)}
+          onSend={(channel) => onSendMessage?.(insight.draftMessage!.id, channel)}
+          onEdit={() => onEditMessage?.(insight.draftMessage!.id)}
+          className="rounded-none border-0 border-t border-border/40"
+        />
+      )}
+
+      {/* Primary action when there's no draft — connected section below the bar */}
+      {primaryAction && !insight.draftMessage && (
+        <div className="border-t border-border/40 px-3.5 py-3">
+          <Button size="sm" className="h-7 px-3 text-[11px]" onClick={() => onAction?.(primaryAction)}>
+            {primaryAction.label}
+          </Button>
+        </div>
+      )}
     </motion.div>
   )
 }

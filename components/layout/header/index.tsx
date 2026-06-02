@@ -21,7 +21,7 @@ const SECTION_LABELS: Record<string, string> = {
   chat: "Messages",
   pages: "",
   settings: "Settings",
-  actions: "Actions",
+  triage: "Tasks",
   intake: "Intake",
   messages: "Messages",
   activity: "Activity",

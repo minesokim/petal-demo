@@ -18,6 +18,80 @@ function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+// Workflow ordering used for the "% complete" derivation
+const STAGE_ORDER: ReturnStage[] = [
+  "new_intake",
+  "collecting_docs",
+  "ready_to_prep",
+  "in_preparation",
+  "client_review",
+  "pay_and_sign",
+  "filed",
+];
+
+/**
+ * Derive a 0-100 progress for the return. Each stage carries an equal slice
+ * (~14%); for collecting_docs we additionally blend in the docs-submitted
+ * ratio so clients with more docs in hand visibly inch forward within the
+ * stage. Pending clients = 0; filed = 100.
+ */
+function returnProgressPct(client: Client, stage: ReturnStage): number {
+  if (client.clientStatus === "pending") return 0;
+  const idx = STAGE_ORDER.indexOf(stage);
+  if (idx < 0) return 0;
+  const slice = 100 / STAGE_ORDER.length;
+  const base = (idx + 1) * slice;
+  if (stage === "collecting_docs" && client.documentsRequired > 0) {
+    const docPct = Math.min(1, client.documentsSubmitted / client.documentsRequired);
+    return Math.round(base - slice + slice * docPct);
+  }
+  return Math.round(base);
+}
+
+/**
+ * Filing type derived from client.type + serviceTier. Three buckets that map
+ * to the services available in serviceTierOptions (mock-data.ts):
+ *   - Simple    → individual + Basic tier        (Simple Tax Return — $150)
+ *   - Complex   → individual + Standard/Premium  (Complex Return — $350+)
+ *   - Business  → any business client            (Business Tax Return — $500)
+ */
+function getFilingType(client: Client): "Simple" | "Complex" | "Business" {
+  if (client.type === "business") return "Business";
+  if (client.serviceTier === "Basic") return "Simple";
+  return "Complex";
+}
+
+// Assignee lookup — pulls from the real firm member list (lib/firm-mock-data)
+// using client.assignedTo. Falls back to a deterministic hash pick for the
+// rare case where assignedTo is missing (e.g., a freshly-created client
+// before the assignment dialog has been used).
+import { FIRM, memberInitials, type FirmMember } from "@/lib/firm-mock-data";
+
+type AssigneeChip = { name: string; avatar?: string; initials: string };
+
+function chipFromMember(m: FirmMember): AssigneeChip {
+  return {
+    name: `${m.shortName} ${m.fullName.split(" ").slice(-1)[0]?.[0] ?? ""}.`.trim(),
+    avatar: m.avatar,
+    initials: memberInitials(m),
+  };
+}
+
+// Deterministic fallback over human members (skip Petal — she's never
+// directly assigned in production).
+const HUMAN_POOL = FIRM.members.filter((m) => m.role !== "ai");
+
+function getAssigneeFor(client: Client): AssigneeChip {
+  if (client.assignedTo) {
+    const m = FIRM.members.find((x) => x.id === client.assignedTo);
+    if (m) return chipFromMember(m);
+  }
+  // Fallback — stable per client id
+  let hash = 0;
+  for (let i = 0; i < client.id.length; i++) hash = (hash * 31 + client.id.charCodeAt(i)) | 0;
+  return chipFromMember(HUMAN_POOL[Math.abs(hash) % HUMAN_POOL.length]);
+}
+
 /**
  * Dot color for the status row. Filed clients get emerald (success);
  * otherwise the insight severity drives the color: alert=red, concern=amber,
@@ -141,6 +215,10 @@ export function ClientCard({
   const insightText = oneLineInsight?.title || "No active flags";
   const dotColor = dotColorForSeverity(oneLineInsight?.severity, effectiveStage);
   const timeline = timelineForStage(client, effectiveStage);
+  const progress = returnProgressPct(client, effectiveStage);
+  const assignee = getAssigneeFor(client);
+  const progressComplete = effectiveStage === "filed";
+  const filingType = getFilingType(client);
 
   return (
     <div
@@ -154,7 +232,15 @@ export function ClientCard({
           <AvatarFallback className="text-xs">{getInitials(client.fullName)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-semibold leading-tight">{client.fullName}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[14px] font-semibold leading-tight">{client.fullName}</span>
+            <span
+              className="shrink-0 rounded border border-border bg-background px-1.5 py-px text-[9px] font-medium text-foreground/60"
+              title={`${filingType} return`}
+            >
+              {filingType}
+            </span>
+          </div>
           <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
             {client.serviceTier} <span className="text-muted-foreground/40">·</span> ${client.feeAmount}
           </div>
@@ -188,11 +274,32 @@ export function ClientCard({
         </span>
       </div>
 
+      {/* Assignee (left) + progress (right) — combined row, quiet visual weight */}
+      <div className="mt-3 flex items-center gap-2 text-[11px]">
+        <Avatar className="size-4 shrink-0">
+          {assignee.avatar && <AvatarImage src={assignee.avatar} alt={assignee.name} />}
+          <AvatarFallback className="text-[7px] font-medium">{assignee.initials}</AvatarFallback>
+        </Avatar>
+        <span className="truncate text-muted-foreground">{assignee.name}</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <div className="h-1 w-14 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                progressComplete ? "bg-emerald-500" : "bg-foreground/70"
+              )}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="w-7 text-right tabular-nums text-muted-foreground">{progress}%</span>
+        </div>
+      </div>
+
       {/* Open file — separate row beneath, quiet hover lift */}
       <Link
         href={`/dashboard/clients/${client.id}/overview`}
         onClick={(e) => e.stopPropagation()}
-        className="mt-3 flex items-center gap-1 text-[12.5px] font-medium text-foreground/70 transition-colors hover:text-foreground"
+        className="mt-2.5 flex items-center gap-1 text-[12.5px] font-medium text-foreground/70 transition-colors hover:text-foreground"
       >
         Open file <ArrowRight className="size-3" />
       </Link>

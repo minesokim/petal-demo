@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ClientDetailDialog } from "@/components/client-detail-dialog";
 import { clients, type Client } from "@/lib/mock-data";
+import { TRIAGE_ISSUES } from "@/lib/triage-mock-data";
 import { PetalMark } from "@/components/petal-mark";
 import Link from "next/link";
 import { useState, useMemo } from "react";
@@ -209,7 +210,7 @@ export default function Page() {
       {/* ─── Header ─── */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="font-display text-3xl tracking-tight md:text-4xl">Command Center</h1>
+          <h1 className="font-display text-3xl tracking-tight md:text-4xl">Overview</h1>
           <p className="mt-1.5 text-[13px] text-muted-foreground">
             Tax Season {new Date().getFullYear() + 1} <span className="text-muted-foreground/40">·</span> {stats.daysToDeadline} days left
           </p>
@@ -222,19 +223,20 @@ export default function Page() {
           >
             Brief me
           </Button>
-          <Button
-            size="sm"
-            className="bg-foreground text-background hover:bg-foreground/90"
-            onClick={() => showToast("info", "Analytics", "Full firm analytics coming soon")}
-          >
-            View all analytics
-          </Button>
+          <Link href="/dashboard/analytics">
+            <Button
+              size="sm"
+              className="bg-foreground text-background hover:bg-foreground/90"
+            >
+              View all analytics
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* ─── AI banner ─── */}
       <Link
-        href="/dashboard/actions"
+        href="/dashboard/triage"
         className="group flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/30"
       >
         <div className="flex items-center gap-3">
@@ -242,8 +244,8 @@ export default function Page() {
             <PetalMark className="size-4 text-foreground/70" />
           </span>
           <div className="text-[13px]">
-            <span className="font-medium">Petal drafted 14 actions</span>
-            <span className="text-muted-foreground"> ready for your review</span>
+            <span className="font-medium">Petal drafted {TRIAGE_ISSUES.length} actions ready for your review</span>
+            <span className="text-muted-foreground"> · open queue when you&apos;re ready</span>
           </div>
         </div>
         <span className="flex items-center gap-1 text-[12px] font-medium text-muted-foreground transition-colors group-hover:text-foreground">
@@ -263,35 +265,43 @@ export default function Page() {
           <CardContent className="flex flex-1 flex-col">
             <ul className="space-y-1">
               {[
+                // Today's brief = facts to KNOW, not tasks to DO.
+                // Anything actionable lives in Triage; this is the morning-newspaper context.
                 {
                   tone: "urgent" as const,
-                  headline: "Sarah Mitchell's S-Corp",
-                  detail: "Q4 estimates are $2,800 short of safe harbor — review before her 10am intro call.",
+                  headline: "IRS flagged ERC enforcement for 2026",
+                  detail: "3 clients on your roster claimed ERC in prior years. Defense packages pre-built and ready to download.",
                   href: "/dashboard/clients",
-                },
-                {
-                  tone: "ready" as const,
-                  headline: "ERO signing queue",
-                  detail: "6 returns ready for your signature · 2 marked urgent by clients.",
-                  href: "/dashboard/actions",
                 },
                 {
                   tone: "info" as const,
-                  headline: "Petal worked overnight",
-                  detail: "Drafted IRS notice responses for 3 clients · summarized 12 new intake forms.",
-                  href: "/dashboard/actions",
+                  headline: "Tax season day 42 of 60",
+                  detail: "You're 3 days ahead of last year's pace. 62% of returns are already prepped.",
+                  href: "/dashboard/analytics",
+                },
+                {
+                  tone: "urgent" as const,
+                  headline: "Sarah Mitchell at 10 AM",
+                  detail: "Your only intro call today. Referred by Priya — cash business, watch the income side.",
+                  href: "/dashboard/apps/calendar",
                 },
                 {
                   tone: "alert" as const,
-                  headline: "Doc-collection pile-up",
-                  detail: "12 clients have been waiting on docs for >14 days · nudges ready to send.",
+                  headline: "Q1 estimates due in 14 days",
+                  detail: "38 clients haven't been reminded yet. Petal has drafts ready when you are.",
                   href: "/dashboard/clients",
                 },
                 {
+                  tone: "info" as const,
+                  headline: "James is out tomorrow",
+                  detail: "Maria already shifted to cover Anthony Russo's prep. No conflicts on the calendar.",
+                  href: "/dashboard/pages/settings/profile",
+                },
+                {
                   tone: "win" as const,
-                  headline: "Yesterday's wins",
-                  detail: "8 returns filed · season pace +12% vs the same week last year.",
-                  href: "/dashboard/actions",
+                  headline: "Petal auto-filed 3 returns yesterday",
+                  detail: "Pre-approved drafts, transmitted clean. No exceptions, no amendments needed.",
+                  href: "/dashboard/analytics",
                 },
               ].map(item => (
                 <li key={item.headline}>
@@ -302,9 +312,8 @@ export default function Page() {
                     <span
                       className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", {
                         "bg-red-500": item.tone === "urgent",
-                        "bg-emerald-500": item.tone === "ready",
                         "bg-amber-500": item.tone === "alert",
-                        "bg-blue-500": item.tone === "win",
+                        "bg-emerald-500": item.tone === "win",
                         "bg-foreground/55": item.tone === "info",
                       })}
                     />
@@ -323,7 +332,7 @@ export default function Page() {
             </ul>
 
             <Link
-              href="/dashboard/actions"
+              href="/dashboard/triage"
               className="mt-auto flex items-center gap-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
             >
               Read full brief <ArrowRightIcon className="size-3" />
@@ -512,42 +521,72 @@ export default function Page() {
 
       {/* ─── Third hero row: Needs review (7) leads, Defense (5) on the right via md:order-* ─── */}
       <div className="grid gap-4 md:grid-cols-12">
-        {/* ── Defense layer ── (narrower — sits on the right via md:order-2) */}
+        {/* ── Compliance shield ── (replaces "Defense layer" — concrete 7-layer model
+            from production. Each layer named, status visible, drillable. The
+            "we are THE compliance product" surface.) */}
         <Card className="md:col-span-5 md:order-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[15px] font-semibold">Defense layer</CardTitle>
+            <div className="flex items-baseline justify-between gap-3">
+              <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
+                <ShieldCheckIcon className="size-3.5 text-emerald-600" />
+                Compliance shield
+              </CardTitle>
+              <span className="text-[11px] text-muted-foreground">
+                <span className="font-display text-[18px] font-medium leading-none tabular-nums text-foreground">96%</span>
+                <span className="ml-1">covered</span>
+              </span>
+            </div>
+            <p className="text-[11.5px] text-muted-foreground">
+              7-layer shield · <span className="text-foreground/70 font-medium">$0 penalty exposure</span> · last sweep 4m ago
+            </p>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
-            <div className="space-y-1">
+            <ul className="space-y-0.5">
               {[
-                { icon: ShieldCheckIcon, label: "Active audits", sub: "IRS examinations in progress", count: 1 },
-                { icon: FileWarningIcon, label: "Notices in triage", sub: "Drafts ready for review", count: 2 },
-                { icon: FileTextIcon, label: "Form 8867 due diligence", sub: "Checklists pending", count: 4 },
-                { icon: EyeIcon, label: "8275 disclosures", sub: "Ready to file", count: 1 },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={() => showToast("info", item.label, "Coming soon")}
-                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/40"
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04]">
-                    <item.icon className="size-4 text-muted-foreground" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium">{item.label}</div>
-                    <div className="text-[11.5px] text-muted-foreground">{item.sub}</div>
-                  </div>
-                  <span className="text-[14px] font-semibold tabular-nums">{item.count}</span>
-                  <ChevronRightIcon className="size-3.5 text-muted-foreground/60" />
-                </button>
-              ))}
-            </div>
+                { label: "§6695(g) due diligence",     sub: "EITC · CTC · ACTC · HoH · AOTC",     status: "ok" as const,   detail: "100%" },
+                { label: "Position Library",            sub: "20 positions tracked · 18 in use",   status: "ok" as const,   detail: "94%" },
+                { label: "§6695(a-e) procedural",       sub: "PTIN · sig · copies · info return",  status: "ok" as const,   detail: "100%" },
+                { label: "Anomaly detection",           sub: "12 patterns · flagged this week",    status: "warn" as const, detail: "2 flags" },
+                { label: "Audit defense workspace",     sub: "Per-position evidence chain",        status: "ok" as const,   detail: "14 ready" },
+                { label: "Circular 230 hygiene",        sub: "7216 · engagement · fee disclosure", status: "ok" as const,   detail: "100%" },
+                { label: "WISP + access security",      sub: "Annual review due Jul 9",            status: "soon" as const, detail: "47 days" },
+              ].map(layer => {
+                const attention = layer.status !== "ok";
+                return (
+                  <button
+                    key={layer.label}
+                    onClick={() => showToast("success", layer.label, "Coming soon")}
+                    className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span
+                      className={cn(
+                        "size-1.5 shrink-0 rounded-full",
+                        attention ? "bg-amber-500" : "bg-emerald-500"
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12.5px] font-medium text-foreground/90">{layer.label}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{layer.sub}</div>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 text-[11px] tabular-nums",
+                        attention ? "font-medium text-amber-600" : "text-foreground/55"
+                      )}
+                    >
+                      {layer.detail}
+                    </span>
+                    <ChevronRightIcon className="size-3 shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
+                );
+              })}
+            </ul>
 
             <Link
               href="/dashboard/clients"
-              className="mt-auto flex items-center gap-1 px-2 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
+              className="mt-auto flex items-center gap-1 px-1.5 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground"
             >
-              View all defense items <ArrowRightIcon className="size-3" />
+              Open compliance workspace <ArrowRightIcon className="size-3" />
             </Link>
           </CardContent>
         </Card>
@@ -659,11 +698,12 @@ export default function Page() {
           </CardContent>
         </Card>
 
-        {/* ── Action center ── */}
+        {/* ── Petal activity ── (was "Action center" — renamed to signal "AI status",
+            not "things to do." Triage owns the action-taking surface.) */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-1.5 text-[15px] font-semibold">
-              <ShieldCheckIcon className="size-3.5 text-muted-foreground" /> Action center
+              <PetalMark className="size-3.5 text-foreground/60" /> Petal activity
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
@@ -684,8 +724,8 @@ export default function Page() {
                 </div>
               ))}
             </div>
-            <Link href="/dashboard/actions" className="mt-auto flex items-center gap-1 px-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
-              View all actions <ArrowRightIcon className="size-3" />
+            <Link href="/dashboard/triage" className="mt-auto flex items-center gap-1 px-1 pt-4 text-[12px] font-medium text-foreground/80 transition-colors hover:text-foreground">
+              Open triage <ArrowRightIcon className="size-3" />
             </Link>
           </CardContent>
         </Card>

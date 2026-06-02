@@ -1,11 +1,12 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Download, ChevronRight } from "lucide-react";
+import { Download, ChevronRight, GripVertical } from "lucide-react";
 import { DocTypeBadge } from "./doc-type-badge";
 import { type MockDocument } from "@/lib/documents-mock-data";
 import { getIntelligenceForDocument } from "@/lib/documents-mock-data";
 import { useToast } from "@/components/ui/toast-notification";
+import { DOC_DND_MIME, type DraggedDoc } from "@/lib/dnd";
 
 function timeAgo(date: string) {
   const now = new Date("2026-03-28T12:00:00");
@@ -30,8 +31,16 @@ export function DocumentRow({ doc, showNew = false, showDate = false, showClassi
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        const payload = JSON.stringify({ id: doc.id, fileName: doc.fileName, docTypeLabel: doc.docTypeLabel } satisfies DraggedDoc);
+        e.dataTransfer.setData(DOC_DND_MIME, payload);
+        e.dataTransfer.setData("text/plain", payload); // fallback for browsers that hide custom MIME mid-drag
+        e.dataTransfer.effectAllowed = "copy";
+      }}
       onClick={() => onOpen?.(doc)}
-      className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
+      title="Open · or drag onto Ask Petal to attach"
+      className="group/docrow hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors active:cursor-grabbing"
     >
       <DocTypeBadge type={doc.docTypeLabel} />
       <div className="min-w-0 flex-1">
@@ -69,6 +78,7 @@ export function DocumentRow({ doc, showNew = false, showDate = false, showClassi
           <Download className="size-3.5" />
         </button>
       )}
+      <GripVertical className="size-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover/docrow:opacity-100" />
       <ChevronRight className="text-muted-foreground/40 size-4 shrink-0" />
     </div>
   );

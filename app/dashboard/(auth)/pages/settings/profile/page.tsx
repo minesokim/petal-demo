@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check } from "lucide-react";
+import { useSession } from "@/lib/session-context";
+import { memberInitials } from "@/lib/firm-mock-data";
 
 export default function FirmProfilePage() {
   const [saved, setSaved] = useState(false);
+  const { user, firm } = useSession();
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  // The owner-level fields (firm name, EIN) come from `firm`; the
+  // preparer-level fields (preparer name, email) come from `user` so
+  // switching personas shows that member's profile.
+  const preparerName = user.credential ? `${user.fullName}, ${user.credential}` : user.fullName;
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,8 +33,8 @@ export default function FirmProfilePage() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <Avatar className="size-16">
-              <AvatarImage src="/images/avatars/01.png" />
-              <AvatarFallback>AV</AvatarFallback>
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.fullName} />}
+              <AvatarFallback>{memberInitials(user)}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
               <label><Button size="sm" variant="outline" asChild><span>Change photo</span></Button><input type="file" accept="image/*" className="hidden" /></label>
@@ -33,9 +42,9 @@ export default function FirmProfilePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-muted-foreground">Firm Name</label><Input defaultValue="Vazant Consulting" className="mt-1" /></div>
-            <div><label className="text-xs font-medium text-muted-foreground">Preparer Name</label><Input defaultValue="Antonio Vazquez, EA" className="mt-1" /></div>
-            <div><label className="text-xs font-medium text-muted-foreground">Email</label><Input defaultValue="antonio@vazantconsulting.com" className="mt-1" /></div>
+            <div><label className="text-xs font-medium text-muted-foreground">Firm Name</label><Input defaultValue={firm.name} className="mt-1" /></div>
+            <div><label className="text-xs font-medium text-muted-foreground">Preparer Name</label><Input defaultValue={preparerName} className="mt-1" /></div>
+            <div><label className="text-xs font-medium text-muted-foreground">Email</label><Input defaultValue={user.email} className="mt-1" /></div>
             <div><label className="text-xs font-medium text-muted-foreground">Phone</label><Input defaultValue="(951) 555-0100" className="mt-1" /></div>
           </div>
         </CardContent>
@@ -48,9 +57,32 @@ export default function FirmProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-muted-foreground">PTIN</label><Input defaultValue="P01234567" className="mt-1" /></div>
-            <div><label className="text-xs font-medium text-muted-foreground">EFIN</label><Input defaultValue="123456" className="mt-1" /></div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">PTIN</label>
+              <Input
+                key={`ptin-${user.id}`}
+                defaultValue={user.ptin ?? ""}
+                placeholder={user.ptin ? undefined : "Not assigned"}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">EFIN</label>
+              <Input
+                key={`efin-${user.id}`}
+                defaultValue={user.efin ?? ""}
+                placeholder={user.efin ? undefined : "Not assigned"}
+                className="mt-1"
+              />
+            </div>
           </div>
+          {!user.ptin && (
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              {user.role === "ai"
+                ? "Petal doesn't sign returns — credentials aren't applicable."
+                : "This role can't sign as ERO, so a PTIN isn't required."}
+            </p>
+          )}
         </CardContent>
       </Card>
 
