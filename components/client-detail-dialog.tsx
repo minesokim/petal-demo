@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
-import { type Client, type ReturnStage, stageLabels, stageChipStyles, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
+import { type Client, type ReturnStage, stageLabels, stageChipStyles, stageDotStyles, actionItems, getClientPaymentSummary, pendingIntakeContext, serviceTierOptions, type InsightAction } from "@/lib/mock-data";
 import { setStageOverride as setStageOverrideGlobal, getStageOverride } from "@/lib/stage-overrides";
 import {
   subscribePipelineStages,
@@ -69,6 +69,9 @@ import { DocumentViewerDialog } from "@/components/documents/document-viewer-dia
 import { OpenItemsSection } from "@/components/issues/open-items-section";
 import { ClientMessagesView } from "@/components/messaging/client-messages-view";
 import { StageActionCard, getStageActionDescriptor } from "@/components/stage-action-card";
+import { DefensePackageView } from "@/components/clients/defense-package-view";
+import { ClientAskPetal } from "@/components/client-ask-petal";
+import { PetalMark } from "@/components/petal-mark";
 import { getUnreadCountForClient } from "@/lib/comms-mock-data";
 import { getClientActivity } from "@/lib/activity-mock-data";
 import { ActivityFilterBar, type FilterOption } from "@/components/activity/activity-filter-bar";
@@ -203,6 +206,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
   };
   const docPercent = Math.round((client.documentsSubmitted / client.documentsRequired) * 100);
   const stageIndex = ['new_intake', 'collecting_docs', 'ready_to_prep', 'in_preparation', 'client_review', 'pay_and_sign', 'filed'].indexOf(currentStage);
+  const ps = getClientPaymentSummary(client.id);
+  const stageDotColor = (stageDotStyles as Record<string, string>)[currentStage] || "bg-blue-500";
 
   const timelineItems: TimelineItem[] = [
     { id: 1, title: "New Intake", date: "Engagement letter + 7216 consent", status: stageIndex > 0 ? "completed" : stageIndex === 0 ? "in-progress" : "pending" },
@@ -453,8 +458,9 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
               pt-0.5 (minimal top breathing room) instead of pt-2. */}
           <div className="sticky top-0 z-10 bg-background border-b px-3 pt-0.5 pb-0 shrink-0 md:px-6 overflow-x-auto mobile-scroll-tabs md:overflow-visible">
             <TabsList variant="fill" className="w-full">
-              {["overview", "intake", "documents", "messages", "billing", "notes"].map(tab => {
+              {["overview", "intake", "documents", "compliance", "messages", "notes", "ask-petal"].map(tab => {
                 const notif = tab === "messages" ? getUnreadCountForClient(client.id) : 0;
+                const label = tab === "ask-petal" ? "Ask Petal" : tab;
                 return (
                   <TabsTrigger key={tab} value={tab} className="relative">
                     {activeTab === tab && (
@@ -465,7 +471,7 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                       />
                     )}
                     <span className="relative z-10 inline-flex items-center gap-1.5 capitalize">
-                      {tab}
+                      {label}
                       {notif > 0 && (
                         <span
                           className="flex size-[16px] items-center justify-center rounded-full bg-emerald-600 text-[9px] font-bold leading-none text-white tabular-nums"
@@ -498,11 +504,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                   promotes Intake Summary up here so the split stays balanced
                   and the popup doesn't feel half-empty. ── */}
               <div className="space-y-5 min-w-0">
-              {/* ── ACTION ITEMS — always at the top so they're never hidden ── */}
-              {stageAction && <StageActionCard {...stageAction} />}
-              {clientCompliance.map(a => (
-                <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
-              ))}
+              {/* Stage action + compliance now live at the top of the right rail
+                  (mirrors the full-page client overview). */}
 
               {/* AI Insight — always renders when one exists.
                   (Previously hid when a stageOverride was set, but that gate
@@ -565,29 +568,8 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 )}
               </AnimatePresence>
 
-              {/* Collecting Docs — show progress */}
-              {currentStage === "collecting_docs" && client.documentsSubmitted < client.documentsRequired && (
-                <div className="rounded-xl border p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-muted">
-                      <Clock className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold">Waiting on documents</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {client.documentsRequired - client.documentsSubmitted} documents still needed from {client.fullName.split(" ")[0]}.
-                      </div>
-                      <div className="mt-2.5">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-muted-foreground">{client.documentsSubmitted} of {client.documentsRequired} received</span>
-                          <span className="text-[10px] font-medium tabular-nums">{docPercent}%</span>
-                        </div>
-                        <Progress value={docPercent} className="h-1.5" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* "Waiting on documents" card removed — the Documents progress in
+                  the right rail already covers it (was redundant). */}
 
               {/* Complete Preparation CTA now lives in <StageActionCard> at the top. */}
 
@@ -742,85 +724,112 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
                 </div>
               )}
 
-              {/* When no hero exists, promote Intake Summary (now includes Contact)
-                  into the LEFT column so the 60/40 split stays visually balanced.
-                  Notes lives in its own tab — not duplicated on Overview. */}
-              {!hasLeftContent && intakeSummaryCard}
               </div>
-              {/* ── RIGHT COLUMN (40%) — context cards: intake (when hero in left), docs, contact, notes ── */}
-              <div className="space-y-5 min-w-0">
-              {/* Billing moved to its own dedicated Billing tab (cleaner separation;
-                  the Billing card was duplicated work alongside the Billing tab). */}
 
-              {/* Intake Summary — rendered here when hero content fills LEFT.
-                  Otherwise promoted to the LEFT column (see end of left wrapper). */}
-              {hasLeftContent && intakeSummaryCard}
+              {/* ── RIGHT — actions at top, then a quiet de-carded facts rail (mirrors full page) ── */}
+              <aside className="space-y-5 text-[13px] min-w-0">
+                {/* Next step — stage action */}
+                {stageAction && (() => {
+                  const ActionIcon = stageAction.actionIcon;
+                  const status = stageAction.statusItems?.[0];
+                  const StatusIcon = status?.icon;
+                  return (
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">Next step</div>
+                      <h2 className="text-[14px] font-semibold leading-snug">{stageAction.title}</h2>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{stageAction.description}</p>
+                      {status && StatusIcon && (
+                        <div className={cn("mt-2.5 inline-flex items-center gap-1.5 text-[12px] font-medium", status.color)}>
+                          <StatusIcon className="size-3.5" /> {status.label}
+                        </div>
+                      )}
+                      <Button onClick={stageAction.onAction} className="mt-3 h-9 w-full gap-1.5 bg-blue-600 text-[13px] font-medium text-white hover:bg-blue-700">
+                        <ActionIcon className="size-3.5" /> {stageAction.actionLabel}
+                      </Button>
+                    </div>
+                  );
+                })()}
 
-              {/* ── DOCUMENTS — progress + last portal login ── */}
-              {(() => {
-                const dp = client.documentsRequired > 0 ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100) : 0;
-                const lastLogin = client.lastPortalLogin
-                  ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                  : "Never";
-                return (
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
-                      <CardTitle className="text-sm">Documents</CardTitle>
-                      <Link href={`/dashboard/clients/${client.id}/documents`}>
-                        <Button variant="ghost" size="sm" className="text-xs gap-1">View checklist <ChevronRight className="size-3" /></Button>
-                      </Link>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-sm">
-                          <span className="font-display text-xl tabular-nums">{client.documentsSubmitted}</span>
-                          <span className="text-muted-foreground"> of {client.documentsRequired} received</span>
-                        </span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{dp}%</span>
+                {clientCompliance.map(a => (
+                  <DialogComplianceCard key={a.id} alert={a} clientName={client.fullName} />
+                ))}
+
+                {(stageAction || clientCompliance.length > 0) && <hr className="border-border/50" />}
+
+                {/* Billing */}
+                <section>
+                  <h3 className="mb-2.5 text-[13px] font-semibold text-foreground">Billing</h3>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Fee</span><span className="font-medium tabular-nums">${ps.totalFee}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Paid</span><span className="font-medium tabular-nums text-emerald-600">${ps.totalPaid}</span></div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Balance due</span>
+                      {ps.fullyPaid ? <span className="font-medium text-emerald-600">Paid in full</span> : <span className="font-medium tabular-nums">${ps.totalOwed}</span>}
+                    </div>
+                  </div>
+                </section>
+
+                <hr className="border-border/50" />
+
+                {/* Documents */}
+                {(() => {
+                  const dp = client.documentsRequired > 0 ? Math.round((client.documentsSubmitted / client.documentsRequired) * 100) : 0;
+                  const lastLogin = client.lastPortalLogin
+                    ? new Date(client.lastPortalLogin).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : "Never";
+                  return (
+                    <section>
+                      <div className="mb-2.5 flex items-center justify-between">
+                        <h3 className="text-[13px] font-semibold text-foreground">Documents</h3>
+                        <Link href={`/dashboard/clients/${client.id}/documents`} className="text-[11px] text-muted-foreground hover:text-foreground">View</Link>
+                      </div>
+                      <div className="mb-2 flex items-baseline justify-between">
+                        <span><span className="font-display text-lg tabular-nums">{client.documentsSubmitted}</span><span className="text-muted-foreground"> of {client.documentsRequired}</span></span>
+                        <span className="text-[11px] tabular-nums text-muted-foreground">{dp}%</span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div className={`h-full transition-all ${dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500"}`} style={{ width: `${dp}%` }} />
+                        <div className={cn("h-full transition-all", dp >= 100 ? "bg-emerald-500" : dp >= 50 ? "bg-foreground/70" : "bg-amber-500")} style={{ width: `${dp}%` }} />
                       </div>
-                      <div className="flex items-center justify-between border-t border-border/40 pt-3 text-xs">
-                        <span className="text-muted-foreground">Last portal login</span>
-                        <span className={`tabular-nums ${client.lastPortalLogin ? "text-foreground" : "text-amber-600"}`}>{lastLogin}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                      <div className="mt-2.5 flex justify-between text-[12px]"><span className="text-muted-foreground">Last portal login</span><span className={cn("tabular-nums", client.lastPortalLogin ? "text-foreground" : "text-amber-600")}>{lastLogin}</span></div>
+                    </section>
+                  );
+                })()}
 
-              {/* ── RETURN PROGRESS — workflow timeline ── */}
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm">Return Progress</CardTitle></CardHeader>
-                <CardContent>
-                  <TrackingTimeline items={timelineItems} />
-                </CardContent>
-              </Card>
+                <hr className="border-border/50" />
 
-              {/* Client Review stage enhancement — only when relevant */}
-              {client.returnStage === "client_review" && client.returnSentDate && (() => {
-                const daysSinceSent = Math.floor((Date.now() - new Date(client.returnSentDate).getTime()) / (1000 * 60 * 60 * 24));
-                const lastLogin = client.lastPortalLogin ? Math.floor((Date.now() - new Date(client.lastPortalLogin).getTime()) / (1000 * 60 * 60 * 24)) : null;
-                return (
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Sent {daysSinceSent}d ago</span>
-                    <span className="text-muted-foreground/30">·</span>
-                    <span>Portal {lastLogin !== null ? (lastLogin === 0 ? "today" : `${lastLogin}d ago`) : "never"}</span>
-                    {daysSinceSent > 5 && (
-                      <>
-                        <span className="text-muted-foreground/30">·</span>
-                        <span className="text-amber-600">{daysSinceSent}d without response</span>
-                      </>
-                    )}
+                {/* Intake */}
+                <section>
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <h3 className="text-[13px] font-semibold text-foreground">Intake</h3>
+                    <Link href={`/dashboard/clients/${client.id}/intake`} className="text-[11px] text-muted-foreground hover:text-foreground">Full intake</Link>
                   </div>
-                );
-              })()}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between gap-3"><span className="text-muted-foreground">Filing</span><span className="text-right font-medium">{client.filingStatus === "mfj" ? "Married Filing Jointly" : client.filingStatus === "single" ? "Single" : client.filingStatus === "hoh" ? "Head of Household" : client.filingStatus}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{client.serviceTier}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="font-medium capitalize">{client.type}</span></div>
+                  </div>
+                  <div className="mt-2.5 space-y-1.5 border-t border-border/40 pt-2.5 text-[12px] text-muted-foreground">
+                    <div className="flex items-center gap-2"><Mail className="size-3.5 shrink-0" /><span className="truncate">{client.email}</span></div>
+                    <div className="flex items-center gap-2"><Phone className="size-3.5 shrink-0" />{client.phone}</div>
+                  </div>
+                </section>
 
-              {/* Contact is now folded into Intake Summary; Notes lives in its own tab.
-                  Right column intentionally ends after Return Progress (and the
-                  optional Client Review stage chip above). */}
-              </div>
+                <hr className="border-border/50" />
+
+                {/* Progress — compact horizontal stepper */}
+                <section>
+                  <h3 className="mb-2.5 text-[13px] font-semibold text-foreground">Progress</h3>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className={cn("h-1.5 flex-1 rounded-full", i === stageIndex ? stageDotColor : i < stageIndex ? cn(stageDotColor, "opacity-40") : "bg-muted")} />
+                    ))}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[12px]">
+                    <span className="font-medium text-foreground">{stageLabels[currentStage as ReturnStage] || currentStage}</span>
+                    <span className="tabular-nums text-muted-foreground">{Math.min(stageIndex + 1, 7)} of 7</span>
+                  </div>
+                </section>
+              </aside>
             </TabsContent>
 
             {/* INTAKE TAB — same shared IntakeView as the full-page intake.
@@ -1010,13 +1019,29 @@ export function ClientDetailDialog({ client, open, onOpenChange, onAccept, onDec
             {/* BILLING TAB — uses the same modern BillingCard design as the
                 full-page view (Premium Return / progress / Deposit + Balance /
                 Activity timeline / Send invoice). Replaces the older BillingTab. */}
-            <TabsContent value="billing" className="space-y-4">
-              <BillingCard client={client} />
+            {/* COMPLIANCE TAB — audit-defense package (mirrors full-page Compliance) */}
+            <TabsContent value="compliance" className="space-y-4">
+              <DefensePackageView
+                client={client}
+                onAction={(label) => showToast("success", label, `Defense package action complete for ${client.fullName.split(" ")[0]}.`)}
+              />
             </TabsContent>
 
             {/* NOTES TAB */}
             <TabsContent value="notes" className="space-y-3">
               <ClientNotesTab clientId={client.id} initialNotes={notes} />
+            </TabsContent>
+
+            {/* ASK PETAL TAB — blank chat, mirrors the full-page Ask Petal section */}
+            <TabsContent value="ask-petal" className="h-full">
+              <div className="h-[58vh] min-h-[460px]">
+                <ClientAskPetal
+                  client={client}
+                  compact
+                  hideInsight
+                  onInsightFlag={(title) => showToast("success", "Flagged for review", `${title} added to your flags`)}
+                />
+              </div>
             </TabsContent>
           </div>
         </Tabs>

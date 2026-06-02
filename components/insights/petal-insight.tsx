@@ -510,6 +510,8 @@ export function PetalInsightCard({
         </svg>
       </button>
 
+      {/* Reasoning — expand-only; sits directly under the bar (the "middle" of
+          the card), ABOVE the stats. */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -519,36 +521,52 @@ export function PetalInsightCard({
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
             className="overflow-hidden"
           >
-            <div className="space-y-3 border-t border-border/40 px-3.5 pt-3 pb-3.5">
-              {/* Reasoning */}
+            <div className="border-t border-border/40 px-3.5 pt-3 pb-3.5">
               <p className="text-[13px] leading-relaxed text-foreground/70">
                 {highlightInsightText(insight.content, { client: clients.find(c => c.id === insight.clientId) })}
               </p>
-              {/* Stat cards (only if the insight carries them) */}
-              {hasSupplementary && (
-                <SupplementaryCards items={insight.supplementary!} onFlag={onFlag} clientId={insight.clientId} />
-              )}
-              {/* Ask Petal — lives at the bottom of the expanded view */}
-              {!hideAskPetal && (
-                <div className="pt-0.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 gap-1 px-3 text-[11px]"
-                    onClick={() => onAction?.(petalAction)}
-                  >
-                    Ask Petal
-                    <svg width={9} height={9} viewBox="0 0 12 12" className="text-muted-foreground">
-                      <path d="M3.5 2L8.5 2L8.5 7" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M8.5 2L3 7.5" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
-                  </Button>
-                </div>
-              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Stat cards — always visible (collapsed + expanded) so the headline
+          numbers (extension likelihood, doc progress, etc.) read at a glance. */}
+      {hasSupplementary && (
+        <div className="border-t border-border/40 px-3.5 py-3">
+          <SupplementaryCards items={insight.supplementary!} onFlag={onFlag} clientId={insight.clientId} />
+        </div>
+      )}
+
+      {/* Ask Petal — expand-only, pinned below the stats. */}
+      {!hideAskPetal && (
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-border/40 px-3.5 py-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 px-3 text-[11px]"
+                  onClick={() => onAction?.(petalAction)}
+                >
+                  Ask Petal
+                  <svg width={9} height={9} viewBox="0 0 12 12" className="text-muted-foreground">
+                    <path d="M3.5 2L8.5 2L8.5 7" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8.5 2L3 7.5" stroke="currentColor" fill="none" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Draft message — nested borderless inside the same card, divided by a
           rule so it reads as part of the one unit, not a separate box. */}
