@@ -1,0 +1,39 @@
+/* Petal OS — locked design tokens (see docs/DESIGN.md). Scoped to .petal-os so it
+   never collides with the legacy /dashboard theme. Verified 1-to-1 against Attio. */
+.petal-os {
+  --os-bg: #ffffff;
+  --os-bg-subtle: #fbfbfa;
+  --os-surface: #ffffff;
+  --os-selected: #f0f0ef;
+  --os-hover: #f6f6f5;
+
+  --os-ink: #1a1a1a;
+  --os-ink-muted: #6b6b70;
+  --os-ink-subtle: #9b9ba0;
+
+  --os-border: #ececec;
+  --os-border-strong: #e0e0e0;
+
+  --os-primary: #1c1c1e;
+  --os-primary-fg: #ffffff;
+  --os-accent: #2f6bff;
+
+  --os-success: #16794c;
+  --os-warning: #b45309;
+  --os-danger: #c2410c;
+
+  color: var(--os-ink);
+  background: var(--os-bg);
+  font-feature-settings: "tnum" on, "cv01" on, "ss01" on;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* sentence-case section label */
+.os-label {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: var(--os-ink-subtle);
+  letter-spacing: 0.01em;
+}
+.os-display { letter-spacing: -0.01em; }

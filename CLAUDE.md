@@ -155,3 +155,12 @@ Antonio Vazquez, EA. Solo enrolled agent in Montclair, CA. ~200 clients. Uses Xe
 - **Live**: vazant-dashboard-v2.vercel.app
 - **Vercel team**: team_qwHcRX2Ih5A0x3J6w62Nvd32
 - **Branch**: main (auto-deploys)
+
+## Design System (agentic-os remake)
+
+**Always read `docs/DESIGN.md` before any visual/UI decision.** It is the LOCKED design
+language for the remake: skeleton + look modeled 1-to-1 on **Attio** (verified from Attio's
+live computed styles), restraint from **Sana**. Font = Inter / Inter Display. Near-monochrome
+(white canvas, near-black ink, near-black primary buttons, hairline borders, low radius);
+color is punctuation only; PetalMark green is the sole brand hue. Do not deviate without
+updating `docs/DESIGN.md`. Product structure lives in `docs/PETAL_OS_SPEC.md`.
