@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -15,29 +15,34 @@ export function SidebarChat() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [hoverList, setHoverList] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [hovered, setHovered] = useState<string | null>(null);
   const recent = chats.slice(0, 6);
+  const noFade = hoverList || expanded;
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const open = () => { router.push("/os/ask"); setHistoryOpen(false); setMenuFor(null); };
 
   return (
     <>
       <div
-        className="px-2 pb-2 pt-1"
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => { setExpanded(false); setMenuFor(null); }}
+        className="px-2 pb-3.5 pt-1"
+        onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); }}
+        onMouseLeave={() => { closeTimer.current = setTimeout(() => { setExpanded(false); setHoverList(false); setMenuFor(null); }, 500); }}
       >
         <div className="os-label mb-1.5 px-2">Recent</div>
-        <div className="overflow-hidden transition-[max-height] duration-300 ease-out" style={{ maxHeight: expanded ? 300 : 116 }}>
-        <div className="space-y-1.5">
+        <div className="overflow-hidden transition-[max-height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]" style={{ maxHeight: expanded ? 234 : 112 }}>
+        <div
+          className="space-y-1.5 transition-transform duration-200 ease-out"
+          style={{ transform: hoverList && !expanded ? "translateY(-2px)" : "none" }}
+          onMouseEnter={() => setHoverList(true)}
+          onMouseLeave={() => setHoverList(false)}
+        >
           {recent.map((c, i) => (
             <div
               key={c.id}
-              className="group/chat relative transition-all duration-200 ease-out"
-              style={{ opacity: hovered === c.id ? 1 : Math.max(0.4, 1 - i * 0.2), transform: hovered === c.id ? "translateY(-2px)" : "none" }}
-              onMouseEnter={() => setHovered(c.id)}
-              onMouseLeave={() => setHovered(null)}
+              className="group/chat relative transition-opacity duration-200 ease-out"
+              style={{ opacity: noFade ? 1 : Math.max(0.35, 1 - i * 0.28) }}
             >
               <button
                 onClick={open}
@@ -73,7 +78,7 @@ export function SidebarChat() {
         </div>
 
         <div className="mt-2.5 flex items-center gap-1.5">
-          <button onClick={() => setHistoryOpen(true)} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+          <button onClick={() => setHistoryOpen(true)} onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setExpanded(true); }} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
             <Icon icon={I.history} size={17} />
           </button>
           <button onClick={open} className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.05)] transition-colors hover:bg-[var(--os-hover)]">

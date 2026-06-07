@@ -41,7 +41,7 @@ const atRiskList = [
 ];
 
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("flex flex-col rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
+  return <div className={cn("flex flex-col rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
 }
 function CardHead({ title, mark, href }: { title: string; mark?: boolean; href?: string }) {
   return (
@@ -116,7 +116,7 @@ export default function TodayPage() {
           <AskComposer />
 
           {/* Close the books — period close progress */}
-          <div className="mb-6 rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+          <div className="mb-6 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
             <div className="flex items-center justify-between">
               <h3 className="text-[15px] font-semibold text-[var(--os-ink)] os-display">Month-end close</h3>
               <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">May 2026 <Icon icon={I.chevronDown} size={13} className="text-[var(--os-ink-subtle)]" /></button>
@@ -191,7 +191,7 @@ export default function TodayPage() {
             </Card>
 
             {/* Petal activity — vertical summary box */}
-              <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+              <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
                 <div className="mb-3 flex items-center gap-2">
                   <PetalMark className="size-4 text-[var(--os-ink)]" />
                   <h3 className="text-[13px] font-semibold text-[var(--os-ink)] os-display">Petal activity</h3>

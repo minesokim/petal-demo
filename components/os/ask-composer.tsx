@@ -3,18 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/os/icon";
-import { Mic } from "lucide-react";
+import { Mic, Upload, HardDrive, Landmark, ChevronRight } from "lucide-react";
 
 /** The Ask Petal composer embedded on the home screen (Solve "complete a task" pattern). */
 export function AskComposer() {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [appsOpen, setAppsOpen] = useState(false);
   const go = () => router.push("/os/ask");
+  const connect = () => { setAppsOpen(false); router.push("/os/settings"); };
+
   return (
     <div className="mb-6">
-      <div className="rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
+      <div className="relative rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
         <div className="flex items-center gap-2.5">
-          <button onClick={go} aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">
+          <button onClick={() => setAppsOpen(v => !v)} aria-label="Connect apps" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">
             <Icon icon={I.plus} size={16} />
           </button>
           <input
@@ -31,6 +34,33 @@ export function AskComposer() {
             <Icon icon={I.send} size={15} />
           </button>
         </div>
+
+        {/* Connect apps popup (opened by the + button) */}
+        {appsOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setAppsOpen(false)} />
+            <div className="absolute left-2 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-1.5 shadow-[0_8px_28px_-8px_rgba(17,17,26,0.18)]">
+              <button onClick={() => setAppsOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]">
+                <Upload className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} /> Upload files
+              </button>
+              <button onClick={() => setAppsOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]">
+                <HardDrive className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} />
+                <span className="flex-1">Google Drive</span>
+                <ChevronRight className="size-4 shrink-0 text-[var(--os-ink-subtle)]" />
+              </button>
+              <div className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] text-[var(--os-ink)]">
+                <Icon icon={I.billing} size={18} className="shrink-0 text-[var(--os-ink-muted)]" />
+                <span className="flex-1">QuickBooks</span>
+                <button onClick={connect} className="text-[12px] font-medium text-[var(--os-ink-muted)] underline underline-offset-2 transition-colors hover:text-[var(--os-ink)]">Connect</button>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] text-[var(--os-ink)]">
+                <Landmark className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} />
+                <span className="flex-1">Link bank account</span>
+                <button onClick={connect} className="text-[12px] font-medium text-[var(--os-ink-muted)] underline underline-offset-2 transition-colors hover:text-[var(--os-ink)]">Connect</button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
