@@ -10,6 +10,7 @@ import { agents } from "@/lib/os-agents";
 import { triage } from "@/lib/os-triage";
 import { returns } from "@/lib/os-entities";
 import { brief, briefToneDot } from "@/lib/os-news";
+import { closeTasks } from "@/lib/os-close";
 
 const agentByName = (n?: string) => agents.find(a => a.name === n);
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -26,12 +27,11 @@ const missingDocs = returns.reduce((s, r) => s + Math.max(0, r.docsRequired - r.
 const awaitingSign = returns.filter(r => r.stage === "pay_and_sign" || r.stage === "client_review").length;
 const overdueCount = returns.filter(r => !r.depositPaid && r.stage !== "filed").length;
 
-// "Close the books" — period close progress across business entities
-const closeList = returns.filter(r => r.form === "1120S" || r.form === "1065" || r.form === "1120");
-const closeDone = closeList.filter(r => r.stage === "filed").length;
-const closeProg = closeList.filter(r => r.stage === "in_preparation" || r.stage === "client_review" || r.stage === "pay_and_sign").length;
-const closeTodo = Math.max(0, closeList.length - closeDone - closeProg);
-const closeTotal = closeList.length || 1;
+// "Month-end close" — derived from the close checklist
+const closeDone = closeTasks.filter(t => t.status === "complete").length;
+const closeProg = closeTasks.filter(t => t.status === "in_progress").length;
+const closeTodo = closeTasks.filter(t => t.status === "not_started").length;
+const closeTotal = closeTasks.length || 1;
 
 // the returns most at risk, with their blocker (drives the readiness hero list)
 const atRiskList = [
@@ -116,10 +116,10 @@ export default function TodayPage() {
           <AskComposer />
 
           {/* Close the books — period close progress */}
-          <div className="mb-6 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+          <Link href="/os/close" className="mb-6 block rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
             <div className="flex items-center justify-between">
               <h3 className="text-[15px] font-semibold text-[var(--os-ink)] os-display">Month-end close</h3>
-              <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">May 2026 <Icon icon={I.chevronDown} size={13} className="text-[var(--os-ink-subtle)]" /></button>
+              <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">May 2026 <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" /></span>
             </div>
             <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
               <div className="h-full bg-emerald-500" style={{ width: `${(closeDone / closeTotal) * 100}%` }} />
@@ -133,7 +133,7 @@ export default function TodayPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Link>
 
           <div className="flex flex-col gap-4">
             {/* ── Today's brief (the newspaper) ── */}
