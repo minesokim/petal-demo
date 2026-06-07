@@ -55,7 +55,7 @@ function ThreadView({ thread }: { thread: Thread }) {
         </div>
 
         {/* Conversation — rendered per channel */}
-        <div className="flex-1 overflow-y-auto px-5 py-5">
+        <div className="flex-1 overflow-y-auto px-8 py-6">
           <div className={cn("mx-auto max-w-[640px]", thread.channel === "sms" ? "space-y-2.5" : thread.channel === "email" ? "space-y-0" : "space-y-5")}>
             {thread.messages.map((msg, i) => {
               // ── Email: full-width message blocks (Gmail / Superhuman) ──
@@ -192,10 +192,9 @@ export default function InboxPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.inbox} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Inbox</h1>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">{counts.all} open</span>
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
+        <Icon icon={I.inbox} size={16} className="text-[var(--os-ink-muted)]" />
+        <h1 className="text-[14px] font-semibold text-[var(--os-ink)] os-display">Inbox</h1>
         <div className="ml-auto flex items-center gap-1.5">
           <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
           <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.edit} size={15} /> Compose</button>
@@ -203,7 +202,7 @@ export default function InboxPage() {
       </div>
 
       {/* Filters: status pills (left) + channel filter (right) */}
-      <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] px-4 py-1.5">
+      <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] px-8 py-1.5">
         {inboxFilters.map(t => (
           <button
             key={t.key}

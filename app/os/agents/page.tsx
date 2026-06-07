@@ -96,7 +96,7 @@ function Builder({ agent, onClose }: { agent: Agent; onClose: () => void }) {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-8 py-5">
         {tab === "persona" && (
           <>
             <div className="mb-2 flex items-center justify-between">
@@ -197,15 +197,18 @@ export default function AgentsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <PetalLogo size={18} />
-        <h1 className="text-[15px] font-semibold os-display">Petal Agents</h1>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">{agents.length}</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.sort} size={15} /> Sort</button>
-          <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.filter} size={15} /> Filter</button>
-          <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
-          <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)]"><Icon icon={I.plus} size={15} /> New agent</button>
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Petal Agents</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">The agents that do your firm&apos;s work, with autonomy you control.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.sort} size={15} /> Sort</button>
+            <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.filter} size={15} /> Filter</button>
+            <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
+            <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)]"><Icon icon={I.plus} size={15} /> New agent</button>
+          </div>
         </div>
       </div>
 
@@ -233,7 +236,7 @@ export default function AgentsPage() {
         ) : (
           // Dense table — color limited to the identity orb; the rest stays quiet
           <div className="flex flex-1 flex-col overflow-y-auto">
-            <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-4 py-2", COLS)}>
+            <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-8 py-2", COLS)}>
               {["Agent", "What it does", "Skills", "Autonomy", "Reliability", "Runs", "Last active"].map((h, i) => (
                 <div key={h} className={cn("os-label", i === 5 && "text-right")}>{h}</div>
               ))}
@@ -242,7 +245,7 @@ export default function AgentsPage() {
               <button
                 key={a.id}
                 onClick={() => setSelected(a.id)}
-                className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)]", COLS)}
+                className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-8 py-3 text-left transition-colors hover:bg-[var(--os-hover)]", COLS)}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <AgentAvatar gradient={a.gradient} icon={a.glyph} size={26} bare />
@@ -260,7 +263,7 @@ export default function AgentsPage() {
               </button>
             ))}
             {/* connective-tissue footer */}
-            <div className="mt-auto flex items-center justify-between border-t border-[var(--os-border)] px-4 py-2 text-[11px] text-[var(--os-ink-subtle)]">
+            <div className="mt-auto flex items-center justify-between border-t border-[var(--os-border)] px-8 py-2 text-[11px] text-[var(--os-ink-subtle)]">
               <span>{agents.length} agents</span>
               <span>Synced 2m ago</span>
             </div>

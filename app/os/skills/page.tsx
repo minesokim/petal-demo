@@ -56,7 +56,7 @@ function SkillDetail({ skill }: { skill: Skill }) {
 
       {/* Body: main flow + metadata rail */}
       <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-w-0 flex-1 overflow-y-auto px-8 py-6">
           {/* Definition — lead, as a quiet blockquote (no boxy callout) */}
           <div className="border-l-2 border-[var(--os-border-strong)] pl-3.5">
             <p className="text-[14px] leading-relaxed text-[var(--os-ink)]">{skill.definition}</p>
@@ -150,13 +150,16 @@ export default function SkillsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.skills} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Skills</h1>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">{skills.length} skills</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
-          <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.plus} size={15} /> New skill</button>
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Skills</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Your firm&apos;s bookkeeping and tax skills, ready for Petal to run.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
+            <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.plus} size={15} /> New skill</button>
+          </div>
         </div>
       </div>
 

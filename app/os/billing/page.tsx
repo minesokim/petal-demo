@@ -162,16 +162,19 @@ export default function BillingPage() {
   return (
     <div className="flex h-full flex-col">
       {/* header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.returns} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Billing</h1>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">Accounts receivable</span>
-        <button className="ml-auto flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.plus} size={15} /> New invoice</button>
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Billing</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Invoices, payments, and what each client owes.</p>
+          </div>
+          <button className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.plus} size={15} /> New invoice</button>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1 overflow-y-auto">
-          <div className="px-6 py-5">
+          <div className="px-8 py-6">
             {/* toolbar — Mercury pills */}
             <div className="flex items-center gap-2">
               <Pill label="Filters" icon={I.filter} />

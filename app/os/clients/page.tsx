@@ -21,7 +21,7 @@ const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice
 
 function HeaderRow({ cols, labels }: { cols: string; labels: string[] }) {
   return (
-    <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-4 py-2", cols)}>
+    <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-8 py-2", cols)}>
       {labels.map(h => <div key={h} className={cn("os-label", h === "Fee" && "text-right")}>{h}</div>)}
     </div>
   );
@@ -47,7 +47,7 @@ function ClientsTable() {
           const stage = householdStage(h.id);
           const person = people.find(p => p.householdId === h.id);
           return (
-            <Link key={h.id} href={`/os/clients/${h.id}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-4 transition-colors hover:bg-[var(--os-hover)]", CLIENT_COLS)}>
+            <Link key={h.id} href={`/os/clients/${h.id}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", CLIENT_COLS)}>
               {/* Name */}
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[11px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
@@ -94,7 +94,7 @@ function ReturnsTable() {
           const complete = r.docsSubmitted >= r.docsRequired;
           const pct = Math.round((r.docsSubmitted / r.docsRequired) * 100);
           return (
-            <Link key={r.id} href={`/os/clients/${r.householdId}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-4 transition-colors hover:bg-[var(--os-hover)]", RETURN_COLS)}>
+            <Link key={r.id} href={`/os/clients/${r.householdId}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", RETURN_COLS)}>
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(r.entityName)}</span>
                 <div className="min-w-0">
@@ -130,7 +130,7 @@ function PeopleTable() {
       <HeaderRow cols={PEOPLE_COLS} labels={["Name", "Role", "Client", "Phone", ""]} />
       <div className="flex-1 overflow-y-auto">
         {people.map(p => (
-          <Link key={p.id} href={`/os/clients/${p.householdId}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-4 transition-colors hover:bg-[var(--os-hover)]", PEOPLE_COLS)}>
+          <Link key={p.id} href={`/os/clients/${p.householdId}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", PEOPLE_COLS)}>
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
               <div className="min-w-0">
@@ -157,19 +157,23 @@ export default function ClientsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* object header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.clients} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Clients</h1>
-        <div className="ml-auto flex items-center gap-1.5">
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Clients</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Every household, return, and contact across your book.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
           <button className="flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} className="text-[var(--os-ink-muted)]" /> Search</button>
           <button className="flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.eye} size={15} className="text-[var(--os-ink-muted)]" /> View</button>
           <button className="flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.download} size={15} className="text-[var(--os-ink-muted)]" /> Export</button>
           <button className="flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]">Create <Icon icon={I.chevronDown} size={14} /></button>
+          </div>
         </div>
       </div>
 
       {/* view switcher (the consolidated book — Households / Returns / People) */}
-      <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-4">
+      <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8">
         {VIEWS.map(v => (
           <button
             key={v.key}

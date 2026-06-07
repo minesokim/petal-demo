@@ -73,12 +73,10 @@ export default function ReportsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.reports} size={17} className="text-[var(--os-ink-muted)]" />
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
         <button className="flex items-center gap-1 text-[15px] font-semibold os-display">
           Practice overview <Icon icon={I.chevronDown} size={15} className="text-[var(--os-ink-subtle)]" />
         </button>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">2025 season</span>
         <div className="ml-auto flex items-center gap-1.5">
           <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.filter} size={15} /> Filter</button>
           <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.plus} size={15} /> Add report</button>

@@ -114,9 +114,7 @@ export default function AskPetalPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <PetalMark className="size-4" />
-        <h1 className="text-[15px] font-semibold os-display">Ask Petal</h1>
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
         <button className="ml-1 flex h-6 items-center gap-1.5 rounded-md px-1.5 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]">
           <Icon icon={I.clients} size={13} /> All clients <Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" />
         </button>

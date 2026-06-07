@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { AgentAvatar } from "@/components/os/primitives";
+import { AskComposer } from "@/components/os/ask-composer";
 import { agents } from "@/lib/os-agents";
 import { triage } from "@/lib/os-triage";
 import { returns } from "@/lib/os-entities";
@@ -19,14 +20,18 @@ const handled = triage.filter(t => t.trust === "auto" && t.when !== "Running" &&
 const calls = triage.filter(t => t.type === "meeting_prep" && t.when === "Running");
 const atRisk = returns.filter(r => r.stage !== "filed" && (r.urgency === "urgent" || r.urgency === "high"));
 
-const total = returns.length;
-const prepped = returns.filter(r => ["in_preparation", "client_review", "pay_and_sign", "filed"].includes(r.stage)).length;
-const readyPct = Math.round((prepped / total) * 100);
+// "Your actions" counts (Solve home pattern, CPA context)
+const reviewCount = triage.filter(t => (t.tier === "right_now" || t.tier === "today") && t.trust !== "auto").length;
+const missingDocs = returns.reduce((s, r) => s + Math.max(0, r.docsRequired - r.docsSubmitted), 0);
+const awaitingSign = returns.filter(r => r.stage === "pay_and_sign" || r.stage === "client_review").length;
+const overdueCount = returns.filter(r => !r.depositPaid && r.stage !== "filed").length;
 
-const totalFees = returns.reduce((s, r) => s + r.fee, 0);
-const avgFee = Math.round(totalFees / total);
-const feeVals = [1500, 3000, 4200, 5500, 6800, 8000, 9000, totalFees];
-const readyVals = [8, 16, 24, 33, 42, 50, 56, readyPct];
+// "Close the books" — period close progress across business entities
+const closeList = returns.filter(r => r.form === "1120S" || r.form === "1065" || r.form === "1120");
+const closeDone = closeList.filter(r => r.stage === "filed").length;
+const closeProg = closeList.filter(r => r.stage === "in_preparation" || r.stage === "client_review" || r.stage === "pay_and_sign").length;
+const closeTodo = Math.max(0, closeList.length - closeDone - closeProg);
+const closeTotal = closeList.length || 1;
 
 // the returns most at risk, with their blocker (drives the readiness hero list)
 const atRiskList = [
@@ -36,7 +41,7 @@ const atRiskList = [
 ];
 
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("flex flex-col rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4", className)}>{children}</div>;
+  return <div className={cn("flex flex-col rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
 }
 function CardHead({ title, mark, href }: { title: string; mark?: boolean; href?: string }) {
   return (
@@ -89,13 +94,8 @@ function MiniChart({ vals, max, h = 64, gradId }: { vals: number[]; max: number;
 export default function TodayPage() {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.reports} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold text-[var(--os-ink)]">Today</h1>
-      </div>
-
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1180px] px-8 py-7">
+        <div className="mx-auto max-w-[780px] px-6 py-8">
           {/* greeting — hero cover banner */}
           <div className="relative mb-6 overflow-hidden rounded-xl border border-[var(--os-border)]">
             <img src="/images/today-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
@@ -113,65 +113,31 @@ export default function TodayPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            {/* ── Row 1 · Numbers — one surface, hairline-split, full-bleed charts (Attio/Linear grammar) ── */}
-            <div className="grid grid-cols-1 divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:col-span-12">
-              {/* Filing readiness */}
-              <div className="flex flex-col pt-4">
-                <div className="flex items-center gap-2 px-5">
-                  <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">Filing readiness</h3>
-                  <PeriodButton className="ml-auto" label="This season" />
-                </div>
-                <div className="mt-3 px-5">
-                  <div className="flex items-end gap-2.5">
-                    <span className="text-[32px] font-semibold leading-none tabular-nums os-display">{readyPct}<span className="align-top text-[17px] text-[var(--os-ink-muted)]">%</span></span>
-                    <span className="inline-flex items-center gap-1 pb-1 text-[12px] font-medium text-[var(--os-success)]"><Icon icon={I.deltaUp} size={12} /> 6%</span>
-                  </div>
-                  <div className="mt-1.5 text-[12px] text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-ink)]">{atRisk.length}</span> returns at risk · +6 pts vs last week</div>
-                </div>
-                <div className="mt-4"><MiniChart vals={readyVals} max={Math.round(readyPct * 1.15)} h={88} gradId="readyFill" /></div>
-              </div>
-              {/* Fees this season */}
-              <div className="flex flex-col pt-4">
-                <div className="flex items-center gap-2 px-5">
-                  <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">Fees this season</h3>
-                  <PeriodButton className="ml-auto" label="This season" />
-                </div>
-                <div className="mt-3 px-5">
-                  <div className="text-[32px] font-semibold leading-none tabular-nums os-display">${totalFees.toLocaleString()}</div>
-                  <div className="mt-1.5 text-[12px] text-[var(--os-ink-muted)]">across {total} returns · avg ${avgFee.toLocaleString()}/return</div>
-                </div>
-                <div className="mt-4"><MiniChart vals={feeVals} max={Math.round(totalFees * 1.12)} h={88} gradId="feesFill" /></div>
-              </div>
+          <AskComposer />
+
+          {/* Close the books — period close progress */}
+          <div className="mb-6 rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold text-[var(--os-ink)] os-display">Month-end close</h3>
+              <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">May 2026 <Icon icon={I.chevronDown} size={13} className="text-[var(--os-ink-subtle)]" /></button>
             </div>
+            <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
+              <div className="h-full bg-emerald-500" style={{ width: `${(closeDone / closeTotal) * 100}%` }} />
+              <div className="h-full bg-amber-500" style={{ width: `${(closeProg / closeTotal) * 100}%` }} />
+            </div>
+            <div className="mt-3.5 flex items-center gap-10">
+              {([["Completed", "bg-emerald-500", closeDone], ["In progress", "bg-amber-500", closeProg], ["Not started", "bg-[var(--os-border-strong)]", closeTodo]] as const).map(([label, dot, count]) => (
+                <div key={label}>
+                  <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]"><span className={cn("size-2 rounded-full", dot)} /> {label}</div>
+                  <div className="mt-1 text-[20px] font-semibold tabular-nums os-display text-[var(--os-ink)]">{count}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* ── Row 2 · Needs you now (Linear) + brief ── */}
-            <Card className="lg:col-span-7">
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">Needs you now</h3>
-                <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{needs.length}</span>
-                <Link href="/os/tasks" className="ml-auto text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">View all</Link>
-              </div>
-              <div className="-mx-2">
-                {needs.map(t => {
-                  const ag = agentByName(t.agent);
-                  return (
-                    <Link key={t.id} href="/os/tasks" className="flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">
-                      <span className="size-3.5 shrink-0 rounded-full border-[1.5px] border-[var(--os-border-strong)]" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{t.title}</div>
-                        <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{t.clientName}</div>
-                      </div>
-                      <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.when}</span>
-                      {ag ? <AgentAvatar gradient={ag.gradient} size={20} bare /> : <Avatar name={t.clientName} />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </Card>
-
+          <div className="flex flex-col gap-4">
             {/* ── Today's brief (the newspaper) ── */}
-            <Card className="lg:col-span-5">
+            <Card>
               <CardHead title="Today's brief" mark />
               <ul className="-mx-2 flex-1">
                 {brief.map((b, i) => {
@@ -198,10 +164,13 @@ export default function TodayPage() {
                   );
                 })}
               </ul>
+              <Link href="/os/reports" className="-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">
+                Read full brief <Icon icon={I.chevronRight} size={13} />
+              </Link>
             </Card>
 
-            {/* ── Row 3 · At risk (Linear) + calls / handled ── */}
-            <Card className="lg:col-span-7">
+            {/* ── At risk (Linear) ── */}
+            <Card>
               <div className="mb-2 flex items-center gap-2">
                 <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">At risk</h3>
                 <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{atRiskList.length}</span>
@@ -221,7 +190,30 @@ export default function TodayPage() {
               </div>
             </Card>
 
-            <div className="flex flex-col gap-4 lg:col-span-5">
+            {/* Petal activity — vertical summary box */}
+              <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+                <div className="mb-3 flex items-center gap-2">
+                  <PetalMark className="size-4 text-[var(--os-ink)]" />
+                  <h3 className="text-[13px] font-semibold text-[var(--os-ink)] os-display">Petal activity</h3>
+                </div>
+                <div className="space-y-0.5">
+                  {([
+                    { label: "Drafts awaiting approval", count: reviewCount, icon: I.sparkle, href: "/os/tasks" },
+                    { label: "Documents outstanding", count: missingDocs, icon: I.file, href: "/os/documents" },
+                    { label: "Awaiting signature", count: awaitingSign, icon: I.edit, href: "/os/tasks" },
+                    { label: "Overdue invoices", count: overdueCount, icon: I.billing, href: "/os/billing" },
+                  ]).map(a => (
+                    <Link key={a.label} href={a.href} className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">
+                      <Icon icon={a.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{a.label}</span>
+                      <span className="shrink-0 text-[18px] font-semibold tabular-nums os-display text-[var(--os-ink)]">{a.count}</span>
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/os/tasks" className="-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">
+                  Open tasks <Icon icon={I.chevronRight} size={13} />
+                </Link>
+              </div>
               {calls.length > 0 && (
                 <Card>
                   <CardHead title="Today's calls" />
@@ -261,7 +253,6 @@ export default function TodayPage() {
                   })}
                 </div>
               </Card>
-            </div>
           </div>
         </div>
       </div>

@@ -177,19 +177,22 @@ export default function DocumentsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.file} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Documents</h1>
-        <span className="text-[12px] text-[var(--os-ink-subtle)]">{clientList.length} clients · {docs.length} documents</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
-          <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.attach} size={15} /> Upload</button>
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Documents</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Source documents Petal collects, extracts, and files by client.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
+            <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.attach} size={15} /> Upload</button>
+          </div>
         </div>
       </div>
 
       {/* Petal insight strip → review across all clients */}
       {needsReviewTotal > 0 && (
-        <button onClick={() => { setClient(null); setTab("needs_review"); }} className="flex w-full items-center gap-2.5 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-4 py-3 text-left transition-colors hover:bg-[var(--os-selected)]">
+        <button onClick={() => { setClient(null); setTab("needs_review"); }} className="flex w-full items-center gap-2.5 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-8 py-3 text-left transition-colors hover:bg-[var(--os-selected)]">
           <PetalMark className="size-4 shrink-0 text-[var(--os-ink-muted)]" />
           <span className="text-[13px] text-[var(--os-ink-muted)]">Petal extracted <span className="font-medium text-[var(--os-ink)]">{needsReviewTotal} documents</span> that need your review across {clientsWithReview} clients</span>
           <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-ink-muted)]">Review all <Icon icon={I.chevronRight} size={13} /></span>
@@ -250,7 +253,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-8 py-6">
             {files.length === 0 ? (
               <div className="grid h-full place-items-center text-[13px] text-[var(--os-ink-subtle)]">Nothing here right now.</div>
             ) : view === "grid" ? (

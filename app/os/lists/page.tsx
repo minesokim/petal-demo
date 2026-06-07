@@ -27,19 +27,22 @@ export default function ListsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <Icon icon={I.star} size={17} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[15px] font-semibold os-display">Worklists</h1>
-        <span className="truncate text-[12px] text-[var(--os-ink-subtle)]">{list.subtitle}</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.sort} size={15} /> Sort</button>
-          <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.filter} size={15} /> Filter</button>
-          <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
+      <div className="border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Worklists</h1>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Saved views that group your book by what needs doing.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.sort} size={15} /> Sort</button>
+            <button className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.filter} size={15} /> Filter</button>
+            <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.search} size={15} /></button>
+          </div>
         </div>
       </div>
 
       {/* merged: switch between saved lists */}
-      <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-4">
+      <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8">
         {LISTS.map(l => (
           <button
             key={l.key}
@@ -53,7 +56,7 @@ export default function ListsPage() {
         ))}
       </div>
 
-      <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-4 py-2", COLS)}>
+      <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-8 py-2", COLS)}>
         {["Client", "Entities", "Stage", "Fee", "Health", "Owner"].map((h, i) => (
           <div key={h} className={cn("os-label", i === 3 && "text-right")}>{h}</div>
         ))}
@@ -68,7 +71,7 @@ export default function ListsPage() {
           const hp = healthMeta(h.healthUrgency);
           const initials = h.name.split(" ").map(n => n[0]).join("").slice(0, 2);
           return (
-            <Link key={h.id} href={`/os/clients/${h.id}`} className={cn("grid h-[52px] items-center gap-x-4 border-b border-[var(--os-border)] px-4 transition-colors hover:bg-[var(--os-hover)]", COLS)}>
+            <Link key={h.id} href={`/os/clients/${h.id}`} className={cn("grid h-[52px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", COLS)}>
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials}</span>
                 <div className="min-w-0">

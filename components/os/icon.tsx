@@ -9,7 +9,7 @@ import {
   ArrowUp01Icon, ViewIcon, Copy01Icon, SecurityCheckIcon, UserSettings01Icon,
   FlashIcon, ArrowDownToLineIcon, Clock01Icon, AiMagicIcon,
   ArrowUp02Icon, Attachment01Icon, Globe02Icon, MessageAdd01Icon,
-  Flag03Icon, ListViewIcon, KanbanIcon, Invoice01Icon,
+  Flag03Icon, ListViewIcon, KanbanIcon, Invoice01Icon, Archive02Icon, Mic01Icon,
 } from "@hugeicons/core-free-icons";
 
 /** Premium icon set — Hugeicons (stroke-rounded). Single source of truth for the OS. */
@@ -61,6 +61,8 @@ export const I = {
   viewList: ListViewIcon,
   viewBoard: KanbanIcon,
   billing: Invoice01Icon,
+  archive: Archive02Icon,
+  mic: Mic01Icon,
 } as const;
 
 export type IconName = keyof typeof I;

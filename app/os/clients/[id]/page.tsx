@@ -157,7 +157,7 @@ export default function ClientRecordPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto px-8 py-5">
             {tab === "Activity" && (
               <>
                 <div className="mb-4 rounded-lg bg-[var(--os-bg-subtle)] p-3.5">
