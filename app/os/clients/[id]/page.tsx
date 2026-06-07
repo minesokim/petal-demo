@@ -95,7 +95,7 @@ export default function ClientRecordPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Breadcrumb header (Assembly composition) */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
         <Link href="/os/clients" className="text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]">Clients</Link>
         <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
         <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials}</span>
@@ -109,7 +109,7 @@ export default function ClientRecordPage() {
       <div className="flex min-h-0 flex-1">
         {/* Center: tabs + content */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-4">
+          <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8">
             {PRIMARY_TABS.map(t => {
               const count = t === "Entities" ? ents.length : t === "Returns" ? rets.length : null;
               return (
@@ -326,9 +326,9 @@ export default function ClientRecordPage() {
               const cthreads = threads.filter(t => t.householdId === h.id);
               if (cthreads.length === 0) return <div className="grid h-full place-items-center text-[13px] text-[var(--os-ink-subtle)]">No messages yet.</div>;
               return (
-                <div className="-mx-5 -mt-4">
+                <div className="-mx-8 -mt-5">
                   {cthreads.map(t => (
-                    <Link key={t.id} href="/os/inbox" className="group flex gap-2.5 border-b border-[var(--os-border)] px-5 py-3 transition-colors hover:bg-[var(--os-hover)]">
+                    <Link key={t.id} href="/os/inbox" className="group flex gap-2.5 border-b border-[var(--os-border)] px-8 py-3 transition-colors hover:bg-[var(--os-hover)]">
                       <div className="relative mt-0.5 shrink-0">
                         <span className="grid size-7 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials}</span>
                         <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-[var(--os-bg)]", channelMeta[t.channel].dot)} />
@@ -434,10 +434,10 @@ export default function ClientRecordPage() {
               if (items.length === 0) return <div className="grid h-full place-items-center text-[13px] text-[var(--os-ink-subtle)]">No open tasks for {firstName}.</div>;
               const groups = TIER_ORDER.map(tier => ({ tier, items: items.filter(t => t.tier === tier) })).filter(g => g.items.length > 0);
               return (
-                <div className="-mx-5 -mt-4">
+                <div className="-mx-8 -mt-5">
                   {groups.map(g => (
                     <div key={g.tier}>
-                      <div className="flex items-center gap-2 bg-[var(--os-bg-subtle)] px-5 py-1.5">
+                      <div className="flex items-center gap-2 bg-[var(--os-bg-subtle)] px-8 py-1.5">
                         <TierGlyph tier={g.tier} />
                         <span className="text-[13px] font-medium text-[var(--os-ink)]">{tierMeta[g.tier].label}</span>
                         <span className="text-[13px] tabular-nums text-[var(--os-ink-subtle)]">{g.items.length}</span>
@@ -446,7 +446,7 @@ export default function ClientRecordPage() {
                         const ag = agentByName(t.agent);
                         const isDue = t.when.startsWith("Due");
                         return (
-                          <Link key={t.id} href="/os/tasks" className="flex h-11 w-full items-center gap-2.5 px-5 transition-colors hover:bg-[var(--os-hover)]">
+                          <Link key={t.id} href="/os/tasks" className="flex h-11 w-full items-center gap-2.5 px-8 transition-colors hover:bg-[var(--os-hover)]">
                             <TierGlyph tier={t.tier} />
                             <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
                             <div className="flex shrink-0 items-center gap-2 text-[11px]">
@@ -587,14 +587,6 @@ export default function ClientRecordPage() {
                 ))}
               </div>
 
-              <div className="os-label px-3 pb-2 pt-4">Lists</div>
-              <div className="space-y-1 px-3">
-                {[h.kind === "business" ? "Business clients" : "Individuals", "My book"].map(l => (
-                  <div key={l} className="flex items-center gap-2 text-[12px] text-[var(--os-ink-muted)]">
-                    <span className="size-1.5 rounded-full bg-[var(--os-border-strong)]" /> {l}
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </aside>
