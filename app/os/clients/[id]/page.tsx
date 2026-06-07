@@ -252,13 +252,14 @@ export default function ClientRecordPage() {
                         {e.ein && <span className="ml-auto font-mono text-[11px] text-[var(--os-ink-subtle)]">EIN {e.ein}</span>}
                       </div>
                       {er.map(r => (
-                        <div key={r.id} className="mt-2.5 flex items-center gap-3 border-t border-[var(--os-border)] pt-2.5 text-[12px]">
-                          <span className="text-[var(--os-ink-muted)]">{r.year} return</span>
+                        <Link key={r.id} href={`/os/returns/${r.id}`} className="group/ret mt-2.5 flex items-center gap-3 border-t border-[var(--os-border)] pt-2.5 text-[12px]">
+                          <span className="text-[var(--os-ink-muted)] transition-colors group-hover/ret:text-[var(--os-ink)]">{r.year} return</span>
                           <StageTag stage={r.stage} />
                           <span className="text-[var(--os-ink-subtle)]">·</span>
                           <span className={cn("tabular-nums", r.docsSubmitted >= r.docsRequired ? "text-[var(--os-ink-muted)]" : "text-[var(--os-warning)]")}>{r.docsSubmitted}/{r.docsRequired} docs</span>
                           <span className="ml-auto font-medium tabular-nums text-[var(--os-ink)]">${r.fee.toLocaleString()}</span>
-                        </div>
+                          <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/ret:opacity-100" />
+                        </Link>
                       ))}
                     </div>
                   );
@@ -269,7 +270,7 @@ export default function ClientRecordPage() {
             {tab === "Returns" && (
               <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
                 {rets.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                  <Link key={r.id} href={`/os/returns/${r.id}`} className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]">
                     <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{r.form}</span>
                     <div className="min-w-0">
                       <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{r.entityName} · {r.year}</div>
@@ -277,8 +278,9 @@ export default function ClientRecordPage() {
                     <div className="ml-auto flex items-center gap-3">
                       <StageTag stage={r.stage} />
                       <span className="w-16 text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">${r.fee.toLocaleString()}</span>
+                      <Icon icon={I.chevronRight} size={14} className="text-[var(--os-ink-subtle)]" />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

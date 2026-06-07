@@ -106,7 +106,7 @@ function ReturnsTable({ rows }: { rows: typeof returns }) {
           const complete = r.docsSubmitted >= r.docsRequired;
           const pct = Math.round((r.docsSubmitted / r.docsRequired) * 100);
           return (
-            <Link key={r.id} href={`/os/clients/${r.householdId}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", RETURN_COLS)}>
+            <Link key={r.id} href={`/os/returns/${r.id}`} className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", RETURN_COLS)}>
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(r.entityName)}</span>
                 <div className="min-w-0">
@@ -227,7 +227,7 @@ export default function ClientsPage() {
 
   // kanban items reflect the active object view
   const boardItems: BoardItem[] = view === "returns"
-    ? rr.map(r => ({ id: r.id, href: `/os/clients/${r.householdId}`, name: r.entityName, sub: `${r.householdName} · ${r.year}`, pills: [r.form], stage: r.stage }))
+    ? rr.map(r => ({ id: r.id, href: `/os/returns/${r.id}`, name: r.entityName, sub: `${r.householdName} · ${r.year}`, pills: [r.form], stage: r.stage }))
     : hh.map(h => {
         const person = people.find(p => p.householdId === h.id);
         return { id: h.id, href: `/os/clients/${h.id}`, name: h.name, sub: person?.email ?? kindLabel[h.kind], pills: entitiesOf(h.id).map(e => e.form), stage: householdStage(h.id), tier: h.serviceTier };
