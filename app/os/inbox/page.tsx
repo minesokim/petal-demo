@@ -48,8 +48,7 @@ function ThreadView({ thread }: { thread: Thread }) {
           <Link href={`/os/clients/${thread.householdId}`} className="shrink-0 text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">{thread.clientName}</Link>
           <Icon icon={I.chevronRight} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" />
           <span className="truncate font-medium text-[var(--os-ink)]">{thread.subject}</span>
-          <button className="ml-auto flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 text-[12px] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.check} size={14} /> Done</button>
-          <button title="Snooze" className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.history} size={15} /></button>
+          <button title="Snooze" className="ml-auto grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.history} size={15} /></button>
           <button title="Star" className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.star} size={15} /></button>
           <button title="More" className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.more} size={16} /></button>
         </div>
@@ -180,11 +179,11 @@ const CHANNEL_FILTERS = [
 ] as const;
 
 export default function InboxPage() {
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<string>("mine");
   const [channel, setChannel] = useState<string>("all");
   const f = inboxFilters.find(x => x.key === filter)!;
   const list = threads.filter(t => f.test(t) && (channel === "all" || t.channel === channel));
-  const [selected, setSelected] = useState<string>(threads[0].id);
+  const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open" && t.assignee === "u-antonio")?.id ?? threads[0].id);
   const thread = list.find(t => t.id === selected) || list[0];
 
   const counts = inboxFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(x.test).length; return a; }, {});

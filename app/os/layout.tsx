@@ -12,7 +12,7 @@ import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, BarChart3, Users,
-  Orbit, BookOpen, Settings, Star, Home, FileText, Folder,
+  Orbit, BookOpen, Settings, Home, FileText, Folder,
 } from "lucide-react";
 
 type Item = { label: string; href: string; icon?: React.ComponentType<{ className?: string }>; badge?: number; glyph?: boolean; logo?: boolean; hugeicon?: IconSvgElement };
@@ -25,7 +25,7 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
       className={cn(
         "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors",
         active
-          ? "bg-[var(--os-selected)] text-[var(--os-ink)]"
+          ? "bg-black/[0.035] text-[var(--os-ink)]"
           : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
       )}
     >
@@ -71,7 +71,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Documents", href: "/os/documents", icon: FileText },
     { label: "Billing", href: "/os/billing", hugeicon: I.billing },
-    { label: "Worklists", href: "/os/lists", icon: Star },
   ];
   const petalAi: Item[] = [
     { label: "Petal Agents", href: "/os/agents", icon: Orbit, logo: true },

@@ -5,13 +5,15 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
+import { Mic } from "lucide-react";
 
 type Msg = { id: number; role: "user" | "petal" };
 
-const EXAMPLES: { icon: typeof I.returns; title: string; desc: string; prompt: string }[] = [
-  { icon: I.returns, title: "Draft a return", desc: "Turn a client's documents into a reviewable draft.", prompt: "Draft the 2025 return for Marcus Chen" },
-  { icon: I.search, title: "Research a question", desc: "Answer a tax question, grounded in the client's file.", prompt: "Why did Marcus Chen's wages drop 40% this year?" },
-  { icon: I.mail, title: "Draft a message", desc: "Write a client reminder or update in your voice.", prompt: "Draft a reminder to Priya for her missing documents" },
+const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
+  { icon: I.returns, label: "Draft Marcus Chen's 1040", prompt: "Draft the 2025 return for Marcus Chen" },
+  { icon: I.file, label: "Chase Priya's missing documents", prompt: "Draft a reminder to Priya for her missing documents" },
+  { icon: I.billing, label: "Reconcile this month's books", prompt: "Reconcile this month's bank activity and flag uncategorized expenses" },
+  { icon: I.search, label: "Why did Marcus Chen's wages drop?", prompt: "Why did Marcus Chen's wages drop 40% this year?" },
 ];
 
 const SOURCES = [
@@ -105,8 +107,8 @@ export default function AskPetalPage() {
 
   const hasConvo = messages.length > 0;
 
-  const send = () => {
-    if (!input.trim()) return;
+  const send = (text?: string) => {
+    if (!(text ?? input).trim()) return;
     setMessages(m => [...m, { id: Date.now(), role: "user" }, { id: Date.now() + 1, role: "petal" }]);
     setInput("");
   };
@@ -139,43 +141,36 @@ export default function AskPetalPage() {
                 ))}
               </div>
             ) : (
-              // Welcome (Linear "Ask" composition)
-              <div className="relative mx-auto flex h-full w-full max-w-[760px] flex-col items-center justify-center px-6">
-                <div className="w-full">
-                  <h2 className="text-center text-[24px] font-semibold os-display">Welcome to Petal</h2>
-                  <p className="mt-1.5 text-center text-[13px] text-[var(--os-ink-muted)]">Ask anything, or tell Petal what to do.</p>
+              // Empty state — chat-first starter (Solve-inspired, adapted)
+              <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-6 pb-6">
+                <div className="flex-1" />
+                <PetalMark className="mb-3 size-6" />
+                <h2 className="text-[26px] font-semibold leading-tight os-display text-[var(--os-ink)]">What can I help you with, Antonio?</h2>
 
-                  <div className="mt-6 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-sm transition-shadow focus-within:shadow-md">
-                    <input
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") send(); }}
-                      placeholder="Ask Petal…"
-                      autoFocus
-                      className="w-full bg-transparent text-[14px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
-                    />
-                    <div className="mt-3 flex items-center gap-1.5">
-                      <button className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.skills} size={14} /> Skills <Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" /></button>
-                      <div className="ml-auto flex items-center gap-1">
-                        <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.attach} size={15} /></button>
-                        <button onClick={send} disabled={!input.trim()} className="grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
-                      </div>
-                    </div>
-                  </div>
+                <div className="mt-5 space-y-0.5">
+                  {STARTERS.map(s => (
+                    <button key={s.label} onClick={() => send(s.prompt)} className="group/s -mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)]">
+                      <Icon icon={s.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
+                      <span className="flex-1 truncate text-[14px] text-[var(--os-ink-muted)] transition-colors group-hover/s:text-[var(--os-ink)]">{s.label}</span>
+                      <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/s:opacity-100" />
+                    </button>
+                  ))}
+                </div>
 
-                  <div className="mt-6">
-                    <div className="flex items-center">
-                      <span className="text-[12px] text-[var(--os-ink-muted)]">Get started with some examples</span>
-                      <button className="ml-auto grid size-5 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]"><Icon icon={I.close} size={13} /></button>
-                    </div>
-                    <div className="mt-2.5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      {EXAMPLES.map(ex => (
-                        <button key={ex.title} onClick={() => setInput(ex.prompt)} className="flex flex-col rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3.5 text-left transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
-                          <Icon icon={ex.icon} size={17} className="text-[var(--os-ink-muted)]" />
-                          <div className="mt-6 text-[13px] font-medium text-[var(--os-ink)]">{ex.title}</div>
-                          <div className="mt-1 text-[12px] leading-snug text-[var(--os-ink-muted)]">{ex.desc}</div>
-                        </button>
-                      ))}
+                <div className="mt-7 rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
+                  <input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") send(); }}
+                    placeholder="Ask Petal anything, or describe work to run…"
+                    autoFocus
+                    className="w-full bg-transparent text-[15px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
+                  />
+                  <div className="mt-2.5 flex items-center gap-1.5">
+                    <button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button>
+                    <div className="ml-auto flex items-center gap-1.5">
+                      <button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button>
+                      <button onClick={() => send()} disabled={!input.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
                     </div>
                   </div>
                 </div>
@@ -215,7 +210,7 @@ export default function AskPetalPage() {
                     <Icon icon={I.attach} size={14} />
                   </button>
                   <button
-                    onClick={send}
+                    onClick={() => send()}
                     disabled={!input.trim()}
                     className="ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"
                   >

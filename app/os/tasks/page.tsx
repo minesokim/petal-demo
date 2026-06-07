@@ -10,6 +10,9 @@ import { AgentAvatar, TierGlyph, TrustPill } from "@/components/os/primitives";
 import { agents } from "@/lib/os-agents";
 import { agentRuns, type DiffRow, type RunStep } from "@/lib/os-runs";
 import { triage, trustMeta, tierMeta, TIER_ORDER, type TriageItem, type Tier } from "@/lib/os-triage";
+import { households } from "@/lib/os-entities";
+
+const MY_HIDS = new Set(households.filter(h => h.assignedTo === "u-antonio").map(h => h.id));
 
 function agentByName(name?: string) {
   return agents.find(a => a.name === name);
@@ -419,9 +422,10 @@ function BoardColumn({ tier, items, selected, onSelect }: { tier: Tier; items: T
 export default function TasksPage() {
   const [tab, setTab] = useState<TabKey>("todo");
   const [view, setView] = useState<ViewMode>("list");
+  const [scope, setScope] = useState<"mine" | "all">("mine");
   const [selected, setSelected] = useState<string | null>(null);
 
-  const visible = triage.filter(TABS.find(tb => tb.key === tab)!.match);
+  const visible = triage.filter(TABS.find(tb => tb.key === tab)!.match).filter(t => scope === "all" || MY_HIDS.has(t.householdId));
   const item = selected ? triage.find(t => t.id === selected) ?? null : null;
   const wide = !item;
   const groups = TIER_ORDER.map(tier => ({ tier, items: visible.filter(t => t.tier === tier) })).filter(g => g.items.length > 0);
@@ -437,7 +441,7 @@ export default function TasksPage() {
       <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8 py-1.5">
         {TABS.map(tb => {
           const on = tab === tb.key;
-          const count = triage.filter(tb.match).length;
+          const count = triage.filter(tb.match).filter(t => scope === "all" || MY_HIDS.has(t.householdId)).length;
           return (
             <button
               key={tb.key}
@@ -450,6 +454,11 @@ export default function TasksPage() {
           );
         })}
         <div className="ml-auto flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">
+            {(["mine", "all"] as const).map(s => (
+              <button key={s} onClick={() => setScope(s)} className={cn("h-6 rounded px-2 text-[12px] transition-colors", scope === s ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}>{s === "mine" ? "Mine" : "All"}</button>
+            ))}
+          </div>
           <div className="flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">
             <button onClick={() => setView("list")} aria-label="List view" className={cn("grid size-6 place-items-center rounded transition-colors", view === "list" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewList} size={14} /></button>
             <button onClick={() => setView("board")} aria-label="Board view" className={cn("grid size-6 place-items-center rounded transition-colors", view === "board" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewBoard} size={14} /></button>

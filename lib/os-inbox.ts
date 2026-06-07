@@ -90,9 +90,7 @@ export const threads: Thread[] = [
 ];
 
 export const inboxFilters = [
-  { key: "all", label: "All open", test: (t: Thread) => t.status === "open" },
-  { key: "unassigned", label: "Unassigned", test: (t: Thread) => false },
   { key: "mine", label: "Mine", test: (t: Thread) => t.status === "open" && t.assignee === "u-antonio" },
+  { key: "all", label: "All", test: (t: Thread) => t.status === "open" },
   { key: "snoozed", label: "Snoozed", test: (t: Thread) => t.status === "snoozed" },
-  { key: "done", label: "Done", test: (t: Thread) => t.status === "done" },
 ] as const;
