@@ -11,7 +11,12 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { threads, channelMeta, type Thread } from "@/lib/os-inbox";
-import { checklistFor } from "@/lib/os-documents";
+import { ThreadConversation } from "@/components/os/thread-conversation";
+import { checklistFor, type DocItem } from "@/lib/os-documents";
+import { docs, type OsDoc } from "@/lib/os-files";
+import { DocCard, DocRow, ReviewModal, DocLayoutToggle } from "@/components/os/doc-gallery";
+import { Detail } from "@/components/os/task-detail";
+import { motion, AnimatePresence } from "motion/react";
 import { triage, tierMeta, TIER_ORDER } from "@/lib/os-triage";
 import { agents } from "@/lib/os-agents";
 import { AgentAvatar, TierGlyph, TrustPill } from "@/components/os/primitives";
@@ -64,6 +69,10 @@ export default function ClientRecordPage() {
   const [tab, setTab] = useState("Activity");
   const [moreOpen, setMoreOpen] = useState(false);
   const [panel, setPanel] = useState<"Internal chat" | "Notes" | "Details">("Internal chat");
+  const [msgThread, setMsgThread] = useState<string | null>(null);
+  const [openDoc, setOpenDoc] = useState<string | null>(null);
+  const [docLayout, setDocLayout] = useState<"list" | "grid">("list");
+  const [taskOpen, setTaskOpen] = useState<string | null>(null);
 
   if (!h) return <div className="p-8 text-[13px] text-[var(--os-ink-muted)]">Client not found</div>;
 
@@ -83,6 +92,38 @@ export default function ClientRecordPage() {
   const draftText = missing > 0
     ? `Hi ${firstName}, quick nudge — we still need ${missing} item${missing === 1 ? "" : "s"} to wrap up your ${rets[0]?.year ?? 2025} return. You can upload straight from your portal whenever it's handy. Thank you!`
     : `Hi ${firstName}, good news — everything's in and your return is moving through review. We'll reach out the moment it's ready for your signature.`;
+
+  // Documents tab — real collected docs + a checklist of what each return still needs
+  const cdocs = docs.filter(d => d.householdId === h.id);
+  const docReturnOf = (d: OsDoc) => rets.find(r => d.context.includes(r.entityName)) ?? rets.find(r => r.form === d.context) ?? rets[0];
+  const synthDoc = (r: (typeof rets)[number], it: DocItem, i: number, status: "received" | "requested"): OsDoc => ({
+    id: `synth-${r.id}-${i}`,
+    name: status === "requested" ? it.label : `${it.label}.pdf`,
+    type: it.label,
+    clientName: h.name,
+    householdId: h.id,
+    context: it.note ?? `${r.form} · ${r.entityName}`,
+    status,
+    source: "Portal",
+    when: status === "requested" ? "Requested" : "Received",
+    note: status === "requested" ? "Doc Chase drafted a reminder — awaiting your approval to send." : undefined,
+  });
+  const docSections = rets.map(r => {
+    const items = checklistFor(r.form);
+    const received = Math.min(r.docsSubmitted, items.length);
+    const pool = [
+      ...cdocs.filter(d => d.status === "needs_review" && docReturnOf(d)?.id === r.id),
+      ...cdocs.filter(d => d.status === "received" && docReturnOf(d)?.id === r.id),
+    ];
+    let pi = 0;
+    const cards: OsDoc[] = items.map((it, i) =>
+      i < received ? (pool[pi++] ?? synthDoc(r, it, i, "received")) : synthDoc(r, it, i, "requested")
+    );
+    return { r, received, total: items.length, missing: Math.max(0, items.length - received), cards };
+  });
+  const allDocCards = docSections.flatMap(s => s.cards);
+  const openDocObj = openDoc ? (allDocCards.find(d => d.id === openDoc) ?? null) : null;
+  const taskItem = taskOpen ? (triage.find(t => t.id === taskOpen) ?? null) : null;
 
   const activity = [
     { who: "Petal", agent: true, text: `Drafted ${biz ? biz.name : ents[0].name} ${biz ? biz.form : "1040"} and flagged 1 item for review`, time: "2h ago", diff: ["Wages → $58,000 (−40% vs 2024)", biz ? `Created ${biz.form} — ${biz.type}` : "Matched prior-year return"] },
@@ -157,6 +198,26 @@ export default function ClientRecordPage() {
             </div>
           </div>
 
+          {tab === "Messages" ? (() => {
+            const cthreads = threads.filter(t => t.householdId === h.id);
+            if (cthreads.length === 0) return <div className="grid flex-1 place-items-center text-[13px] text-[var(--os-ink-subtle)]">No messages with {firstName} yet.</div>;
+            const sel = cthreads.find(t => t.id === msgThread) ?? cthreads[0];
+            return (
+              <div className="flex min-h-0 flex-1 flex-col">
+                {cthreads.length > 1 && (
+                  <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-5 py-1.5">
+                    {cthreads.map(t => (
+                      <button key={t.id} onClick={() => setMsgThread(t.id)} className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[12px] transition-colors", t.id === sel.id ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}>
+                        <span className={cn("size-1.5 shrink-0 rounded-full", channelMeta[t.channel].dot)} />
+                        <span className="max-w-[180px] truncate">{t.subject}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <ThreadConversation key={sel.id} thread={sel} />
+              </div>
+            );
+          })() : (
           <div className="flex-1 overflow-y-auto px-8 py-5">
             {tab === "Activity" && (
               <>
@@ -286,71 +347,39 @@ export default function ClientRecordPage() {
             )}
 
             {tab === "Documents" && (
-              <div className="space-y-5">
-                {rets.map(r => {
-                  const items = checklistFor(r.form);
-                  const received = Math.min(r.docsSubmitted, items.length);
-                  const missing = items.length - received;
-                  return (
-                    <div key={r.id}>
-                      <div className="mb-2 flex items-center gap-2">
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--os-ink-muted)]">{docsIn} of {docsReq} documents received</span>
+                  <DocLayoutToggle value={docLayout} onChange={setDocLayout} />
+                </div>
+                <div className="space-y-7">
+                  {docSections.map(({ r, received, total, missing, cards }) => (
+                    <section key={r.id}>
+                      <div className="mb-3 flex items-center gap-2">
                         <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{r.form}</span>
                         <span className="text-[13px] font-medium text-[var(--os-ink)]">{r.entityName}</span>
-                        <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{received} of {items.length} received</span>
+                        <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{received} of {total} received</span>
                         {missing > 0 && (
                           <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] text-[var(--os-ink-subtle)]">
                             <PetalMark className="size-3" /> Doc Chase is chasing {missing}
                           </span>
                         )}
                       </div>
-                      <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                        {items.map((it, i) => {
-                          const has = i < received;
-                          return (
-                            <div key={i} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                              {has
-                                ? <Icon icon={I.check} size={15} className="shrink-0 text-emerald-600" />
-                                : <span className="size-[15px] shrink-0 rounded-full border-[1.5px] border-amber-400" />}
-                              <span className="text-[13px] text-[var(--os-ink)]">{it.label}</span>
-                              {it.note && <span className="text-[11px] text-[var(--os-ink-subtle)]">{it.note}</span>}
-                              <span className={cn("ml-auto text-[12px]", has ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{has ? "Extracted" : "Requested"}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                      {docLayout === "grid" ? (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
+                          {cards.map(d => <DocCard key={d.id} doc={d} onOpen={setOpenDoc} />)}
+                        </div>
+                      ) : (
+                        <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
+                          {cards.map(d => <DocRow key={d.id} doc={d} onOpen={setOpenDoc} />)}
+                        </div>
+                      )}
+                    </section>
+                  ))}
+                </div>
               </div>
             )}
 
-            {tab === "Messages" && (() => {
-              const cthreads = threads.filter(t => t.householdId === h.id);
-              if (cthreads.length === 0) return <div className="grid h-full place-items-center text-[13px] text-[var(--os-ink-subtle)]">No messages yet.</div>;
-              return (
-                <div className="-mx-8 -mt-5">
-                  {cthreads.map(t => (
-                    <Link key={t.id} href="/os/inbox" className="group flex gap-2.5 border-b border-[var(--os-border)] px-8 py-3 transition-colors hover:bg-[var(--os-hover)]">
-                      <div className="relative mt-0.5 shrink-0">
-                        <span className="grid size-7 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials}</span>
-                        <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-[var(--os-bg)]", channelMeta[t.channel].dot)} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-semibold" : "font-medium")}>{t.subject}</span>
-                          <span className="ml-auto shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.time}</span>
-                          {t.unread && <span className="size-2 shrink-0 rounded-full bg-[var(--os-accent)]" />}
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                          {t.petalDraft && <PetalMark className="size-3 shrink-0" />}
-                          <span className="truncate">{threadContext(t)} · {channelMeta[t.channel].label}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              );
-            })()}
 
             {tab === "Billing" && (() => {
               const cardLast4 = String(1000 + (h.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 9000));
@@ -448,7 +477,7 @@ export default function ClientRecordPage() {
                         const ag = agentByName(t.agent);
                         const isDue = t.when.startsWith("Due");
                         return (
-                          <Link key={t.id} href="/os/tasks" className="flex h-11 w-full items-center gap-2.5 px-8 transition-colors hover:bg-[var(--os-hover)]">
+                          <button key={t.id} onClick={() => setTaskOpen(t.id)} className="flex h-11 w-full items-center gap-2.5 px-8 text-left transition-colors hover:bg-[var(--os-hover)]">
                             <TierGlyph tier={t.tier} />
                             <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
                             <div className="flex shrink-0 items-center gap-2 text-[11px]">
@@ -456,7 +485,7 @@ export default function ClientRecordPage() {
                               <span className={cn("w-14 shrink-0 text-right tabular-nums", isDue ? "text-[var(--os-warning)]" : "text-[var(--os-ink-subtle)]")}>{isDue ? t.when.replace("Due ", "") : t.when}</span>
                               {ag ? <AgentAvatar gradient={ag.gradient} size={18} bare /> : <span className="size-4 shrink-0 rounded-full bg-[var(--os-selected)]" />}
                             </div>
-                          </Link>
+                          </button>
                         );
                       })}
                     </div>
@@ -500,6 +529,7 @@ export default function ClientRecordPage() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Right: workspace panel — Internal chat / Notes / Details (Assembly composition) */}
@@ -593,6 +623,16 @@ export default function ClientRecordPage() {
           )}
         </aside>
       </div>
+      <AnimatePresence>{openDocObj && <ReviewModal doc={openDocObj} onClose={() => setOpenDoc(null)} />}</AnimatePresence>
+      <AnimatePresence>
+        {taskItem && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }} transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()} className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl">
+              <Detail item={taskItem} onClose={() => setTaskOpen(null)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
