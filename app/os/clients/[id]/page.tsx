@@ -1,48 +1,105 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
+// Client record — the deepest /os surface. Header strip + 9 explicit tabs +
+// "Run skill" menu + "View as client" portal preview + @Petal right rail.
+// Every number on this page derives from lib/fixtures at render time; the
+// Park exemplar must tie (Ready to Prep · 32/34 · $1,900 · $1,140) everywhere.
+
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  households, entitiesOf, returnsOf, returnsOfEntity, peopleOf, householdFee, householdStage,
-  healthMeta, kindLabel, stageLabels, stageDotStyles, OWNERS, type ReturnStage,
-} from "@/lib/os-entities";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { threads, channelMeta, type Thread } from "@/lib/os-inbox";
+import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag } from "@/components/os/primitives";
+import { ProvenancePanel } from "@/components/os/provenance";
+import { TaskDetail } from "@/components/os/task-detail";
+import { DocRow, ReviewModal, EngagementDocsHeader } from "@/components/os/doc-gallery";
 import { ThreadConversation } from "@/components/os/thread-conversation";
-import { checklistFor, type DocItem } from "@/lib/os-documents";
-import { docs, type OsDoc } from "@/lib/os-files";
-import { DocCard, DocRow, ReviewModal, DocLayoutToggle } from "@/components/os/doc-gallery";
-import { Detail } from "@/components/os/task-detail";
-import { motion, AnimatePresence } from "motion/react";
-import { triage, tierMeta, TIER_ORDER } from "@/lib/os-triage";
-import { agents } from "@/lib/os-agents";
-import { AgentAvatar, TierGlyph, TrustPill } from "@/components/os/primitives";
+import {
+  householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
+  positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById,
+  type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
+} from "@/lib/fixtures/firm";
+import {
+  householdStage, householdDeadline, householdFee, docsOfHousehold, docsOf, invoiceOf,
+  invoiceStatusMeta, engagementDeadline, activityFeed, transcriptWatchCount, clientHealth,
+  noticeCountdown,
+} from "@/lib/fixtures/derive";
+import { stageMeta, taskStatusMeta, healthMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
 
-// Don't cram the tab bar — keep the daily-driver surfaces visible (Assembly), overflow the rest.
-const PRIMARY_TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing"];
-const OVERFLOW_TABS = ["Intake", "Entities", "Compliance"];
+/* ── constants / small helpers (presentation only — no data) ── */
+const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-const agentByName = (name?: string) => agents.find(a => a.name === name);
-const firstOf = (name: string) => name.split(" ")[0];
-function threadContext(t: Thread) {
-  if (t.petalDraft) return "Petal drafted a reply";
-  const last = t.messages[t.messages.length - 1];
-  if (!last) return t.preview;
-  return last.from === "client" ? `${firstOf(last.author)} replied` : "You replied";
+const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Notices", "Positions", "Notes"] as const;
+type Tab = (typeof TABS)[number];
+const tabFromParam = (p: string | null): Tab =>
+  TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Activity";
+
+const kindLabel: Record<HouseholdKind, string> = {
+  individual: "Individual",
+  business: "Business",
+  mixed: "Individual + business",
+};
+
+/* UI colors for channels live here, not in fixtures (matches the Inbox). */
+const channelDot: Record<Channel, string> = {
+  email: "bg-blue-500",
+  sms: "bg-emerald-500",
+  portal: "bg-violet-500",
+  call: "bg-yellow-500",
+};
+
+/* The portal preview speaks to the client — stageMeta stages, said in client words. */
+const clientStageWords: Record<Stage, string> = {
+  collecting_docs: "We're collecting your documents",
+  ready_to_prep: "Everything's in — preparation is next",
+  in_preparation: "Your return is being prepared",
+  in_review: "Your return is ready for review",
+  pay_and_sign: "Waiting on your signature",
+  e_filed: "Filed with the IRS",
+  accepted: "Accepted by the IRS",
+};
+
+const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2);
+const DOC_STATUS_ORDER: Record<ExpectedDoc["status"], number> = { needs_review: 0, requested: 1, have: 2, na: 3 };
+
+/** The one primary verb — same derivation as the Tasks page. */
+const verbOf = (t: Task) => {
+  const v = taskStatusMeta[t.status].verb;
+  return v === "Approve" && t.draftText ? "Approve & send" : v;
+};
+
+/* ── quiet toast (the action keeps its name: "Approve & send" → "Approved & sent") ── */
+function useToast() {
+  const [msg, setMsg] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const show = (m: string) => {
+    setMsg(m);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setMsg(null), 2400);
+  };
+  return { msg, show };
 }
 
-const money = (n: number) => `$${n.toLocaleString()}`;
-type Tone = "ok" | "warn" | "muted";
-const toneClass: Record<Tone, string> = { ok: "text-[var(--os-success)]", warn: "text-[var(--os-warning)]", muted: "text-[var(--os-ink-subtle)]" };
-const toneDot: Record<Tone, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", muted: "bg-[var(--os-ink-subtle)]" };
-function complianceFor(stage: ReturnStage): { auth: [string, Tone]; efile: [string, Tone] } {
-  if (stage === "filed") return { auth: ["8879 signed", "ok"], efile: ["E-file accepted", "ok"] };
-  if (stage === "pay_and_sign") return { auth: ["8879 awaiting signature", "warn"], efile: ["E-file not started", "muted"] };
-  if (stage === "client_review") return { auth: ["8879 pending review", "muted"], efile: ["E-file not started", "muted"] };
-  return { auth: ["8879 not generated", "muted"], efile: ["E-file not started", "muted"] };
+function Toast({ msg }: { msg: string | null }) {
+  return (
+    <AnimatePresence>
+      {msg && (
+        <motion.div
+          initial={{ opacity: 0, y: 6, x: "-50%" }}
+          animate={{ opacity: 1, y: 0, x: "-50%" }}
+          exit={{ opacity: 0, y: 6, x: "-50%" }}
+          transition={{ duration: 0.16, ease: "easeOut" }}
+          className="fixed bottom-5 left-1/2 z-50 rounded-md bg-[var(--os-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--os-primary-fg)] shadow-sm"
+        >
+          {msg}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 function Attr({ label, children }: { label: string; children: React.ReactNode }) {
@@ -54,585 +111,800 @@ function Attr({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function StageTag({ stage }: { stage: ReturnStage }) {
+function FormChip({ form }: { form: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-      <span className={cn("size-1.5 rounded-full", (stageDotStyles as Record<string, string>)[stage] || "bg-stone-400")} />
-      {stageLabels[stage] || stage}
+    <span className="shrink-0 rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">
+      {form}
     </span>
   );
 }
 
-export default function ClientRecordPage() {
+/* ── notice status grammar (same dots + words as /os/notices) ── */
+function NoticeStatus({ n }: { n: Notice }) {
+  if (n.status === "resolved") {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+        <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
+        <span className="truncate">Resolved by {n.resolvedBy}{n.resolvedOn ? ` · ${fmtDate(n.resolvedOn)}` : ""}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+      <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+      <span className="truncate">Response drafted — awaiting your approval</span>
+    </span>
+  );
+}
+
+function ClientRecordInner() {
   const params = useParams();
-  const h = households.find(x => x.id === params.id);
-  const [tab, setTab] = useState("Activity");
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [panel, setPanel] = useState<"Internal chat" | "Notes" | "Details">("Internal chat");
+  const id = String(params.id);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  const h = householdById(id);
+
+  const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
+  const [panel, setPanel] = useState<"@Petal" | "Details">("@Petal");
+  const [runMenuOpen, setRunMenuOpen] = useState(false);
+  const [queuedSkills, setQueuedSkills] = useState<Set<string>>(new Set());
+  const [viewAsClient, setViewAsClient] = useState(false);
   const [msgThread, setMsgThread] = useState<string | null>(null);
-  const [openDoc, setOpenDoc] = useState<string | null>(null);
-  const [docLayout, setDocLayout] = useState<"list" | "grid">("list");
+  const [openDoc, setOpenDoc] = useState<ExpectedDoc | null>(null);
   const [taskOpen, setTaskOpen] = useState<string | null>(null);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [wpRun, setWpRun] = useState<string | null>(null);
+  const { msg, show } = useToast();
+
+  // ?tab= preselect — also when the param changes in place (deep links from health/positions).
+  useEffect(() => {
+    if (tabParam) setTab(tabFromParam(tabParam));
+  }, [tabParam]);
+
+  /* every fact below derives from fixtures at render time */
+  const engs = useMemo(() => (h ? engagementsOf(h.id) : []), [h]);
+  const ents = h ? entitiesOf(h.id) : [];
+  const ppl = h ? peopleOf(h.id) : [];
+  const hhTasks = h ? tasksOf(h.id) : [];
+  const hhThreads = h ? threadsOf(h.id) : [];
+  const hhNotices = h ? noticesOf(h.id) : [];
+  const hhPositions = h ? positionsOf(h.id) : [];
 
   if (!h) return <div className="p-8 text-[13px] text-[var(--os-ink-muted)]">Client not found</div>;
 
-  const ents = entitiesOf(h.id);
-  const rets = returnsOf(h.id);
-  const ppl = peopleOf(h.id);
-  const hp = healthMeta(h.healthUrgency);
   const stage = householdStage(h.id);
-  const initials = h.name.split(" ").map(n => n[0]).join("").slice(0, 2);
-  const owner = OWNERS[h.assignedTo] || "Unassigned";
-  const biz = ents.find(e => e.form !== "1040");
-  const firstName = h.name.split(" ")[0];
-  const docsIn = rets.reduce((s, r) => s + r.docsSubmitted, 0);
-  const docsReq = rets.reduce((s, r) => s + r.docsRequired, 0);
-  const missing = Math.max(0, docsReq - docsIn);
-  const petalSummary = `${h.name} is in ${stageLabels[stage] || stage}. ${docsIn} of ${docsReq} documents are in across ${rets.length} return${rets.length === 1 ? "" : "s"}, total fee $${householdFee(h.id).toLocaleString()}.`;
-  const draftText = missing > 0
-    ? `Hi ${firstName}, quick nudge — we still need ${missing} item${missing === 1 ? "" : "s"} to wrap up your ${rets[0]?.year ?? 2025} return. You can upload straight from your portal whenever it's handy. Thank you!`
-    : `Hi ${firstName}, good news — everything's in and your return is moving through review. We'll reach out the moment it's ready for your signature.`;
+  const deadline = householdDeadline(h.id);
+  const docs = docsOfHousehold(h.id);
+  const fee = householdFee(h.id);
+  const invoice = invoiceOf(h.id);
+  const health = clientHealth(h.id);
+  const feed = activityFeed({ householdId: h.id });
+  const openTasks = hhTasks.filter(t => t.status !== "done");
 
-  // Documents tab — real collected docs + a checklist of what each return still needs
-  const cdocs = docs.filter(d => d.householdId === h.id);
-  const docReturnOf = (d: OsDoc) => rets.find(r => d.context.includes(r.entityName)) ?? rets.find(r => r.form === d.context) ?? rets[0];
-  const synthDoc = (r: (typeof rets)[number], it: DocItem, i: number, status: "received" | "requested"): OsDoc => ({
-    id: `synth-${r.id}-${i}`,
-    name: status === "requested" ? it.label : `${it.label}.pdf`,
-    type: it.label,
-    clientName: h.name,
-    householdId: h.id,
-    context: it.note ?? `${r.form} · ${r.entityName}`,
-    status,
-    source: "Portal",
-    when: status === "requested" ? "Requested" : "Received",
-    note: status === "requested" ? "Doc Chase drafted a reminder — awaiting your approval to send." : undefined,
-  });
-  const docSections = rets.map(r => {
-    const items = checklistFor(r.form);
-    const received = Math.min(r.docsSubmitted, items.length);
-    const pool = [
-      ...cdocs.filter(d => d.status === "needs_review" && docReturnOf(d)?.id === r.id),
-      ...cdocs.filter(d => d.status === "received" && docReturnOf(d)?.id === r.id),
-    ];
-    let pi = 0;
-    const cards: OsDoc[] = items.map((it, i) =>
-      i < received ? (pool[pi++] ?? synthDoc(r, it, i, "received")) : synthDoc(r, it, i, "requested")
-    );
-    return { r, received, total: items.length, missing: Math.max(0, items.length - received), cards };
-  });
-  const allDocCards = docSections.flatMap(s => s.cards);
-  const openDocObj = openDoc ? (allDocCards.find(d => d.id === openDoc) ?? null) : null;
-  const taskItem = taskOpen ? (triage.find(t => t.id === taskOpen) ?? null) : null;
+  // The canned @Petal answer — composed from the SAME derivations as the header strip.
+  const petalAnswer =
+    `${h.name} is ${stageMeta[stage].label} — docs ${docs.label}. ` +
+    `${openTasks.length} open task${openTasks.length === 1 ? "" : "s"}` +
+    (deadline ? `; next deadline ${fmtDate(deadline.iso)}.` : `; no live deadlines.`);
 
-  const activity = [
-    { who: "Petal", agent: true, text: `Drafted ${biz ? biz.name : ents[0].name} ${biz ? biz.form : "1040"} and flagged 1 item for review`, time: "2h ago", diff: ["Wages → $58,000 (−40% vs 2024)", biz ? `Created ${biz.form} — ${biz.type}` : "Matched prior-year return"] },
-    { who: owner.split(" ")[0], text: "changed Stage and 2 attributes", time: "1d ago", diff: ["Stage → In Preparation", "Deposit → Paid"] },
-    { who: "Petal", agent: true, text: "1099-NEC uploaded to portal — extracted 2 fields", time: "2d ago" },
-    { who: "Meeting", meeting: true, text: "Estimated payments review + entity follow-up", time: "Apr 8 · 30 min · Zoom" },
-    { who: owner.split(" ")[0], text: `created ${h.name}`, time: `${h.since}` },
-  ];
+  // Skills that apply to this household (Books needs books; Transcript Watch needs an 8821).
+  const applicableSkills = skills.filter(
+    s => (s.id !== "sk-books" || h.hasBooks) && (s.id !== "sk-transcript" || h.has8821),
+  );
+
+  // K-1 relationship graph, from entities[].owners + engagements[].k1FlowsTo.
+  const k1Links = engs
+    .filter(e => e.k1FlowsTo)
+    .map(e => {
+      const target = engagementById(e.k1FlowsTo!);
+      const src = entityById(e.entityId);
+      const tgt = target ? entityById(target.entityId) : undefined;
+      const pct = src?.owners?.reduce((s, o) => s + o.pct, 0);
+      return target && src && tgt
+        ? { key: e.id, line: `${tgt.name} (${target.form}) ← K-1 ← ${src.name} (${e.form}${pct ? `, ${pct}%` : ""})` }
+        : null;
+    })
+    .filter((x): x is { key: string; line: string } => x !== null);
+
+  const workpapers = engs
+    .map(e => ({ eng: e, wp: workpaperOf(e.id) }))
+    .filter((x): x is { eng: (typeof engs)[number]; wp: NonNullable<ReturnType<typeof workpaperOf>> } => !!x.wp);
+
+  const taskItem = taskOpen ? hhTasks.find(t => t.id === taskOpen) ?? null : null;
+
+  const tabCount: Partial<Record<Tab, number>> = {
+    Returns: engs.length,
+    Tasks: hhTasks.length,
+    Messages: hhThreads.length,
+    Notices: hhNotices.length,
+    Positions: hhPositions.length,
+  };
+
+  function onTaskVerb(t: Task, verb: string) {
+    if (verb === "Decide" || verb === "View run") setTaskOpen(t.id);
+    else if (verb === "Approve & send") show("Approved & sent");
+    else if (verb === "Approve") show("Approved");
+    else if (verb === "Nudge") show("Nudge sent");
+  }
 
   return (
     <div className="flex h-full flex-col">
-      {/* Breadcrumb header (Assembly composition) */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
-        <Link href="/os/clients" className="text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]">Clients</Link>
+      {/* Breadcrumb header (Assembly composition, preserved) */}
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-3 sm:px-8">
+        <Link href="/os/clients" className={cn("text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)}>Clients</Link>
         <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
-        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials}</span>
-        <span className="text-[13px] font-semibold text-[var(--os-ink)]">{h.name}</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><PetalMark className="size-3.5" /> Run skill</button>
-          <button className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]"><Icon icon={I.more} size={16} /></button>
-        </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1">
-        {/* Center: tabs + content */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8">
-            {PRIMARY_TABS.map(t => {
-              const count = t === "Entities" ? ents.length : t === "Returns" ? rets.length : null;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={cn("relative px-2.5 py-2 text-[13px] transition-colors", tab === t ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}
-                >
-                  {t}
-                  {count !== null && <span className="ml-1 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
-                  {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
-                </button>
-              );
-            })}
-            {/* Overflow — keep the bar uncluttered (Assembly "N more") */}
-            <div className="relative">
-              <button
-                onClick={() => setMoreOpen(o => !o)}
-                className={cn("relative flex items-center gap-1 px-2.5 py-2 text-[13px] transition-colors", OVERFLOW_TABS.includes(tab) ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}
-              >
-                {OVERFLOW_TABS.includes(tab) ? tab : `${OVERFLOW_TABS.length} more`}
-                <Icon icon={I.chevronDown} size={13} className={cn("text-[var(--os-ink-subtle)] transition-transform", moreOpen && "rotate-180")} />
-                {OVERFLOW_TABS.includes(tab) && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
-              </button>
-              {moreOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setMoreOpen(false)} />
-                  <div className="absolute left-0 top-full z-20 mt-1 min-w-[170px] rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-md">
-                    {OVERFLOW_TABS.map(t => {
-                      const count = t === "Entities" ? ents.length : t === "Returns" ? rets.length : null;
-                      return (
-                        <button
-                          key={t}
-                          onClick={() => { setTab(t); setMoreOpen(false); }}
-                          className={cn("flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors", tab === t ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}
-                        >
-                          {t}
-                          {count !== null && <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {tab === "Messages" ? (() => {
-            const cthreads = threads.filter(t => t.householdId === h.id);
-            if (cthreads.length === 0) return <div className="grid flex-1 place-items-center text-[13px] text-[var(--os-ink-subtle)]">No messages with {firstName} yet.</div>;
-            const sel = cthreads.find(t => t.id === msgThread) ?? cthreads[0];
-            return (
-              <div className="flex min-h-0 flex-1 flex-col">
-                {cthreads.length > 1 && (
-                  <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-5 py-1.5">
-                    {cthreads.map(t => (
-                      <button key={t.id} onClick={() => setMsgThread(t.id)} className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[12px] transition-colors", t.id === sel.id ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}>
-                        <span className={cn("size-1.5 shrink-0 rounded-full", channelMeta[t.channel].dot)} />
-                        <span className="max-w-[180px] truncate">{t.subject}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <ThreadConversation key={sel.id} thread={sel} />
-              </div>
-            );
-          })() : (
-          <div className="flex-1 overflow-y-auto px-8 py-5">
-            {tab === "Activity" && (
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
+        <span className="truncate text-[13px] font-semibold text-[var(--os-ink)]">{h.name}</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={() => setViewAsClient(v => !v)}
+            aria-pressed={viewAsClient}
+            className={cn(
+              "flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors",
+              viewAsClient
+                ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] font-medium text-[var(--os-ink)]"
+                : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+              FOCUS,
+            )}
+          >
+            <Icon icon={I.eye} size={13} /> View as client
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setRunMenuOpen(o => !o)}
+              aria-expanded={runMenuOpen}
+              className={cn("flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
+            >
+              <PetalMark className="size-3.5" /> Run skill
+            </button>
+            {runMenuOpen && (
               <>
-                <div className="mb-4 rounded-lg bg-[var(--os-bg-subtle)] p-3.5">
-                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Catch me up</div>
-                  <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
-                </div>
-                <div className="os-label mb-2">Activity</div>
-                <div className="space-y-3">
-                  {activity.map((a, i) => (
-                    <div key={i} className="flex gap-2.5">
-                      <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", a.agent ? "bg-emerald-500" : a.meeting ? "bg-blue-500" : "bg-[var(--os-border-strong)]")} />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[13px] leading-snug">
-                          <span className="font-medium">{a.who}</span> <span className="text-[var(--os-ink-muted)]">{a.text}</span>
-                        </div>
-                        {a.diff && <div className="mt-1 space-y-0.5">{a.diff.map((d, j) => <div key={j} className="text-[12px] text-[var(--os-ink-muted)]">{d}</div>)}</div>}
-                        <div className="mt-0.5 text-[11px] text-[var(--os-ink-subtle)]">{a.time}</div>
+                <div className="fixed inset-0 z-10" onClick={() => setRunMenuOpen(false)} />
+                <div className="absolute right-0 top-full z-20 mt-1 w-[300px] rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-md">
+                  <div className="os-label px-2.5 pb-1 pt-1.5">Run a skill for {h.name}</div>
+                  {applicableSkills.map(s =>
+                    queuedSkills.has(s.id) ? (
+                      <div key={s.id} className="flex h-8 items-center gap-2 rounded-md px-2.5 text-[12px] font-medium text-[var(--os-ink)]">
+                        <Icon icon={I.check} size={14} className="shrink-0 text-emerald-600" />
+                        Queued — lands in Tasks
+                        <span className="ml-auto truncate text-[11px] font-normal text-[var(--os-ink-subtle)]">{s.name}</span>
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <button
+                        key={s.id}
+                        onClick={() => setQueuedSkills(prev => new Set(prev).add(s.id))}
+                        className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
+                      >
+                        <SkillPetal category={s.category} size={14} />
+                        <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                        <TrustTierTag tier={s.trust} />
+                      </button>
+                    ),
+                  )}
                 </div>
               </>
             )}
+          </div>
+        </div>
+      </div>
 
-            {tab === "Intake" && (() => {
-              const primary = ppl.find(p => p.role === "Taxpayer" || p.role === "Owner") ?? ppl[0];
-              const filingStatus = ents.find(e => e.form === "1040")?.type ?? kindLabel[h.kind];
-              const forms = [...new Set(ents.map(e => e.form))].join(" · ");
-              const SOURCES = ["Referral — existing client", "Returning client", "Google search", "Partner CPA referral", "Walk-in"];
-              const source = SOURCES[Math.abs(h.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % SOURCES.length];
-              const depositPaid = rets.some(r => r.depositPaid);
-              return (
-                <div className="space-y-6">
-                  <div className="rounded-lg bg-[var(--os-bg-subtle)] p-3.5">
-                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Intake summary</div>
-                    <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{firstName} — {kindLabel[h.kind].toLowerCase()} client since {h.since}. {ents.length} entit{ents.length === 1 ? "y" : "ies"} filing {forms}.</p>
-                  </div>
+      {/* Header strip — all derived; Park reads Ready to Prep · Ext Sep 15 · 32/34 · $1,900 · $1,140 */}
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 border-b border-[var(--os-border)] px-4 py-2 text-[12px] text-[var(--os-ink-muted)] sm:px-8">
+        <StageTag stage={stage} />
+        {deadline && <DeadlineChip iso={deadline.iso} extended={deadline.extended} />}
+        <span>Docs <span className="font-medium tabular-nums text-[var(--os-ink)]">{docs.label}</span></span>
+        <span>Fee <span className="font-medium tabular-nums text-[var(--os-ink)]">{money(fee)}</span></span>
+        <span>Balance <span className="font-medium tabular-nums text-[var(--os-ink)]">{money(invoice.balance)}</span></span>
+      </div>
 
-                  <section>
-                    <div className="os-label mb-2">Filing profile</div>
-                    <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                      <Attr label="Client type">{kindLabel[h.kind]}</Attr>
-                      <Attr label="Filing status">{filingStatus}</Attr>
-                      <Attr label="Entities"><span className="tabular-nums">{ents.length}</span></Attr>
-                      <Attr label="Expected forms">{forms}</Attr>
-                    </div>
-                  </section>
+      {viewAsClient ? (
+        /* ── Read-only portal preview — what this client sees ── */
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--os-bg-subtle)]">
+          <div className="mx-auto w-full max-w-[560px] px-4 py-6 sm:py-8">
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3.5 py-2.5 text-[12px] text-[var(--os-ink-muted)]">
+              <Icon icon={I.eye} size={14} className="shrink-0" />
+              <span>Viewing as <span className="font-medium text-[var(--os-ink)]">{h.name}</span> — read-only</span>
+              <button onClick={() => setViewAsClient(false)} className={cn("ml-auto shrink-0 text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
+                Back to the record
+              </button>
+            </div>
 
-                  <section>
-                    <div className="os-label mb-2">Contacts</div>
-                    <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                      {ppl.map(p => (
-                        <div key={p.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{p.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate text-[13px] font-medium text-[var(--os-ink)]">{p.name}</span>
-                              {primary && p.id === primary.id && <span className="shrink-0 rounded-full bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--os-ink-muted)]">Primary</span>}
-                            </div>
-                            <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email} · {p.phone}</div>
-                          </div>
-                          <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section>
-                    <div className="os-label mb-2">Engagement</div>
-                    <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                      <Attr label="Service tier">{h.serviceTier}</Attr>
-                      <Attr label="Assigned preparer">{owner}</Attr>
-                      <Attr label="Client since"><span className="tabular-nums">{h.since}</span></Attr>
-                      <Attr label="Referral source">{source}</Attr>
-                      <Attr label="Deposit"><span className={depositPaid ? "text-[var(--os-success)]" : "text-[var(--os-warning)]"}>{depositPaid ? "Paid" : "Not collected"}</span></Attr>
-                    </div>
-                  </section>
+            <div className="space-y-3">
+              {/* their documents */}
+              <section className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4">
+                <h3 className="text-[13px] font-semibold text-[var(--os-ink)]">Your documents</h3>
+                <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">
+                  <span className="font-medium tabular-nums text-[var(--os-ink)]">{docs.inHand} of {docs.denom}</span> received
+                  {docs.requested > 0 ? ` — ${docs.requested} still to send` : " — all set"}
+                </p>
+                <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
+                  <div className="h-full rounded-full bg-[var(--os-ink)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
                 </div>
-              );
-            })()}
+              </section>
 
-            {tab === "Entities" && (
-              <div className="space-y-2.5">
-                {ents.map(e => {
-                  const er = returnsOfEntity(e.id);
-                  return (
-                    <div key={e.id} className="rounded-lg border border-[var(--os-border)] p-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded-md bg-[var(--os-selected)] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{e.form}</span>
-                        <span className="text-[13px] font-medium text-[var(--os-ink)]">{e.name}</span>
-                        <span className="text-[12px] text-[var(--os-ink-subtle)]">{e.type}</span>
-                        {e.ein && <span className="ml-auto font-mono text-[11px] text-[var(--os-ink-subtle)]">EIN {e.ein}</span>}
-                      </div>
-                      {er.map(r => (
-                        <Link key={r.id} href={`/os/returns/${r.id}`} className="group/ret mt-2.5 flex items-center gap-3 border-t border-[var(--os-border)] pt-2.5 text-[12px]">
-                          <span className="text-[var(--os-ink-muted)] transition-colors group-hover/ret:text-[var(--os-ink)]">{r.year} return</span>
-                          <StageTag stage={r.stage} />
-                          <span className="text-[var(--os-ink-subtle)]">·</span>
-                          <span className={cn("tabular-nums", r.docsSubmitted >= r.docsRequired ? "text-[var(--os-ink-muted)]" : "text-[var(--os-warning)]")}>{r.docsSubmitted}/{r.docsRequired} docs</span>
-                          <span className="ml-auto font-medium tabular-nums text-[var(--os-ink)]">${r.fee.toLocaleString()}</span>
-                          <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/ret:opacity-100" />
-                        </Link>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {tab === "Returns" && (
-              <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
-                {rets.map(r => (
-                  <Link key={r.id} href={`/os/returns/${r.id}`} className="flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]">
-                    <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{r.form}</span>
-                    <div className="min-w-0">
-                      <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{r.entityName} · {r.year}</div>
-                    </div>
-                    <div className="ml-auto flex items-center gap-3">
-                      <StageTag stage={r.stage} />
-                      <span className="w-16 text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">${r.fee.toLocaleString()}</span>
-                      <Icon icon={I.chevronRight} size={14} className="text-[var(--os-ink-subtle)]" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {tab === "Documents" && (
-              <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-[12px] text-[var(--os-ink-muted)]">{docsIn} of {docsReq} documents received</span>
-                  <DocLayoutToggle value={docLayout} onChange={setDocLayout} />
-                </div>
-                <div className="space-y-7">
-                  {docSections.map(({ r, received, total, missing, cards }) => (
-                    <section key={r.id}>
-                      <div className="mb-3 flex items-center gap-2">
-                        <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{r.form}</span>
-                        <span className="text-[13px] font-medium text-[var(--os-ink)]">{r.entityName}</span>
-                        <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{received} of {total} received</span>
-                        {missing > 0 && (
-                          <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] text-[var(--os-ink-subtle)]">
-                            <PetalMark className="size-3" /> Doc Chase is chasing {missing}
-                          </span>
-                        )}
-                      </div>
-                      {docLayout === "grid" ? (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
-                          {cards.map(d => <DocCard key={d.id} doc={d} onOpen={setOpenDoc} />)}
+              {/* their returns, in client words */}
+              <section className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4">
+                <h3 className="text-[13px] font-semibold text-[var(--os-ink)]">Your returns</h3>
+                <div className="mt-2 divide-y divide-[var(--os-border)]">
+                  {engs.map(e => (
+                    <div key={e.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                      <FormChip form={e.form} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                          <span className={cn("size-1.5 shrink-0 rounded-full", stageMeta[e.stage].dot)} />
+                          {clientStageWords[e.stage]}
                         </div>
-                      ) : (
-                        <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
-                          {cards.map(d => <DocRow key={d.id} doc={d} onOpen={setOpenDoc} />)}
-                        </div>
+                      </div>
+                      {e.refund && (e.stage === "accepted" || e.stage === "e_filed") && (
+                        <span className="shrink-0 text-[12px] font-medium tabular-nums text-[var(--os-success)]">{money(e.refund)} refund</span>
                       )}
-                    </section>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
+              </section>
 
-
-            {tab === "Billing" && (() => {
-              const cardLast4 = String(1000 + (h.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 9000));
-              const isBiz = h.kind !== "individual";
-              const subFee = h.serviceTier === "Premium" ? 250 : 200;
-              const invRows = rets.map((r, i) => {
-                const [label, cls] = !r.depositPaid ? ["Overdue", "bg-amber-50 text-amber-700"] : r.stage === "filed" ? ["Paid", "bg-emerald-50 text-emerald-700"] : ["Open", "bg-blue-50 text-blue-700"];
-                return { id: r.id, price: r.fee, label, cls, created: `3/${1 + i * 4}/2026`, due: `4/${12 + i * 3}/2026` };
-              });
-              const SUB_COLS = "grid-cols-[1fr_120px_130px_130px]";
-              const INV_COLS = "grid-cols-[1fr_130px_120px_120px_40px]";
-              return (
-                <div className="space-y-7">
-                  {/* Payment Methods */}
-                  <section>
-                    <div className="mb-2.5 flex items-center justify-between">
-                      <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Payment Methods</h3>
-                      <button className="grid size-6 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.plus} size={15} /></button>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-lg border border-[var(--os-border)] px-3.5 py-3">
-                      <span className="grid h-6 w-9 shrink-0 place-items-center rounded bg-[var(--os-ink)] text-[8px] font-bold tracking-wide text-[var(--os-primary-fg)]">VISA</span>
-                      <span className="text-[13px] tabular-nums text-[var(--os-ink)]">•••• {cardLast4}</span>
-                      <span className="rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">Default</span>
-                      <span className="ml-auto text-[12px] text-[var(--os-ink-subtle)]">Expires 09 / 2028</span>
-                      <button className="grid size-6 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.more} size={15} /></button>
-                    </div>
-                  </section>
-
-                  {/* Subscriptions */}
-                  <section>
-                    <div className="mb-2.5 flex items-center justify-between">
-                      <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Subscriptions</h3>
-                      <button className="grid size-6 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.plus} size={15} /></button>
-                    </div>
-                    {isBiz ? (
-                      <>
-                        <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
-                          <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2", SUB_COLS)}>
-                            {["Price", "Status", "Created", "Next Payment"].map(c => <div key={c} className="os-label">{c}</div>)}
-                          </div>
-                          <div className={cn("grid items-center gap-x-4 px-3.5 py-3 text-[13px]", SUB_COLS)}>
-                            <span className="tabular-nums text-[var(--os-ink)]"><span className="font-medium">${subFee}</span> <span className="text-[var(--os-ink-subtle)]">/ month</span></span>
-                            <span><span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Active</span></span>
-                            <span className="tabular-nums text-[var(--os-ink-muted)]">1/17/2026</span>
-                            <span className="tabular-nums text-[var(--os-ink-muted)]">2/17/2026</span>
-                          </div>
-                        </div>
-                        <div className="mt-2 px-1 text-[12px] text-[var(--os-ink-subtle)]">1 subscription</div>
-                      </>
-                    ) : (
-                      <div className="rounded-lg border border-[var(--os-border)] px-3.5 py-3 text-[13px] text-[var(--os-ink-subtle)]">No active subscriptions</div>
-                    )}
-                  </section>
-
-                  {/* Invoices */}
-                  <section>
-                    <div className="mb-2.5 flex items-center justify-between">
-                      <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Invoices</h3>
-                      <button className="grid size-6 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.plus} size={15} /></button>
-                    </div>
-                    <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
-                      <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2", INV_COLS)}>
-                        {["Price", "Status", "Created", "Due", ""].map((c, i) => <div key={i} className="os-label">{c}</div>)}
-                      </div>
-                      {invRows.map(row => (
-                        <div key={row.id} className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-3.5 py-2.5 text-[13px] last:border-b-0", INV_COLS)}>
-                          <span className="font-medium tabular-nums text-[var(--os-ink)]">{money(row.price)}</span>
-                          <span><span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", row.cls)}>{row.label}</span></span>
-                          <span className="tabular-nums text-[var(--os-ink-muted)]">{row.created}</span>
-                          <span className="tabular-nums text-[var(--os-ink-muted)]">{row.due}</span>
-                          <button className="grid size-6 place-items-center justify-self-end rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-selected)] hover:text-[var(--os-ink)]"><Icon icon={I.more} size={15} /></button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 px-1 text-[12px] text-[var(--os-ink-subtle)]">{invRows.length} {invRows.length === 1 ? "invoice" : "invoices"}</div>
-                  </section>
+              {/* their balance */}
+              <section className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4">
+                <h3 className="text-[13px] font-semibold text-[var(--os-ink)]">Your balance</h3>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-[20px] font-semibold tabular-nums text-[var(--os-ink)]">{money(invoice.balance)}</span>
+                  <span className="text-[12px] text-[var(--os-ink-muted)]">{invoice.due}</span>
                 </div>
-              );
-            })()}
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1">
+          {/* Center: tabs + content */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* All 9 tabs explicit — horizontal scroll at narrow widths, no overflow menu */}
+            <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-4 sm:px-8">
+              {TABS.map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={cn(
+                    "relative shrink-0 whitespace-nowrap px-2.5 py-2 text-[13px] transition-colors",
+                    tab === t ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]",
+                    FOCUS,
+                  )}
+                >
+                  {t}
+                  {tabCount[t] !== undefined && tabCount[t]! > 0 && (
+                    <span className="ml-1 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{tabCount[t]}</span>
+                  )}
+                  {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
+                </button>
+              ))}
+            </div>
 
-            {tab === "Tasks" && (() => {
-              const items = triage.filter(t => t.householdId === h.id);
-              if (items.length === 0) return <div className="grid h-full place-items-center text-[13px] text-[var(--os-ink-subtle)]">No open tasks for {firstName}.</div>;
-              const groups = TIER_ORDER.map(tier => ({ tier, items: items.filter(t => t.tier === tier) })).filter(g => g.items.length > 0);
-              return (
-                <div className="-mx-8 -mt-5">
-                  {groups.map(g => (
-                    <div key={g.tier}>
-                      <div className="flex items-center gap-2 bg-[var(--os-bg-subtle)] px-8 py-1.5">
-                        <TierGlyph tier={g.tier} />
-                        <span className="text-[13px] font-medium text-[var(--os-ink)]">{tierMeta[g.tier].label}</span>
-                        <span className="text-[13px] tabular-nums text-[var(--os-ink-subtle)]">{g.items.length}</span>
-                      </div>
-                      {g.items.map(t => {
-                        const ag = agentByName(t.agent);
-                        const isDue = t.when.startsWith("Due");
-                        return (
-                          <button key={t.id} onClick={() => setTaskOpen(t.id)} className="flex h-11 w-full items-center gap-2.5 px-8 text-left transition-colors hover:bg-[var(--os-hover)]">
-                            <TierGlyph tier={t.tier} />
-                            <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
-                            <div className="flex shrink-0 items-center gap-2 text-[11px]">
-                              <TrustPill trust={t.trust} />
-                              <span className={cn("w-14 shrink-0 text-right tabular-nums", isDue ? "text-[var(--os-warning)]" : "text-[var(--os-ink-subtle)]")}>{isDue ? t.when.replace("Due ", "") : t.when}</span>
-                              {ag ? <AgentAvatar gradient={ag.gradient} size={18} bare /> : <span className="size-4 shrink-0 rounded-full bg-[var(--os-selected)]" />}
-                            </div>
+            {tab === "Messages" ? (
+              hhThreads.length === 0 ? (
+                <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-muted)]">
+                  <p>No messages with {h.name} yet. Start one from the Inbox, or let a skill draft the first touch.</p>
+                </div>
+              ) : (() => {
+                const sel = hhThreads.find(t => t.id === msgThread) ?? hhThreads[0];
+                return (
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    {hhThreads.length > 1 && (
+                      <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-4 py-1.5 sm:px-5">
+                        {hhThreads.map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => setMsgThread(t.id)}
+                            className={cn(
+                              "flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[12px] transition-colors",
+                              t.id === sel.id ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]",
+                              FOCUS,
+                            )}
+                          >
+                            <span className={cn("size-1.5 shrink-0 rounded-full", channelDot[t.channel])} />
+                            <span className="max-w-[180px] truncate">{t.subject}</span>
                           </button>
+                        ))}
+                      </div>
+                    )}
+                    <ThreadConversation key={sel.id} thread={sel} />
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
+                {/* ── Activity ── */}
+                {tab === "Activity" && (
+                  <>
+                    <div className="mb-4 rounded-lg bg-[var(--os-bg-subtle)] p-3.5">
+                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Catch me up</div>
+                      <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
+                    </div>
+                    {feed.length === 0 ? (
+                      <p className="py-8 text-center text-[13px] text-[var(--os-ink-muted)]">Nothing logged this week. Run a skill to put {h.name} in motion.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {feed.map(a => {
+                          const expanded = expandedEvents.has(a.id);
+                          return (
+                            <div key={a.id} className="flex gap-2.5">
+                              <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", a.actor === "Petal" ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">Jun {a.day} · {a.at}</span>
+                                  <span className="text-[13px] leading-snug">
+                                    <span className="font-medium text-[var(--os-ink)]">{a.actor}</span>{" "}
+                                    <span className="text-[var(--os-ink-muted)]">{a.label}</span>
+                                  </span>
+                                  {a.runId && (
+                                    <button
+                                      onClick={() =>
+                                        setExpandedEvents(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(a.id)) next.delete(a.id); else next.add(a.id);
+                                          return next;
+                                        })
+                                      }
+                                      aria-expanded={expanded}
+                                      className={cn("shrink-0 text-[11px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
+                                    >
+                                      {expanded ? "Hide run" : "View run"}
+                                    </button>
+                                  )}
+                                </div>
+                                {a.runId && expanded && <ProvenancePanel runId={a.runId} defaultOpen className="mt-2" />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* ── Returns ── */}
+                {tab === "Returns" && (
+                  <div className="space-y-6">
+                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                      {engs.map(e => {
+                        const d = engagementDeadline(e);
+                        const dc = docsOf(e.id);
+                        return (
+                          <Link
+                            key={e.id}
+                            href={`/os/returns/${e.id}`}
+                            className={cn("block px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, "focus-visible:-outline-offset-2")}
+                          >
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <FormChip form={e.form} />
+                              <span className="min-w-0 truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</span>
+                              <StageTag stage={e.stage} />
+                              <DeadlineChip iso={d.iso} extended={d.extended} />
+                              <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">Docs {dc.label}</span>
+                              <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
+                              <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                            </div>
+                            {e.blockedBy && (
+                              <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--os-warning)]">
+                                <Icon icon={I.alert} size={12} className="shrink-0" /> Blocked by {e.blockedBy}
+                              </div>
+                            )}
+                          </Link>
                         );
                       })}
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
 
-            {tab === "Compliance" && (
-              <div className="space-y-5">
-                <div>
-                  <div className="os-label mb-2">Engagement &amp; consents</div>
-                  <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                    {[["Engagement letter", "Signed"], ["§7216 disclosure consent", "On file"], ["WISP acknowledgement", "On file"]].map(([label, status]) => (
-                      <div key={label} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                        <Icon icon={I.check} size={15} className="shrink-0 text-emerald-600" />
-                        <span className="text-[13px] text-[var(--os-ink)]">{label}</span>
-                        <span className="ml-auto text-[12px] text-[var(--os-success)]">{status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="os-label mb-2">E-file authorizations</div>
-                  <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
-                    {rets.map(r => {
-                      const c = complianceFor(r.stage);
-                      return (
-                        <div key={r.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                          <span className="shrink-0 rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{r.form}</span>
-                          <span className="truncate text-[13px] text-[var(--os-ink)]">{r.entityName}</span>
-                          <div className="ml-auto flex shrink-0 items-center gap-4">
-                            <span className={cn("inline-flex items-center gap-1.5 text-[12px]", toneClass[c.auth[1]])}><span className={cn("size-1.5 rounded-full", toneDot[c.auth[1]])} /> {c.auth[0]}</span>
-                            <span className={cn("hidden items-center gap-1.5 text-[12px] sm:inline-flex", toneClass[c.efile[1]])}><span className={cn("size-1.5 rounded-full", toneDot[c.efile[1]])} /> {c.efile[0]}</span>
+                    {/* relationship graph — entity owners + K-1 flow */}
+                    {k1Links.length > 0 && (
+                      <section>
+                        <div className="os-label mb-2">Relationship graph</div>
+                        <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                          {k1Links.map(l => (
+                            <div key={l.key} className="flex items-center gap-2.5 px-3.5 py-2.5">
+                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                              <span className="text-[13px] text-[var(--os-ink)]">{l.line}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {/* workpapers — the audit trail behind the return */}
+                    {workpapers.map(({ eng, wp }) => (
+                      <section key={wp.id}>
+                        <div className="os-label mb-2">Workpaper — {entityById(eng.entityId)?.name} {eng.form}</div>
+                        <div className="overflow-x-auto rounded-lg border border-[var(--os-border)]">
+                          <div className="min-w-[520px]">
+                            <div className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
+                              {["Line", "Amount", "Source document", "Run"].map(c => <div key={c} className="os-label">{c}</div>)}
+                            </div>
+                            {wp.rows.map((row, i) => (
+                              <div key={i} className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] px-3.5 py-2 text-[13px] last:border-b-0">
+                                <span className="truncate text-[var(--os-ink)]">{row.line}</span>
+                                <span className="font-medium tabular-nums text-[var(--os-ink)]">{row.amount}</span>
+                                <span className="truncate text-[var(--os-ink-muted)]">
+                                  {row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}
+                                </span>
+                                {row.runId ? (
+                                  <button
+                                    onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))}
+                                    aria-expanded={wpRun === `${wp.id}-${i}`}
+                                    className={cn("text-left text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
+                                  >
+                                    {wpRun === `${wp.id}-${i}` ? "Hide run" : "View run"}
+                                  </button>
+                                ) : (
+                                  <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
+                        {wp.rows.map((row, i) =>
+                          row.runId && wpRun === `${wp.id}-${i}` ? <ProvenancePanel key={i} runId={row.runId} defaultOpen className="mt-2" /> : null,
+                        )}
+                        <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
+                          <PetalMark className="size-3 shrink-0" />
+                          Trace any line on the return back to the run, the workpaper, and the source document.
+                        </p>
+                      </section>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Documents ── */}
+                {tab === "Documents" && (
+                  <div className="space-y-7">
+                    {engs.map(e => {
+                      const rows = [...docsOfEngagement(e.id)].sort((a, b) => DOC_STATUS_ORDER[a.status] - DOC_STATUS_ORDER[b.status]);
+                      if (rows.length === 0) {
+                        return (
+                          <section key={e.id}>
+                            <div className="mb-2 flex items-center gap-2">
+                              <FormChip form={e.form} />
+                              <span className="text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
+                            </div>
+                            <p className="rounded-lg border border-dashed border-[var(--os-border-strong)] px-3.5 py-4 text-[13px] text-[var(--os-ink-muted)]">
+                              No checklist yet — import last year&apos;s return and Petal builds it.
+                            </p>
+                          </section>
+                        );
+                      }
+                      return (
+                        <section key={e.id}>
+                          <div className="mb-2 flex items-center gap-2">
+                            <FormChip form={e.form} />
+                            <span className="text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
+                            <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
+                          </div>
+                          <EngagementDocsHeader engagementId={e.id} />
+                          <div className="mt-3 overflow-hidden rounded-lg border border-[var(--os-border)]">
+                            {rows.map(d => <DocRow key={d.id} doc={d} onOpen={setOpenDoc} />)}
+                          </div>
+                        </section>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* ── Tasks ── */}
+                {tab === "Tasks" && (
+                  hhTasks.length === 0 ? (
+                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
+                      <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
+                      <p className="text-[13px] text-[var(--os-ink-muted)]">No tasks for {h.name}. Run a skill from the header to queue one.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                      {hhTasks.map(t => {
+                        const skill = skillById(t.skillId);
+                        const verb = verbOf(t);
+                        return (
+                          <div key={t.id} className="relative flex h-11 items-center px-3.5 transition-colors hover:bg-[var(--os-hover)]">
+                            <button
+                              onClick={() => setTaskOpen(t.id)}
+                              aria-label={`Open ${t.title}`}
+                              className="absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
+                            />
+                            <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
+                              {skill && <SkillPetal category={skill.category} size={15} />}
+                              <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
+                              {t.flagged && <Icon icon={I.flag} size={13} className="shrink-0 text-[var(--os-warning)]" />}
+                              <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
+                              {verb && (
+                                <button
+                                  onClick={() => onTaskVerb(t, verb)}
+                                  className="pointer-events-auto h-6 shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 text-[11.5px] font-medium text-[var(--os-ink)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                                >
+                                  {verb}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                )}
+
+                {/* ── Billing ── */}
+                {tab === "Billing" && (
+                  <div className="space-y-7">
+                    {/* invoice summary — all from invoiceOf */}
+                    <section>
+                      <div className="mb-2.5 flex items-center justify-between">
+                        <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Invoice</h3>
+                        <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
+                          <span className={cn("size-1.5 rounded-full", invoiceStatusMeta[invoice.status].dot)} />
+                          {invoiceStatusMeta[invoice.status].label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 divide-x divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                        {([["Invoiced", invoice.invoiced], ["Collected", invoice.collected], ["Balance", invoice.balance]] as const).map(([label, n]) => (
+                          <div key={label} className="px-3.5 py-3">
+                            <div className="os-label">{label}</div>
+                            <div className="mt-1 text-[15px] font-semibold tabular-nums text-[var(--os-ink)]">{money(n)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[12px] text-[var(--os-ink-muted)]">
+                        <span className="tabular-nums">{invoice.number}</span>
+                        <span>Issued {invoice.issued}</span>
+                        <span>{invoice.due}</span>
+                        <span>{invoice.serviceTier} tier</span>
+                      </div>
+                    </section>
+
+                    {(invoice.blockedByDocs || invoice.chaseTaskId) && (
+                      <section className="flex flex-wrap items-center gap-1.5">
+                        {invoice.chaseTaskId && (
+                          <Link
+                            href={`/os/tasks?task=${invoice.chaseTaskId}`}
+                            className={cn("flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
+                          >
+                            <PetalMark className="size-3.5" /> Chase with Petal
+                          </Link>
+                        )}
+                        {invoice.blockedByDocs && (
+                          <button
+                            onClick={() => setTab("Documents")}
+                            className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100", FOCUS)}
+                          >
+                            Fee blocked by missing docs <Icon icon={I.chevronRight} size={11} />
+                          </button>
+                        )}
+                      </section>
+                    )}
+
+                    {/* payment method (prior idiom) */}
+                    <section>
+                      <div className="mb-2.5 flex items-center justify-between">
+                        <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Payment method</h3>
+                        <button className={cn("grid size-6 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}><Icon icon={I.plus} size={15} /></button>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-lg border border-[var(--os-border)] px-3.5 py-3">
+                        <span className="grid h-6 w-9 shrink-0 place-items-center rounded bg-[var(--os-ink)] text-[8px] font-bold tracking-wide text-[var(--os-primary-fg)]">VISA</span>
+                        <span className="text-[13px] tabular-nums text-[var(--os-ink)]">•••• {String(1000 + (h.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 9000))}</span>
+                        <span className="rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">Default</span>
+                        <span className="ml-auto text-[12px] text-[var(--os-ink-subtle)]">On file for deposits</span>
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {/* ── Notices ── */}
+                {tab === "Notices" && (
+                  hhNotices.length === 0 ? (
+                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
+                      <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
+                      <p className="text-[13px] text-[var(--os-ink-muted)]">No notices. Petal is watching transcripts for {transcriptWatchCount()} clients.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                      {hhNotices.map(n => (
+                        <Link
+                          key={n.id}
+                          href={`/os/notices/${n.id}`}
+                          className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, "focus-visible:-outline-offset-2")}
+                        >
+                          <span className="inline-flex shrink-0 items-center rounded-md border border-[var(--os-border)] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[var(--os-ink)]">{n.type}</span>
+                          <span className="text-[13px] text-[var(--os-ink)]">Tax year <span className="tabular-nums">{n.taxYear}</span></span>
+                          {n.amount && <span className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{n.amount}</span>}
+                          <span className="text-[12px] text-[var(--os-ink-muted)]">Received {fmtDate(n.received)}</span>
+                          {n.status === "response_drafted" && (
+                            <span className={cn("text-[12px] tabular-nums", noticeCountdown(n) < 14 ? "font-medium text-[var(--os-danger)]" : "text-[var(--os-ink-muted)]")}>
+                              {noticeCountdown(n)} days left
+                            </span>
+                          )}
+                          <span className="ml-auto flex items-center gap-2">
+                            <NoticeStatus n={n} />
+                            <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* ── Positions ── */}
+                {tab === "Positions" && (
+                  hhPositions.length === 0 ? (
+                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
+                      <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
+                      <p className="text-[13px] text-[var(--os-ink-muted)]">No documented positions for {h.name}. Positions land here as returns are prepared.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {hhPositions.map(p => {
+                        const eng = engagementById(p.engagementId);
+                        return (
+                          <div key={p.id} className="rounded-lg border border-[var(--os-border)] p-3.5">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              {eng && <FormChip form={eng.form} />}
+                              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--os-ink)]">{p.issue}</span>
+                              {p.status === "open" ? (
+                                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
+                                  <span className="size-1.5 rounded-full bg-amber-500" /> Open
+                                </span>
+                              ) : (
+                                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                                  <span className="size-1.5 rounded-full bg-emerald-500" /> Resolved by {p.resolvedBy}{p.resolvedOn ? ` · ${fmtDate(p.resolvedOn)}` : ""}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--os-ink-muted)]">
+                              <span className="inline-flex items-center rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium">{p.authorityLevel}</span>
+                              <span className="tabular-nums">Confidence {Math.round(p.confidence * 100)}%</span>
+                            </div>
+                            <div className="mt-2.5">
+                              <div className="os-label mb-1">Documentation</div>
+                              <ul className="space-y-0.5">
+                                {p.documentation.map((d, i) => (
+                                  <li key={i} className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink)]">
+                                    <Icon icon={I.file} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" /> {d}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                )}
+
+                {/* ── Notes ── */}
+                {tab === "Notes" && (
+                  <textarea
+                    placeholder={`Private notes about ${h.name}…`}
+                    aria-label={`Private notes about ${h.name}`}
+                    className={cn("h-full min-h-[220px] w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]", FOCUS)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right rail: @Petal chat + Details (Assembly composition, preserved) */}
+          <aside className="hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex">
+            <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-3">
+              {(["@Petal", "Details"] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPanel(p)}
+                  className={cn("relative px-2.5 py-2.5 text-[13px] transition-colors", panel === p ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]", FOCUS)}
+                >
+                  {p}
+                  {panel === p && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
+                </button>
+              ))}
+            </div>
+
+            {panel === "@Petal" && (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                  {/* the question */}
+                  <div className="flex gap-2.5">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-semibold text-[var(--os-ink-muted)]">AV</span>
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Antonio</span><span className="text-[11px] text-[var(--os-ink-subtle)]">9:32 AM</span></div>
+                      <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-accent)]">@Petal</span> where does {h.name} stand?</p>
+                    </div>
+                  </div>
+                  {/* the answer — composed from the same derivations as the header strip */}
+                  <div className="flex gap-2.5">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-ink)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Petal</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
+                      <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
+                      {openTasks.length > 0 && (
+                        <button
+                          onClick={() => setTab("Tasks")}
+                          className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] text-[var(--os-accent)] hover:underline", FOCUS)}
+                        >
+                          Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* composer */}
+                <div className="border-t border-[var(--os-border)] p-3">
+                  <div className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-2 transition-colors focus-within:border-[var(--os-border-strong)]">
+                    <input placeholder={`Ask Petal about ${h.name}`} className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]" />
+                    <div className="mt-2 flex items-center gap-0.5">
+                      <button className={cn("grid size-6 place-items-center rounded text-[14px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)}>@</button>
+                      <button className={cn("grid size-6 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={14} /></button>
+                      <button className={cn("ml-auto grid size-6 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]", FOCUS)} aria-label="Send"><Icon icon={I.send} size={13} /></button>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-          )}
-        </div>
 
-        {/* Right: workspace panel — Internal chat / Notes / Details (Assembly composition) */}
-        <aside className="flex w-[360px] shrink-0 flex-col border-l border-[var(--os-border)]">
-          <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-3">
-            {(["Internal chat", "Notes", "Details"] as const).map(p => (
-              <button key={p} onClick={() => setPanel(p)} className={cn("relative px-2.5 py-2.5 text-[13px] transition-colors", panel === p ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}>
-                {p}
-                {panel === p && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
-              </button>
-            ))}
-          </div>
-
-          {panel === "Internal chat" && (
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-                {/* teammate prompt */}
-                <div className="flex gap-2.5">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-semibold text-[var(--os-ink-muted)]">{owner.split(" ").map(n => n[0]).join("").slice(0, 2)}</span>
-                  <div className="min-w-0">
-                    <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">{owner.split(" ")[0]}</span><span className="text-[11px] text-[var(--os-ink-subtle)]">9:32 AM</span></div>
-                    <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-accent)]">@Petal</span> draft a reminder for {firstName} and tell me where the return stands.</p>
-                  </div>
+            {panel === "Details" && (
+              <div className="flex-1 overflow-y-auto pb-4">
+                <div className="divide-y divide-[var(--os-border)] border-b border-[var(--os-border)]">
+                  <Attr label="Type">{kindLabel[h.kind]}</Attr>
+                  <Attr label="Stage"><StageTag stage={stage} /></Attr>
+                  <Attr label="Service">{h.serviceTier}</Attr>
+                  <Attr label="Entities"><span className="tabular-nums">{ents.length}</span></Attr>
+                  <Attr label="Returns"><span className="tabular-nums">{engs.length}</span></Attr>
+                  <Attr label="Docs"><span className="tabular-nums">{docs.label}</span></Attr>
+                  <Attr label="Total fee"><span className="tabular-nums">{money(fee)}</span></Attr>
+                  <Attr label="Balance"><span className="tabular-nums">{money(invoice.balance)}</span></Attr>
+                  <Attr label="Health"><span className={healthMeta[health.health].text}>{healthMeta[health.health].label}</span></Attr>
+                  <Attr label="8821 on file">{h.has8821 ? "Yes — transcripts watched" : "No"}</Attr>
+                  <Attr label="Client since"><span className="tabular-nums">{h.since}</span></Attr>
                 </div>
-                {/* Petal reply */}
-                <div className="flex gap-2.5">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-ink)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Petal</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
-                    <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink)]">{petalSummary}</p>
-                    <div className="mt-2.5 overflow-hidden rounded-lg border border-[var(--os-border)]">
-                      <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-2">
-                        <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />
-                        <span className="os-label">Draft reply</span>
-                        <button className="ml-auto flex h-6 items-center gap-1 rounded-md bg-[var(--os-primary)] px-2 text-[11px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]"><Icon icon={I.send} size={11} /> Review & send</button>
+
+                <div className="os-label px-3 pb-2 pt-4">People</div>
+                <div className="divide-y divide-[var(--os-border)] border-y border-[var(--os-border)]">
+                  {ppl.map(p => (
+                    <div key={p.id} className="flex items-center gap-2.5 px-3 py-2">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] text-[var(--os-ink)]">{p.name}</div>
+                        <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
                       </div>
-                      <div className="px-3 py-2.5 text-[12px] leading-relaxed text-[var(--os-ink)]">{draftText}</div>
+                      <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-              {/* composer (chat with teammates or @Petal) */}
-              <div className="border-t border-[var(--os-border)] p-3">
-                <div className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-2 transition-colors focus-within:border-[var(--os-border-strong)]">
-                  <input placeholder="Chat with teammates or @Petal" className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]" />
-                  <div className="mt-2 flex items-center gap-0.5">
-                    <button className="grid size-6 place-items-center rounded text-[14px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]">@</button>
-                    <button className="grid size-6 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]"><Icon icon={I.attach} size={14} /></button>
-                    <button className="ml-auto grid size-6 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]"><Icon icon={I.send} size={13} /></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </aside>
+        </div>
+      )}
 
-          {panel === "Notes" && (
-            <div className="flex-1 overflow-y-auto p-4">
-              <textarea placeholder={`Private notes about ${h.name}…`} className="h-full min-h-[220px] w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]" />
-            </div>
-          )}
+      {/* document review modal (shared with /os/documents) */}
+      <AnimatePresence>{openDoc && <ReviewModal doc={openDoc} onClose={() => setOpenDoc(null)} />}</AnimatePresence>
 
-          {panel === "Details" && (
-            <div className="flex-1 overflow-y-auto pb-4">
-              <div className="divide-y divide-[var(--os-border)] border-b border-[var(--os-border)]">
-                <Attr label="Type">{kindLabel[h.kind]}</Attr>
-                <Attr label="Stage"><StageTag stage={stage} /></Attr>
-                <Attr label="Service">{h.serviceTier}</Attr>
-                <Attr label="Entities"><span className="tabular-nums">{ents.length}</span></Attr>
-                <Attr label="Returns"><span className="tabular-nums">{rets.length}</span></Attr>
-                <Attr label="Total fee"><span className="tabular-nums">${householdFee(h.id).toLocaleString()}</span></Attr>
-                <Attr label="Health"><span className={hp.text}>{hp.label}</span></Attr>
-                <Attr label="Owner">{owner}</Attr>
-                <Attr label="Client since"><span className="tabular-nums">{h.since}</span></Attr>
-              </div>
-
-              <div className="os-label px-3 pb-2 pt-4">People</div>
-              <div className="divide-y divide-[var(--os-border)] border-y border-[var(--os-border)]">
-                {ppl.map(p => (
-                  <div key={p.id} className="flex items-center gap-2.5 px-3 py-2">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{p.name.split(" ").map(n => n[0]).join("").slice(0, 2)}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] text-[var(--os-ink)]">{p.name}</div>
-                      <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
-                    </div>
-                    <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          )}
-        </aside>
-      </div>
-      <AnimatePresence>{openDocObj && <ReviewModal doc={openDocObj} onClose={() => setOpenDoc(null)} />}</AnimatePresence>
+      {/* task detail modal (shared with /os/tasks) */}
       <AnimatePresence>
         {taskItem && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-6">
-            <motion.div initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }} transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()} className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl">
-              <Detail item={taskItem} onClose={() => setTaskOpen(null)} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()}
+              className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+            >
+              <TaskDetail task={taskItem} onClose={() => setTaskOpen(null)} />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Toast msg={msg} />
     </div>
+  );
+}
+
+export default function ClientRecordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ClientRecordInner />
+    </Suspense>
   );
 }

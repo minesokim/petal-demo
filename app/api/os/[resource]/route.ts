@@ -1,20 +1,21 @@
 // Petal OS — read-only resource API (mock).
 // Demonstrates the "your firm OS is readable via API & MCP" capability.
-// READS ONLY. Writes are never exposed here — agent writes are gated by trust tiers in-product.
+// READS ONLY. Writes are never exposed here — writes are gated by each skill's trust tier in-product.
 // Backed by mock data; contains no real client PII.
 
 import { NextResponse } from "next/server";
-import { triage } from "@/lib/os-triage";
-import { households, entities, returns, people } from "@/lib/os-entities";
+import { tasks, households, entities, engagements, people, skills, skillRuns } from "@/lib/fixtures/firm";
 
 const RESOURCES = {
-  tasks: () => triage,
+  tasks: () => tasks,
   clients: () => households,
   households: () => households,
   entities: () => entities,
-  returns: () => returns,
+  returns: () => engagements,
   people: () => people,
   contacts: () => people,
+  skills: () => skills,
+  runs: () => skillRuns,
 } as const;
 
 type ResourceKey = keyof typeof RESOURCES;
@@ -43,7 +44,7 @@ export async function GET(
     {
       resource: key,
       access: "read",
-      note: "Reads are open to authorized keys. Writes are gated by each agent's trust tier in-product.",
+      note: "Reads are open to authorized keys. Writes are gated by each skill's trust tier in-product.",
       count: data.length,
       data,
     },

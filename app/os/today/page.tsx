@@ -1,258 +1,249 @@
 "use client";
 
+// Today — the command center. Every number on this page derives from
+// lib/fixtures/derive at render time; nothing is hard-coded (see /os/debug/tie-out).
+
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { AgentAvatar } from "@/components/os/primitives";
 import { AskComposer } from "@/components/os/ask-composer";
-import { agents } from "@/lib/os-agents";
-import { triage } from "@/lib/os-triage";
-import { returns } from "@/lib/os-entities";
-import { brief, briefToneDot } from "@/lib/os-news";
-import { closeTasks } from "@/lib/os-close";
+import { RoiStrip } from "@/components/os/roi-strip";
+import { ProvenancePanel } from "@/components/os/provenance";
+import { SkillPetal } from "@/components/os/primitives";
+import { DEMO_DATE_LABEL, fmtDate, healthMeta } from "@/lib/fixtures/vocab";
+import {
+  FIRM_PROFILE, brief, briefToneDot, booksItems, booksMonth, booksStatusMeta,
+  taskById, householdById, skillById, runById, engagementById,
+} from "@/lib/fixtures/firm";
+import { needsYouCount, atRiskHouseholds, filedThisWeek, booksClients } from "@/lib/fixtures/derive";
 
-const agentByName = (n?: string) => agents.find(a => a.name === n);
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
-// ── derived state ──
-const needs = triage.filter(t => t.tier === "right_now" && t.trust !== "auto");
-const handled = triage.filter(t => t.trust === "auto" && t.when !== "Running" && t.when !== "Scheduled");
-const calls = triage.filter(t => t.type === "meeting_prep" && t.when === "Running");
-const atRisk = returns.filter(r => r.stage !== "filed" && (r.urgency === "urgent" || r.urgency === "high"));
-
-// "Your actions" counts (Solve home pattern, CPA context)
-const reviewCount = triage.filter(t => (t.tier === "right_now" || t.tier === "today") && t.trust !== "auto").length;
-const missingDocs = returns.reduce((s, r) => s + Math.max(0, r.docsRequired - r.docsSubmitted), 0);
-const awaitingSign = returns.filter(r => r.stage === "pay_and_sign" || r.stage === "client_review").length;
-const overdueCount = returns.filter(r => !r.depositPaid && r.stage !== "filed").length;
-
-// "Month-end close" — derived from the close checklist
-const closeDone = closeTasks.filter(t => t.status === "complete").length;
-const closeProg = closeTasks.filter(t => t.status === "in_progress").length;
-const closeTodo = closeTasks.filter(t => t.status === "not_started").length;
-const closeTotal = closeTasks.length || 1;
-
-// the returns most at risk, with their blocker (drives the readiness hero list)
-const atRiskList = [
-  { name: "DeShawn Williams", hid: "h-deshawn", blocker: "missing 5 documents" },
-  { name: "Priya Sharma", hid: "h-priya", blocker: "missing 4 documents" },
-  { name: "David Park", hid: "h-park", blocker: "position unresolved" },
-];
+const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("flex flex-col rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
 }
-function CardHead({ title, mark, href }: { title: string; mark?: boolean; href?: string }) {
+
+function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark?: boolean; badge?: number; href?: string; hrefLabel?: string }) {
   return (
-    <div className="mb-3 flex items-center gap-1.5">
+    <div className="mb-3 flex items-center gap-2">
       {mark && <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />}
       <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">{title}</h3>
-      {href && <Link href={href} className="ml-auto text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">View all</Link>}
+      {badge != null && <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{badge}</span>}
+      {href && (
+        <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
+          {hrefLabel ?? "View all"}
+        </Link>
+      )}
     </div>
   );
 }
-function Avatar({ name }: { name: string }) {
-  return <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9.5px] font-semibold text-[var(--os-ink-muted)]">{initials(name)}</span>;
-}
-// flat people avatar — records stay monochrome; color lives only on the agent layer (DESIGN.md §2a)
+
+// flat people avatar — records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
 function PersonAvatar({ name }: { name: string }) {
   return <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-semibold text-[var(--os-ink-muted)]">{initials(name)}</span>;
 }
 
-/** Mercury-style period control (visual). */
-function PeriodButton({ label, className }: { label: string; className?: string }) {
-  return (
-    <button className={cn("flex h-7 items-center gap-1 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]", className)}>
-      {label} <Icon icon={I.chevronDown} size={12} />
-    </button>
-  );
-}
-
-/** Mercury-style soft area + thin line trend (monochrome). */
-function MiniChart({ vals, max, h = 64, gradId }: { vals: number[]; max: number; h?: number; gradId: string }) {
-  const W = 320, pad = 6;
-  const stepX = W / (vals.length - 1);
-  const y = (v: number) => h - pad - (v / max) * (h - pad * 2);
-  const pts = vals.map((v, i) => `${(i * stepX).toFixed(1)} ${y(v).toFixed(1)}`);
-  const line = "M " + pts.join(" L ");
-  const area = `${line} L ${W} ${h} L 0 ${h} Z`;
-  return (
-    <svg viewBox={`0 0 ${W} ${h}`} preserveAspectRatio="none" className="w-full" style={{ height: h }}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a1a1a" stopOpacity="0.10" />
-          <stop offset="100%" stopColor="#1a1a1a" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#${gradId})`} />
-      <path d={line} fill="none" stroke="#1a1a1a" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export default function TodayPage() {
+  const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
+  const needsYou = needsYouCount();
+  const atRisk = atRiskHouseholds();
+
+  // Filed-this-week receipt — count + date derive from the e-filed engagements.
+  const filed = filedThisWeek();
+  const efiledTask = taskById("t-efiled-3")!;
+  const filedOn = filed[0] ? fmtDate(filed[0].eFiledOn!) : "";
+
+  // Books-to-tax readiness (renders only because books clients exist).
+  const booksHH = booksClients();
+  const booksDone = booksItems.filter(b => b.status === "complete").length;
+  const booksProg = booksItems.filter(b => b.status === "in_progress").length;
+  const booksTodo = booksItems.filter(b => b.status === "not_started").length;
+  const booksTotal = booksItems.length || 1;
+
+  // Today's call — the Fuentes 1120S review; the brief is a running Pre-call Brief run.
+  const callTask = taskById("t-brief-fuentes")!;
+  const callHousehold = householdById(callTask.householdId)!;
+  const callSkill = skillById(callTask.skillId)!;
+  const callRun = callTask.runId ? runById(callTask.runId) : undefined;
+  const callForm = callRun?.engagementId ? engagementById(callRun.engagementId)?.form : undefined;
+
   return (
     <div className="flex h-full flex-col">
       <div className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[780px] px-6 py-8">
-          {/* greeting — hero cover banner */}
-          <div className="relative mb-6 overflow-hidden rounded-xl border border-[var(--os-border)]">
-            <img src="/images/today-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
-            <div className="relative px-7 py-8">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
-                <PetalMark className="size-3.5 text-white/85" /> Daily brief
-              </div>
-              <h2 className="text-[22px] font-semibold leading-tight text-white os-display">Good morning, Antonio</h2>
-              <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/85">
-                Petal handled <span className="font-semibold text-white">{handled.length}</span> things overnight.{" "}
-                <span className="font-semibold text-white">{needs.length}</span> need you, and{" "}
-                <span className="font-semibold text-white">{atRisk.length}</span> returns are approaching their deadline.
+
+          {/* ── header row ── */}
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            <div>
+              <h2 className="os-display text-[20px] font-semibold leading-tight text-[var(--os-ink)]">Good morning, {firstName}</h2>
+              <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">
+                {DEMO_DATE_LABEL} · <span className="tabular-nums">{needsYou}</span> items need you
               </p>
             </div>
+            <Link
+              href="/os/review"
+              className={cn("inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", focusRing)}
+            >
+              Review <span className="tabular-nums">{needsYou}</span> items
+              <Icon icon={I.chevronRight} size={13} />
+            </Link>
           </div>
 
+          {/* ── ROI strip ── */}
+          <div className="mb-6"><RoiStrip /></div>
+
+          {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* Close the books — period close progress */}
-          <Link href="/os/close" className="mb-6 block rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[15px] font-semibold text-[var(--os-ink)] os-display">Month-end close</h3>
-              <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">May 2026 <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" /></span>
-            </div>
-            <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
-              <div className="h-full bg-emerald-500" style={{ width: `${(closeDone / closeTotal) * 100}%` }} />
-              <div className="h-full bg-amber-500" style={{ width: `${(closeProg / closeTotal) * 100}%` }} />
-            </div>
-            <div className="mt-3.5 flex items-center gap-10">
-              {([["Completed", "bg-emerald-500", closeDone], ["In progress", "bg-amber-500", closeProg], ["Not started", "bg-[var(--os-border-strong)]", closeTodo]] as const).map(([label, dot, count]) => (
-                <div key={label}>
-                  <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]"><span className={cn("size-2 rounded-full", dot)} /> {label}</div>
-                  <div className="mt-1 text-[20px] font-semibold tabular-nums os-display text-[var(--os-ink)]">{count}</div>
-                </div>
-              ))}
-            </div>
-          </Link>
+          {/* ── card grid ── */}
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
 
-          <div className="flex flex-col gap-4">
-            {/* ── Today's brief (the newspaper) ── */}
-            <Card>
+            {/* Today's brief */}
+            <Card className="md:col-span-2">
               <CardHead title="Today's brief" mark />
               <ul className="-mx-2 flex-1">
                 {brief.map((b, i) => {
-                  const body = (
+                  const row = (
                     <>
                       <span className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", briefToneDot[b.tone])} />
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-1.5">
+                        <span className="flex flex-wrap items-baseline gap-x-1.5">
                           <span className="text-[13px] font-medium leading-snug text-[var(--os-ink)]">{b.headline}</span>
                           {b.source && <span className="shrink-0 text-[10px] font-medium tracking-wide text-[var(--os-ink-subtle)]">{b.source}</span>}
                         </span>
                         <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{b.detail}</span>
                       </span>
+                      {b.href && <Icon icon={I.chevronRight} size={13} className="mt-1.5 shrink-0 text-[var(--os-ink-subtle)]" />}
                     </>
                   );
                   return (
                     <li key={i}>
                       {b.href ? (
-                        <Link href={b.href} className="flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">{body}</Link>
+                        <Link href={b.href} className={cn("flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>{row}</Link>
                       ) : (
-                        <div className="flex gap-2.5 px-2 py-2">{body}</div>
+                        <div className="flex gap-2.5 px-2 py-2">{row}</div>
+                      )}
+                      {b.runId && (
+                        <div className="mb-1.5 ml-6 mr-2 mt-0.5">
+                          <ProvenancePanel runId={b.runId} />
+                        </div>
                       )}
                     </li>
                   );
                 })}
               </ul>
-              <Link href="/os/reports" className="-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">
-                Read full brief <Icon icon={I.chevronRight} size={13} />
-              </Link>
             </Card>
 
-            {/* ── At risk (Linear) ── */}
+            {/* At risk */}
             <Card>
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">At risk</h3>
-                <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{atRiskList.length}</span>
-                <Link href="/os/clients" className="ml-auto text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">View all</Link>
-              </div>
-              <div className="-mx-2">
-                {atRiskList.map(a => (
-                  <Link key={a.hid} href={`/os/clients/${a.hid}`} className="flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">
-                    <PersonAvatar name={a.name} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{a.name}</div>
-                      <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{a.blocker}</div>
+              <CardHead title="At risk" badge={atRisk.length} href="/os/clients" />
+              {atRisk.length === 0 ? (
+                <p className="px-2 text-[12px] text-[var(--os-ink-muted)]">
+                  Every client is on pace.{" "}
+                  <Link href="/os/clients" className={cn("rounded text-[var(--os-accent)] hover:underline", focusRing)}>Open clients</Link>
+                </p>
+              ) : (
+                <div className="-mx-2 flex-1">
+                  {atRisk.map(({ household, health, reason, nextAction }) => (
+                    <div key={household.id} className="flex gap-2.5 rounded-md px-2 py-2">
+                      <span className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", healthMeta[health].dot)} />
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/os/clients/${household.id}`}
+                          className={cn("rounded text-[13px] font-medium leading-snug text-[var(--os-ink)] hover:underline", focusRing)}
+                        >
+                          {household.name}
+                        </Link>
+                        <p className="mt-0.5 text-[12px] leading-snug text-[var(--os-ink-muted)]">
+                          {reason}
+                          {nextAction && (
+                            <>
+                              {" · "}
+                              <Link href={nextAction.href} className={cn("rounded font-medium text-[var(--os-accent)] hover:underline", focusRing)}>
+                                {nextAction.label}
+                              </Link>
+                            </>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                  </Link>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
-            {/* Petal activity — vertical summary box */}
-              <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
-                <div className="mb-3 flex items-center gap-2">
-                  <PetalMark className="size-4 text-[var(--os-ink)]" />
-                  <h3 className="text-[13px] font-semibold text-[var(--os-ink)] os-display">Petal activity</h3>
-                </div>
-                <div className="space-y-0.5">
-                  {([
-                    { label: "Drafts awaiting approval", count: reviewCount, icon: I.sparkle, href: "/os/tasks" },
-                    { label: "Documents outstanding", count: missingDocs, icon: I.file, href: "/os/documents" },
-                    { label: "Awaiting signature", count: awaitingSign, icon: I.edit, href: "/os/tasks" },
-                    { label: "Overdue invoices", count: overdueCount, icon: I.billing, href: "/os/billing" },
-                  ]).map(a => (
-                    <Link key={a.label} href={a.href} className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">
-                      <Icon icon={a.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{a.label}</span>
-                      <span className="shrink-0 text-[18px] font-semibold tabular-nums os-display text-[var(--os-ink)]">{a.count}</span>
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/os/tasks" className="-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">
-                  Open tasks <Icon icon={I.chevronRight} size={13} />
-                </Link>
-              </div>
-              {calls.length > 0 && (
-                <Card>
-                  <CardHead title="Today's calls" />
-                  {calls.map(t => (
-                    <div key={t.id} className="flex items-center gap-3 py-1">
-                      <span className="w-14 shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">9:00 AM</span>
-                      <Avatar name={t.clientName} />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] text-[var(--os-ink)]">{t.clientName}</div>
-                        <div className="truncate text-[12px] text-[var(--os-ink-muted)]">1120S review</div>
-                      </div>
-                      <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                        <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> Brief ready
-                      </span>
-                    </div>
-                  ))}
-                </Card>
-              )}
+            {/* Filed this week — the receipt */}
+            <Card>
+              <CardHead title="Filed this week" mark href="/os/returns" hrefLabel="All returns" />
+              <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("-mx-2 flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+                <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-emerald-500" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium leading-snug text-[var(--os-ink)]">
+                    Petal filed <span className="tabular-nums">{filed.length}</span> returns clean — pre-approved by you {filedOn}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{efiledTask.why}</span>
+                </span>
+                <Icon icon={I.chevronRight} size={13} className="mt-1.5 shrink-0 text-[var(--os-ink-subtle)]" />
+              </Link>
+              {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-2" />}
+            </Card>
 
-              <Card>
-                <CardHead title="Petal handled overnight" mark href="/os/tasks" />
-                <div>
-                  {handled.slice(0, 4).map(t => {
-                    const ag = agentByName(t.agent);
-                    return (
-                      <Link key={t.id} href="/os/tasks" className="flex items-center gap-3 -mx-2 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]">
-                        {ag ? <AgentAvatar gradient={ag.gradient} size={22} bare /> : <Avatar name={t.clientName} />}
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] text-[var(--os-ink)]">{t.title}</div>
-                          <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{t.clientName}</div>
-                        </div>
-                        <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-[var(--os-ink-subtle)]">
-                          <span className="size-1.5 rounded-full bg-emerald-500" /> {t.when}
-                        </span>
-                      </Link>
-                    );
-                  })}
+            {/* Books-to-tax readiness — renders only while books clients exist */}
+            {booksHH.length > 0 && (
+              <Link
+                href="/os/books"
+                className={cn("flex flex-col rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", focusRing)}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[13px] font-semibold text-[var(--os-ink)] os-display">{booksMonth} books — wrapping up</h3>
+                  <span className="flex shrink-0 items-center gap-1 text-[12px] text-[var(--os-ink-muted)]">
+                    <span className="tabular-nums">{booksHH.length}</span> clients <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
+                  </span>
                 </div>
-              </Card>
+                <div className="mt-3 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
+                  <div className="h-full bg-emerald-500" style={{ width: `${(booksDone / booksTotal) * 100}%` }} />
+                  <div className="h-full bg-amber-500" style={{ width: `${(booksProg / booksTotal) * 100}%` }} />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  {([
+                    ["complete", booksDone],
+                    ["in_progress", booksProg],
+                    ["not_started", booksTodo],
+                  ] as const).map(([status, count]) => (
+                    <span key={status} className="inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                      <span className={cn("size-1.5 rounded-full", booksStatusMeta[status].dot)} />
+                      <span className="tabular-nums font-medium text-[var(--os-ink)]">{count}</span> {booksStatusMeta[status].label.toLowerCase()}
+                    </span>
+                  ))}
+                </div>
+              </Link>
+            )}
+
+            {/* Today's calls */}
+            <Card className={cn(booksHH.length > 0 ? "" : "md:col-span-2")}>
+              <CardHead title="Today's calls" />
+              <div className="flex items-center gap-3">
+                <span className="w-14 shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">3:00 PM</span>
+                <PersonAvatar name={callHousehold.name} />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/os/clients/${callHousehold.id}`}
+                    className={cn("rounded text-[13px] font-medium text-[var(--os-ink)] hover:underline", focusRing)}
+                  >
+                    {callHousehold.name}
+                  </Link>
+                  <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</div>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                  <SkillPetal category={callSkill.category} size={13} /> Brief generating
+                </span>
+              </div>
+              {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-3" />}
+            </Card>
+
           </div>
         </div>
       </div>

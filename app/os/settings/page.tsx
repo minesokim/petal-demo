@@ -1,20 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import type { IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
-import { AgentAvatar } from "@/components/os/primitives";
+import { PetalMark } from "@/components/petal-mark";
+import { AgentAvatar, SkillPetal, TrustDial } from "@/components/os/primitives";
 import { integrations, integrationCategories, type Integration } from "@/lib/os-integrations";
 import { mcpServer, accessTokens } from "@/lib/os-api";
+import { skills } from "@/lib/fixtures/firm";
+import { skillCategoryMeta, trustTierMeta, type TrustTier } from "@/lib/fixtures/vocab";
 
-const SOON = [
+const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
+
+const SOON_BEFORE = [
   { label: "General", icon: I.settings },
   { label: "Members", icon: I.clients },
-  { label: "Trust & autonomy", icon: I.shield },
+];
+const SOON_AFTER = [
   { label: "Billing", icon: I.returns },
 ];
 
 const connectedCount = integrations.filter(i => i.status === "connected").length;
+
+type SectionId = "trust" | "integrations" | "developer";
+
+function SoonRow({ label, icon }: { label: string; icon: IconSvgElement }) {
+  return (
+    <div className="flex h-7 cursor-default items-center gap-2 rounded-md px-2 text-[13px] text-[var(--os-ink-subtle)]">
+      <Icon icon={icon} size={15} className="shrink-0 opacity-60" />
+      <span className="truncate">{label}</span>
+      <span className="ml-auto rounded bg-[var(--os-selected)] px-1.5 text-[10px] font-medium text-[var(--os-ink-subtle)]">Soon</span>
+    </div>
+  );
+}
 
 function IntegrationCard({ it }: { it: Integration }) {
   const connected = it.status === "connected";
@@ -39,9 +58,9 @@ function IntegrationCard({ it }: { it: Integration }) {
           <span className="truncate text-[11px] text-[var(--os-ink-subtle)]">{it.account} · {it.lastSync}</span>
         ) : <span />}
         {connected ? (
-          <button className="shrink-0 rounded-md px-2 py-1 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">Manage</button>
+          <button className={cn("shrink-0 rounded-md px-2 py-1 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>Manage</button>
         ) : (
-          <button className="shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1 text-[12px] font-medium text-[var(--os-ink)] hover:bg-[var(--os-hover)]">Connect</button>
+          <button className={cn("shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1 text-[12px] font-medium text-[var(--os-ink)] hover:bg-[var(--os-hover)]", FOCUS)}>Connect</button>
         )}
       </div>
     </div>
@@ -51,14 +70,43 @@ function IntegrationCard({ it }: { it: Integration }) {
 export default function SettingsPage() {
   const [tab, setTab] = useState<"connected" | "all">("all");
   const [copied, setCopied] = useState(false);
+  const [active, setActive] = useState<SectionId>("trust");
+
+  // Trust & autonomy — per-skill dials, local state seeded from fixtures.
+  const [tiers, setTiers] = useState<Record<string, TrustTier>>(
+    () => Object.fromEntries(skills.map(s => [s.id, s.trust])),
+  );
+  const docChase = skills.find(s => s.graduation);
+  const grad = docChase?.graduation;
+  const [gradChoice, setGradChoice] = useState<"open" | "promoted" | "kept">("open");
+  const showGrad = !!docChase && !!grad && gradChoice === "open" && tiers[docChase.id] < grad.promoteTo;
+
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   };
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const go = (id: SectionId) => {
+    setActive(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const shown = tab === "connected" ? integrations.filter(i => i.status === "connected") : integrations;
+
+  const navBtn = (id: SectionId, label: string, icon: IconSvgElement) => (
+    <button
+      onClick={() => go(id)}
+      className={cn(
+        "flex h-7 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors",
+        active === id
+          ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]"
+          : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+        FOCUS,
+      )}
+    >
+      <Icon icon={icon} size={15} className="shrink-0" /> <span className="truncate">{label}</span>
+    </button>
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -67,32 +115,107 @@ export default function SettingsPage() {
         <aside className="flex w-[208px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] px-2.5 py-3">
           <div className="os-label mb-1 px-2">Workspace</div>
           <div className="mb-3 space-y-0.5">
-            {SOON.map(s => (
-              <div key={s.label} className="flex h-7 cursor-default items-center gap-2 rounded-md px-2 text-[13px] text-[var(--os-ink-subtle)]">
-                <Icon icon={s.icon} size={15} className="shrink-0 opacity-60" />
-                <span className="truncate">{s.label}</span>
-                <span className="ml-auto rounded bg-[var(--os-selected)] px-1.5 text-[10px] font-medium text-[var(--os-ink-subtle)]">Soon</span>
-              </div>
-            ))}
+            {SOON_BEFORE.map(s => <SoonRow key={s.label} label={s.label} icon={s.icon} />)}
+            {navBtn("trust", "Trust & autonomy", I.shield)}
+            {SOON_AFTER.map(s => <SoonRow key={s.label} label={s.label} icon={s.icon} />)}
           </div>
 
           <div className="os-label mb-1 px-2">Connections</div>
-          <button onClick={() => scrollTo("integrations")} className="flex h-7 items-center gap-2 rounded-md bg-[var(--os-selected)] px-2 text-left text-[13px] font-medium text-[var(--os-ink)]">
-            <Icon icon={I.globe} size={15} className="shrink-0" /> <span className="truncate">Integrations</span>
-          </button>
-          <button onClick={() => scrollTo("developer")} className="flex h-7 items-center gap-2 rounded-md px-2 text-left text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
-            <Icon icon={I.shield} size={15} className="shrink-0" /> <span className="truncate">API &amp; MCP</span>
-          </button>
+          {navBtn("integrations", "Integrations", I.globe)}
+          {navBtn("developer", "API & MCP", I.link)}
         </aside>
 
         {/* main */}
         <div className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[840px] px-6 py-6">
-            {/* header */}
-            <div id="integrations" className="mb-4 scroll-mt-4">
+            {/* ── Trust & autonomy ── */}
+            <div id="trust" className="mb-4 scroll-mt-4">
+              <h2 className="text-[15px] font-semibold os-display">Trust &amp; autonomy</h2>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]">
+                Petal prepares everything; what it may <span className="font-medium text-[var(--os-ink)]">do</span> is set per skill.
+              </p>
+            </div>
+
+            {/* per-skill dials */}
+            <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+              {skills.map(s => {
+                const tier = tiers[s.id];
+                return (
+                  <div key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[var(--os-border)] px-3.5 py-3 last:border-b-0">
+                    <SkillPetal category={s.category} size={20} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-[13px] font-medium text-[var(--os-ink)]">{s.name}</span>
+                        <span className="text-[11px] text-[var(--os-ink-subtle)]">{skillCategoryMeta[s.category].label}</span>
+                      </div>
+                      <div className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">{trustTierMeta[tier].blurb}</div>
+                    </div>
+                    <TrustDial tier={tier} onChange={t => setTiers(prev => ({ ...prev, [s.id]: t }))} />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Doc Chase graduation */}
+            {docChase && grad && showGrad && (
+              <div className="mt-4 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-3.5">
+                <div className="flex items-start gap-2">
+                  <PetalMark className="mt-0.5 size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
+                  <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{grad.prompt}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setGradChoice("promoted");
+                      setTiers(prev => ({ ...prev, [docChase.id]: grad.promoteTo }));
+                    }}
+                    className={cn("flex h-7 items-center rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
+                  >
+                    Promote to {trustTierMeta[grad.promoteTo].code}
+                  </button>
+                  <button
+                    onClick={() => setGradChoice("kept")}
+                    className={cn("flex h-7 items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
+                  >
+                    Keep approving
+                  </button>
+                </div>
+              </div>
+            )}
+            {docChase && grad && gradChoice === "promoted" && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink)]">
+                <Icon icon={I.check} size={14} className="shrink-0 text-emerald-600" />
+                {docChase.name} promoted to {trustTierMeta[grad.promoteTo].code} — acts after 24h unless you stop it
+              </div>
+            )}
+            {docChase && gradChoice === "kept" && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink-muted)]">
+                <Icon icon={I.check} size={14} className="shrink-0" />
+                Keeping approval on every send — {docChase.name} stays at {trustTierMeta[tiers[docChase.id]].code}.
+              </div>
+            )}
+
+            {/* assurances */}
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-4 py-3.5">
+              <Icon icon={I.shield} size={15} className="mt-0.5 shrink-0 text-[var(--os-ink-muted)]" />
+              <p className="text-[12px] leading-relaxed text-[var(--os-ink-muted)]">
+                Your skills, processes, and client data are never shared with other firms and never used to train models. Zero-data-retention agreements with model providers. §7216 consent templates included.
+              </p>
+            </div>
+
+            {/* onboarding strip */}
+            <div className="mb-10 mt-3 rounded-lg border border-dashed border-[var(--os-border)] px-4 py-3 text-[12px] text-[var(--os-ink-subtle)]">
+              Set up in under an hour: import last year&apos;s returns → Petal builds each client&apos;s checklist → the chase is running.
+            </div>
+
+            {/* ── Integrations ── */}
+            <div id="integrations" className="mb-4 scroll-mt-4 border-t border-[var(--os-border)] pt-6">
               <h2 className="text-[15px] font-semibold os-display">Integrations</h2>
               <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]">
-                Connect your stack. Petal reads from these to draft work and keep records in sync — writes stay gated by trust tiers.
+                Connect your stack. Petal reads from these to draft work and keep records in sync —{" "}
+                <button onClick={() => go("trust")} className={cn("rounded-sm text-[var(--os-accent)] hover:underline", FOCUS)}>
+                  writes stay gated by trust tiers
+                </button>.
               </p>
             </div>
 
@@ -102,7 +225,7 @@ export default function SettingsPage() {
                 <button
                   key={k}
                   onClick={() => setTab(k)}
-                  className={cn("relative flex items-center gap-1.5 px-2.5 py-2 text-[13px] transition-colors", tab === k ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}
+                  className={cn("relative flex items-center gap-1.5 px-2.5 py-2 text-[13px] transition-colors", tab === k ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]", FOCUS)}
                 >
                   {label}
                   <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{k === "connected" ? connectedCount : integrations.length}</span>
@@ -126,7 +249,7 @@ export default function SettingsPage() {
             })}
 
             <div className="mb-9 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border)] px-8 py-3 text-[12px] text-[var(--os-ink-subtle)]">
-              Don&apos;t see what you use? <button className="font-medium text-[var(--os-accent)] hover:underline">Request an integration</button>
+              Don&apos;t see what you use? <button className={cn("font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>Request an integration</button>
             </div>
 
             {/* ── Developer · API & MCP (the agentic read layer, kept compact) ── */}

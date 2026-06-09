@@ -1,7 +1,5 @@
 import { type IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
-import { autonomyMeta, type Autonomy } from "@/lib/os-agents";
-import { trustMeta, type Tier, type Trust } from "@/lib/os-triage";
 import {
   taskStatusMeta, stageMeta, skillCategoryMeta, trustTierMeta, TRUST_TIER_ORDER,
   SKILL_CATEGORY_ORDER, daysUntil, fmtDate,
@@ -77,43 +75,6 @@ export function Pill({
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium", tint, className)}>
       {dot && <span className={cn("size-1.5 rounded-full", dot)} />}
       {label}
-    </span>
-  );
-}
-
-export function AutonomyPill({ autonomy, className }: { autonomy: Autonomy; className?: string }) {
-  const m = autonomyMeta[autonomy];
-  return <Pill label={m.label} tint={m.pill} dot={m.dot} className={className} />;
-}
-
-/**
- * Linear status circle — pie-fill for active tiers, dashed for waiting, check when done.
- * Shared so Tasks, the client record, and any other task surface render an identical glyph.
- */
-export function TierGlyph({ tier }: { tier: Tier }) {
-  if (tier === "needs_review") {
-    return <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden><circle cx="8" cy="8" r="7" fill="#10b981" /><path d="M5 8.3l2 2 4-4.4" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-  }
-  if (tier === "waiting") {
-    return <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden><circle cx="8" cy="8" r="6.4" fill="none" stroke="#94a3b8" strokeWidth="1.4" strokeDasharray="1.8 2" /></svg>;
-  }
-  const color = tier === "right_now" ? "#ef4444" : "#f59e0b";
-  const frac = tier === "right_now" ? 0.8 : 0.45;
-  const C = 2 * Math.PI * 3;
-  return (
-    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
-      <circle cx="8" cy="8" r="6.4" fill="none" stroke={color} strokeWidth="1.4" />
-      <circle cx="8" cy="8" r="3" fill="none" stroke={color} strokeWidth="6" strokeDasharray={`${(C * frac).toFixed(2)} ${C.toFixed(2)}`} transform="rotate(-90 8 8)" />
-    </svg>
-  );
-}
-
-/** Trust tier as a bordered dot + label pill — the Tasks-row grammar. */
-export function TrustPill({ trust, className }: { trust: Trust; className?: string }) {
-  const m = trustMeta[trust];
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]", className)}>
-      <span className={cn("size-1.5 rounded-full", m.dot)} /> {m.label}
     </span>
   );
 }

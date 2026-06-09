@@ -18,7 +18,7 @@ const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
 
 const SOURCES = [
   "W-2 2025.pdf",
-  "Apr 8 meeting notes",
+  "Jun 23 email — Marcus",
   "2024 Return.pdf",
 ];
 
@@ -58,8 +58,8 @@ function PetalAnswer() {
         <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">
           Marcus&apos;s W-2 wages fell from <span className="font-medium tabular-nums">$96,400</span> to{" "}
           <span className="font-medium tabular-nums">$58,000</span> because his second restaurant location closed in
-          Q2 2025<Cite n={1} />. That matches the note from your April 8 call, where he mentioned winding down the
-          Riverside spot<Cite n={2} />. His Schedule C business income actually rose 19% over the same period<Cite n={3} />,
+          May 2026<Cite n={1} />. That matches his Jun 23 email, where he mentioned winding down the
+          Riverside spot<Cite n={2} />. His K-1 income from Golden Dragon actually rose 19% over the same period<Cite n={3} />,
           so total household income is down only ~8%, not 40%.
         </p>
         <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--os-ink)]">
@@ -89,7 +89,7 @@ function PetalAnswer() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-medium text-[var(--os-ink)]">Want me to draft the 2025 return?</div>
-            <div className="text-[12px] text-[var(--os-ink-muted)]">Runs the 1040 Drafter skill — lands in Tasks for your review.</div>
+            <div className="text-[12px] text-[var(--os-ink-muted)]">Runs the Draft 1040 skill — lands in Tasks for your review.</div>
           </div>
           <button className="shrink-0 flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]">
             <Icon icon={I.trigger} size={14} /> Start run
