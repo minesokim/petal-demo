@@ -12,8 +12,9 @@ import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, BarChart3, Users,
-  Orbit, BookOpen, Settings, Home, FileText, Folder,
+  Settings, Home, FileText, Folder, FileCheck2, MailWarning, Receipt,
 } from "lucide-react";
+import { needsYouCount } from "@/lib/fixtures/derive";
 
 type Item = { label: string; href: string; icon?: React.ComponentType<{ className?: string }>; badge?: number; glyph?: boolean; logo?: boolean; hugeicon?: IconSvgElement };
 
@@ -62,23 +63,32 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
+  // Review mode and debug surfaces render full-screen, outside the shell chrome.
+  if (pathname.startsWith("/os/review") || pathname.startsWith("/os/debug")) {
+    return (
+      <div className="petal-os h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
+        {children}
+      </div>
+    );
+  }
+
   const primary: Item[] = [
     { label: "Today", href: "/os/today", icon: Home },
-    { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: 4 },
+    { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYouCount() },
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
   ];
   const records: Item[] = [
+    { label: "Returns", href: "/os/returns", icon: FileCheck2 },
     { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Documents", href: "/os/documents", icon: FileText },
-    { label: "Billing", href: "/os/billing", hugeicon: I.billing },
+    { label: "Notices", href: "/os/notices", icon: MailWarning },
+    { label: "Billing", href: "/os/billing", icon: Receipt },
   ];
   const petalAi: Item[] = [
-    { label: "Petal Agents", href: "/os/agents", icon: Orbit, logo: true },
-    { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
     { label: "Skills", href: "/os/skills", hugeicon: I.skills },
   ];
   const system: Item[] = [
-    { label: "Reports", href: "/os/reports", icon: BarChart3 },
+    { label: "Practice", href: "/os/practice", icon: BarChart3 },
     { label: "Settings", href: "/os/settings", icon: Settings },
   ];
 
@@ -103,7 +113,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
           </div>
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
-          <NavGroup label="Records" icon={<Folder className="size-4 shrink-0" />} items={records} isActive={isActive} defaultOpen={false} />
+          <NavGroup label="Records" icon={<Folder className="size-4 shrink-0" />} items={records} isActive={isActive} defaultOpen />
           <NavGroup label="Petal AI" icon={<PetalMark className="size-4 shrink-0" />} items={petalAi} isActive={isActive} defaultOpen={false} />
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">

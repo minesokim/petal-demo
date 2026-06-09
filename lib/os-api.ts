@@ -1,12 +1,11 @@
 // Petal OS — API & MCP surface data.
-// The firm's OS is readable from anywhere: agents, Claude, Cursor, Raycast, Zapier.
-// Reads are open to authorized keys; every WRITE is gated by an agent's trust tier
-// (nothing auto-applies for asks/manual). Modeled on Attio Developers + Exa's MCP framing.
+// The firm's OS is readable from anywhere: Claude, Cursor, Raycast, Zapier.
+// Reads are open to authorized keys; every WRITE is gated by a skill's trust tier.
+// Modeled on Attio Developers + Exa's MCP framing.
 
 import type { IconSvgElement } from "@hugeicons/react";
 import { AiMagicIcon, PencilEdit01Icon, FlashIcon, Globe02Icon } from "@hugeicons/core-free-icons";
-import { triage } from "@/lib/os-triage";
-import { households, entities, returns, people } from "@/lib/os-entities";
+import { tasks, households, entities, engagements, people, skills } from "@/lib/fixtures/firm";
 
 export const mcpServer = {
   url: "https://mcp.petal.os/v1",
@@ -42,13 +41,13 @@ export interface ResourceScope {
 }
 
 export const resourceScopes: ResourceScope[] = [
-  { resource: "Tasks", endpoint: "/api/os/tasks", desc: "The agent review queue", count: triage.length, write: "Approve / snooze — gated by trust tier" },
+  { resource: "Tasks", endpoint: "/api/os/tasks", desc: "The review queue", count: tasks.length, write: "Approve / snooze — gated by trust tier" },
   { resource: "Clients", endpoint: "/api/os/clients", desc: "Households — the relationship hub", count: households.length, write: "Creates a draft task" },
   { resource: "Entities", endpoint: "/api/os/entities", desc: "Each thing that files", count: entities.length, write: "Creates a draft task" },
-  { resource: "Returns", endpoint: "/api/os/returns", desc: "Entity × tax year", count: returns.length, write: "Drafts only — never files" },
+  { resource: "Returns", endpoint: "/api/os/returns", desc: "Engagement × tax year", count: engagements.length, write: "Drafts only — never files" },
   { resource: "People", endpoint: "/api/os/people", desc: "Contacts across households", count: people.length, write: "Creates a draft task" },
   { resource: "Knowledge", endpoint: "/api/os/knowledge", desc: "Firm Constitution + reference", count: 6, write: "Requires approval" },
-  { resource: "Agents & runs", endpoint: "/api/os/agents", desc: "The workforce and their runs", count: 6, write: "Read-only" },
+  { resource: "Skills & runs", endpoint: "/api/os/skills", desc: "The skill library and its runs", count: skills.length, write: "Read-only" },
 ];
 
 export interface ConnectedApp {

@@ -2,6 +2,11 @@ import { type IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { autonomyMeta, type Autonomy } from "@/lib/os-agents";
 import { trustMeta, type Tier, type Trust } from "@/lib/os-triage";
+import {
+  taskStatusMeta, stageMeta, skillCategoryMeta, trustTierMeta, TRUST_TIER_ORDER,
+  SKILL_CATEGORY_ORDER, daysUntil, fmtDate,
+  type TaskStatus, type Stage, type SkillCategory, type TrustTier,
+} from "@/lib/fixtures/vocab";
 
 /** Each agent's petal mark, keyed by its identity gradient. */
 const PETAL_BY_GRADIENT: Record<string, string> = {
@@ -109,6 +114,114 @@ export function TrustPill({ trust, className }: { trust: Trust; className?: stri
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]", className)}>
       <span className={cn("size-1.5 rounded-full", m.dot)} /> {m.label}
+    </span>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// Canonical-vocabulary primitives (lib/fixtures). One status
+// language everywhere — these are the ONLY renderers for it.
+// ════════════════════════════════════════════════════════════
+
+/** Task status: small dot + neutral label. The single status grammar for every surface. */
+export function StatusPill({ status, className }: { status: TaskStatus; className?: string }) {
+  const m = taskStatusMeta[status];
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]", className)}>
+      <span className={cn("size-1.5 shrink-0 rounded-full", m.dot)} /> {m.label}
+    </span>
+  );
+}
+
+/** Engagement stage: dot + label. */
+export function StageTag({ stage, className }: { stage: Stage; className?: string }) {
+  const m = stageMeta[stage];
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink)]", className)}>
+      <span className={cn("size-1.5 shrink-0 rounded-full", m.dot)} /> {m.label}
+    </span>
+  );
+}
+
+/** Deadline chip — color by proximity (<14d danger, <45d warning, else muted). "Ext" prefix for extended deadlines. */
+export function DeadlineChip({ iso, extended, className }: { iso: string; extended?: boolean; className?: string }) {
+  const d = daysUntil(iso);
+  const tone =
+    d < 14 ? "border-red-200 bg-red-50 text-red-700"
+    : d < 45 ? "border-amber-200 bg-amber-50 text-amber-700"
+    : "border-[var(--os-border)] text-[var(--os-ink-muted)]";
+  return (
+    <span
+      title={`${d} days away`}
+      className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums", tone, className)}
+    >
+      {extended ? "Ext " : ""}{fmtDate(iso)}
+    </span>
+  );
+}
+
+/** The AI layer's identity: a petal colored by skill category (see the legend). */
+export function SkillPetal({ category, size = 16, className }: { category: SkillCategory; size?: number; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src={skillCategoryMeta[category].petal}
+      alt={skillCategoryMeta[category].label}
+      title={skillCategoryMeta[category].label}
+      className={cn("shrink-0 object-contain mix-blend-multiply", className)}
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+/** The six petal colors, mapped — render wherever petals appear without context. */
+export function PetalLegend({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-1.5", className)}>
+      {SKILL_CATEGORY_ORDER.map(c => (
+        <span key={c} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--os-ink-muted)]">
+          <SkillPetal category={c} size={13} /> {skillCategoryMeta[c].label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Trust tier as a 4-step dial (T0 Suggest → T3 Act & report). Read-only without onChange. */
+export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onChange?: (t: TrustTier) => void; className?: string }) {
+  return (
+    <div className={cn("inline-flex items-center rounded-md border border-[var(--os-border)] p-0.5", className)} role="radiogroup" aria-label="Trust tier">
+      {TRUST_TIER_ORDER.map(t => {
+        const m = trustTierMeta[t];
+        const active = t === tier;
+        return (
+          <button
+            key={t}
+            role="radio"
+            aria-checked={active}
+            disabled={!onChange}
+            onClick={() => onChange?.(t)}
+            title={`${m.code} ${m.label} — ${m.blurb}`}
+            className={cn(
+              "rounded px-2 py-1 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+              active ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "text-[var(--os-ink-muted)]",
+              onChange && !active && "hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+            )}
+          >
+            {m.code}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Compact trust-tier tag for menus and rows. */
+export function TrustTierTag({ tier, className }: { tier: TrustTier; className?: string }) {
+  const m = trustTierMeta[tier];
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full border border-[var(--os-border)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]", className)} title={m.blurb}>
+      {m.code} · {m.label}
     </span>
   );
 }

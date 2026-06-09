@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
-import { chats, chatGroups } from "@/lib/os-chats";
+import { recentChats, type RecentChat } from "@/lib/fixtures/firm";
 
 /** Sidebar bottom — the Ask Petal chat zone: Recent convos, history, New chat (Solve pattern).
- *  Opening history slides the whole sidebar up into a Chat history view. */
+ *  Opening history slides the whole sidebar up into a Chat history view.
+ *  Chats that produced an artifact open that artifact — chats and tasks reference the same objects. */
 export function SidebarChat() {
   const router = useRouter();
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -17,11 +18,15 @@ export function SidebarChat() {
   const [query, setQuery] = useState("");
   const [hoverList, setHoverList] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const recent = chats.slice(0, 6);
+  const recent = recentChats.slice(0, 6);
   const noFade = hoverList || expanded;
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const open = () => { router.push("/os/ask"); setHistoryOpen(false); setMenuFor(null); };
+  const open = (c?: RecentChat) => {
+    router.push(c?.artifact ? c.artifact.href : "/os/ask");
+    setHistoryOpen(false);
+    setMenuFor(null);
+  };
 
   return (
     <>
@@ -45,12 +50,18 @@ export function SidebarChat() {
               style={{ opacity: noFade ? 1 : Math.max(0.35, 1 - i * 0.28) }}
             >
               <button
-                onClick={open}
-                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
+                onClick={() => open(c)}
+                title={c.artifact ? `Opens ${c.artifact.label}` : undefined}
+                className="flex w-full flex-col justify-center gap-0 rounded-md px-2 py-1 text-left text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
               >
-                <span className={cn("size-1.5 shrink-0 rounded-full", c.unread ? "bg-[var(--os-accent)]" : "border border-[var(--os-border-strong)]")} />
-                <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)] group-hover/chat:opacity-0">{c.when}</span>
+                <span className="flex h-6 w-full items-center gap-2">
+                  <span className={cn("size-1.5 shrink-0 rounded-full", c.unread ? "bg-[var(--os-accent)]" : "border border-[var(--os-border-strong)]")} />
+                  <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)] group-hover/chat:opacity-0">{c.when}</span>
+                </span>
+                {c.artifact && (
+                  <span className="truncate pl-3.5 text-[11px] text-[var(--os-ink-subtle)]">→ {c.artifact.label}</span>
+                )}
               </button>
               <button
                 onClick={() => setMenuFor(menuFor === c.id ? null : c.id)}
@@ -81,7 +92,7 @@ export function SidebarChat() {
           <button onClick={() => setHistoryOpen(true)} onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setExpanded(true); }} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
             <Icon icon={I.history} size={17} />
           </button>
-          <button onClick={open} className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.05)] transition-colors hover:bg-[var(--os-hover)]">
+          <button onClick={() => open()} className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.05)] transition-colors hover:bg-[var(--os-hover)]">
             <PetalMark className="size-4" /> New chat
           </button>
         </div>
@@ -110,22 +121,20 @@ export function SidebarChat() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto px-2 pb-3">
-              {chatGroups.map(g => {
-                const items = chats.filter(c => c.group === g && c.title.toLowerCase().includes(query.toLowerCase()));
-                if (!items.length) return null;
-                return (
-                  <div key={g} className="mb-2">
-                    <div className="os-label mb-1 px-2">{g}</div>
-                    {items.map(c => (
-                      <button key={c.id} onClick={open} className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left transition-colors hover:bg-[var(--os-hover)]">
-                        <span className={cn("size-1.5 shrink-0 rounded-full", c.unread ? "bg-[var(--os-accent)]" : "bg-[var(--os-border-strong)]")} />
-                        <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{c.title}</span>
-                        <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{c.when}</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })}
+              {recentChats
+                .filter(c => c.title.toLowerCase().includes(query.toLowerCase()))
+                .map(c => (
+                  <button key={c.id} onClick={() => open(c)} className="flex w-full flex-col justify-center rounded-md px-2 py-1 text-left transition-colors hover:bg-[var(--os-hover)]">
+                    <span className="flex h-6 w-full items-center gap-2">
+                      <span className={cn("size-1.5 shrink-0 rounded-full", c.unread ? "bg-[var(--os-accent)]" : "bg-[var(--os-border-strong)]")} />
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{c.title}</span>
+                      <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{c.when}</span>
+                    </span>
+                    {c.artifact && (
+                      <span className="truncate pl-3.5 text-[11px] text-[var(--os-ink-subtle)]">→ {c.artifact.label}</span>
+                    )}
+                  </button>
+                ))}
             </div>
           </motion.div>
         )}
