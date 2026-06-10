@@ -38,12 +38,12 @@ function Card({ className, children }: { className?: string; children: React.Rea
   return <div className={cn("flex flex-col rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
 }
 
-/** The original card header — small muted title INSIDE the card. */
+/** Card header — the `title` token (15/600 ink) so containers announce themselves. */
 function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark?: boolean; badge?: number; href?: string; hrefLabel?: string }) {
   return (
-    <div className="mb-3 flex items-center gap-1.5">
-      {mark && <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />}
-      <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">{title}</h3>
+    <div className="mb-3 flex items-center gap-2">
+      {mark && <PetalMark className="size-4 text-[var(--os-ink-muted)]" />}
+      <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{title}</h3>
       {badge != null && <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{badge}</span>}
       {href && (
         <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
@@ -265,7 +265,7 @@ export default function TodayPage() {
           <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
             <div className="mb-3 flex items-center gap-2">
               <PetalMark className="size-4 text-[var(--os-ink)]" />
-              <h3 className="os-display text-[13px] font-semibold text-[var(--os-ink)]">Petal activity</h3>
+              <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">Petal activity</h3>
             </div>
             <div className="space-y-0.5">
               {([
@@ -277,7 +277,7 @@ export default function TodayPage() {
                 <Link key={a.label} href={a.href} className={cn("-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
                   <Icon icon={a.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
                   <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{a.label}</span>
-                  <span className="os-display shrink-0 text-[18px] font-semibold tabular-nums text-[var(--os-ink)]">{a.count}</span>
+                  <span className="os-display shrink-0 text-[20px] font-semibold tabular-nums text-[var(--os-ink)]">{a.count}</span>
                 </Link>
               ))}
             </div>

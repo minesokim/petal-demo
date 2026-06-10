@@ -234,3 +234,9 @@ were tried and rejected as "vibe coded"):
 - **One accent moment per screen** (the gradient callout, or one primary button) — everything
   else stays monochrome. Page titles elsewhere may go display-large (28–36/600, tight
   tracking) to create the Ramp type-contrast; sections stay 13–15.
+
+**The type ramp (locked Jun 9, 2026 — hierarchy must be felt):** 22/600 hero (banner
+greeting; sanctioned) → 18/600 callout title (FeatureCallout only) → **15/600 ink card
+titles** (CardHead/section cards — never 12px muted whispers) → 13 body / 12 meta →
+20/600 tabular **focal numbers** (stat lists, close-card blocks). Card headers are ink,
+not muted; the muted-micro treatment is reserved for true eyebrows (banner, callout).

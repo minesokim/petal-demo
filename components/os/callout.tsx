@@ -38,7 +38,7 @@ export function FeatureCallout({
       {/* copy + actions */}
       <div className="flex flex-col justify-center gap-1 px-6 py-6 md:py-7">
         {eyebrow && <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{eyebrow}</div>}
-        <h3 className="os-display text-[16px] font-semibold leading-snug text-[var(--os-ink)]">{title}</h3>
+        <h3 className="os-display text-[18px] font-semibold leading-snug tracking-[-0.01em] text-[var(--os-ink)]">{title}</h3>
         <p className="mt-1 max-w-[36ch] text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">{body}</p>
         <div className="mt-4 flex items-center gap-2">
           <Link
