@@ -3,13 +3,13 @@
 // Today — the command center. Every number on this page derives from
 // lib/fixtures/derive at render time; nothing is hard-coded (see /os/debug/tie-out).
 //
-// Layout language (DESIGN.md §7, after Ramp Stack / Ferndesk):
-//   hero (calm — one sentence carries the week) → composer → ONE gradient callout →
-//   brief as a grid of glyph-tile cards (Ferndesk) → client rows with avatars + pills
-//   (Linear × Ramp) → receipt card with chips → Ramp-style close card for books.
+// Layout language (DESIGN.md §7 — Ramp Stack grammar, studied from the user's own
+// Stack account screenshots): hierarchy from TYPE CONTRAST and air, not boxes or color.
+// Sentence-case gray eyebrows · tall rows with hairlines · metadata = small gray chips ·
+// state = plain colored text · row actions = quiet underlined links · one accent moment
+// per screen (the review callout). No icon tiles, no pills, no dot columns.
 
 import Link from "next/link";
-import type { IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -21,7 +21,7 @@ import { SkillPetal } from "@/components/os/primitives";
 import { DEMO_DATE_LABEL, fmtDate, type Health } from "@/lib/fixtures/vocab";
 import {
   FIRM_PROFILE, brief, booksItems, booksMonth, booksStatusMeta, entityById,
-  taskById, householdById, skillById, runById, engagementById, type BriefTopic,
+  taskById, householdById, skillById, runById, engagementById,
 } from "@/lib/fixtures/firm";
 import {
   needsYouCount, needsYouTasks, atRiskHouseholds, healthCounts, filedThisWeek,
@@ -32,14 +32,14 @@ const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-/** Ferndesk eyebrow — tiny caps label above each section. */
+/** Ramp eyebrow — small, sentence case, gray. Sits above its section with air around it. */
 function SectionLabel({ children, count, href, hrefLabel }: { children: React.ReactNode; count?: number; href?: string; hrefLabel?: string }) {
   return (
-    <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
-      <h3 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--os-ink-subtle)]">{children}</h3>
-      {count != null && <span className="text-[10px] font-medium tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
+    <div className="mb-3 flex items-baseline gap-2">
+      <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">{children}</h3>
+      {count != null && <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
       {href && (
-        <Link href={href} className={cn("ml-auto rounded text-[11px] font-medium text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
+        <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-subtle)] underline decoration-[var(--os-border-strong)] underline-offset-2 transition-colors hover:text-[var(--os-ink)]", focusRing)}>
           {hrefLabel ?? "View all"}
         </Link>
       )}
@@ -47,23 +47,21 @@ function SectionLabel({ children, count, href, hrefLabel }: { children: React.Re
   );
 }
 
-/** Glyph tile — the Ferndesk card icon, tinted by topic. */
-const TOPIC_TILE: Record<BriefTopic, { icon: keyof typeof I; bg: string; text: string }> = {
-  returns:    { icon: "badge",    bg: "bg-emerald-50", text: "text-emerald-600" },
-  transcript: { icon: "eye",      bg: "bg-violet-50",  text: "text-violet-600" },
-  notice:     { icon: "mail",     bg: "bg-amber-50",   text: "text-amber-600" },
-  deadline:   { icon: "calendar", bg: "bg-sky-50",     text: "text-sky-600" },
-  policy:     { icon: "shield",   bg: "bg-[var(--os-selected)]", text: "text-[var(--os-ink-muted)]" },
-  filing:     { icon: "file",     bg: "bg-cyan-50",    text: "text-cyan-600" },
-};
-
-function GlyphTile({ icon, bg, text, size = 32 }: { icon: IconSvgElement; bg: string; text: string; size?: number }) {
+/** Ramp metadata chip — small, gray, borderless. */
+function Chip({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn("grid shrink-0 place-items-center rounded-lg", bg, text)} style={{ width: size, height: size }}>
-      <Icon icon={icon} size={Math.round(size / 2)} />
+    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]", className)}>
+      {children}
     </span>
   );
 }
+
+/** Quiet row action — Ramp's underlined "Edit" link grammar. */
+const rowAction = cn(
+  "shrink-0 rounded text-[12px] text-[var(--os-ink-muted)] underline decoration-[var(--os-border-strong)] underline-offset-2",
+  "transition-colors hover:text-[var(--os-ink)] hover:decoration-[var(--os-ink-subtle)]",
+  focusRing,
+);
 
 // flat people avatar — records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
 function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
@@ -77,9 +75,10 @@ function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
-const HEALTH_PILL: Record<Exclude<Health, "healthy">, { label: string; cls: string }> = {
-  at_risk: { label: "At risk", cls: "bg-red-50 text-red-700" },
-  watch:   { label: "Watch",   cls: "bg-amber-50 text-amber-700" },
+/** State as plain colored text (Mercury/Ramp) — no pills, no dots. */
+const HEALTH_TEXT: Record<Exclude<Health, "healthy">, { label: string; cls: string }> = {
+  at_risk: { label: "At risk", cls: "text-red-600" },
+  watch:   { label: "Watch",   cls: "text-amber-700" },
 };
 
 export default function TodayPage() {
@@ -116,20 +115,20 @@ export default function TodayPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[820px] px-6 py-8">
+        <div className="mx-auto max-w-[760px] px-6 pb-16 pt-8">
 
           {/* ── hero — calm: eyebrow, greeting, one sentence that carries the week ── */}
-          <div className="relative mb-5 overflow-hidden rounded-xl border border-[var(--os-border)]">
+          <div className="relative mb-6 overflow-hidden rounded-xl border border-[var(--os-border)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/today-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
             <div className="relative px-7 py-8">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
+              <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
                 <PetalMark className="size-3.5 text-white/85" /> Daily brief · {DEMO_DATE_LABEL}
                 <WeeklyDigestLink tone="light" className="-my-1 ml-auto" />
               </div>
-              <h2 className="os-display text-[22px] font-semibold leading-tight text-white">Good morning, {firstName}</h2>
-              <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/85">
+              <h2 className="os-display text-[26px] font-semibold leading-tight tracking-[-0.01em] text-white">Good morning, {firstName}</h2>
+              <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-white/85">
                 Petal ran <span className="font-semibold text-white tabular-nums">{roi.actions}</span> actions this week — about{" "}
                 <span className="font-semibold text-white tabular-nums">{roi.hoursReturned} hours</span> returned.{" "}
                 <span className="font-semibold text-white tabular-nums">{needsYou}</span> items need you, and{" "}
@@ -141,9 +140,9 @@ export default function TodayPage() {
           {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* ── review queue — the crafted moment ── */}
+          {/* ── review queue — the one accent moment on this screen ── */}
           <FeatureCallout
-            className="mb-10"
+            className="mb-12"
             eyebrow={<><PetalMark className="size-3.5" /> Review mode</>}
             title={`${needsYou} items are ready for your sign-off`}
             body={`Approve, edit, or skip each one with its sources alongside — keyboard A, E, S. About ${reviewMinutes} minutes.`}
@@ -171,7 +170,7 @@ export default function TodayPage() {
                         <span className="font-semibold">{a.key}</span>
                         <span className="truncate">{a.label}</span>
                         {a.key === previewTask.recommendedAction && (
-                          <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[9.5px] text-[var(--os-ink-muted)]">
+                          <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[9.5px] text-[var(--os-ink-subtle)]">
                             <PetalMark className="size-2.5" /> recommends
                           </span>
                         )}
@@ -183,160 +182,137 @@ export default function TodayPage() {
             }
           />
 
-          {/* ── Today's brief — a grid of glyph-tile cards (Ferndesk) ── */}
-          <section className="mb-10">
+          {/* ── Today's brief — clean list; typography carries it ── */}
+          <section className="mb-12">
             <SectionLabel>Today's brief</SectionLabel>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <ul>
               {brief.map((b, i) => {
-                const tile = TOPIC_TILE[b.topic];
-                const inner = (
+                const row = (
                   <>
-                    <div className="flex items-start justify-between gap-2">
-                      <GlyphTile icon={I[tile.icon]} bg={tile.bg} text={tile.text} />
-                      {b.source && (
-                        <span className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-[var(--os-ink-subtle)]">{b.source}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13.5px] font-semibold leading-snug text-[var(--os-ink)]">{b.headline}</span>
+                      <span className="mt-1 block text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">{b.detail}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2 pt-0.5">
+                      {b.source && <Chip>{b.source}</Chip>}
+                      {b.href && (
+                        <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)] opacity-0 transition-opacity duration-150 group-hover/row:opacity-100" />
                       )}
-                    </div>
-                    <div className="mt-3">
-                      <div className="text-[13px] font-semibold leading-snug text-[var(--os-ink)]">{b.headline}</div>
-                      <div className="mt-1 text-[12px] leading-relaxed text-[var(--os-ink-muted)] line-clamp-2">{b.detail}</div>
-                    </div>
-                    {b.runId && (
-                      <div className="mt-auto flex items-center gap-1 pt-3 text-[10.5px] font-medium text-[var(--os-ink-subtle)]">
-                        <PetalMark className="size-2.5" /> Run logged
-                      </div>
-                    )}
+                    </span>
                   </>
                 );
-                const cardCls = cn(
-                  "flex flex-col rounded-xl border border-[var(--os-border)] bg-white p-4",
-                  "transition-[border-color,box-shadow] duration-150",
-                );
-                return b.href ? (
-                  <Link
-                    key={i}
-                    href={b.href}
-                    className={cn(cardCls, "hover:border-[var(--os-border-hover)] hover:shadow-[0_2px_10px_rgba(17,17,26,0.05)]", focusRing)}
-                  >
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={i} className={cardCls}>{inner}</div>
+                return (
+                  <li key={i} className={cn(i > 0 && "border-t border-[var(--os-border)]")}>
+                    {b.href ? (
+                      <Link href={b.href} className={cn("group/row -mx-3 flex items-start gap-4 rounded-lg px-3 py-4 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+                        {row}
+                      </Link>
+                    ) : (
+                      <div className="-mx-3 flex items-start gap-4 px-3 py-4">{row}</div>
+                    )}
+                    {b.runId && (
+                      <div className="-mt-1.5 pb-3">
+                        <ProvenancePanel runId={b.runId} />
+                      </div>
+                    )}
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </section>
 
-          {/* ── Needs watching — client rows: avatar + health pill + one action ── */}
-          <section className="mb-10">
+          {/* ── Needs watching — people-table grammar: avatar, state as text, quiet action ── */}
+          <section className="mb-12">
             <SectionLabel count={atRisk.length} href="/os/clients">Needs watching</SectionLabel>
-            <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-white">
-              {atRisk.length === 0 ? (
-                <p className="px-4 py-4 text-[12px] text-[var(--os-ink-muted)]">
-                  Every client is on pace.{" "}
-                  <Link href="/os/clients" className={cn("rounded font-medium text-[var(--os-ink)] underline decoration-[var(--os-border-strong)] underline-offset-2", focusRing)}>Open clients</Link>
-                </p>
-              ) : (
-                atRisk.map(({ household, health, reason, nextAction }, i) => (
-                  <div key={household.id} className={cn("flex items-center gap-3 px-4 py-3", i > 0 && "border-t border-[var(--os-border)]")}>
+            {atRisk.length === 0 ? (
+              <p className="py-2 text-[12.5px] text-[var(--os-ink-muted)]">
+                Every client is on pace. <Link href="/os/clients" className={rowAction}>Open clients</Link>
+              </p>
+            ) : (
+              <ul>
+                {atRisk.map(({ household, health, reason, nextAction }, i) => (
+                  <li key={household.id} className={cn("flex items-center gap-3.5 py-3.5", i > 0 && "border-t border-[var(--os-border)]")}>
                     <PersonAvatar name={household.name} size={30} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-baseline gap-x-2.5">
                         <Link
                           href={`/os/clients/${household.id}`}
-                          className={cn("rounded text-[13px] font-semibold leading-snug text-[var(--os-ink)] hover:underline", focusRing)}
+                          className={cn("rounded text-[13.5px] font-semibold leading-snug text-[var(--os-ink)] hover:underline", focusRing)}
                         >
                           {household.name}
                         </Link>
                         {health !== "healthy" && (
-                          <span className={cn("rounded-full px-1.5 py-px text-[10px] font-semibold", HEALTH_PILL[health].cls)}>
-                            {HEALTH_PILL[health].label}
-                          </span>
+                          <span className={cn("text-[11px] font-semibold", HEALTH_TEXT[health].cls)}>{HEALTH_TEXT[health].label}</span>
                         )}
                       </div>
-                      <p className="mt-0.5 truncate text-[12px] text-[var(--os-ink-muted)]">{reason}</p>
+                      <p className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{reason}</p>
                     </div>
                     {nextAction && (
-                      <Link
-                        href={nextAction.href}
-                        className={cn(
-                          "hidden h-7 shrink-0 items-center rounded-md border border-[var(--os-border)] bg-white px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] sm:inline-flex",
-                          focusRing,
-                        )}
-                      >
+                      <Link href={nextAction.href} className={cn(rowAction, "hidden sm:inline")}>
                         {nextAction.label}
                       </Link>
                     )}
-                  </div>
-                ))
-              )}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
-          {/* ── Filed this week · Today's calls ── */}
-          <div className="mb-10 grid grid-cols-1 items-start gap-x-4 gap-y-10 md:grid-cols-2">
-            <section>
-              <SectionLabel href="/os/returns" hrefLabel="All returns">Filed this week</SectionLabel>
-              <div className="rounded-xl border border-[var(--os-border)] bg-white p-4">
-                <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("group/row -m-1 flex items-start gap-3 rounded-lg p-1", focusRing)}>
-                  <GlyphTile icon={I.badge} bg="bg-emerald-50" text="text-emerald-600" size={36} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold leading-snug text-[var(--os-ink)]">
-                      <span className="tabular-nums">{filed.length}</span> returns filed clean
-                    </span>
-                    <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">
-                      Pre-approved by you {filedOn} · all accepted Jun 24
-                    </span>
-                  </span>
-                  <Icon icon={I.chevronRight} size={13} className="mt-1 shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity duration-150 group-hover/row:opacity-100" />
-                </Link>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {filed.map(e => {
-                    const entity = entityById(e.entityId)!;
-                    return (
-                      <Link
-                        key={e.id}
-                        href={`/os/returns/${e.id}`}
-                        className={cn("inline-flex items-center gap-1 rounded-md border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}
-                      >
+          {/* ── Filed this week ── */}
+          <section className="mb-12">
+            <SectionLabel href="/os/returns" hrefLabel="All returns">Filed this week</SectionLabel>
+            <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+              <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("group/row min-w-0 flex-1 rounded", focusRing)}>
+                <span className="block text-[13.5px] font-semibold leading-snug text-[var(--os-ink)] group-hover/row:underline">
+                  <span className="tabular-nums">{filed.length}</span> returns filed clean
+                </span>
+                <span className="mt-1 block text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">
+                  Pre-approved by you {filedOn} · all accepted Jun 24
+                </span>
+              </Link>
+              <span className="flex flex-wrap gap-1.5 pt-0.5">
+                {filed.map(e => {
+                  const entity = entityById(e.entityId)!;
+                  return (
+                    <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("rounded", focusRing)}>
+                      <Chip className="transition-colors hover:bg-[var(--os-border)] hover:text-[var(--os-ink)]">
                         {entity.name.split("&")[0].trim().split(" ")[0]} · {e.form}
-                      </Link>
-                    );
-                  })}
-                </div>
-                {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-3" />}
-              </div>
-            </section>
+                      </Chip>
+                    </Link>
+                  );
+                })}
+              </span>
+            </div>
+            {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-2" />}
+          </section>
 
-            <section>
-              <SectionLabel>Today's calls</SectionLabel>
-              <div className="rounded-xl border border-[var(--os-border)] bg-white p-4">
-                <div className="flex items-start gap-3">
-                  <GlyphTile icon={I.call} bg="bg-yellow-50" text="text-yellow-600" size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <Link
-                        href={`/os/clients/${callHousehold.id}`}
-                        className={cn("rounded text-[13px] font-semibold text-[var(--os-ink)] hover:underline", focusRing)}
-                      >
-                        {callHousehold.name}
-                      </Link>
-                      <span className="text-[11px] font-medium tabular-nums text-[var(--os-ink-subtle)]">3:00 PM</span>
-                    </div>
-                    <div className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</div>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">
-                    <SkillPetal category={callSkill.category} size={12} /> Brief generating
-                  </span>
+          {/* ── Today's calls ── */}
+          <section className="mb-12">
+            <SectionLabel>Today's calls</SectionLabel>
+            <div className="flex items-center gap-3.5 py-1">
+              <PersonAvatar name={callHousehold.name} size={30} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2.5">
+                  <Link
+                    href={`/os/clients/${callHousehold.id}`}
+                    className={cn("rounded text-[13.5px] font-semibold text-[var(--os-ink)] hover:underline", focusRing)}
+                  >
+                    {callHousehold.name}
+                  </Link>
+                  <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">3:00 PM</span>
                 </div>
-                {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-3" />}
+                <p className="mt-0.5 text-[12.5px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</p>
               </div>
-            </section>
-          </div>
+              <Chip>
+                <SkillPetal category={callSkill.category} size={11} /> Brief generating
+              </Chip>
+            </div>
+            {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-1.5 pl-[44px]" />}
+          </section>
 
           {/* ── Books — the Ramp close card (renders only while books clients exist) ── */}
           {booksHH.length > 0 && (
-            <section className="mb-2">
+            <section>
               <SectionLabel href="/os/books" hrefLabel="Open books">Books</SectionLabel>
               <Link
                 href="/os/books"
@@ -344,7 +320,7 @@ export default function TodayPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{booksMonth} books</h3>
-                  <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
+                  <span className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
                     <span className="tabular-nums">{booksHH.length}</span> clients <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
                   </span>
                 </div>

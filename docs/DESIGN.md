@@ -212,18 +212,25 @@ checklist" callout; Ferndesk's greeting-with-stats home). Everything around them
    artifact (derived data, never a mock illustration). **Max one per page.** Current uses:
    Today (review queue), Books (run-with-Petal).
 
-Supporting patterns (the section language for content pages — proven on Today, Jun 9, 2026):
-- **Section eyebrows**: 10/600 UPPERCASE tracking-[0.08em] ink-subtle, OUTSIDE the content,
-  with optional count + right-aligned quiet link. (Scoped exception to the no-uppercase rule —
-  eyebrows only, never headings/buttons/labels inside content.)
-- **Glyph-tile cards** (Ferndesk): digest/suggestion items render as a grid of white cards,
-  each led by a 32px rounded-lg tinted glyph tile (soft-50 bg + 600 icon; tint = topic
-  semantics, mapped in the page from fixture `topic`, never stored in fixtures). Hover =
-  border-hover + soft shadow. Petal-produced cards carry a tiny "Run logged" petal footer.
-- **Entity rows** (Linear × Ramp): people/client rows lead with the flat initials avatar,
-  carry at most ONE soft-fill state pill next to the name, one muted reason line, and ONE
-  bordered action button on the right. No leading dots, no inline accent-blue links.
+**The section grammar — Ramp Stack (reference #1, studied from the firm's own Stack account;
+proven on Today, Jun 9, 2026).** Hierarchy comes from TYPE CONTRAST and air — never from
+boxes, tinted icon tiles, colored pills, or dot columns (tinted glyph tiles in pastel squares
+were tried and rejected as "vibe coded"):
+- **Section eyebrows**: 12/500 sentence-case ink-muted, sitting on the canvas above the
+  content, optional count + a right-aligned quiet underlined link. No uppercase.
+- **Lists are typographic**: headline 13.5/600 over a 12.5 muted detail line, tall rows
+  (py-3.5–4), hairline dividers, hover-only chevrons. No leading marks.
+- **Metadata = small gray chips** (rounded-md, bg --os-selected, 10.5/500 muted) — like
+  Ramp's "Owner" chip. Never colored pills in rows.
+- **State = plain colored text** (11/600: red-600 "At risk", amber-700 "Watch") next to the
+  name — Mercury/Ramp style. Dots only where a legend defines them (boards, charts).
+- **Row actions = quiet underlined links** (Ramp's "Edit"): 12px ink-muted, hairline
+  underline, right-aligned. Bordered buttons only for primary actions in headers/callouts.
+- **Entity rows** lead with the flat initials avatar; one state word; one action.
 - **The Ramp close card**: progress modules = title row → segmented bar → a row of
   number-over-label stat blocks (20/600 tabular number over 12 muted label with its dot).
-- **Stats live in sentences** (Ferndesk): the hero carries the week's numbers inside its one
-  summary sentence; no standalone stat strips on content pages.
+- **Stats live in sentences**: the hero carries the week's numbers inside its one summary
+  sentence; no standalone stat strips on content pages.
+- **One accent moment per screen** (the gradient callout, or one primary button) — everything
+  else stays monochrome. Page titles elsewhere may go display-large (28–36/600, tight
+  tracking) to create the Ramp type-contrast; sections stay 13–15.
