@@ -20,7 +20,7 @@ import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import {
   householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
-  positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById,
+  positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById, FIRM_PROFILE,
   type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
 } from "@/lib/fixtures/firm";
 import {
@@ -33,8 +33,11 @@ import { stageMeta, taskStatusMeta, healthMeta, fmtDate, money, type Stage } fro
 /* ── constants / small helpers (presentation only — no data) ── */
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Notices", "Positions", "Notes"] as const;
+const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Notices", "Positions", "Compliance", "Notes"] as const;
 type Tab = (typeof TABS)[number];
+// 5 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
+const PRIMARY_TABS: Tab[] = ["Activity", "Returns", "Documents", "Tasks", "Messages"];
+const MORE_TABS: Tab[] = ["Billing", "Notices", "Positions", "Compliance", "Notes"];
 const tabFromParam = (p: string | null): Tab =>
   TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Activity";
 
@@ -149,6 +152,17 @@ function ClientRecordInner() {
   const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
   const [panel, setPanel] = useState<"@Petal" | "Details">("@Petal");
   const [runMenuOpen, setRunMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  // close the More menu on an outside click (robust — no overlay div to race the open)
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [moreOpen]);
   const [queuedSkills, setQueuedSkills] = useState<Set<string>>(new Set());
   const [viewAsClient, setViewAsClient] = useState(false);
   const [msgThread, setMsgThread] = useState<string | null>(null);
@@ -375,9 +389,10 @@ function ClientRecordInner() {
         <div className="flex min-h-0 flex-1">
           {/* Center: tabs + content */}
           <div className="flex min-w-0 flex-1 flex-col">
-            {/* All 9 tabs explicit — horizontal scroll at narrow widths, no overflow menu */}
-            <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-4 sm:px-8">
-              {TABS.map(t => (
+            {/* 6 primary tabs inline + a "More" dropdown for the rest (Attio pattern).
+                No overflow-x clipping here — it would hide the absolutely-positioned dropdown. */}
+            <div className="flex flex-wrap items-center gap-1 border-b border-[var(--os-border)] px-4 sm:px-8">
+              {PRIMARY_TABS.map(t => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -394,6 +409,43 @@ function ClientRecordInner() {
                   {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
                 </button>
               ))}
+
+              {/* More ▾ — overflow tabs (ref-based outside-click close) */}
+              <div ref={moreRef} className="relative shrink-0">
+                <button
+                  onClick={() => setMoreOpen(o => !o)}
+                  aria-expanded={moreOpen}
+                  className={cn(
+                    "relative flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[13px] transition-colors",
+                    MORE_TABS.includes(tab) ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]",
+                    FOCUS,
+                  )}
+                >
+                  {MORE_TABS.includes(tab) ? tab : "More"}
+                  <Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" />
+                  {MORE_TABS.includes(tab) && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
+                </button>
+                {moreOpen && (
+                  <div className="absolute right-0 top-full z-30 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_8px_28px_-8px_rgba(17,17,26,0.18)]">
+                    {MORE_TABS.map(t => (
+                      <button
+                        key={t}
+                        onClick={() => { setTab(t); setMoreOpen(false); }}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors hover:bg-[var(--os-hover)]",
+                          tab === t ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]",
+                          FOCUS,
+                        )}
+                      >
+                        <span className="flex-1">{t}</span>
+                        {tabCount[t] !== undefined && tabCount[t]! > 0 && (
+                          <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{tabCount[t]}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {tab === "Messages" ? (
@@ -788,6 +840,79 @@ function ClientRecordInner() {
                     </div>
                   )
                 )}
+
+                {/* ── Compliance ── */}
+                {tab === "Compliance" && (() => {
+                  // e-file authorization + transmission status, derived per engagement from stage
+                  const efileStatus = (s: Stage): { label: string; dot: string } =>
+                    s === "accepted" ? { label: "Accepted", dot: "bg-emerald-500" }
+                    : s === "e_filed" ? { label: "Transmitted", dot: "bg-blue-500" }
+                    : s === "pay_and_sign" ? { label: "Awaiting signature", dot: "bg-amber-500" }
+                    : { label: "Not started", dot: "bg-[var(--os-border-strong)]" };
+                  const authStatus = (s: Stage): { label: string; dot: string } =>
+                    s === "accepted" || s === "e_filed" ? { label: "Signed", dot: "bg-emerald-500" }
+                    : s === "pay_and_sign" ? { label: "Out for signature", dot: "bg-amber-500" }
+                    : { label: "Not yet generated", dot: "bg-[var(--os-border-strong)]" };
+                  return (
+                    <div className="space-y-4">
+                      {/* firm-level credentials */}
+                      <div className="rounded-lg border border-[var(--os-border)] p-3.5">
+                        <div className="os-label mb-2">Preparer & authorizations</div>
+                        <div className="divide-y divide-[var(--os-border)]">
+                          {([
+                            ["ERO / signing preparer", `${FIRM_PROFILE.owner.name}, ${FIRM_PROFILE.owner.credential}`, true],
+                            ["PTIN & EFIN", "On file", true],
+                            ["Engagement letter", `Signed · ${h.since} season`, true],
+                            ["§7216 consent to disclose", "On file", true],
+                            ["Form 8821 (transcript access)", h.has8821 ? "On file — transcripts monitored" : "Not on file", h.has8821],
+                            ["WISP (data security plan)", "On file", true],
+                          ] as const).map(([label, value, ok]) => (
+                            <div key={label} className="flex items-center gap-3 py-2 text-[13px]">
+                              <span className="min-w-0 flex-1 text-[var(--os-ink-muted)]">{label}</span>
+                              <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-[var(--os-ink)]">
+                                <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
+                                {value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* per-engagement e-file compliance */}
+                      <div>
+                        <div className="os-label mb-2 px-0.5">E-file authorization by return</div>
+                        <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
+                          {engs.map((e, i) => {
+                            const auth = authStatus(e.stage);
+                            const ef = efileStatus(e.stage);
+                            const ent = entityById(e.entityId);
+                            return (
+                              <div key={e.id} className={cn("flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3.5 py-3", i > 0 && "border-t border-[var(--os-border)]")}>
+                                <div className="flex min-w-0 flex-[2] items-center gap-2">
+                                  <FormChip form={e.form} />
+                                  <span className="min-w-0 truncate text-[13px] text-[var(--os-ink)]">{ent?.name}</span>
+                                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
+                                </div>
+                                <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                                  <span className={cn("size-1.5 shrink-0 rounded-full", auth.dot)} />
+                                  <span className="truncate">8879 · {auth.label}</span>
+                                </div>
+                                <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                                  <span className={cn("size-1.5 shrink-0 rounded-full", ef.dot)} />
+                                  <span className="truncate">E-file · {ef.label}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-2 flex items-start gap-1.5 px-0.5 text-[12px] text-[var(--os-ink-subtle)]">
+                          <PetalMark className="mt-0.5 size-3 shrink-0" />
+                          Petal never transmits a return until its 8879 is signed and you've approved it — every authorization is logged in the activity record.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* ── Notes ── */}
                 {tab === "Notes" && (

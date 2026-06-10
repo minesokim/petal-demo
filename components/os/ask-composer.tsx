@@ -15,7 +15,7 @@ export function AskComposer() {
   const connect = () => { setAppsOpen(false); router.push("/os/settings"); };
 
   return (
-    <div className="mb-6">
+    <div>
       <div className="relative rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
         <div className="flex items-center gap-2.5">
           <button onClick={() => setAppsOpen(v => !v)} aria-label="Connect apps" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]">

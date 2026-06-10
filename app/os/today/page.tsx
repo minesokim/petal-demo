@@ -101,7 +101,7 @@ export default function TodayPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[760px] flex-col gap-4 px-6 pb-14 pt-8">
+        <div className="mx-auto flex max-w-[760px] flex-col gap-6 px-6 pb-16 pt-8">
 
           {/* ── hero banner ── */}
           <div className="relative overflow-hidden rounded-xl border border-[var(--os-border)]">
