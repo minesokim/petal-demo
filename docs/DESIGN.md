@@ -212,6 +212,18 @@ checklist" callout; Ferndesk's greeting-with-stats home). Everything around them
    artifact (derived data, never a mock illustration). **Max one per page.** Current uses:
    Today (review queue), Books (run-with-Petal).
 
-Supporting pattern — **section micro-labels** (Ferndesk): section titles sit OUTSIDE their
-card as an 11/500 muted sentence-case label (optional count chip + right-aligned quiet link);
-the card itself carries no internal header. Rows inside cards divide with hairlines, not gaps.
+Supporting patterns (the section language for content pages — proven on Today, Jun 9, 2026):
+- **Section eyebrows**: 10/600 UPPERCASE tracking-[0.08em] ink-subtle, OUTSIDE the content,
+  with optional count + right-aligned quiet link. (Scoped exception to the no-uppercase rule —
+  eyebrows only, never headings/buttons/labels inside content.)
+- **Glyph-tile cards** (Ferndesk): digest/suggestion items render as a grid of white cards,
+  each led by a 32px rounded-lg tinted glyph tile (soft-50 bg + 600 icon; tint = topic
+  semantics, mapped in the page from fixture `topic`, never stored in fixtures). Hover =
+  border-hover + soft shadow. Petal-produced cards carry a tiny "Run logged" petal footer.
+- **Entity rows** (Linear × Ramp): people/client rows lead with the flat initials avatar,
+  carry at most ONE soft-fill state pill next to the name, one muted reason line, and ONE
+  bordered action button on the right. No leading dots, no inline accent-blue links.
+- **The Ramp close card**: progress modules = title row → segmented bar → a row of
+  number-over-label stat blocks (20/600 tabular number over 12 muted label with its dot).
+- **Stats live in sentences** (Ferndesk): the hero carries the week's numbers inside its one
+  summary sentence; no standalone stat strips on content pages.

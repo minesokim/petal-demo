@@ -1,45 +1,35 @@
 "use client";
 
-// RoiStats — the week's numbers as a composed stat bar, designed to sit INSIDE the
-// Today hero banner (translucent row over the photo). Every number derives from the
-// activity log via roiWeek(); hours come from the per-action minutes map.
+// WeeklyDigestLink — the ROI story lives as a sentence in the Today hero
+// (Ferndesk's stats-as-a-sentence); this is the quiet trigger for the
+// email-styled digest preview. Numbers derive from roiWeek().
 
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { cn } from "@/lib/utils";
 import { roiWeek } from "@/lib/fixtures/derive";
 import { FIRM_PROFILE } from "@/lib/fixtures/firm";
 import { Icon, I } from "@/components/os/icon";
 
-function Stat({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-[16px] font-semibold leading-tight tabular-nums text-white os-display">{value}</div>
-      <div className="mt-0.5 truncate text-[11px] leading-tight text-white/60">{label}</div>
-    </div>
-  );
-}
-
-/** The translucent stat row for the hero banner. */
-export function RoiStats() {
+export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" | "dark"; className?: string }) {
   const roi = roiWeek();
   const [digestOpen, setDigestOpen] = useState(false);
 
   return (
     <>
-      <div className="relative flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/15 bg-white/[0.06] px-7 py-3.5 backdrop-blur-[2px]">
-        <Stat value={roi.actions} label="actions this week" />
-        <Stat value={roi.docsCollected} label="documents in" />
-        <Stat value={roi.returnsFiled} label="returns filed" />
-        <Stat value={roi.noticesDrafted} label="notices drafted" />
-        <Stat value={`~${roi.hoursReturned}`} label="hours returned" />
-        <button
-          onClick={() => setDigestOpen(true)}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium text-white/70 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/80"
-        >
-          <Icon icon={I.mail} size={13} /> Weekly digest
-        </button>
-      </div>
+      <button
+        onClick={() => setDigestOpen(true)}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium transition-colors",
+          tone === "light"
+            ? "text-white/70 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/80"
+            : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+          className,
+        )}
+      >
+        <Icon icon={I.mail} size={13} /> Weekly digest
+      </button>
 
       <AnimatePresence>
         {digestOpen && (
@@ -83,6 +73,3 @@ export function RoiStats() {
     </>
   );
 }
-
-/** @deprecated kept as an alias while pages migrate — renders the banner stat row. */
-export const RoiStrip = RoiStats;

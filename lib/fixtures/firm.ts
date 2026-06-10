@@ -1060,9 +1060,12 @@ export const threads: Thread[] = [
 
 // ── Brief (Today) ────────────────────────────────────────────
 export type BriefTone = "urgent" | "alert" | "win" | "info";
+/** semantic topic — Today maps these to glyph tiles (no UI colors stored here) */
+export type BriefTopic = "returns" | "transcript" | "notice" | "deadline" | "policy" | "filing";
 
 export interface BriefItem {
   tone: BriefTone;
+  topic: BriefTopic;
   source?: string;
   headline: string;
   detail: string;
@@ -1079,35 +1082,35 @@ export const briefToneDot: Record<BriefTone, string> = {
 
 export const brief: BriefItem[] = [
   {
-    tone: "win", headline: "Petal filed 3 returns clean — pre-approved by you Jun 23",
+    tone: "win", topic: "returns", headline: "Petal filed 3 returns clean — pre-approved by you Jun 23",
     detail: "Linda's 1040 + Etsy Schedule C and Karen's 1040 all accepted Jun 24.",
     href: "/os/tasks?task=t-efiled-3", runId: "run-efile-nak",
   },
   {
-    tone: "alert", source: "Transcript Watch",
+    tone: "alert", topic: "transcript", source: "Transcript Watch",
     headline: "Transcript change detected for Rodriguez — matches the CP2000 already in Notices.",
     detail: "New AUR marker on the 2024 account transcript, dated Jun 16. No new issue.",
     href: "/os/notices/n-cp2000", runId: "run-transcript-rod",
   },
   {
-    tone: "alert", source: "IRS",
+    tone: "alert", topic: "notice", source: "IRS",
     headline: "CP2000s for tax year 2024 are landing",
     detail: "One received so far (Rodriguez) — response drafted, due Jul 18.",
     href: "/os/notices",
   },
   {
-    tone: "info", source: "IRS",
+    tone: "info", topic: "deadline", source: "IRS",
     headline: "Q3 estimates due Sep 15",
     detail: "Vouchers compute Sep 1 for the 9 voucher clients; two Q2 stragglers have follow-ups in your queue.",
     href: "/os/tasks?task=t-est-q2",
   },
   {
-    tone: "info", source: "IRS",
+    tone: "info", topic: "policy", source: "IRS",
     headline: "2025 safe-harbor amounts unchanged — no action needed",
     detail: "110% of prior-year tax over $150k AGI, 100% otherwise. Your estimate math stands.",
   },
   {
-    tone: "info",
+    tone: "info", topic: "filing",
     headline: "5 business returns on the Sep 15 extension track",
     detail: "All in motion — none behind pace as of this morning.",
     href: "/os/returns",
