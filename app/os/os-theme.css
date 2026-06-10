@@ -26,6 +26,10 @@
   --os-warning: #b45309;
   --os-danger: #c2410c;
 
+  /* the one structural green — progress + positive marks share a single hue ramp */
+  --os-brand: #16794c;
+  --os-brand-soft: #16794c47;
+
   color: var(--os-ink);
   background: var(--os-shell);
   font-feature-settings: "tnum" on, "cv01" on, "ss01" on;

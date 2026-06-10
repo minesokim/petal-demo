@@ -179,8 +179,8 @@ export default function TodayPage() {
                 </span>
               </div>
               <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
-                <div className="h-full bg-emerald-500" style={{ width: `${(booksDone / booksTotal) * 100}%` }} />
-                <div className="h-full bg-amber-500" style={{ width: `${(booksProg / booksTotal) * 100}%` }} />
+                <div className="h-full bg-[var(--os-brand)]" style={{ width: `${(booksDone / booksTotal) * 100}%` }} />
+                <div className="h-full bg-[var(--os-brand-soft)]" style={{ width: `${(booksProg / booksTotal) * 100}%` }} />
               </div>
               <div className="mt-3.5 flex items-center gap-10">
                 {([

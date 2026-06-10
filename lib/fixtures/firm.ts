@@ -1076,7 +1076,7 @@ export interface BriefItem {
 export const briefToneDot: Record<BriefTone, string> = {
   urgent: "bg-red-500",
   alert: "bg-amber-500",
-  win: "bg-emerald-500",
+  win: "bg-[var(--os-brand)]",
   info: "bg-[var(--os-ink-subtle)]",
 };
 
@@ -1223,8 +1223,8 @@ export const booksMonth = "May 2026";
 
 export const booksStatusMeta: Record<BooksStatus, { label: string; dot: string }> = {
   not_started: { label: "Not started", dot: "bg-[var(--os-border-strong)]" },
-  in_progress: { label: "In progress", dot: "bg-amber-500" },
-  complete: { label: "Complete", dot: "bg-emerald-500" },
+  in_progress: { label: "In progress", dot: "bg-[var(--os-brand-soft)]" },
+  complete: { label: "Complete", dot: "bg-[var(--os-brand)]" },
 };
 
 export const BOOKS_ORDER: BooksStatus[] = ["not_started", "in_progress", "complete"];
