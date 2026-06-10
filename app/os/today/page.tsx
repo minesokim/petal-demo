@@ -19,14 +19,14 @@ import { WeeklyDigestLink } from "@/components/os/roi-strip";
 import { FeatureCallout } from "@/components/os/callout";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { SkillPetal } from "@/components/os/primitives";
-import { DEMO_DATE_LABEL, fmtDate, healthMeta } from "@/lib/fixtures/vocab";
+import { DEMO_DATE_LABEL, healthMeta } from "@/lib/fixtures/vocab";
 import {
-  FIRM_PROFILE, brief, briefToneDot, booksItems, booksMonth, booksStatusMeta, entityById,
+  FIRM_PROFILE, brief, briefToneDot, booksItems, booksMonth, booksStatusMeta,
   taskById, householdById, skillById, runById, engagementById, expectedDocs,
 } from "@/lib/fixtures/firm";
 import {
-  needsYouCount, needsYouTasks, atRiskHouseholds, healthCounts, filedThisWeek,
-  booksClients, roiWeek, billingKpis, activeEngagements, docsOf,
+  needsYouCount, needsYouTasks, atRiskHouseholds, healthCounts,
+  booksClients, roiWeek, billingKpis, activeEngagements,
 } from "@/lib/fixtures/derive";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -82,11 +82,6 @@ export default function TodayPage() {
   const docsOutstanding = expectedDocs.filter(d => d.status === "requested").length;
   const awaitingSign = activeEngagements().filter(e => e.stage === "pay_and_sign").length;
   const overdueInvoices = billingKpis().overdueCount;
-
-  // Filed-this-week receipt — names + date derive from the e-filed engagements.
-  const filed = filedThisWeek();
-  const efiledTask = taskById("t-efiled-3")!;
-  const filedOn = filed[0] ? fmtDate(filed[0].eFiledOn!) : "";
 
   // Books-to-tax readiness (renders only because books clients exist).
   const booksHH = booksClients();
@@ -308,36 +303,6 @@ export default function TodayPage() {
               </span>
             </div>
             {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-2 pl-[68px]" />}
-          </Card>
-
-          {/* ── Filed this week — the receipt ── */}
-          <Card>
-            <CardHead title="Filed this week" mark href="/os/returns" hrefLabel="All returns" />
-            <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("-mx-2 flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
-              <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-emerald-500" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-medium leading-snug text-[var(--os-ink)]">
-                  Petal filed <span className="tabular-nums">{filed.length}</span> returns clean — pre-approved by you {filedOn}
-                </span>
-                <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{efiledTask.why}</span>
-              </span>
-              <Icon icon={I.chevronRight} size={14} className="mt-1 shrink-0 text-[var(--os-ink-subtle)]" />
-            </Link>
-            <div className="mt-1.5 flex flex-wrap gap-1.5 pl-4">
-              {filed.map(e => {
-                const entity = entityById(e.entityId)!;
-                return (
-                  <Link
-                    key={e.id}
-                    href={`/os/returns/${e.id}`}
-                    className={cn("inline-flex items-center rounded-md bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}
-                  >
-                    {entity.name.split("&")[0].trim().split(" ")[0]} · {e.form}
-                  </Link>
-                );
-              })}
-            </div>
-            {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-2 pl-4" />}
           </Card>
 
         </div>
