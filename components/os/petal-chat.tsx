@@ -33,7 +33,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     const answer = matchQuestion(q, scopeHouseholdId);
     window.setTimeout(() => {
       setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
-    }, 650);
+    }, 1400);
   }, [scopeHouseholdId]);
 
   const reset = useCallback(() => setMessages([]), []);
@@ -51,10 +51,10 @@ function useStreamedText(text: string, active: boolean) {
     setCount(0);
     let i = 0;
     const t = window.setInterval(() => {
-      i += 3;
+      i += 1;
       setCount(i);
       if (i >= words.length) window.clearInterval(t);
-    }, 28);
+    }, 55);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, active]);
