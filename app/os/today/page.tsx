@@ -1,13 +1,14 @@
 "use client";
 
-// Today — the command center. Every number on this page derives from
-// lib/fixtures/derive at render time; nothing is hard-coded (see /os/debug/tie-out).
+// Today — the command center. Every number derives from lib/fixtures/derive at
+// render time; nothing is hard-coded (see /os/debug/tie-out).
 //
-// Layout language (DESIGN.md §7 — Ramp Stack grammar, studied from the user's own
-// Stack account screenshots): hierarchy from TYPE CONTRAST and air, not boxes or color.
-// Sentence-case gray eyebrows · tall rows with hairlines · metadata = small gray chips ·
-// state = plain colored text · row actions = quiet underlined links · one accent moment
-// per screen (the review callout). No icon tiles, no pills, no dot columns.
+// Layout language: the ORIGINAL Today card grammar (the deployed design the user
+// prefers — petal-os.vercel.app circa Jun 9, 2026): one centered column of soft
+// cream cards (--os-card fill, border-strong), each with a small muted header
+// INSIDE the card; compact rows; tone dots live only inside cards; big tabular
+// numbers as focal points. Kept from the redesign journey: the hero banner, the
+// review-queue FeatureCallout, and quiet provenance lines (DESIGN.md §7).
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -18,50 +19,40 @@ import { WeeklyDigestLink } from "@/components/os/roi-strip";
 import { FeatureCallout } from "@/components/os/callout";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { SkillPetal } from "@/components/os/primitives";
-import { DEMO_DATE_LABEL, fmtDate, type Health } from "@/lib/fixtures/vocab";
+import { DEMO_DATE_LABEL, fmtDate, healthMeta } from "@/lib/fixtures/vocab";
 import {
-  FIRM_PROFILE, brief, booksItems, booksMonth, booksStatusMeta, entityById,
-  taskById, householdById, skillById, runById, engagementById,
+  FIRM_PROFILE, brief, briefToneDot, booksItems, booksMonth, booksStatusMeta, entityById,
+  taskById, householdById, skillById, runById, engagementById, expectedDocs,
 } from "@/lib/fixtures/firm";
 import {
   needsYouCount, needsYouTasks, atRiskHouseholds, healthCounts, filedThisWeek,
-  booksClients, roiWeek,
+  booksClients, roiWeek, billingKpis, activeEngagements, docsOf,
 } from "@/lib/fixtures/derive";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-/** Ramp eyebrow — small, sentence case, gray. Sits above its section with air around it. */
-function SectionLabel({ children, count, href, hrefLabel }: { children: React.ReactNode; count?: number; href?: string; hrefLabel?: string }) {
+/** The original soft card — cream fill, stronger border, hover border only. */
+function Card({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn("flex flex-col rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
+}
+
+/** The original card header — small muted title INSIDE the card. */
+function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark?: boolean; badge?: number; href?: string; hrefLabel?: string }) {
   return (
-    <div className="mb-3 flex items-baseline gap-2">
-      <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">{children}</h3>
-      {count != null && <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
+    <div className="mb-3 flex items-center gap-1.5">
+      {mark && <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />}
+      <h3 className="text-[12px] font-medium text-[var(--os-ink-muted)]">{title}</h3>
+      {badge != null && <span className="rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">{badge}</span>}
       {href && (
-        <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-subtle)] underline decoration-[var(--os-border-strong)] underline-offset-2 transition-colors hover:text-[var(--os-ink)]", focusRing)}>
+        <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
           {hrefLabel ?? "View all"}
         </Link>
       )}
     </div>
   );
 }
-
-/** Ramp metadata chip — small, gray, borderless. */
-function Chip({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]", className)}>
-      {children}
-    </span>
-  );
-}
-
-/** Quiet row action — Ramp's underlined "Edit" link grammar. */
-const rowAction = cn(
-  "shrink-0 rounded text-[12px] text-[var(--os-ink-muted)] underline decoration-[var(--os-border-strong)] underline-offset-2",
-  "transition-colors hover:text-[var(--os-ink)] hover:decoration-[var(--os-ink-subtle)]",
-  focusRing,
-);
 
 // flat people avatar — records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
 function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
@@ -75,12 +66,6 @@ function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
   );
 }
 
-/** State as plain colored text (Mercury/Ramp) — no pills, no dots. */
-const HEALTH_TEXT: Record<Exclude<Health, "healthy">, { label: string; cls: string }> = {
-  at_risk: { label: "At risk", cls: "text-red-600" },
-  watch:   { label: "Watch",   cls: "text-amber-700" },
-};
-
 export default function TodayPage() {
   const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
   const needsYou = needsYouCount();
@@ -92,6 +77,11 @@ export default function TodayPage() {
 
   // The first decision in the queue — embedded as the callout's live preview.
   const previewTask = queue[0];
+
+  // "Petal activity" focal numbers (the original stat-list card, now canon-derived).
+  const docsOutstanding = expectedDocs.filter(d => d.status === "requested").length;
+  const awaitingSign = activeEngagements().filter(e => e.stage === "pay_and_sign").length;
+  const overdueInvoices = billingKpis().overdueCount;
 
   // Filed-this-week receipt — names + date derive from the e-filed engagements.
   const filed = filedThisWeek();
@@ -115,20 +105,20 @@ export default function TodayPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[760px] px-6 pb-16 pt-8">
+        <div className="mx-auto flex max-w-[760px] flex-col gap-4 px-6 pb-14 pt-8">
 
-          {/* ── hero — calm: eyebrow, greeting, one sentence that carries the week ── */}
-          <div className="relative mb-6 overflow-hidden rounded-xl border border-[var(--os-border)]">
+          {/* ── hero banner ── */}
+          <div className="relative overflow-hidden rounded-xl border border-[var(--os-border)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/today-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
             <div className="relative px-7 py-8">
-              <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
                 <PetalMark className="size-3.5 text-white/85" /> Daily brief · {DEMO_DATE_LABEL}
                 <WeeklyDigestLink tone="light" className="-my-1 ml-auto" />
               </div>
-              <h2 className="os-display text-[26px] font-semibold leading-tight tracking-[-0.01em] text-white">Good morning, {firstName}</h2>
-              <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-white/85">
+              <h2 className="os-display text-[22px] font-semibold leading-tight text-white">Good morning, {firstName}</h2>
+              <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/85">
                 Petal ran <span className="font-semibold text-white tabular-nums">{roi.actions}</span> actions this week — about{" "}
                 <span className="font-semibold text-white tabular-nums">{roi.hoursReturned} hours</span> returned.{" "}
                 <span className="font-semibold text-white tabular-nums">{needsYou}</span> items need you, and{" "}
@@ -140,9 +130,8 @@ export default function TodayPage() {
           {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* ── review queue — the one accent moment on this screen ── */}
+          {/* ── review queue — the crafted moment ── */}
           <FeatureCallout
-            className="mb-12"
             eyebrow={<><PetalMark className="size-3.5" /> Review mode</>}
             title={`${needsYou} items are ready for your sign-off`}
             body={`Approve, edit, or skip each one with its sources alongside — keyboard A, E, S. About ${reviewMinutes} minutes.`}
@@ -182,36 +171,65 @@ export default function TodayPage() {
             }
           />
 
-          {/* ── Today's brief — clean list; typography carries it ── */}
-          <section className="mb-12">
-            <SectionLabel>Today's brief</SectionLabel>
-            <ul>
+          {/* ── Books — the close card (renders only while books clients exist) ── */}
+          {booksHH.length > 0 && (
+            <Link
+              href="/os/books"
+              className={cn("block rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]", focusRing)}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{booksMonth} books</h3>
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
+                  <span className="tabular-nums">{booksHH.length}</span> clients <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
+                </span>
+              </div>
+              <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
+                <div className="h-full bg-emerald-500" style={{ width: `${(booksDone / booksTotal) * 100}%` }} />
+                <div className="h-full bg-amber-500" style={{ width: `${(booksProg / booksTotal) * 100}%` }} />
+              </div>
+              <div className="mt-3.5 flex items-center gap-10">
+                {([
+                  ["complete", booksDone],
+                  ["in_progress", booksProg],
+                  ["not_started", booksTodo],
+                ] as const).map(([status, count]) => (
+                  <div key={status}>
+                    <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                      <span className={cn("size-2 rounded-full", booksStatusMeta[status].dot)} /> {booksStatusMeta[status].label}
+                    </div>
+                    <div className="os-display mt-1 text-[20px] font-semibold tabular-nums text-[var(--os-ink)]">{count}</div>
+                  </div>
+                ))}
+              </div>
+            </Link>
+          )}
+
+          {/* ── Today's brief (the newspaper) ── */}
+          <Card>
+            <CardHead title="Today's brief" mark />
+            <ul className="-mx-2 flex-1">
               {brief.map((b, i) => {
-                const row = (
+                const body = (
                   <>
+                    <span className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", briefToneDot[b.tone])} />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13.5px] font-semibold leading-snug text-[var(--os-ink)]">{b.headline}</span>
-                      <span className="mt-1 block text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">{b.detail}</span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2 pt-0.5">
-                      {b.source && <Chip>{b.source}</Chip>}
-                      {b.href && (
-                        <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)] opacity-0 transition-opacity duration-150 group-hover/row:opacity-100" />
-                      )}
+                      <span className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-[13px] font-medium leading-snug text-[var(--os-ink)]">{b.headline}</span>
+                        {b.source && <span className="shrink-0 text-[10px] font-medium tracking-wide text-[var(--os-ink-subtle)]">{b.source}</span>}
+                      </span>
+                      <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{b.detail}</span>
                     </span>
                   </>
                 );
                 return (
-                  <li key={i} className={cn(i > 0 && "border-t border-[var(--os-border)]")}>
+                  <li key={i}>
                     {b.href ? (
-                      <Link href={b.href} className={cn("group/row -mx-3 flex items-start gap-4 rounded-lg px-3 py-4 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
-                        {row}
-                      </Link>
+                      <Link href={b.href} className={cn("flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>{body}</Link>
                     ) : (
-                      <div className="-mx-3 flex items-start gap-4 px-3 py-4">{row}</div>
+                      <div className="flex gap-2.5 px-2 py-2">{body}</div>
                     )}
                     {b.runId && (
-                      <div className="-mt-1.5 pb-3">
+                      <div className="mb-1 ml-6 mr-2">
                         <ProvenancePanel runId={b.runId} />
                       </div>
                     )}
@@ -219,132 +237,108 @@ export default function TodayPage() {
                 );
               })}
             </ul>
-          </section>
+            <Link href="/os/activity" className={cn("-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
+              View activity log <Icon icon={I.chevronRight} size={13} />
+            </Link>
+          </Card>
 
-          {/* ── Needs watching — people-table grammar: avatar, state as text, quiet action ── */}
-          <section className="mb-12">
-            <SectionLabel count={atRisk.length} href="/os/clients">Needs watching</SectionLabel>
-            {atRisk.length === 0 ? (
-              <p className="py-2 text-[12.5px] text-[var(--os-ink-muted)]">
-                Every client is on pace. <Link href="/os/clients" className={rowAction}>Open clients</Link>
-              </p>
-            ) : (
-              <ul>
-                {atRisk.map(({ household, health, reason, nextAction }, i) => (
-                  <li key={household.id} className={cn("flex items-center gap-3.5 py-3.5", i > 0 && "border-t border-[var(--os-border)]")}>
-                    <PersonAvatar name={household.name} size={30} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-x-2.5">
-                        <Link
-                          href={`/os/clients/${household.id}`}
-                          className={cn("rounded text-[13.5px] font-semibold leading-snug text-[var(--os-ink)] hover:underline", focusRing)}
-                        >
-                          {household.name}
-                        </Link>
-                        {health !== "healthy" && (
-                          <span className={cn("text-[11px] font-semibold", HEALTH_TEXT[health].cls)}>{HEALTH_TEXT[health].label}</span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{reason}</p>
+          {/* ── At risk ── */}
+          <Card>
+            <CardHead title="At risk" badge={atRisk.length} href="/os/clients" />
+            <div className="-mx-2">
+              {atRisk.map(({ household, health, reason }) => (
+                <Link
+                  key={household.id}
+                  href={`/os/clients/${household.id}`}
+                  className={cn("flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}
+                >
+                  <PersonAvatar name={household.name} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2 truncate">
+                      <span className="truncate text-[13px] font-medium text-[var(--os-ink)]">{household.name}</span>
+                      <span className={cn("shrink-0 text-[10.5px] font-semibold", healthMeta[health].text)}>{healthMeta[health].label}</span>
                     </div>
-                    {nextAction && (
-                      <Link href={nextAction.href} className={cn(rowAction, "hidden sm:inline")}>
-                        {nextAction.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* ── Filed this week ── */}
-          <section className="mb-12">
-            <SectionLabel href="/os/returns" hrefLabel="All returns">Filed this week</SectionLabel>
-            <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-              <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("group/row min-w-0 flex-1 rounded", focusRing)}>
-                <span className="block text-[13.5px] font-semibold leading-snug text-[var(--os-ink)] group-hover/row:underline">
-                  <span className="tabular-nums">{filed.length}</span> returns filed clean
-                </span>
-                <span className="mt-1 block text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">
-                  Pre-approved by you {filedOn} · all accepted Jun 24
-                </span>
-              </Link>
-              <span className="flex flex-wrap gap-1.5 pt-0.5">
-                {filed.map(e => {
-                  const entity = entityById(e.entityId)!;
-                  return (
-                    <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("rounded", focusRing)}>
-                      <Chip className="transition-colors hover:bg-[var(--os-border)] hover:text-[var(--os-ink)]">
-                        {entity.name.split("&")[0].trim().split(" ")[0]} · {e.form}
-                      </Chip>
-                    </Link>
-                  );
-                })}
-              </span>
+                    <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{reason}</div>
+                  </div>
+                  <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                </Link>
+              ))}
             </div>
-            {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-2" />}
-          </section>
+          </Card>
+
+          {/* ── Petal activity — the focal-number summary ── */}
+          <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
+            <div className="mb-3 flex items-center gap-2">
+              <PetalMark className="size-4 text-[var(--os-ink)]" />
+              <h3 className="os-display text-[13px] font-semibold text-[var(--os-ink)]">Petal activity</h3>
+            </div>
+            <div className="space-y-0.5">
+              {([
+                { label: "Drafts awaiting approval", count: needsYou, icon: I.sparkle, href: "/os/review" },
+                { label: "Documents outstanding", count: docsOutstanding, icon: I.file, href: "/os/documents" },
+                { label: "Awaiting signature", count: awaitingSign, icon: I.edit, href: "/os/returns" },
+                { label: "Overdue invoices", count: overdueInvoices, icon: I.billing, href: "/os/billing" },
+              ]).map(a => (
+                <Link key={a.label} href={a.href} className={cn("-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+                  <Icon icon={a.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{a.label}</span>
+                  <span className="os-display shrink-0 text-[18px] font-semibold tabular-nums text-[var(--os-ink)]">{a.count}</span>
+                </Link>
+              ))}
+            </div>
+            <Link href="/os/tasks" className={cn("-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
+              Open tasks <Icon icon={I.chevronRight} size={13} />
+            </Link>
+          </div>
 
           {/* ── Today's calls ── */}
-          <section className="mb-12">
-            <SectionLabel>Today's calls</SectionLabel>
-            <div className="flex items-center gap-3.5 py-1">
-              <PersonAvatar name={callHousehold.name} size={30} />
+          <Card>
+            <CardHead title="Today's calls" />
+            <div className="flex items-center gap-3 py-1">
+              <span className="w-14 shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">3:00 PM</span>
+              <PersonAvatar name={callHousehold.name} size={24} />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2.5">
-                  <Link
-                    href={`/os/clients/${callHousehold.id}`}
-                    className={cn("rounded text-[13.5px] font-semibold text-[var(--os-ink)] hover:underline", focusRing)}
-                  >
-                    {callHousehold.name}
-                  </Link>
-                  <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">3:00 PM</span>
-                </div>
-                <p className="mt-0.5 text-[12.5px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</p>
+                <Link href={`/os/clients/${callHousehold.id}`} className={cn("truncate rounded text-[13px] text-[var(--os-ink)] hover:underline", focusRing)}>
+                  {callHousehold.name}
+                </Link>
+                <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</div>
               </div>
-              <Chip>
-                <SkillPetal category={callSkill.category} size={11} /> Brief generating
-              </Chip>
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                <SkillPetal category={callSkill.category} size={13} /> Brief generating
+              </span>
             </div>
-            {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-1.5 pl-[44px]" />}
-          </section>
+            {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-2 pl-[68px]" />}
+          </Card>
 
-          {/* ── Books — the Ramp close card (renders only while books clients exist) ── */}
-          {booksHH.length > 0 && (
-            <section>
-              <SectionLabel href="/os/books" hrefLabel="Open books">Books</SectionLabel>
-              <Link
-                href="/os/books"
-                className={cn("block rounded-xl border border-[var(--os-border)] bg-white p-5 transition-[border-color,box-shadow] duration-150 hover:border-[var(--os-border-hover)] hover:shadow-[0_2px_10px_rgba(17,17,26,0.05)]", focusRing)}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{booksMonth} books</h3>
-                  <span className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    <span className="tabular-nums">{booksHH.length}</span> clients <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
-                  </span>
-                </div>
-                <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
-                  <div className="h-full bg-emerald-500" style={{ width: `${(booksDone / booksTotal) * 100}%` }} />
-                  <div className="h-full bg-amber-500" style={{ width: `${(booksProg / booksTotal) * 100}%` }} />
-                </div>
-                <div className="mt-3.5 flex items-center gap-10">
-                  {([
-                    ["complete", booksDone],
-                    ["in_progress", booksProg],
-                    ["not_started", booksTodo],
-                  ] as const).map(([status, count]) => (
-                    <div key={status}>
-                      <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                        <span className={cn("size-2 rounded-full", booksStatusMeta[status].dot)} /> {booksStatusMeta[status].label}
-                      </div>
-                      <div className="os-display mt-1 text-[20px] font-semibold tabular-nums text-[var(--os-ink)]">{count}</div>
-                    </div>
-                  ))}
-                </div>
-              </Link>
-            </section>
-          )}
+          {/* ── Filed this week — the receipt ── */}
+          <Card>
+            <CardHead title="Filed this week" mark href="/os/returns" hrefLabel="All returns" />
+            <Link href={`/os/tasks?task=${efiledTask.id}`} className={cn("-mx-2 flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+              <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-emerald-500" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium leading-snug text-[var(--os-ink)]">
+                  Petal filed <span className="tabular-nums">{filed.length}</span> returns clean — pre-approved by you {filedOn}
+                </span>
+                <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{efiledTask.why}</span>
+              </span>
+              <Icon icon={I.chevronRight} size={14} className="mt-1 shrink-0 text-[var(--os-ink-subtle)]" />
+            </Link>
+            <div className="mt-1.5 flex flex-wrap gap-1.5 pl-4">
+              {filed.map(e => {
+                const entity = entityById(e.entityId)!;
+                return (
+                  <Link
+                    key={e.id}
+                    href={`/os/returns/${e.id}`}
+                    className={cn("inline-flex items-center rounded-md bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}
+                  >
+                    {entity.name.split("&")[0].trim().split(" ")[0]} · {e.form}
+                  </Link>
+                );
+              })}
+            </div>
+            {efiledTask.runId && <ProvenancePanel runId={efiledTask.runId} className="mt-2 pl-4" />}
+          </Card>
 
         </div>
       </div>
