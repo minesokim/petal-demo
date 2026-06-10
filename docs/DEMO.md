@@ -64,29 +64,34 @@ Matching is keyword-based and forgiving ("did roberto sign yet", "park status", 
 
 ---
 
-## 3. The 3-minute Techstars script
+## 3. The Techstars script (~5 minutes, with a 3-minute cut marked)
 
 **Setup:** `npm run dev` → open `localhost:3000/os` (lands on Today). Fresh reload. Desktop, full screen, 100% zoom.
 
 **The story:** *Petal is an AI operating system for solo tax firms. The AI does the work; the licensed professional reviews and signs. Every number you'll see is one derived world — and every AI action carries its receipts.*
 
+> **3-minute cut:** run only the beats marked ★. Skip the Deep-dive, Returns board, and Inbox beats — the story still closes.
+
 | ⏱ | Say | Do |
 |---|---|---|
-| 0:00 | "This is Antonio — a solo Enrolled Agent with 11 clients, mid extension season. This is his 9am." | On **Today**. Let the banner read: *Petal ran 41 actions this week — about 6.5 hours returned. 12 items need you.* |
-| 0:20 | "Petal already did the week's grunt work — collected documents, filed three returns he pre-approved, drafted two IRS notice responses. Everything it does carries its receipts." | Click **Sources & reasoning** on the brief's first item — show sources, the rule applied, approval trail. Collapse it. |
-| 0:40 | "But here's where it gets interesting. He doesn't just ask about one client — he asks it to think across his whole book." | In the composer, type **"run a risk scan across my book"** → hands off to chat. **Let it run** — the steps stream ("Read 19 engagements… cross-referenced positions, notices, flags… ranked exposure"). |
-| 1:00 | "It just audited 19 returns in four seconds — and everything it found is clickable to the actual record." | The answer lands: *6 exposures, 2 high-severity, $4.3k at stake.* Point at the **exposure-by-client chart** (red/amber bars) and the **ranked findings** — the CP2000, the Russo basis decision. Say: "No solo EA has an analyst. Now he does. And every number ties to one source of truth." Optionally click a finding to jump to the record. |
-| 1:20 | "But here's the thing about tax — the license on the line is Antonio's. So nothing sends, nothing files, until he signs off. That's the daily habit:" | Back to Today (sidebar). Click **Start reviewing**. |
-| 1:35 | "Twelve items, one at a time, sources alongside. Keyboard speed." | In **Review mode**: first item is the capital-gains decision — point at options A/B/C and *Petal recommends A*. Press **A**. Next is a drafted client email — press **A**. One more — **A**. |
-| 2:00 | "Watch the number." | Press **Esc** → back on Today: badge and headline now read **9**. "Approved on his keyboard, before coffee." |
-| 2:15 | "Trust is graduated, per skill — Petal starts by drafting everything, and earns autonomy the same way a junior would." | Sidebar → **Skills**. Open **Doc Chase** — show the T0–T3 trust dial and the graduation prompt: *"You've approved 12 drafts without edits — promote?"* |
-| 2:35 | "And when the IRS comes knocking, the answer is already drafted — with the position documented." | Sidebar → **Notices** → open the **CP2000**. Show the drafted response letter + the respond-by countdown. |
-| 2:50 | "Every action, logged for audit. That's Petal: the AI does the work, the professional stays in command — and gets ~6.5 hours a week back to take the clients they've been turning away." | Sidebar → **Activity** (scroll the flight recorder). End on **Today**. |
+| ★ 0:00 | "This is Antonio — a solo Enrolled Agent with 11 clients, mid extension season. This is his 9am." | On **Today**. Let the banner read: *Petal ran 41 actions this week — about 6.5 hours returned. 12 items need you.* |
+| ★ 0:20 | "Petal already did the week's grunt work — collected documents, filed three returns he pre-approved, drafted two IRS notice responses. Everything it does carries its receipts." | Click **Sources & reasoning** on the brief's first item — show sources, the rule applied, approval trail. Collapse it. |
+| ★ 0:40 | "But here's where it gets interesting. He doesn't just ask about one client — he asks it to think across his whole book." | In the composer, type **"run a risk scan across my book"** → hands off to chat. **Let it run** — the steps stream ("Read 19 engagements… cross-referenced positions, notices, flags… ranked exposure"). |
+| ★ 1:00 | "It just audited 19 returns in four seconds — and everything it found is clickable to the actual record." | The answer lands: *6 exposures, 2 high-severity, $4.3k at stake.* Point at the **exposure-by-client chart** (red/amber bars) and the **ranked findings**. Say: "No solo EA has an analyst. Now he does." Then: "And every finding is one click from the file." **Click the last finding — "Home office + vehicle mixed-use — Park Family Dental."** |
+| **Deep-dive** 1:20 | "It jumped me straight to that position on Park's record. When a position is aggressive, Petal documents the authority and the confidence — substantial authority, 74% — so the file defends itself." | You're on the **Park record, Positions tab**. Point at the open position + its documentation. Then point at the **header strip** — "and every number up here is derived: Ready to Prep, docs 32 of 34, fee, balance — the same figures Petal just quoted." |
+| 1:45 | "Here's the part auditors love. The K-1 from the S-corp flows to the personal return — Petal drew that relationship. And the workpaper traces *every line on the return back to the run, the workpaper, and the source document.*" | Open the **Returns tab**: point at the **K-1 relationship graph** ("David & Grace Park (1040) ← K-1 ← Park Family Dental (1120S, 100%)") and the **workpaper block** — click a line's *View run*. |
+| 2:05 | "And compliance is its own tab — every 8879 and e-file authorization tracked, nothing transmitted until signed and approved." | **More ▾ → Compliance** — the preparer authorizations + per-return 8879 / e-file status. |
+| **Returns board** 2:20 | "Zoom out — *where is every return?* One board. $9,000 of fees in the pipeline, and it tells me $5,200 is blocked on missing documents — which is exactly what the chases are clearing." | Sidebar → **Returns**. Point at the 7 stage columns and the header strip (fees in pipeline / blocked by docs). |
+| **Inbox** 2:45 | "Client comms live here too — email, SMS, portal, and calls. Petal sat in on David's books call, transcribed it, and pulled out two follow-ups as tasks." | Sidebar → **Inbox** → open the **Park books review call** (Call channel) → show the transcript + *Petal extracted 2 follow-ups*. |
+| 3:05 | "And on routine questions, it just drafts the answer." | Open **Karen O'Brien — "Where's my refund?"** → click the **Petal can answer** chip → the drafted reply fills the composer. (Optional: click **Approve & send** — it posts into the thread.) |
+| ★ 3:20 | "But here's the thing about tax — the license on the line is Antonio's. Nothing sends, nothing files, until he signs off. That's the daily habit:" | Sidebar → **Today**. Click **Start reviewing**. |
+| ★ 3:35 | "Twelve items, one at a time, sources alongside. Keyboard speed." | In **Review mode**: first item is the capital-gains decision — point at options A/B/C and *Petal recommends A*. Press **A**. Next, a drafted client email — **A**. One more — **A**. |
+| ★ 4:00 | "Watch the number." | Press **Esc** → back on Today: the badge and headline now read **9**. "Approved on his keyboard, before coffee." |
+| ★ 4:15 | "Trust is graduated, per skill — Petal drafts everything first, and earns autonomy the way a junior would." | Sidebar → **Skills**. Open **Doc Chase** — the T0–T3 trust dial and the graduation prompt: *"You've approved 12 drafts without edits — promote?"* |
+| ★ 4:35 | "And when the IRS comes knocking, the answer is already drafted — with the position documented." | Sidebar → **Notices** → open the **CP2000** — the drafted response letter + respond-by countdown. |
+| ★ 4:50 | "Every action, logged for audit. That's Petal: the AI does the work, the professional stays in command — and gets ~6.5 hours a week back to take the clients they've been turning away." | Sidebar → **Activity** (scroll the flight recorder). End on **Today**. |
 
-### If you have 5 minutes, add
-- **Client record deep-dive** (after 1:00): click *Open record* from the chat answer → the Park header strip, **Returns tab** (K-1 relationship graph + the workpaper: "trace any line back to the run, the workpaper, and the source document"), **Positions tab** (the open home-office position).
-- **Returns board**: "Where is every return? One board — $9,000 in pipeline, $5,200 blocked on documents."
-- **Inbox**: the Park call transcript with extracted follow-ups, and the "Petal can answer" chip on Karen's refund question.
+> **Deep-dive note:** the More ▾ dropdown holds Billing, Notices, Positions, Compliance, Notes. If you'd rather not open the menu twice on stage, deep-link Positions directly: the at-risk link and chat both jump there, or just narrate Compliance from the Positions view.
 
 ### Recovery moves (live-demo insurance)
 - **Typed something unscripted?** The fallback offers suggestion chips — click one and keep talking; it reads as a feature ("in the demo build I keep it to the firm's records").
