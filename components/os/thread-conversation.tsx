@@ -51,16 +51,36 @@ function Toast({ msg }: { msg: string | null }) {
 
 /** Per-channel conversation + reply composer. Shared by the Inbox and the client record Messages tab.
  *  Renders as a flex-1 scrolling message area + a composer pinned beneath — drop it into a flex-col parent. */
+/** A contextual reply Petal "drafts" for threads without a scripted one (session-only). */
+function petalDraftFor(thread: Thread): string {
+  const f = first(thread.clientName);
+  if (thread.id === "th-fuentes")
+    return `Hi ${f} — yes, both trucks qualify for 60% bonus depreciation in 2025 since they were placed in service this year. I've already factored that into the 1120S draft, so the moment you sign the 8879 we're clear to transmit. Happy to walk through the numbers on our call this afternoon. Best, Antonio`;
+  return `Hi ${f} — thanks for reaching out. I've got this and will follow up with the details shortly. Let me know if anything's urgent in the meantime. Best, Antonio`;
+}
+
 export function ThreadConversation({ thread }: { thread: Thread }) {
   const [reply, setReply] = useState(thread.petalDraft?.text ?? "");
   const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [petalDrafted, setPetalDrafted] = useState(false);
   const [sent, setSent] = useState(false);
+  const [extraMessages, setExtraMessages] = useState<Message[]>([]);
   const { msg, show } = useToast();
+
+  // Reset everything when the thread switches (also resets on page reload).
+  useEffect(() => {
+    setReply(thread.petalDraft?.text ?? "");
+    setAnswerRevealed(false);
+    setPetalDrafted(false);
+    setSent(false);
+    setExtraMessages([]);
+  }, [thread.id, thread.petalDraft?.text]);
 
   const draftSkillName = thread.petalDraft ? (skillById(thread.petalDraft.skillId)?.name ?? "Petal") : null;
   const extractionDoc = thread.extraction ? expectedDocs.find(d => d.id === thread.extraction!.docId) : undefined;
   /** a Petal draft is sitting in the composer, unedited-or-edited but un-sent */
-  const draftLoaded = !sent && reply.trim().length > 0 && (!!thread.petalDraft || answerRevealed);
+  const draftLoaded = reply.trim().length > 0 && (!!thread.petalDraft || answerRevealed || petalDrafted);
+  const allMessages = [...thread.messages, ...extraMessages];
 
   function revealAnswer() {
     if (!thread.petalCanAnswer) return;
@@ -68,16 +88,26 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
     setReply(thread.petalCanAnswer.draft);
   }
 
-  function approveAndSend() {
-    show("Approved & sent");
-    setReply("");
-    setSent(true);
+  function draftWithPetal() {
+    if (thread.petalCanAnswer && !answerRevealed) { revealAnswer(); return; }
+    setReply(petalDraftFor(thread));
+    setPetalDrafted(true);
+    show("Petal drafted a reply");
   }
-  function send() {
-    show("Sent");
+
+  /** append the composed reply into the conversation, then clear the composer */
+  function postReply(toast: string) {
+    const text = reply.trim();
+    if (!text) return;
+    setExtraMessages(m => [...m, { from: "firm", author: "Antonio Vazquez", text, time: "just now" }]);
     setReply("");
+    setAnswerRevealed(false);
+    setPetalDrafted(false);
     setSent(true);
+    show(toast);
   }
+  const approveAndSend = () => postReply("Approved & sent");
+  const send = () => postReply("Sent");
 
   const composerPlaceholder =
     thread.channel === "email" ? `Reply to ${first(thread.clientName)}…`
@@ -128,7 +158,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
             </div>
           )}
 
-          {thread.messages.map((msg, i) => {
+          {allMessages.map((msg, i) => {
             // ── Email: full-width message blocks ──
             if (thread.channel === "email") {
               return (
@@ -264,7 +294,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                 </button>
               ) : (
                 <button
-                  onClick={thread.petalCanAnswer && !answerRevealed ? revealAnswer : undefined}
+                  onClick={draftWithPetal}
                   className={cn("flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", focusRing)}
                 >
                   <PetalMark className="size-3.5" /> Draft with Petal

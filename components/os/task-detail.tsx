@@ -16,6 +16,7 @@ import { StatusPill, DeadlineChip, SkillPetal } from "@/components/os/primitives
 import { ProvenancePanel } from "@/components/os/provenance";
 import { householdById, skillById, type Task } from "@/lib/fixtures/firm";
 import { taskStatusMeta } from "@/lib/fixtures/vocab";
+import { demoStore } from "@/lib/demo-store";
 
 /* ── quiet toast (the action keeps its name: "Approve & send" → "Approved & sent") ── */
 function useToast() {
@@ -75,15 +76,25 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     setEditLogged(false);
   }, [task.id, task.recommendedAction, task.draftText]);
 
+  // Decide / Approve / Approve & send resolve the task and close the panel —
+  // the item leaves the needs-you queue across the app (session-only; reload resets).
+  function resolveAndClose() {
+    demoStore.resolve(task.id);
+    window.setTimeout(onClose, 850);
+  }
+
   function onPrimary() {
     if (!verbLabel) return;
     if (verbLabel === "Decide") {
       const opt = task.proposedActions?.find(a => a.key === chosen);
       show(chosen ? `Decided ${chosen}${opt ? ` — ${opt.label}` : ""}` : "Decided");
+      resolveAndClose();
     } else if (verbLabel === "Approve & send") {
       show("Approved & sent");
+      resolveAndClose();
     } else if (verbLabel === "Approve") {
       show("Approved");
+      resolveAndClose();
     } else if (verbLabel === "Nudge") {
       show("Nudge sent");
     }

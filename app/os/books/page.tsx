@@ -26,9 +26,9 @@ function StatusGlyph({ status }: { status: BooksStatus }) {
       className={cn(
         "grid size-4 shrink-0 place-items-center rounded-full border-2",
         status === "complete"
-          ? "border-[var(--os-brand)] bg-[var(--os-brand)] text-white"
+          ? "border-emerald-500 bg-emerald-500 text-white"
           : status === "in_progress"
-            ? "border-[var(--os-brand-soft)]"
+            ? "border-amber-500"
             : "border-[var(--os-border-strong)]",
       )}
     >
