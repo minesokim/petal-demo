@@ -1,7 +1,9 @@
 "use client";
 
 // "Sources & reasoning" — the provenance affordance every Petal-produced artifact carries.
-// Rendering an AI artifact without this panel is a bug (see docs/superpowers/plans/2026-06-09-petal-os-overhaul.md §3.4).
+// Collapsed, it is a single quiet text line (no box — boxes-in-boxes read as noise);
+// the bordered panel draws only when opened. Rendering an AI artifact without this
+// affordance is a bug (docs/superpowers/plans/2026-06-09-petal-os-overhaul.md §3.4).
 
 import Link from "next/link";
 import { useState } from "react";
@@ -31,22 +33,32 @@ export function ProvenancePanel({
   const tier = trustTierMeta[run.trustTierAtRun];
 
   return (
-    <div className={cn("rounded-lg border border-[var(--os-border)] bg-[var(--os-card)]", className)}>
+    <div className={cn("min-w-0", className)}>
       <button
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+        className={cn(
+          "-mx-1.5 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11.5px] font-medium transition-colors",
+          "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink-muted)]",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+          open && "text-[var(--os-ink-muted)]",
+        )}
       >
-        <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
-        <span className="text-[12px] font-medium text-[var(--os-ink)]">Sources & reasoning</span>
-        <span className="ml-auto flex items-center gap-2 text-[11px] text-[var(--os-ink-muted)]">
-          {skill && <span className="inline-flex items-center gap-1"><SkillPetal category={skill.category} size={12} /> {skill.name}</span>}
-          <Icon icon={I.chevronDown} size={13} className={cn("transition-transform", !open && "-rotate-90")} />
-        </span>
+        <PetalMark className="size-3 shrink-0" />
+        Sources &amp; reasoning
+        <Icon icon={I.chevronDown} size={12} className={cn("shrink-0 transition-transform duration-150", !open && "-rotate-90")} />
       </button>
 
       {open && (
-        <div className="space-y-3 border-t border-[var(--os-border)] px-3 py-3 text-[12px]">
+        <div className="mt-1.5 space-y-3 rounded-lg border border-[var(--os-border)] bg-white px-3.5 py-3 text-[12px]">
+          {/* run byline */}
+          {skill && (
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]">
+              <SkillPetal category={skill.category} size={12} /> {skill.name}
+              <span className="font-normal text-[var(--os-ink-subtle)]">· run {run.startedAt}</span>
+            </div>
+          )}
+
           {/* sources */}
           <div>
             <div className="os-label mb-1 text-[11px] font-medium text-[var(--os-ink-muted)]">Sources</div>
@@ -64,14 +76,14 @@ export function ProvenancePanel({
           {run.extracted && run.extracted.length > 0 && (
             <div>
               <div className="os-label mb-1 text-[11px] font-medium text-[var(--os-ink-muted)]">Extracted fields</div>
-              <div className="overflow-hidden rounded-md border border-[var(--os-border)] bg-white">
+              <div className="overflow-hidden rounded-md border border-[var(--os-border)]">
                 {run.extracted.map((f, i) => {
                   const low = f.flag || f.confidence < CONFIDENCE_BAR;
                   return (
                     <div key={i} className={cn("flex items-center justify-between gap-3 border-b border-[var(--os-border)] px-2.5 py-1.5 last:border-b-0", low && "bg-amber-50/60")}>
                       <span className="text-[var(--os-ink-muted)]">{f.label}</span>
                       <span className="flex items-center gap-2">
-                        <span className="font-medium tabular-nums">{f.value}</span>
+                        <span className="font-medium tabular-nums text-[var(--os-ink)]">{f.value}</span>
                         <span className={cn("tabular-nums text-[10.5px]", low ? "font-medium text-amber-700" : "text-[var(--os-ink-subtle)]")}>
                           {Math.round(f.confidence * 100)}%{low ? " · review" : ""}
                         </span>
@@ -99,8 +111,6 @@ export function ProvenancePanel({
 
           {/* run facts */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--os-border)] pt-2 text-[11px] text-[var(--os-ink-muted)]">
-            <span>Run {run.startedAt}</span>
-            <span>·</span>
             <span>{tier.code} {tier.label} at run time</span>
             {run.confidence != null && (<><span>·</span><span className="tabular-nums">Confidence {Math.round(run.confidence * 100)}%</span></>)}
             {run.approvedBy && (<><span>·</span><span>Approved by {run.approvedBy}{run.approvedAt ? ` · ${run.approvedAt}` : ""}</span></>)}

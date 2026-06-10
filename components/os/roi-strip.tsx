@@ -1,6 +1,7 @@
 "use client";
 
-// ROI strip — replaces the Today banner image. Every number derives from the
+// RoiStats — the week's numbers as a composed stat bar, designed to sit INSIDE the
+// Today hero banner (translucent row over the photo). Every number derives from the
 // activity log via roiWeek(); hours come from the per-action minutes map.
 
 import Link from "next/link";
@@ -8,40 +9,33 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { roiWeek } from "@/lib/fixtures/derive";
 import { FIRM_PROFILE } from "@/lib/fixtures/firm";
-import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[15px] font-semibold tabular-nums text-[var(--os-ink)]">{value}</span>
-      <span className="text-[12px] text-[var(--os-ink-muted)]">{label}</span>
-    </span>
+    <div className="min-w-0">
+      <div className="text-[16px] font-semibold leading-tight tabular-nums text-white os-display">{value}</div>
+      <div className="mt-0.5 truncate text-[11px] leading-tight text-white/60">{label}</div>
+    </div>
   );
 }
 
-export function RoiStrip() {
+/** The translucent stat row for the hero banner. */
+export function RoiStats() {
   const roi = roiWeek();
   const [digestOpen, setDigestOpen] = useState(false);
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-3">
-        <span className="inline-flex items-center gap-2 text-[12px] font-medium text-[var(--os-ink-muted)]">
-          <PetalMark className="size-3.5" /> This week
-        </span>
-        <Stat value={roi.actions} label="actions" />
-        <span className="text-[var(--os-border-strong)]">·</span>
-        <Stat value={roi.docsCollected} label="documents collected" />
-        <span className="text-[var(--os-border-strong)]">·</span>
+      <div className="relative flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/15 bg-white/[0.06] px-7 py-3.5 backdrop-blur-[2px]">
+        <Stat value={roi.actions} label="actions this week" />
+        <Stat value={roi.docsCollected} label="documents in" />
         <Stat value={roi.returnsFiled} label="returns filed" />
-        <span className="text-[var(--os-border-strong)]">·</span>
         <Stat value={roi.noticesDrafted} label="notices drafted" />
-        <span className="text-[var(--os-border-strong)]">·</span>
-        <Stat value={`~${roi.hoursReturned} hrs`} label="returned" />
+        <Stat value={`~${roi.hoursReturned}`} label="hours returned" />
         <button
           onClick={() => setDigestOpen(true)}
-          className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium text-white/70 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/80"
         >
           <Icon icon={I.mail} size={13} /> Weekly digest
         </button>
@@ -62,7 +56,7 @@ export function RoiStrip() {
             >
               {/* email-styled digest preview */}
               <div className="flex items-center justify-between border-b border-[var(--os-border)] px-5 py-3">
-                <span className="text-[13px] font-semibold">Weekly digest</span>
+                <span className="text-[13px] font-semibold text-[var(--os-ink)]">Weekly digest</span>
                 <button aria-label="Close" onClick={() => setDigestOpen(false)} className="grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
                   <Icon icon={I.close} size={14} />
                 </button>
@@ -71,7 +65,7 @@ export function RoiStrip() {
                 <div className="text-[11px] text-[var(--os-ink-subtle)]">
                   From: Petal &lt;digest@petal.app&gt; · To: {FIRM_PROFILE.owner.name} · Friday 7:00 AM
                 </div>
-                <h3 className="mt-3 text-[15px] font-semibold">Your week at {FIRM_PROFILE.name}</h3>
+                <h3 className="mt-3 text-[15px] font-semibold text-[var(--os-ink)]">Your week at {FIRM_PROFILE.name}</h3>
                 <p className="mt-2 leading-relaxed text-[var(--os-ink)]">
                   Petal ran <strong>{roi.actions} actions</strong> this week: {roi.docsCollected} documents collected and filed,{" "}
                   {roi.returnsFiled} returns e-filed clean (pre-approved by you), and {roi.noticesDrafted} notice responses drafted.
@@ -89,3 +83,6 @@ export function RoiStrip() {
     </>
   );
 }
+
+/** @deprecated kept as an alias while pages migrate — renders the banner stat row. */
+export const RoiStrip = RoiStats;
