@@ -1,25 +1,25 @@
 "use client";
 
-import { useState } from "react";
+// Ask Petal — the full-page chat. Answers come from the scripted demo bank
+// (lib/fixtures/demo-chat) keyword-matched against whatever is typed; every
+// number in an answer derives from canon. ?q= runs a question on arrival
+// (the Today composer hands off here).
+
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { Mic } from "lucide-react";
-
-type Msg = { id: number; role: "user" | "petal" };
+import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/petal-chat";
+import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
 
 const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
-  { icon: I.returns, label: "Draft Marcus Chen's 1040", prompt: "Draft the 2025 return for Marcus Chen" },
-  { icon: I.file, label: "Chase Priya's missing documents", prompt: "Draft a reminder to Priya for her missing documents" },
-  { icon: I.billing, label: "Reconcile this month's books", prompt: "Reconcile this month's bank activity and flag uncategorized expenses" },
+  { icon: I.tasks, label: "What needs me today?", prompt: "What needs me today?" },
   { icon: I.search, label: "Why did Marcus Chen's wages drop?", prompt: "Why did Marcus Chen's wages drop 40% this year?" },
-];
-
-const SOURCES = [
-  "W-2 2025.pdf",
-  "Jun 23 email — Marcus",
-  "2024 Return.pdf",
+  { icon: I.mail, label: "What's the deal with the Rodriguez CP2000?", prompt: "What's the deal with the Rodriguez CP2000?" },
+  { icon: I.history, label: "How much time did you save me this week?", prompt: "How much time did you save me this week?" },
 ];
 
 const GROUNDING: { icon: keyof typeof I; label: string }[] = [
@@ -30,88 +30,60 @@ const GROUNDING: { icon: keyof typeof I; label: string }[] = [
   { icon: "mail", label: "Gmail" },
 ];
 
-function Cite({ n }: { n: number }) {
-  return (
-    <button className="mx-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded bg-[var(--os-selected)] px-1 align-[2px] text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-border-strong)]">
-      {n}
-    </button>
-  );
-}
-
-function UserBubble() {
+function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
       <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">
-        Why did Marcus Chen&apos;s wages drop 40% this year?
+        {text}
       </div>
     </div>
   );
 }
 
-function PetalAnswer() {
+function PetalBubble({ msg, isLatest, onSuggest }: { msg: Extract<ChatMsg, { role: "petal" }>; isLatest: boolean; onSuggest: (q: string) => void }) {
   return (
     <div className="flex gap-3">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-bg-subtle)] ring-1 ring-[var(--os-border)]">
         <PetalMark className="size-4" />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">
-          Marcus&apos;s W-2 wages fell from <span className="font-medium tabular-nums">$96,400</span> to{" "}
-          <span className="font-medium tabular-nums">$58,000</span> because his second restaurant location closed in
-          May 2026<Cite n={1} />. That matches his Jun 23 email, where he mentioned winding down the
-          Riverside spot<Cite n={2} />. His K-1 income from Golden Dragon actually rose 19% over the same period<Cite n={3} />,
-          so total household income is down only ~8%, not 40%.
-        </p>
-        <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--os-ink)]">
-          One thing to confirm verbally before filing: the W-2 reduction isn&apos;t backed by a termination letter in his
-          documents, so I&apos;ve flagged it rather than treating it as final.
-        </p>
-
-        {/* Sources strip */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-[var(--os-ink-subtle)]">Sources</span>
-          {SOURCES.map((s, i) => (
-            <button
-              key={s}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-1 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:text-[var(--os-ink)]"
-            >
-              <span className="text-[10px] font-medium tabular-nums text-[var(--os-ink-subtle)]">{i + 1}</span>
-              <Icon icon={I.file} size={13} className="text-[var(--os-ink-subtle)]" />
-              <span className="truncate">{s}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* The "Do" gear — turn the answer into a run */}
-        <div className="mt-3.5 flex items-center gap-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2.5">
-          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm ring-1 ring-inset ring-white/20">
-            <Icon icon={I.skills} size={15} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-medium text-[var(--os-ink)]">Want me to draft the 2025 return?</div>
-            <div className="text-[12px] text-[var(--os-ink-muted)]">Runs the Draft 1040 skill — lands in Tasks for your review.</div>
-          </div>
-          <button className="shrink-0 flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]">
-            <Icon icon={I.trigger} size={14} /> Start run
-          </button>
-        </div>
+      <div className="min-w-0 flex-1 pt-1">
+        <PetalAnswerView answer={msg.answer} thinking={msg.thinking} stream={isLatest} onSuggest={onSuggest} />
       </div>
     </div>
   );
 }
 
-export default function AskPetalPage() {
-  const [messages, setMessages] = useState<Msg[]>([]);
+function AskPetalInner() {
+  const params = useSearchParams();
+  const { messages, send, reset } = usePetalChat();
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<"ask" | "research" | "do">("ask");
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const ranParam = useRef(false);
 
   const hasConvo = messages.length > 0;
 
-  const send = (text?: string) => {
-    if (!(text ?? input).trim()) return;
-    setMessages(m => [...m, { id: Date.now(), role: "user" }, { id: Date.now() + 1, role: "petal" }]);
+  // the Today composer hands its question off via ?q=
+  useEffect(() => {
+    const q = params.get("q");
+    if (q && !ranParam.current) {
+      ranParam.current = true;
+      send(q);
+    }
+  }, [params, send]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
+  const submit = (text?: string) => {
+    const q = (text ?? input).trim();
+    if (!q) return;
+    send(q);
     setInput("");
   };
+
+  const lastPetalId = [...messages].reverse().find(m => m.role === "petal")?.id;
 
   return (
     <div className="flex h-full flex-col">
@@ -121,7 +93,7 @@ export default function AskPetalPage() {
           <Icon icon={I.clients} size={13} /> All clients <Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" />
         </button>
         <button
-          onClick={() => setMessages([])}
+          onClick={() => { reset(); setInput(""); }}
           className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] transition-colors hover:bg-[var(--os-hover)]"
         >
           <Icon icon={I.newChat} size={14} /> New chat
@@ -136,12 +108,15 @@ export default function AskPetalPage() {
               <div className="mx-auto max-w-[720px] space-y-6 px-6 py-6">
                 {messages.map(m => (
                   <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeOut" }}>
-                    {m.role === "user" ? <UserBubble /> : <PetalAnswer />}
+                    {m.role === "user"
+                      ? <UserBubble text={m.text} />
+                      : <PetalBubble msg={m} isLatest={m.id === lastPetalId} onSuggest={submit} />}
                   </motion.div>
                 ))}
+                <div ref={bottomRef} />
               </div>
             ) : (
-              // Empty state — chat-first starter (Solve-inspired, adapted)
+              // Empty state — chat-first starter
               <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-6 pb-6">
                 <div className="flex-1" />
                 <PetalMark className="mb-3 size-6" />
@@ -149,7 +124,7 @@ export default function AskPetalPage() {
 
                 <div className="mt-5 space-y-0.5">
                   {STARTERS.map(s => (
-                    <button key={s.label} onClick={() => send(s.prompt)} className="group/s -mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)]">
+                    <button key={s.label} onClick={() => submit(s.prompt)} className="group/s -mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)]">
                       <Icon icon={s.icon} size={16} className="shrink-0 text-[var(--os-ink-muted)]" />
                       <span className="flex-1 truncate text-[14px] text-[var(--os-ink-muted)] transition-colors group-hover/s:text-[var(--os-ink)]">{s.label}</span>
                       <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/s:opacity-100" />
@@ -161,7 +136,7 @@ export default function AskPetalPage() {
                   <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") send(); }}
+                    onKeyDown={e => { if (e.key === "Enter") submit(); }}
                     placeholder="Ask Petal anything, or describe work to run…"
                     autoFocus
                     className="w-full bg-transparent text-[15px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
@@ -170,7 +145,7 @@ export default function AskPetalPage() {
                     <button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button>
                     <div className="ml-auto flex items-center gap-1.5">
                       <button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button>
-                      <button onClick={() => send()} disabled={!input.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
+                      <button onClick={() => submit()} disabled={!input.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
                     </div>
                   </div>
                 </div>
@@ -186,8 +161,9 @@ export default function AskPetalPage() {
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") send(); }}
+                  onKeyDown={e => { if (e.key === "Enter") submit(); }}
                   placeholder="Ask Petal anything, or describe work to run…"
+                  autoFocus
                   className="w-full bg-transparent text-[13px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
                 />
                 <div className="mt-2.5 flex items-center gap-1.5">
@@ -210,7 +186,7 @@ export default function AskPetalPage() {
                     <Icon icon={I.attach} size={14} />
                   </button>
                   <button
-                    onClick={() => send()}
+                    onClick={() => submit()}
                     disabled={!input.trim()}
                     className="ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"
                   >
@@ -240,7 +216,7 @@ export default function AskPetalPage() {
               <div key={g.label} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]">
                 <Icon icon={I[g.icon]} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
                 <span className="flex-1 truncate text-[var(--os-ink)]">{g.label}</span>
-                <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
+                <span className="size-1.5 shrink-0 rounded-full bg-[var(--os-brand)]" />
               </div>
             ))}
           </div>
@@ -251,5 +227,13 @@ export default function AskPetalPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AskPetalPage() {
+  return (
+    <Suspense>
+      <AskPetalInner />
+    </Suspense>
   );
 }

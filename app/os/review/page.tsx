@@ -15,6 +15,7 @@ import { Icon, I } from "@/components/os/icon";
 import { StatusPill, DeadlineChip, SkillPetal } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { needsYouTasks } from "@/lib/fixtures/derive";
+import { demoStore } from "@/lib/demo-store";
 import { householdById, skillById, type Task } from "@/lib/fixtures/firm";
 import { NEEDS_YOU_STATUSES, MINUTES_RETURNED } from "@/lib/fixtures/vocab";
 
@@ -141,12 +142,13 @@ function DecisionCard({ task }: { task: Task }) {
 export default function ReviewPage() {
   const router = useRouter();
 
-  // Queue: everything that needs you, decisions first. THE same number as Today + the Tasks badge.
+  // Queue: everything that needs you, decisions first. THE same number as Today + the
+  // Tasks badge. Frozen at mount (items resolved this session don't reshuffle the deck).
   const queue = useMemo(
     () =>
-      [...needsYouTasks()].sort(
-        (a, b) => NEEDS_YOU_STATUSES.indexOf(a.status) - NEEDS_YOU_STATUSES.indexOf(b.status),
-      ),
+      [...needsYouTasks()]
+        .filter(t => !demoStore.isResolved(t.id))
+        .sort((a, b) => NEEDS_YOU_STATUSES.indexOf(a.status) - NEEDS_YOU_STATUSES.indexOf(b.status)),
     [],
   );
   const n = queue.length;
@@ -180,6 +182,7 @@ export default function ReviewPage() {
 
   const approve = () => {
     if (!task || editing || saved) return;
+    demoStore.resolve(task.id); // the badge + Today decrement live
     setApproved(c => c + 1);
     advance();
   };
@@ -196,6 +199,7 @@ export default function ReviewPage() {
   };
 
   const saveEdit = () => {
+    if (task) demoStore.resolve(task.id); // an edited send is handled too
     setEdited(c => c + 1);
     setEditing(false);
     setSaved(true);

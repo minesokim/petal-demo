@@ -10,7 +10,8 @@ export function AskComposer() {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [appsOpen, setAppsOpen] = useState(false);
-  const go = () => router.push("/os/ask");
+  // hand the typed question to /os/ask, which runs it on arrival
+  const go = () => router.push(q.trim() ? `/os/ask?q=${encodeURIComponent(q.trim())}` : "/os/ask");
   const connect = () => { setAppsOpen(false); router.push("/os/settings"); };
 
   return (

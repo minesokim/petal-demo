@@ -25,9 +25,10 @@ import {
   taskById, householdById, skillById, runById, engagementById, expectedDocs,
 } from "@/lib/fixtures/firm";
 import {
-  needsYouCount, needsYouTasks, atRiskHouseholds, healthCounts,
+  atRiskHouseholds, healthCounts,
   booksClients, roiWeek, billingKpis, activeEngagements,
 } from "@/lib/fixtures/derive";
+import { useLiveNeedsYou } from "@/lib/demo-store";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
@@ -68,8 +69,8 @@ function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
 
 export default function TodayPage() {
   const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
-  const needsYou = needsYouCount();
-  const queue = needsYouTasks();
+  const queue = useLiveNeedsYou();
+  const needsYou = queue.length;
   const atRisk = atRiskHouseholds();
   const atRiskCount = healthCounts().at_risk;
   const roi = roiWeek();
@@ -125,7 +126,8 @@ export default function TodayPage() {
           {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* ── review queue — the crafted moment ── */}
+          {/* ── review queue — the crafted moment (hidden once the queue is clear) ── */}
+          {needsYou > 0 && (
           <FeatureCallout
             eyebrow={<><PetalMark className="size-3.5" /> Review mode</>}
             title={`${needsYou} items are ready for your sign-off`}
@@ -165,6 +167,7 @@ export default function TodayPage() {
               )
             }
           />
+          )}
 
           {/* ── Books — the close card (renders only while books clients exist) ── */}
           {booksHH.length > 0 && (

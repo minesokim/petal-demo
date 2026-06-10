@@ -17,6 +17,7 @@ import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
 import { DocRow, ReviewModal, EngagementDocsHeader } from "@/components/os/doc-gallery";
 import { ThreadConversation } from "@/components/os/thread-conversation";
+import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import {
   householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
   positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById,
@@ -156,6 +157,20 @@ function ClientRecordInner() {
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [wpRun, setWpRun] = useState<string | null>(null);
   const { msg, show } = useToast();
+
+  // interactive @Petal rail — scoped to this household (scripted demo bank)
+  const chat = usePetalChat(h?.id);
+  const [chatInput, setChatInput] = useState("");
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chat.messages]);
+  const sendChat = (text?: string) => {
+    const q = (text ?? chatInput).trim();
+    if (!q) return;
+    chat.send(q);
+    setChatInput("");
+  };
 
   // ?tab= preselect — also when the param changes in place (deep links from health/positions).
   useEffect(() => {
@@ -828,15 +843,58 @@ function ClientRecordInner() {
                       )}
                     </div>
                   </div>
+
+                  {/* live conversation — typed questions matched against the demo bank */}
+                  {chat.messages.map(m =>
+                    m.role === "user" ? (
+                      <div key={m.id} className="flex gap-2.5">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-semibold text-[var(--os-ink-muted)]">AV</span>
+                        <div className="min-w-0">
+                          <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Antonio</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
+                          <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-accent)]">@Petal</span> {m.text}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={m.id} className="flex gap-2.5">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-ink)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Petal</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
+                          <div className="mt-1">
+                            <PetalAnswerView
+                              answer={m.answer}
+                              thinking={m.thinking}
+                              compact
+                              stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
+                              onSuggest={q => sendChat(q)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                  <div ref={chatBottomRef} />
                 </div>
                 {/* composer */}
                 <div className="border-t border-[var(--os-border)] p-3">
                   <div className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-2 transition-colors focus-within:border-[var(--os-border-strong)]">
-                    <input placeholder={`Ask Petal about ${h.name}`} className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]" />
+                    <input
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") sendChat(); }}
+                      placeholder={`Ask Petal about ${h.name}`}
+                      className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
+                    />
                     <div className="mt-2 flex items-center gap-0.5">
                       <button className={cn("grid size-6 place-items-center rounded text-[14px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)}>@</button>
                       <button className={cn("grid size-6 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={14} /></button>
-                      <button className={cn("ml-auto grid size-6 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]", FOCUS)} aria-label="Send"><Icon icon={I.send} size={13} /></button>
+                      <button
+                        onClick={() => sendChat()}
+                        disabled={!chatInput.trim()}
+                        className={cn("ml-auto grid size-6 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)] disabled:opacity-30", FOCUS)}
+                        aria-label="Send"
+                      >
+                        <Icon icon={I.send} size={13} />
+                      </button>
                     </div>
                   </div>
                 </div>

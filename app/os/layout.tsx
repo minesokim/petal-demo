@@ -14,7 +14,7 @@ import {
   ChevronsUpDown, ListChecks, Inbox, BarChart3, Users,
   Settings, Home, FileText, Folder, FileCheck2, MailWarning, Receipt,
 } from "lucide-react";
-import { needsYouCount } from "@/lib/fixtures/derive";
+import { useLiveNeedsYou } from "@/lib/demo-store";
 
 type Item = { label: string; href: string; icon?: React.ComponentType<{ className?: string }>; badge?: number; glyph?: boolean; logo?: boolean; hugeicon?: IconSvgElement };
 
@@ -62,6 +62,7 @@ function NavGroup({ label, icon, items, isActive, defaultOpen = true }: { label:
 export default function OsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const needsYou = useLiveNeedsYou().length;
 
   // Review mode and debug surfaces render full-screen, outside the shell chrome.
   if (pathname.startsWith("/os/review") || pathname.startsWith("/os/debug")) {
@@ -74,7 +75,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
 
   const primary: Item[] = [
     { label: "Today", href: "/os/today", icon: Home },
-    { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYouCount() },
+    { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYou },
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
   ];
   const records: Item[] = [

@@ -13,7 +13,7 @@ import { Icon, I } from "@/components/os/icon";
 import { StatusPill, DeadlineChip, SkillPetal } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
 import { tasks, householdById, skillById, engagementById, taskById, type Task } from "@/lib/fixtures/firm";
-import { needsYouCount } from "@/lib/fixtures/derive";
+import { demoStore, useDemoVersion, useLiveNeedsYou } from "@/lib/demo-store";
 import { TASK_STATUS_ORDER, taskStatusMeta, type TaskStatus } from "@/lib/fixtures/vocab";
 
 /* ── derivations on the canonical shapes ── */
@@ -166,8 +166,17 @@ function TasksPageInner() {
     if (params.get("task")) router.replace("/os/tasks", { scroll: false });
   };
 
+  // tasks resolved this demo session read as Done everywhere on this page
+  const demoVersion = useDemoVersion();
+  const liveTasks: Task[] = useMemo(
+    () => tasks.map(t => (demoStore.isResolved(t.id) ? { ...t, status: "done" as TaskStatus } : t)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [demoVersion],
+  );
+  const needsYou = useLiveNeedsYou().length;
+
   const groups: Group[] = useMemo(() => {
-    const list = tasks.filter(t => (!flaggedOnly || t.flagged) && (!blockedOnly || isBlocked(t)));
+    const list = liveTasks.filter(t => (!flaggedOnly || t.flagged) && (!blockedOnly || isBlocked(t)));
     const sorted = [...list].sort(sorters[sort]);
     if (groupByClient) {
       const names = [...new Set(sorted.map(clientName))].sort((a, b) => a.localeCompare(b));
@@ -176,15 +185,15 @@ function TasksPageInner() {
     return TASK_STATUS_ORDER
       .map(s => ({ key: s as string, status: s, items: sorted.filter(t => t.status === s) }))
       .filter(g => g.items.length > 0);
-  }, [sort, groupByClient, flaggedOnly, blockedOnly]);
+  }, [liveTasks, sort, groupByClient, flaggedOnly, blockedOnly]);
 
   const item = selected ? taskById(selected) ?? null : null;
-  const approvable = tasks.filter(t => t.status === "ready_to_approve");
+  const approvable = liveTasks.filter(t => t.status === "ready_to_approve");
 
   function onVerb(t: Task, verb: string) {
     if (verb === "Decide" || verb === "View run") setSelected(t.id);
-    else if (verb === "Approve & send") show("Approved & sent");
-    else if (verb === "Approve") show("Approved");
+    else if (verb === "Approve & send") { demoStore.resolve(t.id); show("Approved & sent"); }
+    else if (verb === "Approve") { demoStore.resolve(t.id); show("Approved"); }
     else if (verb === "Nudge") show("Nudge sent");
   }
 
@@ -197,7 +206,7 @@ function TasksPageInner() {
           <h1 className="os-display text-[14px] font-semibold text-[var(--os-ink)]">Tasks</h1>
         </div>
         <p className="text-[12px] text-[var(--os-ink-muted)]">
-          {needsYouCount()} need you — the rest are running, scheduled, waiting, or done.
+          {needsYou} need you — the rest are running, scheduled, waiting, or done.
         </p>
       </div>
 
@@ -230,7 +239,7 @@ function TasksPageInner() {
           {confirmBulk ? (
             <>
               <button
-                onClick={() => { setConfirmBulk(false); show(`Approved all ${approvable.length}`); }}
+                onClick={() => { setConfirmBulk(false); approvable.forEach(t => demoStore.resolve(t.id)); show(`Approved all ${approvable.length}`); }}
                 className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
               >
                 <Icon icon={I.check} size={13} /> Confirm — approve all {approvable.length}
