@@ -11,6 +11,7 @@ import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
 import { SkillPetal } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
+import { FeatureCallout } from "@/components/os/callout";
 import {
   booksItems, booksMonth, booksStatusMeta, BOOKS_ORDER,
   householdById, skillById, type BooksItem, type BooksStatus,
@@ -124,6 +125,9 @@ export default function BooksPage() {
     .map(s => ({ status: s, items: booksItems.filter(t => t.status === s) }))
     .filter(g => g.items.length > 0);
 
+  const runnable = booksItems.filter(b => b.petalRunnable && b.status !== "complete");
+  const previewItem = runnable[0];
+
   return (
     <div className="flex h-full flex-col">
       {/* header */}
@@ -147,6 +151,42 @@ export default function BooksPage() {
 
       {/* checklist grouped by status */}
       <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* the crafted moment — run the remaining readiness items with Petal */}
+        {runnable.length > 0 && (
+          <div className="px-8 pt-5">
+            <FeatureCallout
+              className="mb-5"
+              eyebrow={<><SkillPetal category="books" size={13} /> Books-to-Tax Close · {trustTierMeta[skillById("sk-books")!.trust].code} {trustTierMeta[skillById("sk-books")!.trust].label}</>}
+              title={`Petal can run ${runnable.length} of the open items`}
+              body="Reconciliations and categorization queue as drafts for your approval — owner sign-off stays yours. Every run logs its sources."
+              action={{ label: "Run with Petal", href: "/os/tasks?task=t-park-books" }}
+              secondary={{ label: "See a finished run", href: "/os/activity?run=run-recon-park" }}
+              preview={
+                previewItem && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--os-ink-subtle)]">
+                      <SkillPetal category="books" size={11} />
+                      {householdById(previewItem.householdId)?.name}
+                    </div>
+                    <div className="mt-1 text-[12px] font-semibold leading-snug text-[var(--os-ink)]">{previewItem.title}</div>
+                    <div className="mt-2 space-y-1 text-[10.5px] leading-tight text-[var(--os-ink-muted)]">
+                      <div className="flex items-center gap-1.5 rounded-md border border-[var(--os-border)] px-2 py-1">
+                        <span className="size-1 rounded-full bg-emerald-500" /> Categories proposed from David's email
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-md border border-[var(--os-border)] px-2 py-1">
+                        <span className="size-1 rounded-full bg-emerald-500" /> Adjusting entries drafted
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-md border border-[var(--os-border-strong)] bg-[var(--os-card)] px-2 py-1 font-medium text-[var(--os-ink)]">
+                        <PetalMark className="size-2.5" /> Lands in Tasks for your approval
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+            />
+          </div>
+        )}
+
         {groups.length === 0 ? (
           <div className="grid place-items-center gap-1.5 px-6 py-16 text-center">
             <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />

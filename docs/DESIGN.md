@@ -188,8 +188,30 @@ time (meta); expandable to show field-level diffs (`Stage → Meeting`, struck o
 ---
 
 ## 6. Anti-patterns (the "no vibe code" list)
-Gradients **only** on agent/AI-layer orbs (nowhere else) · no colored icon circles on the
-chrome · orbs never on humans/records · no green/tinted PetalMark wash (mark is monochrome) ·
-no marketing callout banners in-product · no cutesy AI-chatbot persona · no uppercase labels ·
-no ad-hoc font sizes outside the 5-step scale · no hard boxes where a hairline + spacing will
-do · no saturated status blocks (soft-fill only) · no high border-radius.
+Gradients **only** on agent/AI-layer orbs and the two sanctioned crafted moments (§7) ·
+no colored icon circles on the chrome · orbs never on humans/records · no green/tinted
+PetalMark wash (mark is monochrome) · no marketing callout banners in-product **except the
+§7 patterns** · no cutesy AI-chatbot persona · no uppercase labels · no ad-hoc font sizes
+outside the 5-step scale · no hard boxes where a hairline + spacing will do · no saturated
+status blocks (soft-fill only) · no high border-radius.
+
+---
+
+## 7. Crafted moments (added Jun 9, 2026 — Ramp Stack / Ferndesk research)
+
+Two — and only two — sanctioned departures from flat monochrome. Both exist to make the
+product feel crafted, not decorated (references: Ramp Stack's home + "Start automating your
+checklist" callout; Ferndesk's greeting-with-stats home). Everything around them stays calm.
+
+1. **Today hero banner.** `/images/today-banner.jpg` under a left-weighted black gradient
+   (`from-black/80 via-black/50 to-black/20`), eyebrow `PetalMark + "Daily brief · {date}"`,
+   white greeting + one summary sentence with derived numbers. Today only — never on other pages.
+2. **FeatureCallout** (`components/os/callout.tsx`). Two-pane box: soft sage→cream wash
+   (`linear-gradient(105deg, #edf4ec, #f6f5ec, #fbfaf9)`) with copy + ONE primary action on
+   the left; a deeper-tint pane on the right holding a small white preview card of the REAL
+   artifact (derived data, never a mock illustration). **Max one per page.** Current uses:
+   Today (review queue), Books (run-with-Petal).
+
+Supporting pattern — **section micro-labels** (Ferndesk): section titles sit OUTSIDE their
+card as an 11/500 muted sentence-case label (optional count chip + right-aligned quiet link);
+the card itself carries no internal header. Rows inside cards divide with hairlines, not gaps.
