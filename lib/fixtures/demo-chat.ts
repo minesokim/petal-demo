@@ -3,30 +3,52 @@
 // from the canonical fixtures at call time, so chat numbers always tie out.
 // Unmatched questions get a graceful fallback with suggestions (live-demo safety).
 //
-// Matching: an entry matches when ANY of its `match` groups matches; a group
-// matches when EVERY keyword in it appears in the input (a keyword may list
-// synonyms separated by "|"). First match in bank order wins.
+// Flagship answers (risk scan, revenue, capacity) carry an agentic step trace,
+// stat metrics, an inline chart, and ranked findings — the deepest expression of
+// the product: Petal reasoning across the whole book, every finding grounded.
 
-import { money, fmtDate, stageMeta, type SkillCategory } from "./vocab";
+import { money, fmtDate, stageMeta, daysUntil, MINUTES_RETURNED, STAGE_ORDER, type SkillCategory, type ActivityKind } from "./vocab";
 import {
   householdById, engagementsOf, tasksOf, noticesOf, positionsOf, taskById, noticeById,
-  expectedDocs, brief, type Household,
+  expectedDocs, engagements, tasks, notices, positions, activity, type Household,
 } from "./firm";
 import {
   needsYouTasks, docsOfHousehold, householdStage, householdFee, householdDeadline,
   invoiceOf, clientHealth, atRiskHouseholds, healthCounts, roiWeek, filedThisWeek,
-  openNotices, noticeCountdown, billingKpis, feesInPipeline, feesBlockedByDocs,
-  transcriptWatchCount, booksClients,
+  noticeCountdown, billingKpis, feesInPipeline, feesBlockedByDocs, feesBooked,
+  activeEngagements, booksClients,
 } from "./derive";
+
+type Tone = "neutral" | "danger" | "warning" | "brand";
+
+export interface ChatStep { label: string; detail?: string }
+export interface ChatMetric { value: string; label: string; tone?: Tone }
+export interface ChatChartBar { label: string; value: number; display: string; tone?: Tone }
+export interface ChatChart { kind: "bars"; title?: string; bars: ChatChartBar[]; max?: number }
+export interface ChatFinding {
+  severity: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+  impact?: string;
+  href?: string;
+}
 
 export interface ChatAnswer {
   /** plain text paragraphs; **bold** spans supported */
   paragraphs: string[];
+  /** agentic reasoning trace — reveals step by step before the prose */
+  steps?: ChatStep[];
+  /** stat callout row (number-over-label) */
+  metrics?: ChatMetric[];
+  /** inline chart */
+  chart?: ChatChart;
+  /** ranked finding cards, each deep-linked to its record */
+  findings?: ChatFinding[];
   sources?: string[];
   links?: { label: string; href: string }[];
   /** the "Do" card — turns the answer into a run */
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };
-  /** suggestion chips that SEND a new question (used by the fallback) */
+  /** suggestion chips that SEND a new question */
   suggest?: string[];
 }
 
@@ -41,6 +63,125 @@ const norm = (s: string) => " " + s.toLowerCase().replace(/[^a-z0-9$]+/g, " ").t
 
 function groupMatches(input: string, group: string[]): boolean {
   return group.every(kw => kw.split("|").some(syn => input.includes(syn.trim())));
+}
+
+/* ── practice-wide analysis helpers (all derived from canon) ──── */
+
+type Severity = "high" | "medium" | "low";
+
+interface Exposure {
+  severity: Severity;
+  household: string;
+  title: string;
+  detail: string;
+  impact: string;
+  href: string;
+}
+
+/** Scan the whole book for exposures — notices, blocked decisions, flags, open positions, unpaid deposits. */
+function practiceExposures(): Exposure[] {
+  const out: Exposure[] = [];
+
+  for (const n of notices.filter(x => x.status === "response_drafted")) {
+    const h = householdById(n.householdId)!;
+    out.push({
+      severity: "high", household: h.name,
+      title: `${n.type} — ${h.name}`,
+      detail: `${n.amount} proposed by the IRS. Respond by ${fmtDate(n.respondBy)}. Response already drafted with the position documented.`,
+      impact: n.amount ?? "IRS notice",
+      href: `/os/notices/${n.id}`,
+    });
+  }
+
+  for (const t of tasks.filter(t => t.status === "needs_decision" && t.flagged)) {
+    const h = householdById(t.householdId)!;
+    const blocked = t.feeContext?.toLowerCase().includes("blocked") ?? false;
+    out.push({
+      severity: blocked ? "high" : "medium", household: h.name,
+      title: t.title,
+      detail: t.why,
+      impact: t.feeContext ?? "Flagged for your decision",
+      href: `/os/tasks?task=${t.id}`,
+    });
+  }
+
+  for (const p of positions.filter(p => p.status === "open")) {
+    const h = householdById(p.householdId)!;
+    out.push({
+      severity: p.confidence < 0.6 ? "high" : "medium", household: h.name,
+      title: `${p.issue} — ${h.name}`,
+      detail: `${p.authorityLevel} · ${Math.round(p.confidence * 100)}% confidence · ${p.documentation.length} supporting docs attached. Unresolved.`,
+      impact: p.authorityLevel,
+      href: `/os/clients/${p.householdId}?tab=positions`,
+    });
+  }
+
+  for (const e of activeEngagements().filter(e => !e.depositPaid)) {
+    const h = householdById(e.householdId)!;
+    const missing = docsOfHousehold(h.id).requested;
+    out.push({
+      severity: "medium", household: h.name,
+      title: `${h.name} — deposit unpaid, ${missing} docs missing`,
+      detail: "New client; deposit never collected and the W-2 is still outstanding after three chases. At risk of slipping the deadline.",
+      impact: money(e.fee),
+      href: `/os/clients/${h.id}`,
+    });
+  }
+
+  const rank: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
+  return out.sort((a, b) => rank[a.severity] - rank[b.severity]);
+}
+
+function exposureBars(exps: Exposure[]): ChatChartBar[] {
+  const W: Record<Severity, number> = { high: 5, medium: 2, low: 1 };
+  const byHH: Record<string, { score: number; sev: Severity }> = {};
+  for (const f of exps) {
+    const cur = byHH[f.household] ?? { score: 0, sev: "low" as Severity };
+    cur.score += W[f.severity];
+    if (f.severity === "high") cur.sev = "high";
+    else if (f.severity === "medium" && cur.sev !== "high") cur.sev = "medium";
+    byHH[f.household] = cur;
+  }
+  const tone = (s: Severity): Tone => (s === "high" ? "danger" : s === "medium" ? "warning" : "brand");
+  return Object.entries(byHH)
+    .map(([label, v]) => ({ label, value: v.score, display: v.sev === "high" ? "High" : v.sev === "medium" ? "Med" : "Low", tone: tone(v.sev) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+}
+
+function feesByStage(): ChatChartBar[] {
+  const sums: Record<string, number> = {};
+  for (const e of engagements) sums[e.stage] = (sums[e.stage] ?? 0) + e.fee;
+  return STAGE_ORDER.filter(s => sums[s]).map(s => ({
+    label: stageMeta[s].label,
+    value: sums[s],
+    display: money(sums[s]),
+    tone: s === "e_filed" || s === "accepted" ? ("brand" as Tone) : ("neutral" as Tone),
+  }));
+}
+
+function hoursByCategory(): ChatChartBar[] {
+  const LABELS: Partial<Record<ActivityKind, string>> = {
+    doc_collected: "Document collection",
+    extraction: "Data extraction",
+    notice_draft: "Notice responses",
+    efile: "E-filing",
+    brief: "Call prep",
+    draft: "Drafting",
+    send: "Client outreach",
+    transcript_check: "Transcript watch",
+  };
+  const mins: Record<string, number> = {};
+  for (const a of activity) {
+    if (a.actor !== "Petal" || a.kind === "approval" || a.kind === "edit") continue;
+    const label = LABELS[a.kind];
+    if (!label) continue;
+    mins[label] = (mins[label] ?? 0) + MINUTES_RETURNED[a.kind];
+  }
+  return Object.entries(mins)
+    .map(([label, m]) => ({ label, value: m, display: `${(m / 60).toFixed(1)}h`, tone: "brand" as Tone }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
 }
 
 /* ── global bank ─────────────────────────────────────────────── */
@@ -66,6 +207,79 @@ export const QA_BANK: QAEntry[] = [
       };
     },
   },
+
+  /* ── FLAGSHIP: practice-wide risk scan ── */
+  {
+    id: "qa-risk-scan",
+    question: "Run a risk scan across my book",
+    match: [
+      ["risk", "scan"], ["scan", "book|practice|return"], ["expose|exposed|exposure"],
+      ["audit", "risk|book|scan|exposure|expose"], ["blow up"],
+      ["biggest", "risk|exposure|problem|issue"], ["most", "exposed|risk"], ["where", "exposed"],
+    ],
+    build: () => {
+      const exps = practiceExposures();
+      const high = exps.filter(f => f.severity === "high").length;
+      const cp = noticeById("n-cp2000")!;
+      return {
+        steps: [
+          { label: "Read 19 open engagements across 11 clients" },
+          { label: "Cross-referenced 2 tax positions, 1 open IRS notice, 4 variance flags" },
+          { label: "Weighted by authority level, deadline proximity, and document gaps" },
+          { label: "Ranked exposure across the book" },
+        ],
+        paragraphs: [
+          `I found **${exps.length} exposures** worth your attention — **${high} high-severity**. The book is healthy overall, but two items could cost real money or a missed deadline if they slip.`,
+          `The sharpest two are **${exps[0].title}** and **${exps[1].title}**. Both already have a drafted next step waiting in your queue — you're not starting from scratch on either.`,
+        ],
+        metrics: [
+          { value: String(exps.length), label: "exposures flagged" },
+          { value: String(high), label: "high severity", tone: "danger" },
+          { value: "$4.3k", label: "tax at stake", tone: "warning" },
+          { value: `${noticeCountdown(cp)} days`, label: "to the CP2000 deadline" },
+        ],
+        chart: { kind: "bars", title: "Exposure by client", bars: exposureBars(exps) },
+        findings: exps.slice(0, 5).map(f => ({ severity: f.severity, title: f.title, detail: f.detail, impact: f.impact, href: f.href })),
+        links: [{ label: "Start reviewing", href: "/os/review" }],
+        suggest: ["What's blocking the Russo return?", "What's the deal with the Rodriguez CP2000?"],
+      };
+    },
+  },
+
+  /* ── FLAGSHIP: revenue / practice financials ── */
+  {
+    id: "qa-revenue",
+    question: "Show me the financial picture",
+    match: [
+      ["revenue"], ["financ", "picture|health|practice|look"],
+      ["money", "making|practice|season|book"], ["fees", "stage|pipeline|breakdown|picture"],
+      ["season", "look|going|doing|health"], ["how", "practice|business", "doing|going"],
+    ],
+    build: () => {
+      const k = billingKpis();
+      return {
+        steps: [
+          { label: "Summed fees across 19 engagements" },
+          { label: "Reconciled collected against outstanding from invoices" },
+          { label: "Flagged fees blocked behind missing documents" },
+        ],
+        paragraphs: [
+          `**${money(feesBooked())} booked** this season. You've collected **${money(k.collectedTotal)}**; **${money(k.outstandingTotal)}** is still outstanding, and **${money(feesBlockedByDocs())}** of the pipeline is stuck behind missing documents — which is exactly what the document chases are clearing.`,
+          `One invoice is overdue (DeShawn — deposit never collected). Everything else is on schedule for the extension deadlines.`,
+        ],
+        metrics: [
+          { value: money(feesBooked()), label: "fees booked" },
+          { value: money(k.collectedTotal), label: "collected", tone: "brand" },
+          { value: money(k.outstandingTotal), label: "outstanding", tone: "warning" },
+          { value: money(feesBlockedByDocs()), label: "blocked on docs", tone: "danger" },
+        ],
+        chart: { kind: "bars", title: "Fees by stage", bars: feesByStage() },
+        links: [{ label: "Practice", href: "/os/practice" }, { label: "Billing", href: "/os/billing" }],
+        suggest: ["Run a risk scan across my book", "Can I take on more clients?"],
+      };
+    },
+  },
+
   {
     id: "qa-chen-wages",
     question: "Why did Marcus Chen's wages drop 40%?",
@@ -152,25 +366,71 @@ export const QA_BANK: QAEntry[] = [
       };
     },
   },
+
+  /* ── FLAGSHIP: ROI / time returned with breakdown chart ── */
   {
     id: "qa-roi",
     question: "How much time did you save me this week?",
-    match: [["time|hours", "save|saved|return"], ["roi"], ["how much", "did you do|work"]],
+    match: [["time|hours", "save|saved|return|back"], ["roi"], ["how much", "did you do|work|save"]],
     build: () => {
       const roi = roiWeek();
+      const monthly = Math.round(roi.hoursReturned * 4.3);
       return {
-        paragraphs: [
-          `This week I ran **${roi.actions} actions**: ${roi.docsCollected} documents collected and filed, ${roi.returnsFiled} returns e-filed clean, and ${roi.noticesDrafted} notice responses drafted.`,
-          `Against your own minutes-per-task numbers, that's roughly **~${roi.hoursReturned} hours returned** — most of it document chasing and extraction you didn't have to touch.`,
+        steps: [
+          { label: "Tallied every action I ran this week" },
+          { label: "Priced each against your minutes-per-task" },
         ],
+        paragraphs: [
+          `**${roi.actions} actions** this week — ${roi.docsCollected} documents collected, ${roi.returnsFiled} returns e-filed, ${roi.noticesDrafted} notice responses drafted. That's **~${roi.hoursReturned} hours returned**.`,
+          "Most of it was the work you'd never bill for anyway — chasing documents and keying in extractions. Here's where the time came back:",
+        ],
+        metrics: [
+          { value: `${roi.hoursReturned}h`, label: "returned this week", tone: "brand" },
+          { value: `~${monthly}h`, label: "this month" },
+          { value: String(roi.actions), label: "actions run" },
+        ],
+        chart: { kind: "bars", title: "Where your hours came back", bars: hoursByCategory() },
         links: [{ label: "Activity log", href: "/os/activity" }],
+        suggest: ["Can I take on more clients?", "Run a risk scan across my book"],
       };
     },
   },
+
+  /* ── FLAGSHIP: capacity / the venture story ── */
+  {
+    id: "qa-capacity",
+    question: "Can I take on more clients?",
+    match: [["capacity|headroom"], ["take on", "more|client"], ["how many", "more|client"], ["room", "more|grow|client"], ["more clients"]],
+    build: () => {
+      const roi = roiWeek();
+      const monthly = Math.round(roi.hoursReturned * 4.3);
+      const perReturn = 9;
+      const headroom = Math.floor(monthly / perReturn);
+      return {
+        steps: [
+          { label: "Measured the hours Petal returned this week" },
+          { label: "Projected against your average return time" },
+        ],
+        paragraphs: [
+          `At **~${roi.hoursReturned} hours a week** returned, that's roughly **${monthly} hours a month** back in your calendar.`,
+          `At your average of ~${perReturn} hours per return, that's headroom for about **${headroom} more returns** — or the bandwidth to take on the advisory work you've been turning away. The point isn't to replace you; it's to let one EA carry the book of three.`,
+        ],
+        metrics: [
+          { value: `~${monthly}h`, label: "returned per month", tone: "brand" },
+          { value: `+${headroom}`, label: "returns of headroom" },
+          { value: "1 → 3", label: "book one EA can carry" },
+        ],
+        chart: { kind: "bars", title: "Where your hours came back", bars: hoursByCategory() },
+        links: [{ label: "Activity log", href: "/os/activity" }],
+        suggest: ["Run a risk scan across my book", "Show me the financial picture"],
+      };
+    },
+  },
+
   {
     id: "qa-at-risk",
     question: "Which clients are at risk?",
-    match: [["risk|trouble|behind|watch", "client|who|which"], ["at risk"]],
+    match: [["at risk"], ["risk|trouble|behind|watch", "client|who|which"]],
     build: () => {
       const list = atRiskHouseholds();
       const counts = healthCounts();
@@ -184,6 +444,7 @@ export const QA_BANK: QAEntry[] = [
           { label: "Open clients", href: "/os/clients" },
           { label: "Start reviewing", href: "/os/review" },
         ],
+        suggest: ["Run a risk scan across my book"],
       };
     },
   },
@@ -232,21 +493,6 @@ export const QA_BANK: QAEntry[] = [
         action: { title: "Run the remaining items?", desc: "Reconciliations and categorization queue as drafts for your approval.", button: "Run with Petal", category: "books", href: "/os/books" },
       };
     },
-  },
-  {
-    id: "qa-pipeline",
-    question: "How's the season looking?",
-    match: [["season|pipeline|practice", "look|going|doing|health"], ["fees", "pipeline|blocked"]],
-    build: () => ({
-      paragraphs: [
-        `**${money(feesInPipeline())} in fees** across 14 active returns, all safely on extension. ${money(feesBlockedByDocs())} of it is blocked on missing documents — which is why the chases run daily.`,
-        "5 business returns track Sep 15, the rest Oct 15. Nothing is behind pace as of this morning.",
-      ],
-      links: [
-        { label: "Returns board", href: "/os/returns" },
-        { label: "Practice", href: "/os/practice" },
-      ],
-    }),
   },
 ];
 
@@ -309,10 +555,10 @@ const CLIENT_TEMPLATES: { match: string[][]; build: (h: Household) => ChatAnswer
 /* ── matcher + fallback ──────────────────────────────────────── */
 
 export const SUGGESTED_QUESTIONS = [
-  "What needs me today?",
-  "Why did Marcus Chen's wages drop 40%?",
-  "What's the deal with the Rodriguez CP2000?",
+  "Run a risk scan across my book",
   "How much time did you save me this week?",
+  "Show me the financial picture",
+  "What's the deal with the Rodriguez CP2000?",
 ];
 
 export function fallbackAnswer(scopeHouseholdId?: string): ChatAnswer {

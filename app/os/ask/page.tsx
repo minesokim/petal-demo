@@ -16,10 +16,10 @@ import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/pet
 import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
 
 const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
+  { icon: I.shield, label: "Run a risk scan across my book", prompt: "Run a risk scan across my book" },
+  { icon: I.billing, label: "Show me the financial picture", prompt: "Show me the financial picture of the practice" },
+  { icon: I.history, label: "Can I take on more clients?", prompt: "Can I take on more clients?" },
   { icon: I.tasks, label: "What needs me today?", prompt: "What needs me today?" },
-  { icon: I.search, label: "Why did Marcus Chen's wages drop?", prompt: "Why did Marcus Chen's wages drop 40% this year?" },
-  { icon: I.mail, label: "What's the deal with the Rodriguez CP2000?", prompt: "What's the deal with the Rodriguez CP2000?" },
-  { icon: I.history, label: "How much time did you save me this week?", prompt: "How much time did you save me this week?" },
 ];
 
 const GROUNDING: { icon: keyof typeof I; label: string }[] = [
