@@ -39,7 +39,13 @@
 
 ## 2. The scripted question bank (type any of these)
 
-**Anywhere (Ask page or Today composer):**
+**⭐ Flagship — deep analysis (agentic steps + chart + ranked findings). These are the wow moments:**
+- **"Run a risk scan across my book"** — Petal scans all 19 returns, streams its reasoning steps, then returns a 4-metric summary, an *exposure-by-client* bar chart (red = high, amber = medium), and ranked finding cards — every one deep-linked to its record (the CP2000, the Russo basis decision, Park's 1098 + open position, etc.). **This is the single most impressive moment in the demo.**
+- **"Show me the financial picture"** — fees booked / collected / outstanding / blocked-on-docs, plus a fees-by-stage chart.
+- **"Can I take on more clients?"** — the capacity story: hours/month returned → returns of headroom → "one EA carrying the book of three," with the hours-by-category chart.
+- **"How much time did you save me this week?"** — ROI metrics + the where-the-hours-came-back chart.
+
+**Quick factual answers (Ask page or Today composer):**
 - "What needs me today?"
 - "Why did Marcus Chen's wages drop 40%?"
 - "Where does Park Family Dental stand?"
@@ -47,12 +53,10 @@
 - "What's the deal with the Rodriguez CP2000?"
 - "Who missed Q2 estimates?"
 - "What did you file this week?"
-- "How much time did you save me this week?"
 - "Which clients are at risk?"
 - "Chase DeShawn's W-2 again"
 - "Did Roberto sign the 8879 yet?"
 - "Where are the May books?"
-- "How's the season looking?"
 
 **On any client record (@Petal rail):** "Where do they stand?" · "What documents are missing?" · "What do they owe?"
 
@@ -70,8 +74,8 @@ Matching is keyword-based and forgiving ("did roberto sign yet", "park status", 
 |---|---|---|
 | 0:00 | "This is Antonio — a solo Enrolled Agent with 11 clients, mid extension season. This is his 9am." | On **Today**. Let the banner read: *Petal ran 41 actions this week — about 6.5 hours returned. 12 items need you.* |
 | 0:20 | "Petal already did the week's grunt work — collected documents, filed three returns he pre-approved, drafted two IRS notice responses. Everything it does carries its receipts." | Click **Sources & reasoning** on the brief's first item — show sources, the rule applied, approval trail. Collapse it. |
-| 0:40 | "He talks to his firm like a person." | In the composer, type **"who missed q2 estimates"** → it hands off to chat, answer streams with the two clients + a drafted follow-up link. |
-| 1:00 | "And it knows every client cold." | Type **"where does park family dental stand?"** → *Ready to Prep — 32/34 docs, $1,900 fee, $1,140 balance, K-1 blocking.* Say: "That same number is on every screen — one source of truth." |
+| 0:40 | "But here's where it gets interesting. He doesn't just ask about one client — he asks it to think across his whole book." | In the composer, type **"run a risk scan across my book"** → hands off to chat. **Let it run** — the steps stream ("Read 19 engagements… cross-referenced positions, notices, flags… ranked exposure"). |
+| 1:00 | "It just audited 19 returns in four seconds — and everything it found is clickable to the actual record." | The answer lands: *6 exposures, 2 high-severity, $4.3k at stake.* Point at the **exposure-by-client chart** (red/amber bars) and the **ranked findings** — the CP2000, the Russo basis decision. Say: "No solo EA has an analyst. Now he does. And every number ties to one source of truth." Optionally click a finding to jump to the record. |
 | 1:20 | "But here's the thing about tax — the license on the line is Antonio's. So nothing sends, nothing files, until he signs off. That's the daily habit:" | Back to Today (sidebar). Click **Start reviewing**. |
 | 1:35 | "Twelve items, one at a time, sources alongside. Keyboard speed." | In **Review mode**: first item is the capital-gains decision — point at options A/B/C and *Petal recommends A*. Press **A**. Next is a drafted client email — press **A**. One more — **A**. |
 | 2:00 | "Watch the number." | Press **Esc** → back on Today: badge and headline now read **9**. "Approved on his keyboard, before coffee." |
