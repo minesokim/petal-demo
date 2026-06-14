@@ -12,7 +12,7 @@ import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, BarChart3, Users,
-  Settings, Home, FileText, Folder, FileCheck2, MailWarning, Receipt, BookOpen,
+  Settings, Home, FileText, Folder, MailWarning, Receipt, BookOpen,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
 
@@ -79,7 +79,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
   ];
   const records: Item[] = [
-    { label: "Returns", href: "/os/returns", icon: FileCheck2 },
     { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Documents", href: "/os/documents", icon: FileText },
     { label: "Notices", href: "/os/notices", icon: MailWarning },

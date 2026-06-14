@@ -111,6 +111,40 @@ export function feesBooked(): number {
   return engagements.reduce((s, e) => s + e.fee, 0);
 }
 
+// ── Filing readiness (tax analytics — who's on track to file on time) ──
+export type FilingState = "filed" | "on_track" | "at_risk";
+
+export function filingStateOf(e: Engagement): FilingState {
+  if (e.stage === "accepted" || e.stage === "e_filed") return "filed";
+  // at risk = blocked on something out of the firm's hands, or the deposit was never collected
+  if (e.blockedBy || !e.depositPaid) return "at_risk";
+  return "on_track";
+}
+
+export interface FilingReadiness {
+  filed: number;
+  onTrack: number;
+  atRisk: number;
+  total: number;
+  /** the at-risk engagements with their blocker, for a drill-down list */
+  atRiskList: { engagementId: string; householdId: string; form: string; reason: string }[];
+}
+
+export function filingReadiness(): FilingReadiness {
+  let filed = 0, onTrack = 0, atRisk = 0;
+  const atRiskList: FilingReadiness["atRiskList"] = [];
+  for (const e of engagements) {
+    const s = filingStateOf(e);
+    if (s === "filed") filed++;
+    else if (s === "on_track") onTrack++;
+    else {
+      atRisk++;
+      atRiskList.push({ engagementId: e.id, householdId: e.householdId, form: e.form, reason: e.blockedBy ?? "Deposit not collected" });
+    }
+  }
+  return { filed, onTrack, atRisk, total: engagements.length, atRiskList };
+}
+
 export function filedThisWeek(): Engagement[] {
   return engagements.filter(e => e.eFiledOn === "2026-06-23");
 }

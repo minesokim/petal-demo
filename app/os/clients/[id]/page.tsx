@@ -33,11 +33,12 @@ import { stageMeta, taskStatusMeta, healthMeta, fmtDate, money, type Stage } fro
 /* ── constants / small helpers (presentation only — no data) ── */
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Notices", "Positions", "Compliance", "Notes"] as const;
+// Notices are a firm-wide deadline queue — they live in the sidebar, not as a per-client tab.
+const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance", "Notes"] as const;
 type Tab = (typeof TABS)[number];
 // 5 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
 const PRIMARY_TABS: Tab[] = ["Activity", "Returns", "Documents", "Tasks", "Messages"];
-const MORE_TABS: Tab[] = ["Billing", "Notices", "Positions", "Compliance", "Notes"];
+const MORE_TABS: Tab[] = ["Billing", "Positions", "Compliance", "Notes"];
 const tabFromParam = (p: string | null): Tab =>
   TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Activity";
 
@@ -246,7 +247,6 @@ function ClientRecordInner() {
     Returns: engs.length,
     Tasks: hhTasks.length,
     Messages: hhThreads.length,
-    Notices: hhNotices.length,
     Positions: hhPositions.length,
   };
 
@@ -533,10 +533,28 @@ function ClientRecordInner() {
                 {/* ── Returns ── */}
                 {tab === "Returns" && (
                   <div className="space-y-6">
+                    {/* per-client summary — ported from the firm-wide returns board strip */}
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-3">
+                      {([
+                        ["Returns", String(engs.length)],
+                        ["Next deadline", deadline ? fmtDate(deadline.iso) : "—"],
+                        ["Fees", money(householdFee(h.id))],
+                        ["Blocked", money(engs.filter(e => e.blockedBy).reduce((s, e) => s + e.fee, 0))],
+                      ] as const).map(([label, value], i) => (
+                        <div key={label}>
+                          <div className="text-[11px] text-[var(--os-ink-muted)]">{label}</div>
+                          <div className={cn("os-display mt-0.5 text-[17px] font-semibold tabular-nums", i === 3 && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+
                     <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
                       {engs.map(e => {
                         const d = engagementDeadline(e);
                         const dc = docsOf(e.id);
+                        const pct = dc.denom > 0 ? Math.round((dc.inHand / dc.denom) * 100) : 0;
+                        const runTask = hhTasks.find(t => t.engagementId === e.id && t.status === "running");
+                        const runSkill = runTask ? skillById(runTask.skillId) : undefined;
                         return (
                           <Link
                             key={e.id}
@@ -548,9 +566,20 @@ function ClientRecordInner() {
                               <span className="min-w-0 truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</span>
                               <StageTag stage={e.stage} />
                               <DeadlineChip iso={d.iso} extended={d.extended} />
-                              <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">Docs {dc.label}</span>
+                              {runSkill && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--os-ink-muted)]" title={`${runSkill.name} — running`}>
+                                  <SkillPetal category={runSkill.category} size={13} /> running
+                                </span>
+                              )}
                               <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
                               <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                            </div>
+                            {/* docs progress mini-bar (ported from the board card) */}
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
+                                <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-muted)]">Docs {dc.label}</span>
                             </div>
                             {e.blockedBy && (
                               <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--os-warning)]">
@@ -758,40 +787,6 @@ function ClientRecordInner() {
                       </div>
                     </section>
                   </div>
-                )}
-
-                {/* ── Notices ── */}
-                {tab === "Notices" && (
-                  hhNotices.length === 0 ? (
-                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
-                      <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
-                      <p className="text-[13px] text-[var(--os-ink-muted)]">No notices. Petal is watching transcripts for {transcriptWatchCount()} clients.</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
-                      {hhNotices.map(n => (
-                        <Link
-                          key={n.id}
-                          href={`/os/notices/${n.id}`}
-                          className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, "focus-visible:-outline-offset-2")}
-                        >
-                          <span className="inline-flex shrink-0 items-center rounded-md border border-[var(--os-border)] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[var(--os-ink)]">{n.type}</span>
-                          <span className="text-[13px] text-[var(--os-ink)]">Tax year <span className="tabular-nums">{n.taxYear}</span></span>
-                          {n.amount && <span className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{n.amount}</span>}
-                          <span className="text-[12px] text-[var(--os-ink-muted)]">Received {fmtDate(n.received)}</span>
-                          {n.status === "response_drafted" && (
-                            <span className={cn("text-[12px] tabular-nums", noticeCountdown(n) < 14 ? "font-medium text-[var(--os-danger)]" : "text-[var(--os-ink-muted)]")}>
-                              {noticeCountdown(n)} days left
-                            </span>
-                          )}
-                          <span className="ml-auto flex items-center gap-2">
-                            <NoticeStatus n={n} />
-                            <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  )
                 )}
 
                 {/* ── Positions ── */}
