@@ -20,6 +20,11 @@ const allInvoices = invoices();
 const kpis = billingKpis();
 
 const COLS = "grid-cols-[minmax(200px,1.7fr)_148px_104px_104px_108px_120px]";
+// Ramp-style grid cells: stretch full row height (continuous vertical dividers), center
+// content, right divider per cell. Edges flush (the table already sits inside px-8); the
+// name cell gets extra right margin for separation.
+const CELL =
+  "[&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-[var(--os-border)] [&>*]:px-3 [&>*:first-child]:pl-0 [&>*:first-child]:pr-8 [&>*:last-child]:border-r-0 [&>*:last-child]:pr-0";
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
 type Tab = "all" | "outstanding" | "overdue" | "paid";
@@ -217,9 +222,9 @@ export default function BillingPage() {
             {/* table */}
             <div className="mt-6 overflow-x-auto">
               <div className="min-w-[820px]">
-                <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-2 py-2", COLS)}>
+                <div className={cn("grid border-b border-[var(--os-border)] [&>*]:py-2.5", COLS, CELL)}>
                   {["Client", "Status", "Invoiced", "Collected", "Balance", "Due"].map((h, i) => (
-                    <div key={h} className={cn("os-label", i >= 2 && i <= 4 && "text-right")}>{h}</div>
+                    <div key={h} className={cn("os-label", i >= 2 && i <= 4 && "justify-end")}>{h}</div>
                   ))}
                 </div>
                 {rows.map(inv => (
@@ -229,9 +234,9 @@ export default function BillingPage() {
                     tabIndex={0}
                     onClick={() => setSelected(inv.id)}
                     onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(inv.id); } }}
-                    className={cn("grid w-full cursor-pointer items-center gap-x-4 border-b border-[var(--os-border)] px-2 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)] focus-visible:-outline-offset-2", FOCUS, selected === inv.id && "bg-[var(--os-selected)]", COLS)}
+                    className={cn("grid w-full cursor-pointer border-b border-[var(--os-border)] [&>*]:py-3.5 text-left transition-colors hover:bg-[var(--os-hover)] focus-visible:-outline-offset-2", FOCUS, selected === inv.id && "bg-[var(--os-selected)]", COLS, CELL)}
                   >
-                    <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="gap-2.5">
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(inv.clientName)}</span>
                       <div className="min-w-0">
                         <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{inv.clientName}</div>
@@ -243,10 +248,10 @@ export default function BillingPage() {
                         )}
                       </div>
                     </div>
-                    <StatusTag status={inv.status} />
-                    <div className="text-right text-[13px] tabular-nums text-[var(--os-ink-muted)]">{money(inv.invoiced)}</div>
-                    <div className="text-right text-[13px] tabular-nums text-[var(--os-ink-muted)]">{money(inv.collected)}</div>
-                    <div className={cn("text-right text-[13px] font-medium tabular-nums", inv.balance === 0 ? "text-[var(--os-ink-subtle)]" : inv.status === "overdue" ? "text-[var(--os-danger)]" : "text-[var(--os-ink)]")}>{money(inv.balance)}</div>
+                    <div><StatusTag status={inv.status} /></div>
+                    <div className="justify-end text-[13px] tabular-nums text-[var(--os-ink-muted)]">{money(inv.invoiced)}</div>
+                    <div className="justify-end text-[13px] tabular-nums text-[var(--os-ink-muted)]">{money(inv.collected)}</div>
+                    <div className={cn("justify-end text-[13px] font-medium tabular-nums", inv.balance === 0 ? "text-[var(--os-ink-subtle)]" : inv.status === "overdue" ? "text-[var(--os-danger)]" : "text-[var(--os-ink)]")}>{money(inv.balance)}</div>
                     <div className={cn("text-[12px]", inv.status === "overdue" ? "text-[var(--os-danger)]" : "text-[var(--os-ink-muted)]")}>{inv.due}</div>
                   </div>
                 ))}

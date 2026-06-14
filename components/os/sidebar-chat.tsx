@@ -52,7 +52,7 @@ export function SidebarChat() {
               <button
                 onClick={() => open(c)}
                 title={c.artifact ? `Opens ${c.artifact.label}` : undefined}
-                className="flex w-full flex-col justify-center gap-0 rounded-md px-2 py-1 text-left text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
+                className="flex w-full flex-col justify-center gap-0 rounded-md px-2 py-1 text-left text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]"
               >
                 <span className="flex h-6 w-full items-center gap-2">
                   <span className={cn("size-1.5 shrink-0 rounded-full", c.unread ? "bg-[var(--os-accent)]" : "border border-[var(--os-border-strong)]")} />
@@ -66,7 +66,7 @@ export function SidebarChat() {
               <button
                 onClick={() => setMenuFor(menuFor === c.id ? null : c.id)}
                 aria-label="Chat options"
-                className="absolute right-1 top-1/2 hidden size-6 -translate-y-1/2 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-selected)] hover:text-[var(--os-ink)] group-hover/chat:grid"
+                className="absolute right-1 top-1/2 hidden size-6 -translate-y-1/2 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:bg-black/[0.08] hover:text-[var(--os-ink)] group-hover/chat:grid"
               >
                 <Icon icon={I.more} size={15} />
               </button>
@@ -89,7 +89,7 @@ export function SidebarChat() {
         </div>
 
         <div className="mt-2.5 flex items-center gap-1.5">
-          <button onClick={() => setHistoryOpen(true)} onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setExpanded(true); }} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+          <button onClick={() => setHistoryOpen(true)} onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setExpanded(true); }} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]">
             <Icon icon={I.history} size={17} />
           </button>
           <button onClick={() => open()} className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.05)] transition-colors hover:bg-[var(--os-hover)]">

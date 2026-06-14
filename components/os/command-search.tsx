@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
-  Home, ListChecks, Inbox, CalendarDays, Users, FileText, MailWarning, Receipt,
+  Home, ListChecks, Inbox, CalendarDays, Users, FileText, MailWarning, CreditCard,
   BookOpen, Settings, Search, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ const PAGES: Result[] = [
   { id: "p-clients", label: "Clients", href: "/os/clients", icon: Users, group: "Pages" },
   { id: "p-documents", label: "Documents", href: "/os/documents", icon: FileText, group: "Pages" },
   { id: "p-notices", label: "Notices", href: "/os/notices", icon: MailWarning, group: "Pages" },
-  { id: "p-billing", label: "Billing", href: "/os/billing", icon: Receipt, group: "Pages" },
+  { id: "p-billing", label: "Billing", href: "/os/billing", icon: CreditCard, group: "Pages" },
   { id: "p-knowledge", label: "Knowledge", href: "/os/knowledge", icon: BookOpen, group: "Pages" },
   { id: "p-settings", label: "Settings", href: "/os/settings", icon: Settings, group: "Pages" },
 ];

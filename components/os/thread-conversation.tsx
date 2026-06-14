@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
+import { Phone, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -64,6 +65,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [petalDrafted, setPetalDrafted] = useState(false);
   const [sent, setSent] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [extraMessages, setExtraMessages] = useState<Message[]>([]);
   const { msg, show } = useToast();
 
@@ -73,6 +75,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
     setAnswerRevealed(false);
     setPetalDrafted(false);
     setSent(false);
+    setTranscriptOpen(false);
     setExtraMessages([]);
   }, [thread.id, thread.petalDraft?.text]);
 
@@ -120,38 +123,78 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
       {/* Conversation — rendered per channel */}
       <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
         <div className={cn("mx-auto max-w-[640px]", thread.channel === "sms" ? "space-y-2.5" : thread.channel === "email" ? "space-y-0" : "space-y-5")}>
-          {/* ── Call: transcript (speaker + line) ── */}
+          {/* ── Call: Petal summary first, full transcript on demand, follow-ups ── */}
           {thread.channel === "call" && thread.transcript && (
-            <div className="space-y-5">
+            <div className="space-y-4">
+              {/* medium + meta line — phone and video both live here */}
               <div className="flex items-center gap-2 text-[12px] text-[var(--os-ink-muted)]">
-                <Icon icon={I.call} size={14} className="shrink-0" />
-                <span className="font-medium text-[var(--os-ink)]">Call transcript</span>
-                <span className="text-[var(--os-ink-subtle)]">· {thread.time}</span>
+                {thread.transcript.medium === "video"
+                  ? <Video className="size-3.5 shrink-0" />
+                  : <Phone className="size-3.5 shrink-0" />}
+                <span className="font-medium text-[var(--os-ink)]">{thread.transcript.medium === "video" ? "Video call" : "Phone call"}</span>
+                <span className="text-[var(--os-ink-subtle)]">
+                  · {thread.time}{thread.transcript.durationMin ? ` · ${thread.transcript.durationMin} min` : ""}
+                </span>
               </div>
-              <div className="space-y-3">
-                {thread.transcript.lines.map((l, i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="w-[60px] shrink-0 pt-px text-right text-[11px] font-medium text-[var(--os-ink-muted)]">{l.speaker}</span>
-                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-[var(--os-ink)]">{l.text}</p>
-                  </div>
-                ))}
-              </div>
-              {/* Follow-ups Petal pulled out of the call */}
-              <div className="overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-card)]">
-                <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-3 py-2">
-                  <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
-                  <span className="text-[12px] font-medium text-[var(--os-ink)]">
-                    Petal extracted {thread.transcript.followUps.length} follow-up{thread.transcript.followUps.length === 1 ? "" : "s"}
-                  </span>
+
+              {/* Petal call summary — the primary read; transcript folds underneath */}
+              <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                  <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> Call summary
                 </div>
-                {thread.transcript.followUps.map(f => (
+                <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{thread.transcript.summary}</p>
+
+                <button
+                  onClick={() => setTranscriptOpen(o => !o)}
+                  aria-expanded={transcriptOpen}
+                  className={cn("mt-3 inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}
+                >
+                  <Icon icon={I.file} size={13} className="text-[var(--os-ink-subtle)]" />
+                  {transcriptOpen ? "Hide full transcript" : "Open full transcript"}
+                  <Icon icon={I.chevronDown} size={12} className={cn("text-[var(--os-ink-subtle)] transition-transform", transcriptOpen && "rotate-180")} />
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {transcriptOpen && (
+                    <motion.div
+                      key="transcript"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 space-y-3 border-t border-[var(--os-border)] pt-3">
+                        {thread.transcript.lines.map((l, i) => (
+                          <div key={i} className="flex gap-3">
+                            <span className="w-[58px] shrink-0 pt-px text-right text-[11px] font-medium text-[var(--os-ink-muted)]">{l.speaker}</span>
+                            <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">{l.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Follow-ups Petal pulled out of the call — numbered, task-linked */}
+              <div className="overflow-hidden rounded-xl border border-[var(--os-border)]">
+                <div className="flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2.5">
+                  <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
+                  <span className="text-[12px] font-medium text-[var(--os-ink)]">Follow-ups</span>
+                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[var(--os-selected)] px-1 text-[10.5px] font-medium tabular-nums text-[var(--os-ink-muted)]">{thread.transcript.followUps.length}</span>
+                  <span className="ml-auto text-[11px] text-[var(--os-ink-subtle)]">Extracted by Petal · added to Tasks</span>
+                </div>
+                {thread.transcript.followUps.map((f, i) => (
                   <Link
                     key={f.taskId}
                     href={`/os/tasks?task=${f.taskId}`}
-                    className={cn("flex items-center gap-2 border-b border-[var(--os-border)] px-3 py-2 text-[13px] text-[var(--os-ink)] transition-colors last:border-b-0 hover:bg-[var(--os-hover)]", focusRing)}
+                    className={cn("group/fu flex items-center gap-3 border-b border-[var(--os-border)] px-3.5 py-2.5 transition-colors last:border-b-0 hover:bg-[var(--os-hover)]", focusRing)}
                   >
-                    <span className="min-w-0 flex-1 truncate">{f.label}</span>
-                    <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10.5px] font-semibold tabular-nums text-[var(--os-ink-muted)]">{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--os-ink)]">{f.label}</span>
+                    <span className="hidden shrink-0 text-[11px] text-[var(--os-ink-subtle)] sm:inline">Open task</span>
+                    <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)] transition-transform group-hover/fu:translate-x-0.5" />
                   </Link>
                 ))}
               </div>
@@ -167,7 +210,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                     <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full text-[10px] font-medium", msg.from === "firm" ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{initials(msg.author)}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[13px] font-semibold text-[var(--os-ink)]">{msg.author}</span>
+                        <span className="text-[13px] font-medium text-[var(--os-ink)]">{msg.author}</span>
                         <span className="truncate font-mono text-[11px] text-[var(--os-ink-subtle)]">&lt;{emailFor(msg.author, msg.from)}&gt;</span>
                         <span className="ml-auto shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{msg.time}</span>
                       </div>

@@ -36,10 +36,19 @@ const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
 
+// Ramp-style grid: every cell stretches full row height (so the vertical dividers are
+// continuous), centers its content, and carries a right divider — last cell omits it.
+const CELL =
+  "[&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-[var(--os-border)] [&>*]:px-3 [&>*:first-child]:pl-8 [&>*:first-child]:pr-8 [&>*:last-child]:border-r-0 [&>*:last-child]:pr-8";
+
+// Name column = flexible with a 300px floor: it fills the row (long, like before) when
+// there's room, and holds 300px when the table overflows and scrolls. The fr absorbs any
+// slack so the grid lines never extend past the content.
+
 function HeaderRow({ cols, labels, right }: { cols: string; labels: string[]; right?: string[] }) {
   return (
-    <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-8 py-2", cols)}>
-      {labels.map(h => <div key={h} className={cn("os-label", right?.includes(h) && "text-right")}>{h}</div>)}
+    <div className={cn("grid border-b border-[var(--os-border)] [&>*]:py-2.5", cols, CELL)}>
+      {labels.map(h => <div key={h} className={cn("os-label", right?.includes(h) && "justify-end")}>{h}</div>)}
     </div>
   );
 }
@@ -61,12 +70,12 @@ function DocsBar({ label, inHand, denom }: { label: string; inHand: number; deno
 const EmDash = () => <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>;
 
 // ── Clients (households) — the deliverable table ──
-const CLIENT_COLS = "grid-cols-[minmax(220px,1.6fr)_minmax(110px,1fr)_136px_104px_148px_100px_84px_56px]";
+const CLIENT_COLS = "grid-cols-[minmax(300px,1.7fr)_150px_136px_104px_148px_104px_92px_96px]";
 
 function ClientsTable({ rows }: { rows: Household[] }) {
   return (
-    <div className="min-w-[1040px]">
-      <HeaderRow cols={CLIENT_COLS} labels={["Name", "Forms", "Stage", "Deadline", "Docs", "Balance", "Tier", "Owner"]} right={["Balance"]} />
+    <div className="min-w-[1130px]">
+      <HeaderRow cols={CLIENT_COLS} labels={["Name", "Forms", "Stage", "Deadline", "Docs", "Balance", "Tier", "Owner"]} right={["Balance", "Owner"]} />
       {rows.map(h => {
         const ents = entitiesOf(h.id);
         const docs = docsOfHousehold(h.id);
@@ -76,16 +85,16 @@ function ClientsTable({ rows }: { rows: Household[] }) {
           <Link
             key={h.id}
             href={`/os/clients/${h.id}`}
-            className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", FOCUS, CLIENT_COLS)}
+            className={cn("grid border-b border-[var(--os-border)] [&>*]:py-3.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, CLIENT_COLS, CELL)}
           >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[11px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
+            <div className="gap-2.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
               <div className="min-w-0">
                 <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{h.name}</div>
-                <div className="truncate text-[12px] text-[var(--os-ink-subtle)]">{kindLabel[h.kind]}</div>
+                <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{kindLabel[h.kind]}</div>
               </div>
             </div>
-            <div className="flex min-w-0 items-center gap-1">
+            <div className="gap-1">
               {ents.slice(0, 3).map(e => (
                 <span key={e.id} className="shrink-0 rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--os-ink-muted)]">{e.form}</span>
               ))}
@@ -93,12 +102,12 @@ function ClientsTable({ rows }: { rows: Household[] }) {
             </div>
             <div><StageTag stage={householdStage(h.id)} /></div>
             <div>{dl ? <DeadlineChip iso={dl.iso} extended={dl.extended} /> : <EmDash />}</div>
-            <DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} />
-            <div className={cn("text-right text-[13px] tabular-nums", balance > 0 ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>{money(balance)}</div>
+            <div className="gap-2"><DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} /></div>
+            <div className={cn("justify-end text-[13px] tabular-nums", balance > 0 ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>{money(balance)}</div>
             <div>
               <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{h.serviceTier}</span>
             </div>
-            <div><AssigneePicker householdId={h.id} variant="avatar" align="right" /></div>
+            <div className="justify-end"><AssigneePicker householdId={h.id} variant="avatar" align="right" /></div>
           </Link>
         );
       })}
@@ -107,12 +116,12 @@ function ClientsTable({ rows }: { rows: Household[] }) {
 }
 
 // ── Returns (engagements) ──
-const RETURN_COLS = "grid-cols-[minmax(220px,1.7fr)_136px_104px_148px_96px_56px]";
+const RETURN_COLS = "grid-cols-[minmax(300px,1.7fr)_136px_104px_148px_104px_96px]";
 
 function ReturnsTable({ rows }: { rows: Engagement[] }) {
   return (
-    <div className="min-w-[880px]">
-      <HeaderRow cols={RETURN_COLS} labels={["Return", "Stage", "Deadline", "Docs", "Fee", "Owner"]} right={["Fee"]} />
+    <div className="min-w-[888px]">
+      <HeaderRow cols={RETURN_COLS} labels={["Return", "Stage", "Deadline", "Docs", "Fee", "Owner"]} right={["Fee", "Owner"]} />
       {rows.map(e => {
         const entity = entityById(e.entityId);
         const hh = householdById(e.householdId);
@@ -123,20 +132,20 @@ function ReturnsTable({ rows }: { rows: Engagement[] }) {
           <Link
             key={e.id}
             href={`/os/returns/${e.id}`}
-            className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", FOCUS, RETURN_COLS)}
+            className={cn("grid border-b border-[var(--os-border)] [&>*]:py-3.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, RETURN_COLS, CELL)}
           >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(entity?.name ?? e.form)}</span>
+            <div className="gap-2.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(entity?.name ?? e.form)}</span>
               <div className="min-w-0">
                 <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{entity?.name ?? hh?.name}</div>
-                <div className="truncate text-[12px] text-[var(--os-ink-subtle)]">{hh?.name} · {e.form} · {e.taxYear}</div>
+                <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{hh?.name} · {e.form} · {e.taxYear}</div>
               </div>
             </div>
             <div><StageTag stage={e.stage} /></div>
             <div>{closed ? <EmDash /> : <DeadlineChip iso={dl.iso} extended={dl.extended} />}</div>
-            <DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} />
-            <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
-            <div><AssigneePicker householdId={e.householdId} variant="avatar" align="right" /></div>
+            <div><DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} /></div>
+            <div className="justify-end text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
+            <div className="justify-end"><AssigneePicker householdId={e.householdId} variant="avatar" align="right" /></div>
           </Link>
         );
       })}
@@ -145,31 +154,31 @@ function ReturnsTable({ rows }: { rows: Engagement[] }) {
 }
 
 // ── People (contacts) ──
-const PEOPLE_COLS = "grid-cols-[minmax(210px,1.6fr)_120px_minmax(150px,1.1fr)_140px_56px]";
+const PEOPLE_COLS = "grid-cols-[minmax(300px,1.6fr)_120px_200px_140px_96px]";
 
 function PeopleTable({ rows }: { rows: Person[] }) {
   return (
-    <div className="min-w-[800px]">
-      <HeaderRow cols={PEOPLE_COLS} labels={["Name", "Role", "Client", "Phone", "Owner"]} />
+    <div className="min-w-[856px]">
+      <HeaderRow cols={PEOPLE_COLS} labels={["Name", "Role", "Client", "Phone", "Owner"]} right={["Owner"]} />
       {rows.map(p => (
         <Link
           key={p.id}
           href={`/os/clients/${p.householdId}`}
-          className={cn("grid h-[60px] items-center gap-x-4 border-b border-[var(--os-border)] px-8 transition-colors hover:bg-[var(--os-hover)]", FOCUS, PEOPLE_COLS)}
+          className={cn("grid border-b border-[var(--os-border)] [&>*]:py-3.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, PEOPLE_COLS, CELL)}
         >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
+          <div className="gap-2.5">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
             <div className="min-w-0">
               <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{p.name}</div>
-              <div className="truncate text-[12px] text-[var(--os-ink-subtle)]">{p.email}</div>
+              <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
             </div>
           </div>
           <div>
             <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{p.role}</span>
           </div>
-          <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{householdById(p.householdId)?.name}</div>
+          <div className="truncate text-[12px] text-[var(--os-ink-muted)]"><span className="truncate">{householdById(p.householdId)?.name}</span></div>
           <div className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{p.phone}</div>
-          <div><AssigneePicker householdId={p.householdId} variant="avatar" align="right" /></div>
+          <div className="justify-end"><AssigneePicker householdId={p.householdId} variant="avatar" align="right" /></div>
         </Link>
       ))}
     </div>
@@ -228,12 +237,17 @@ export default function ClientsPage() {
   const [view, setView] = useState<View>("clients");
   const [layout, setLayout] = useState<Layout>("list");
   const [scope, setScope] = useState<Scope>("firm");
+  const [query, setQuery] = useState("");
   useAssignVersion(); // re-filter when a client is reassigned from the table
 
   const mine = scope === "mine";
-  const hhRows = mine ? households.filter(h => assigneeOf(h.id) === CURRENT_USER_ID) : households;
-  const engRows = mine ? engagements.filter(e => assigneeOf(e.householdId) === CURRENT_USER_ID) : engagements;
-  const peopleRows = mine ? people.filter(p => assigneeOf(p.householdId) === CURRENT_USER_ID) : people;
+  const q = query.trim().toLowerCase();
+  const hhRows = (mine ? households.filter(h => assigneeOf(h.id) === CURRENT_USER_ID) : households)
+    .filter(h => !q || h.name.toLowerCase().includes(q));
+  const engRows = (mine ? engagements.filter(e => assigneeOf(e.householdId) === CURRENT_USER_ID) : engagements)
+    .filter(e => !q || `${entityById(e.entityId)?.name ?? ""} ${householdById(e.householdId)?.name ?? ""} ${e.form}`.toLowerCase().includes(q));
+  const peopleRows = (mine ? people.filter(p => assigneeOf(p.householdId) === CURRENT_USER_ID) : people)
+    .filter(p => !q || `${p.name} ${p.email}`.toLowerCase().includes(q));
 
   const counts: Record<View, number> = {
     clients: hhRows.length,
@@ -263,14 +277,13 @@ export default function ClientsPage() {
             <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Every household, return, and contact across your book.</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.search} size={15} className="text-[var(--os-ink-muted)]" /> Search</button>
             <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.download} size={15} className="text-[var(--os-ink-muted)]" /> Export</button>
             <button className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>Create <Icon icon={I.chevronDown} size={14} /></button>
           </div>
         </div>
       </div>
 
-      {/* view switcher + layout toggle */}
+      {/* view switcher */}
       <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-8">
         {VIEWS.map(v => (
           <button
@@ -283,9 +296,26 @@ export default function ClientsPage() {
             {view === v.key && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
           </button>
         ))}
+      </div>
 
-        {/* scope + layout */}
-        <div className="ml-auto flex items-center gap-1.5">
+      {/* controls row — search on the left, scope + layout on the right */}
+      <div className="flex items-center gap-3 border-b border-[var(--os-border)] px-8 py-2">
+        <div className="relative w-full max-w-[300px]">
+          <Icon icon={I.search} size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--os-ink-subtle)]" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder={`Search ${view}…`}
+            className={cn("h-8 w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] pl-8 pr-7 text-[13px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] transition-colors hover:border-[var(--os-border-strong)] focus:border-[var(--os-border-strong)]", FOCUS)}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear search" className={cn("absolute right-1.5 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+              <Icon icon={I.close} size={13} />
+            </button>
+          )}
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <ScopeToggle scope={scope} onChange={setScope} />
           {view !== "people" && (
             <div className="flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">

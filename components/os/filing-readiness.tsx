@@ -58,6 +58,36 @@ function MiniBar({ filed, onTrack, atRisk }: { filed: number; onTrack: number; a
   );
 }
 
+/** Ramp-style radial gauge — animated arc with the figure centered. */
+function RadialGauge({ value, label, sublabel, color }: { value: number; label: string; sublabel: string; color: string }) {
+  const r = 50;
+  const circ = 2 * Math.PI * r;
+  const dash = Math.max(0, Math.min(100, value)) / 100 * circ;
+  return (
+    <div className="flex flex-col items-center rounded-xl border border-[var(--os-border)] px-4 py-5">
+      <div className="relative grid place-items-center">
+        <svg width="124" height="124" viewBox="0 0 124 124">
+          <g transform="rotate(-90 62 62)">
+            <circle cx="62" cy="62" r={r} fill="none" stroke="var(--os-selected)" strokeWidth="9" />
+            <motion.circle
+              cx="62" cy="62" r={r} fill="none" stroke={color} strokeWidth="9" strokeLinecap="round"
+              strokeDasharray={circ}
+              initial={{ strokeDashoffset: circ }}
+              animate={{ strokeDashoffset: circ - dash }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </g>
+        </svg>
+        <span className="absolute os-display text-[27px] font-semibold tabular-nums text-[var(--os-ink)]">{value}%</span>
+      </div>
+      <div className="mt-3 text-center">
+        <div className="text-[13px] font-medium text-[var(--os-ink)]">{label}</div>
+        <div className="mt-0.5 text-[11.5px] text-[var(--os-ink-muted)]">{sublabel}</div>
+      </div>
+    </div>
+  );
+}
+
 function ClientAvatar({ name, size = 30 }: { name: string; size?: number }) {
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
   return (
@@ -90,6 +120,10 @@ export function FilingReadiness() {
   const reasonPct = (n: number) => (fr.atRisk ? (n / fr.atRisk) * 100 : 0);
 
   const onTrackShare = fr.total ? Math.round(((fr.filed + fr.onTrack) / fr.total) * 100) : 0;
+
+  // two gauge metrics — our own context (readiness vs. money collected)
+  const depositsPaid = engagements.filter(e => e.depositPaid).length;
+  const depositShare = fr.total ? Math.round((depositsPaid / fr.total) * 100) : 0;
 
   return (
     <>
@@ -139,6 +173,10 @@ export function FilingReadiness() {
                 <div>
                   <div className="os-label mb-2.5">Overall</div>
                   <ReadinessSummary fr={fr} size="modal" />
+                  <div className="mt-5 grid grid-cols-2 gap-4">
+                    <RadialGauge value={onTrackShare} label="On track to file" sublabel={`${fr.filed + fr.onTrack} of ${fr.total} returns`} color="var(--os-brand)" />
+                    <RadialGauge value={depositShare} label="Deposits collected" sublabel={`${depositsPaid} of ${fr.total} paid`} color="#2563eb" />
+                  </div>
                 </div>
 
                 {/* analytics grid */}

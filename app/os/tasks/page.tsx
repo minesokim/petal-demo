@@ -13,7 +13,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, StatusHeading, DeadlineChip, SkillPetal, MemberAvatar, ScopeToggle, Segmented, BookmarkFlag, type Scope } from "@/components/os/primitives";
+import { StatusPill, StatusHeading, DeadlineChip, SkillIcon, MemberAvatar, ScopeToggle, Segmented, BookmarkFlag, type Scope } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
 import { tasks, householdById, skillById, engagementById, taskById, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
 import { demoStore, useDemoVersion, useLiveNeedsYou } from "@/lib/demo-store";
@@ -114,7 +114,7 @@ function Row({
         className="absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
       />
       <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
-        {skill && <SkillPetal category={skill.category} size={15} />}
+        {skill && <SkillIcon category={skill.category} size={15} />}
         <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
         {t.flagged && <BookmarkFlag size={13} />}
         {!narrow && (
@@ -154,7 +154,7 @@ function BoardCard({ t, active, onOpen, onVerb }: { t: Task; active: boolean; on
       <button onClick={onOpen} aria-label={`Open ${t.title}`} className="absolute inset-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]" />
       <div className="pointer-events-none relative">
         <div className="flex items-start gap-2">
-          {skill && <SkillPetal category={skill.category} size={14} className="mt-px" />}
+          {skill && <SkillIcon category={skill.category} size={14} className="mt-px" />}
           <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-[var(--os-ink)] line-clamp-2">{t.title}</span>
           {t.flagged && <BookmarkFlag size={12} className="mt-0.5" />}
         </div>
@@ -221,7 +221,6 @@ function TasksPageInner() {
   const [groupByClient, setGroupByClient] = useState(false);
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [blockedOnly, setBlockedOnly] = useState(false);
-  const [confirmBulk, setConfirmBulk] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
   const { msg, show } = useToast();
@@ -292,7 +291,6 @@ function TasksPageInner() {
   }, [liveTasks, flaggedOnly, blockedOnly, scope, assignVersion]);
 
   const item = selected ? taskById(selected) ?? null : null;
-  const approvable = liveTasks.filter(t => t.status === "ready_to_approve");
 
   function onVerb(t: Task, verb: string) {
     if (verb === "Decide" || verb === "View run") setSelected(t.id);
@@ -303,25 +301,25 @@ function TasksPageInner() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
-        <Icon icon={I.tasks} size={16} className="text-[var(--os-ink-muted)]" />
-        <h1 className="os-display text-[14px] font-semibold text-[var(--os-ink)]">Tasks</h1>
+      {/* header — title left, Review mode right */}
+      <div className="flex items-center justify-between gap-6 border-b border-[var(--os-border)] px-8 pt-6 pb-5">
+        <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Tasks</h1>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link
+            href="/os/review"
+            className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-black active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
+          >
+            <PetalMark className="size-3.5 transition-transform duration-500 ease-out group-hover:rotate-180" />
+            Review mode
+            {needsYou ? <span className="grid h-4 min-w-4 place-items-center rounded bg-white/20 px-1 text-[11px] tabular-nums">{needsYou}</span> : null}
+          </Link>
+        </div>
       </div>
 
-      {/* toolbar: scope · sort · group · filter chips · bulk approve */}
+      {/* toolbar: scope (Mine/Firm) · filters … list/board on the right */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--os-border)] px-8 py-1.5">
-        <Segmented
-          value={view}
-          onChange={setView}
-          options={[
-            { value: "list", label: <span className="inline-flex items-center gap-1.5"><Icon icon={I.viewList} size={13} /> List</span> },
-            { value: "board", label: <span className="inline-flex items-center gap-1.5"><Icon icon={I.viewBoard} size={13} /> Board</span> },
-          ]}
-        />
-        <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
         <ScopeToggle scope={scope} onChange={setScope} />
-        <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
         {/* filters — sort + group + flagged + blocked, collapsed into one popover */}
         <div className="relative" ref={filtersRef}>
           <button
@@ -378,42 +376,16 @@ function TasksPageInner() {
           )}
         </div>
 
-        {/* right: actions — Approve all is contextual; Review mode is the primary */}
-        <div className="ml-auto flex items-center gap-1.5">
-          {approvable.length > 0 && (
-            confirmBulk ? (
-              <>
-                <button
-                  onClick={() => { setConfirmBulk(false); approvable.forEach(t => demoStore.resolve(t.id)); show(`Approved all ${approvable.length}`); }}
-                  className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
-                >
-                  <Icon icon={I.check} size={13} /> Confirm approve {approvable.length}
-                </button>
-                <button
-                  onClick={() => setConfirmBulk(false)}
-                  className="flex h-7 items-center rounded-lg px-2 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setConfirmBulk(true)}
-                className="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
-              >
-                <Icon icon={I.check} size={13} /> Approve all ({approvable.length})
-              </button>
-            )
-          )}
-          <Link
-            href="/os/review"
-            className="group inline-flex h-7 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-black active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
-          >
-            <PetalMark className="size-3.5 transition-transform duration-500 ease-out group-hover:rotate-180" />
-            Review mode
-            {needsYou ? <span className="grid h-4 min-w-4 place-items-center rounded bg-white/20 px-1 text-[11px] tabular-nums">{needsYou}</span> : null}
-          </Link>
-        </div>
+        {/* far right: list / board view toggle */}
+        <Segmented
+          className="ml-auto"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "list", label: <span className="inline-flex items-center gap-1.5"><Icon icon={I.viewList} size={13} /> List</span> },
+            { value: "board", label: <span className="inline-flex items-center gap-1.5"><Icon icon={I.viewBoard} size={13} /> Board</span> },
+          ]}
+        />
       </div>
 
       {/* list + detail */}

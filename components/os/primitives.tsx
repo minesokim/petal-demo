@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   CheckCircle2, Clock3, AlertCircle, CircleDot, CalendarClock, Hourglass, Bookmark,
+  FileText, Send, BookOpen, Phone, Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -189,6 +190,20 @@ export function DeadlineChip({ iso, extended, className }: { iso: string; extend
       {extended ? "Ext · " : ""}{fmtDate(iso)}
     </span>
   );
+}
+
+/** Monochrome skill-category glyph — the calmer alternative to the colored petal in dense lists. */
+const SKILL_ICON: Record<SkillCategory, React.ComponentType<{ size?: number; className?: string }>> = {
+  prep_filing: FileText,
+  signatures_chase: Send,
+  books: BookOpen,
+  meetings_calls: Phone,
+  briefs: Newspaper,
+  estimates_deadlines: CalendarClock,
+};
+export function SkillIcon({ category, size = 15, className }: { category: SkillCategory; size?: number; className?: string }) {
+  const IconC = SKILL_ICON[category];
+  return <IconC size={size} className={cn("shrink-0 text-[var(--os-ink-subtle)]", className)} />;
 }
 
 /** The AI layer's identity: a petal colored by skill category (see the legend). */

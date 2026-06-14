@@ -1026,7 +1026,14 @@ export interface Thread {
   petalDraft?: { skillId: string; text: string };
   extraction?: { runId: string; summary: string; docId: string };
   petalCanAnswer?: { taskId: string; draft: string };
-  transcript?: { lines: { speaker: string; text: string }[]; followUps: { label: string; taskId: string }[] };
+  transcript?: {
+    /** phone or video — both ride the single "call" channel; the medium is a sub-label */
+    medium?: "phone" | "video";
+    durationMin?: number;
+    summary: string;
+    lines: { speaker: string; text: string }[];
+    followUps: { label: string; taskId: string }[];
+  };
 }
 
 export const threads: Thread[] = [
@@ -1049,6 +1056,9 @@ export const threads: Thread[] = [
     subject: "Park books review call", preview: "Transcribed · 2 follow-ups extracted",
     time: "Jun 24", unread: false, status: "open",
     transcript: {
+      medium: "phone",
+      durationMin: 9,
+      summary: "David cleared the three uncategorized May transactions — the $2,800 sterilizer, the $910 team dinner after the office move, and the $500 annual software renewal — and confirmed he refinanced the house in February, which explains the tripled 1098 mortgage interest. He'll send the closing disclosure if needed.",
       lines: [
         { speaker: "Antonio", text: "Three May transactions need a category before we close: $2,800 on Dec— sorry, Jun 3, $910 on Jun 9, and $500 on Jun 18." },
         { speaker: "David", text: "The $2,800 was the new sterilizer. The $910 was the team dinner after the office move. The $500 is the annual practice-software renewal." },

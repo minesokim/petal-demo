@@ -139,9 +139,8 @@ export default function InboxPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header — Compose is a ghost icon; the primary affordance lives in the composer ("Draft with Petal") */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-5 py-3 sm:px-8">
-        <Icon icon={I.inbox} size={16} className="text-[var(--os-ink-muted)]" />
-        <h1 className="text-[14px] font-semibold text-[var(--os-ink)] os-display">Inbox</h1>
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-5 pt-6 pb-5 sm:px-8">
+        <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Inbox</h1>
         <div className="ml-auto flex items-center gap-1.5">
           <ScopeToggle scope={scope} onChange={setScope} />
           <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
@@ -202,19 +201,17 @@ export default function InboxPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-semibold" : "font-medium")}>{t.clientName}</span>
+                  <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-medium" : "font-normal")}>{t.clientName}</span>
                   <div className="ml-auto flex shrink-0 items-center gap-1.5">
                     {waitDays >= 1 && (
-                      <span title={`Client waiting ${waitDays} day${waitDays === 1 ? "" : "s"}`} className="inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums text-amber-600">
-                        <Hourglass className="size-3" /> {waitDays}d
-                      </span>
+                      <Badge tone="amber" icon={Hourglass} size="sm" className="tabular-nums">{waitDays}d</Badge>
                     )}
                     <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.time}</span>
                     {t.unread && <span className="size-2 rounded-full bg-[var(--os-accent)]" />}
                   </div>
                 </div>
-                <div className="mt-0.5 truncate text-[13px] text-[var(--os-ink)]">{t.subject}</div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                <div className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{t.subject}</div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
                   {ai && <PetalMark className="size-3 shrink-0" />}
                   <span className="truncate">{meta}</span>
                 </div>

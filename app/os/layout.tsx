@@ -14,7 +14,7 @@ import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
-  Settings, Home, FileText, Folder, MailWarning, Receipt, BookOpen, LogOut,
+  Settings, Home, FileText, Folder, MailWarning, CreditCard, BookOpen, LogOut,
   PanelLeftClose, PanelLeftOpen, Activity,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
@@ -27,10 +27,10 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors",
+        "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal transition-colors",
         active
-          ? "bg-black/[0.035] text-[var(--os-ink)]"
-          : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+          ? "bg-black/[0.07] text-[var(--os-ink)]"
+          : "text-[var(--os-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--os-ink)]",
       )}
     >
       {item.logo ? <PetalLogo size={14} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={14} className="shrink-0" /> : item.glyph ? <PetalMark className="size-3.5 shrink-0" /> : IconC ? <IconC className="size-3.5 shrink-0" /> : null}
@@ -48,10 +48,10 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
 function NavGroup({ label, icon, items, isActive, defaultOpen = true }: { label: string; icon: React.ReactNode; items: Item[]; isActive: (h: string) => boolean; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={cn("mt-1 rounded-lg transition-colors", open && "bg-black/[0.035]")}>
+    <div className={cn("mt-1 rounded-lg transition-colors", open && "bg-black/[0.05]")}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
+        className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]"
       >
         {icon}
         <span className="flex-1 truncate text-left">{label}</span>
@@ -99,7 +99,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   }
 
   const primary: Item[] = [
-    { label: "Today", href: "/os/today", icon: Home },
+    { label: "Home", href: "/os/today", icon: Home },
     { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYou },
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
     { label: "Calendar", href: "/os/calendar", icon: CalendarDays },
@@ -108,7 +108,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Documents", href: "/os/documents", icon: FileText },
     { label: "Notices", href: "/os/notices", icon: MailWarning },
-    { label: "Billing", href: "/os/billing", icon: Receipt },
+    { label: "Billing", href: "/os/billing", icon: CreditCard },
   ];
   const petalAi: Item[] = [
     { label: "Skills", href: "/os/skills", hugeicon: I.skills },
@@ -140,7 +140,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => setWsOpen(o => !o)}
               aria-expanded={wsOpen}
-              className="-mx-1 flex min-w-0 w-full items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:bg-[var(--os-hover)]"
+              className="-mx-1 flex min-w-0 w-full items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:bg-black/[0.05]"
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]">
                 <PetalMark className="size-3.5" />
@@ -179,14 +179,14 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           <button
             aria-label="Collapse sidebar"
             onClick={() => setCollapsed(true)}
-            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] opacity-0 transition-all hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:opacity-100 group-hover/sidebar:opacity-100"
+            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] opacity-0 transition-all hover:bg-black/[0.05] hover:text-[var(--os-ink)] focus-visible:opacity-100 group-hover/sidebar:opacity-100"
           >
             <PanelLeftClose className="size-[17px]" strokeWidth={1.5} />
           </button>
           <button
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
-            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
+            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]"
           >
             <Icon icon={I.search} size={16} />
           </button>

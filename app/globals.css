@@ -125,7 +125,7 @@
      --font-* on <body>, not :root, so without a fallback the nested
      var() resolves to empty at :root → whole stack becomes invalid. */
   --serif-stack: var(--font-spectral, "Spectral"), Georgia, serif;
-  --sans-stack: var(--font-dm-sans, "DM Sans"), -apple-system, BlinkMacSystemFont, sans-serif;
+  --sans-stack: var(--font-twk, "TWK Lausanne Pan"), var(--font-dm-sans, "DM Sans"), -apple-system, BlinkMacSystemFont, sans-serif;
   --mono-stack: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SF Mono", monospace;
 
   /* Spacing (4px grid, PRD §2.4) */
@@ -312,6 +312,10 @@
   }
   .font-semibold {
     font-weight: 500 !important;
+  }
+  /* Petal OS display titles ride a lighter cut (after the caps so it wins) */
+  .petal-os .os-display {
+    font-weight: 400 !important;
   }
 
   [data-slot="dialog-overlay"],

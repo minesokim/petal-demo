@@ -380,7 +380,7 @@ export default function ReviewPage() {
       : "Approve & send";
 
   return (
-    <div className="flex h-full flex-col bg-[var(--os-shell)]">
+    <div className="flex h-full flex-col bg-[var(--os-canvas)]">
       {/* ── Header ── */}
       <header className="shrink-0">
         <div className="flex h-12 w-full items-center gap-3 px-5">
@@ -515,7 +515,7 @@ export default function ReviewPage() {
 
           {/* action bar — Approve (A) / Skip (S) on needs-you; Next / Back otherwise */}
           {!done && (
-            <footer className="shrink-0 border-t border-[var(--os-border)] bg-[var(--os-shell)]">
+            <footer className="shrink-0 border-t border-[var(--os-border)] bg-[var(--os-canvas)]">
               <div className="mx-auto flex w-full max-w-[680px] flex-wrap items-center gap-2 px-6 py-3">
                 {actionable ? (
                   <>
