@@ -11,7 +11,7 @@ import { SidebarChat } from "@/components/os/sidebar-chat";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
-  ChevronsUpDown, ListChecks, Inbox, BarChart3, Users,
+  ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
   Settings, Home, FileText, Folder, MailWarning, Receipt, BookOpen,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
@@ -77,6 +77,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Today", href: "/os/today", icon: Home },
     { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYou },
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
+    { label: "Calendar", href: "/os/calendar", icon: CalendarDays },
   ];
   const records: Item[] = [
     { label: "Clients", href: "/os/clients", icon: Users },
@@ -89,7 +90,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
   ];
   const system: Item[] = [
-    { label: "Practice", href: "/os/practice", icon: BarChart3 },
     { label: "Settings", href: "/os/settings", icon: Settings },
   ];
 
