@@ -4,14 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   households, people, engagements, entitiesOf, householdById, entityById,
-  preparerOf, CURRENT_USER_ID,
+  CURRENT_USER_ID,
   type HouseholdKind, type Person, type Household, type Engagement,
 } from "@/lib/fixtures/firm";
 import { STAGE_ORDER, stageMeta, money, type Stage } from "@/lib/fixtures/vocab";
 import {
   householdStage, householdDeadline, docsOfHousehold, docsOf, invoiceOf, engagementDeadline,
 } from "@/lib/fixtures/derive";
-import { StageTag, DeadlineChip, MemberAvatar, ScopeToggle, type Scope } from "@/components/os/primitives";
+import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
+import { StageTag, DeadlineChip, ScopeToggle, type Scope } from "@/components/os/primitives";
+import { AssigneePicker } from "@/components/os/assignee-picker";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 
@@ -96,7 +98,7 @@ function ClientsTable({ rows }: { rows: Household[] }) {
             <div>
               <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{h.serviceTier}</span>
             </div>
-            <div><MemberAvatar memberId={preparerOf(h.id)} size={24} /></div>
+            <div><AssigneePicker householdId={h.id} variant="avatar" align="right" /></div>
           </Link>
         );
       })}
@@ -134,7 +136,7 @@ function ReturnsTable({ rows }: { rows: Engagement[] }) {
             <div>{closed ? <EmDash /> : <DeadlineChip iso={dl.iso} extended={dl.extended} />}</div>
             <DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} />
             <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
-            <div><MemberAvatar memberId={preparerOf(e.householdId)} size={24} /></div>
+            <div><AssigneePicker householdId={e.householdId} variant="avatar" align="right" /></div>
           </Link>
         );
       })}
@@ -167,7 +169,7 @@ function PeopleTable({ rows }: { rows: Person[] }) {
           </div>
           <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{householdById(p.householdId)?.name}</div>
           <div className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{p.phone}</div>
-          <div><MemberAvatar memberId={preparerOf(p.householdId)} size={24} /></div>
+          <div><AssigneePicker householdId={p.householdId} variant="avatar" align="right" /></div>
         </Link>
       ))}
     </div>
@@ -226,11 +228,12 @@ export default function ClientsPage() {
   const [view, setView] = useState<View>("clients");
   const [layout, setLayout] = useState<Layout>("list");
   const [scope, setScope] = useState<Scope>("firm");
+  useAssignVersion(); // re-filter when a client is reassigned from the table
 
   const mine = scope === "mine";
-  const hhRows = mine ? households.filter(h => preparerOf(h.id) === CURRENT_USER_ID) : households;
-  const engRows = mine ? engagements.filter(e => preparerOf(e.householdId) === CURRENT_USER_ID) : engagements;
-  const peopleRows = mine ? people.filter(p => preparerOf(p.householdId) === CURRENT_USER_ID) : people;
+  const hhRows = mine ? households.filter(h => assigneeOf(h.id) === CURRENT_USER_ID) : households;
+  const engRows = mine ? engagements.filter(e => assigneeOf(e.householdId) === CURRENT_USER_ID) : engagements;
+  const peopleRows = mine ? people.filter(p => assigneeOf(p.householdId) === CURRENT_USER_ID) : people;
 
   const counts: Record<View, number> = {
     clients: hhRows.length,

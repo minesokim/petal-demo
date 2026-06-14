@@ -1121,61 +1121,103 @@ export const threads: Thread[] = [
 ];
 
 // ── Brief (Today) ────────────────────────────────────────────
+// The brief is SITUATIONAL AWARENESS, not a task mirror: what an EA needs to KNOW
+// (the tax world, the firm in aggregate) that never becomes a row in the queue.
+// Grouped by "desk" like a newspaper. Most items are awareness-only (no action).
 export type BriefTone = "urgent" | "alert" | "win" | "info";
-/** semantic topic — Today maps these to glyph tiles (no UI colors stored here) */
-export type BriefTopic = "returns" | "transcript" | "notice" | "deadline" | "policy" | "filing";
+
+/** Which desk a brief item is filed under — Today groups the newspaper by these. */
+export type BriefDesk = "irs" | "firm" | "season" | "practice";
+export const briefDeskMeta: Record<BriefDesk, { label: string }> = {
+  irs:      { label: "IRS & regulatory" },
+  firm:     { label: "Your firm" },
+  season:   { label: "Season" },
+  practice: { label: "Practice" },
+};
+export const BRIEF_DESK_ORDER: BriefDesk[] = ["irs", "firm", "season", "practice"];
 
 export interface BriefItem {
+  id: string;
+  desk: BriefDesk;
   tone: BriefTone;
-  topic: BriefTopic;
-  source?: string;
+  source: string;     // sourced from — "IRS", "FinCEN", "Petal · Books"
+  dateline: string;   // when it surfaced — "Jun 24"
   headline: string;
-  detail: string;
-  href?: string;
-  runId?: string;
+  detail: string;     // one-line summary (list view)
+  body: string;       // the full briefing (modal)
+  whyItMatters?: string; // firm-specific relevance (modal callout)
+  action?: { label: string; href: string }; // optional soft action — awareness is the default
 }
 
+// dots share the Filing-readiness palette so Today reads as one system
 export const briefToneDot: Record<BriefTone, string> = {
   urgent: "bg-red-500",
-  alert: "bg-amber-500",
-  win: "bg-[var(--os-brand)]",
-  info: "bg-[var(--os-ink-subtle)]",
+  alert: "bg-amber-500",     // at-risk amber
+  win: "bg-emerald-500",     // filed emerald
+  info: "bg-blue-500",       // on-track blue
 };
 
 export const brief: BriefItem[] = [
+  // ── IRS & regulatory — the outside world Petal watches ──
   {
-    tone: "win", topic: "returns", headline: "Petal filed 3 returns clean — pre-approved by you Jun 23",
-    detail: "Linda's 1040 + Etsy Schedule C and Karen's 1040 all accepted Jun 24.",
-    href: "/os/tasks?task=t-efiled-3", runId: "run-efile-nak",
+    id: "br-cp2000-season", desk: "irs", tone: "alert", source: "IRS", dateline: "Jun 24",
+    headline: "IRS resumed automated CP2000 matching for tax year 2024",
+    detail: "The Automated Underreporter program restarted after the spring pause — expect more notices through Q3.",
+    body: "The IRS has restarted its Automated Underreporter (AUR) program for 2024 returns following the seasonal pause. AUR cross-matches filed returns against third-party 1099 and W-2 data and issues CP2000 notices where they disagree. Notice volume typically peaks June through September.",
+    whyItMatters: "Petal is already watching 1099/W-2 mismatches across your clients. One CP2000 (Rodriguez) has landed and the response is drafted; others may follow as matching runs.",
+    action: { label: "Open Notices", href: "/os/notices" },
   },
   {
-    tone: "alert", topic: "transcript", source: "Transcript Watch",
-    headline: "Transcript change detected for Rodriguez — matches the CP2000 already in Notices.",
-    detail: "New AUR marker on the 2024 account transcript, dated Jun 16. No new issue.",
-    href: "/os/notices/n-cp2000", runId: "run-transcript-rod",
+    id: "br-inflation-2026", desk: "irs", tone: "info", source: "IRS", dateline: "Jun 20",
+    headline: "2026 inflation adjustments released",
+    detail: "Standard deduction $15,750 single / $31,500 MFJ, business mileage 70¢, 401(k) deferral cap $24,500.",
+    body: "Rev. Proc. 2025-32 sets the 2026 inflation-adjusted figures: standard deduction of $15,750 (single) and $31,500 (married filing jointly), the business standard mileage rate at 70¢/mile, and the 401(k) elective deferral limit at $24,500 with a $8,000 catch-up at 50+.",
+    whyItMatters: "These drive every Q3 planning conversation and your estimated-payment math. No filing action today — context for client calls.",
   },
   {
-    tone: "alert", topic: "notice", source: "IRS",
-    headline: "CP2000s for tax year 2024 are landing",
-    detail: "One received so far (Rodriguez) — response drafted, due Jul 18.",
-    href: "/os/notices",
+    id: "br-boi-reopen", desk: "irs", tone: "alert", source: "FinCEN", dateline: "Jun 18",
+    headline: "FinCEN reopens Beneficial Ownership (BOI) reporting",
+    detail: "Filing requirements are back in effect after the injunction lifted; new entities report within 30 days.",
+    body: "With the nationwide injunction lifted, FinCEN's Beneficial Ownership Information reporting under the Corporate Transparency Act is again in effect. Existing reporting companies face updated deadlines; newly formed entities must file an initial BOI report within 30 days of formation.",
+    whyItMatters: "11 of your clients are business entities that may have a BOI obligation — none are tracked in your queue yet. Worth a sweep.",
+    action: { label: "Review business clients", href: "/os/clients" },
+  },
+
+  // ── Your firm — aggregate signals across the book ──
+  {
+    id: "br-books-behind", desk: "firm", tone: "alert", source: "Petal · Books", dateline: "this morning",
+    headline: "May books close trending behind across your 3 books clients",
+    detail: "62% reconciled with 6 days to your internal target — Park Family Dental is the long pole.",
+    body: "Aggregating your three monthly-books engagements, the May close is 62% reconciled against a target of done-by-month-end-plus-20. Park Family Dental is the constraint: its POS export is in but two bank feeds are unreconciled. The other two are on pace.",
+    whyItMatters: "A late May close compresses the June close and delays any Q2 advisory. The reconciliation tasks are already in your queue.",
+    action: { label: "Open books tasks", href: "/os/tasks" },
   },
   {
-    tone: "info", topic: "deadline", source: "IRS",
-    headline: "Q3 estimates due Sep 15",
-    detail: "Vouchers compute Sep 1 for the 9 voucher clients; two Q2 stragglers have follow-ups in your queue.",
-    href: "/os/tasks?task=t-est-q2",
+    id: "br-intake-up", desk: "firm", tone: "win", source: "Petal · Intake", dateline: "this week",
+    headline: "4 new portal inquiries this week — intake running ahead of last June",
+    detail: "Two individuals, one S-corp, one partnership submitted inquiries through the client portal.",
+    body: "Four prospective clients submitted inquiries through your portal this week — ahead of the same week last year. Mix: two individual 1040s, one S-corporation, and one partnership. Petal has triaged each and drafted intake responses for your review.",
+    whyItMatters: "Healthy top-of-funnel, but the S-corp and partnership add complexity during extension season. Worth deciding capacity before you reply.",
+    action: { label: "View clients", href: "/os/clients" },
   },
+
+  // ── Season — firm-level calendar posture ──
   {
-    tone: "info", topic: "policy", source: "IRS",
-    headline: "2025 safe-harbor amounts unchanged — no action needed",
-    detail: "110% of prior-year tax over $150k AGI, 100% otherwise. Your estimate math stands.",
+    id: "br-q3-estimates", desk: "season", tone: "info", source: "IRS", dateline: "Sep 15 deadline",
+    headline: "Q3 estimated payments are the next firm-wide deadline",
+    detail: "Vouchers compute Sep 1 for your 9 voucher clients; two Q2 stragglers still have follow-ups out.",
+    body: "The next firm-wide deadline is the Q3 1040-ES due September 15. Petal will compute and draft vouchers for all nine of your voucher clients on September 1, leaving two weeks for review and client delivery. Two Q2 stragglers (Sandoval, Park) still have payment-confirmation follow-ups outstanding.",
+    whyItMatters: "Nothing to do today — the work pre-stages itself. Flagged so the date is on your radar before it compresses against the close.",
   },
+
+  // ── Practice — you, the business ──
   {
-    tone: "info", topic: "filing",
-    headline: "5 business returns on the Sep 15 extension track",
-    detail: "All in motion — none behind pace as of this morning.",
-    href: "/os/returns",
+    id: "br-wisp-review", desk: "practice", tone: "alert", source: "Petal · Security", dateline: "Annual",
+    headline: "Your WISP annual review is due",
+    detail: "The Written Information Security Plan was last updated Jun 2025 — IRS Pub 4557 expects a yearly review.",
+    body: "IRS Publication 4557 (Safeguarding Taxpayer Data) and the FTC Safeguards Rule both expect tax practices to review their Written Information Security Plan annually. Your WISP was last revised June 2025, so it's due. The current document is in your firm files.",
+    whyItMatters: "A current WISP is a condition of your PTIN attestation and your professional liability coverage. A 10-minute review keeps you compliant.",
+    action: { label: "Open in Documents", href: "/os/documents" },
   },
 ];
 

@@ -8,23 +8,19 @@ import { useMemo, useState } from "react";
 import { Folder, FolderPlus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
+import { FileGlyph } from "@/components/os/primitives";
 import {
   firmFolders, recentFirmFiles, starredFirmFiles, allFirmFiles, firmFileCount,
-  folderById, fileKindMeta, type FileKind, type FirmFile, type FlatFile,
+  folderById, type FileKind, type FirmFile, type FlatFile,
 } from "@/lib/fixtures/firm-files";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 type View = "all" | "starred" | string; // string = folderId
 type Layout = "list" | "grid";
 
-/* ── colored file-type tile (Drive-style) ── */
+/* ── file-type glyph (page shape + folded corner + type badge) ── */
 function KindTile({ kind, size = 32 }: { kind: FileKind; size?: number }) {
-  const m = fileKindMeta[kind];
-  return (
-    <span className={cn("grid shrink-0 place-items-center rounded-lg", m.tile)} style={{ width: size, height: size }}>
-      <span className={cn("font-bold tracking-wide", m.text)} style={{ fontSize: size >= 40 ? 10 : 9 }}>{m.label}</span>
-    </span>
-  );
+  return <FileGlyph kind={kind} size={size} />;
 }
 
 function FileRow({ f, showFolder }: { f: FirmFile & { folderName?: string }; showFolder?: boolean }) {

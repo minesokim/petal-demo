@@ -9,10 +9,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
+import { CornerDownRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, DeadlineChip, SkillPetal } from "@/components/os/primitives";
+import { StatusPill, DeadlineChip, SkillPetal, BookmarkFlag } from "@/components/os/primitives";
+import { AssigneePicker } from "@/components/os/assignee-picker";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { householdById, skillById, type Task } from "@/lib/fixtures/firm";
 import { taskStatusMeta } from "@/lib/fixtures/vocab";
@@ -62,10 +64,15 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
   const verb = taskStatusMeta[task.status].verb;
   const verbLabel = verb === "Approve" && task.draftText ? "Approve & send" : verb;
 
-  const [chosen, setChosen] = useState<"A" | "B" | "C" | undefined>(task.recommendedAction);
+  const [chosen, setChosen] = useState<"A" | "B" | "C" | "other" | undefined>(task.recommendedAction);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.draftText ?? "");
   const [editLogged, setEditLogged] = useState(false);
+  // "Something else" — the open-ended escape hatch: redirect Petal in your own words.
+  const [otherText, setOtherText] = useState("");
+  const [redrafting, setRedrafting] = useState(false);
+  const [redrafted, setRedrafted] = useState(false);
+  const redraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { msg, show } = useToast();
 
   // Reset local state when the panel switches tasks.
@@ -74,7 +81,28 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     setEditing(false);
     setDraft(task.draftText ?? "");
     setEditLogged(false);
+    setOtherText("");
+    setRedrafting(false);
+    setRedrafted(false);
+    if (redraftTimer.current) clearTimeout(redraftTimer.current);
   }, [task.id, task.recommendedAction, task.draftText]);
+
+  useEffect(() => () => { if (redraftTimer.current) clearTimeout(redraftTimer.current); }, []);
+
+  // Ask Petal to redraft to the preparer's own direction (demo: simulated re-run).
+  function askPetalRedraft() {
+    const note = otherText.trim();
+    if (!note || redrafting) return;
+    setRedrafting(true);
+    redraftTimer.current = setTimeout(() => {
+      setDraft(
+        `Updated per your direction — "${note}".\n\nI've revised the response accordingly and flagged the open item for follow-up. Review below and approve when you're ready.`,
+      );
+      setRedrafting(false);
+      setRedrafted(true);
+      show("Petal redrafted to your direction");
+    }, 1100);
+  }
 
   // Decide / Approve / Approve & send resolve the task and close the panel —
   // the item leaves the needs-you queue across the app (session-only; reload resets).
@@ -87,7 +115,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     if (!verbLabel) return;
     if (verbLabel === "Decide") {
       const opt = task.proposedActions?.find(a => a.key === chosen);
-      show(chosen ? `Decided ${chosen}${opt ? ` — ${opt.label}` : ""}` : "Decided");
+      show(chosen === "other" ? "Decided — your direction" : chosen ? `Decided ${chosen}${opt ? ` — ${opt.label}` : ""}` : "Decided");
       resolveAndClose();
     } else if (verbLabel === "Approve & send") {
       show("Approved & sent");
@@ -138,8 +166,8 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           <StatusPill status={task.status} />
           {task.deadline && <DeadlineChip iso={task.deadline} />}
           {task.flagged && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--os-warning)]">
-              <Icon icon={I.flag} size={12} /> Flagged
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--os-ink-muted)]">
+              <BookmarkFlag size={12} /> Flagged
             </span>
           )}
           {task.feeContext && <span className="text-[11px]">{task.feeContext}</span>}
@@ -156,16 +184,13 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
               <Icon icon={primaryIcon} size={14} /> {verbLabel}
             </button>
           ) : null}
-          <button
-            onClick={() => setEditing(e => !e)}
-            disabled={!task.draftText}
-            className={GHOST_BTN}
-          >
-            <Icon icon={I.edit} size={14} /> Edit
-          </button>
           <button onClick={onClose} className={GHOST_BTN}>
             Skip
           </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-[11px] text-[var(--os-ink-subtle)]">Assignee</span>
+            <AssigneePicker householdId={task.householdId} align="right" />
+          </div>
         </div>
       </div>
 
@@ -191,34 +216,74 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                     onClick={() => setChosen(a.key)}
                     aria-pressed={isChosen}
                     className={cn(
-                      "w-full rounded-lg border px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+                      "w-full rounded-xl border px-3.5 py-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
                       isChosen
-                        ? "border-[var(--os-border-strong)] bg-[var(--os-surface)] ring-1 ring-[var(--os-border-strong)]"
-                        : "border-[var(--os-border)] hover:border-[var(--os-border-strong)]",
+                        ? "border-[var(--os-border-strong)] bg-[var(--os-card)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                        : "border-[var(--os-border)] hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]",
                     )}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <span
                         className={cn(
-                          "grid size-5 shrink-0 place-items-center rounded border text-[11px] font-semibold",
+                          "grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-semibold transition-colors",
                           isChosen
-                            ? "border-[var(--os-primary)] bg-[var(--os-primary)] text-[var(--os-primary-fg)]"
-                            : "border-[var(--os-border-strong)] text-[var(--os-ink-muted)]",
+                            ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]"
+                            : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]",
                         )}
                       >
                         {a.key}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--os-ink)]">{a.label}</span>
                       {isRec && (
-                        <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-[var(--os-ink-muted)]">
-                          <PetalMark className="size-3" /> Petal recommends {a.key}
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]">
+                          <PetalMark className="size-2.5" /> Recommended
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 pl-7 text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
+                    <p className="mt-1.5 pl-[30px] text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
                   </button>
                 );
               })}
+            </div>
+
+            {/* Something else — the open-ended escape: redirect Petal in your own words */}
+            <div className="mt-2">
+              {chosen !== "other" ? (
+                <button
+                  onClick={() => setChosen("other")}
+                  className="flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 text-left text-[12.5px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                >
+                  <CornerDownRight className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
+                  Something else — tell Petal what to do instead
+                </button>
+              ) : (
+                <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+                    <CornerDownRight className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
+                    <span className="text-[12px] font-medium text-[var(--os-ink)]">Something else</span>
+                    <button
+                      onClick={() => { setChosen(task.recommendedAction); setOtherText(""); }}
+                      className="ml-auto rounded px-1 text-[11px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <textarea
+                    value={otherText}
+                    onChange={e => setOtherText(e.target.value)}
+                    rows={2}
+                    autoFocus
+                    placeholder="e.g. Call Maria to confirm the 1099-INT first, then redraft the dispute."
+                    className="w-full resize-y rounded-md border border-[var(--os-border-strong)] bg-white p-2.5 text-[13px] leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                  />
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-[var(--os-ink-subtle)]">Petal will redraft to your direction.</span>
+                    <button onClick={askPetalRedraft} disabled={!otherText.trim() || redrafting} className={PRIMARY_BTN}>
+                      <PetalMark className="size-3" /> {redrafting ? "Redrafting…" : "Ask Petal"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -231,17 +296,26 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           </p>
         )}
 
-        {/* the drafted artifact — Petal-marked, monochrome */}
-        {task.draftText && (
+        {/* the drafted artifact — Petal-marked, monochrome. Edit lives in the header;
+            the body itself is click-to-edit. Appears after a "Something else" redraft too. */}
+        {(task.draftText || redrafted) && (
           <section className="mt-6">
-            <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
-              <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-1.5">
+            <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+              <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
                 <PetalMark className="size-3 shrink-0 text-[var(--os-ink-muted)]" />
                 <span className="text-[11px] font-medium text-[var(--os-ink-muted)]">Petal drafted</span>
-                {skill && <span className="ml-auto text-[11px] text-[var(--os-ink-subtle)]">{skill.name}</span>}
+                {skill && <span className="text-[11px] text-[var(--os-ink-subtle)]">· {skill.name}</span>}
+                {!editing && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                  >
+                    <Icon icon={I.edit} size={12} /> Edit
+                  </button>
+                )}
               </div>
               {editing ? (
-                <div className="p-2">
+                <div className="p-2.5">
                   <textarea
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
@@ -250,7 +324,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                     aria-label="Edit draft"
                     className="w-full resize-y rounded-md border border-[var(--os-border-strong)] bg-white p-2.5 text-[13px] leading-relaxed text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
                   />
-                  <div className="mt-1.5 flex items-center gap-1.5">
+                  <div className="mt-2 flex items-center gap-1.5">
                     <button onClick={() => { setEditing(false); setEditLogged(true); }} className={PRIMARY_BTN}>
                       <Icon icon={I.check} size={14} /> Save edit
                     </button>
@@ -263,7 +337,21 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                   </div>
                 </div>
               ) : (
-                <p className="whitespace-pre-line px-3.5 py-3 text-[13px] leading-relaxed text-[var(--os-ink)]">{draft}</p>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setEditing(true)}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(true); } }}
+                  title="Click to edit"
+                  className="group/draft relative cursor-text px-3.5 py-3 transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
+                >
+                  <p className="whitespace-pre-line text-[13px] leading-relaxed text-[var(--os-ink)]">{draft}</p>
+                  <Icon
+                    icon={I.edit}
+                    size={13}
+                    className="pointer-events-none absolute right-3 top-3 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/draft:opacity-100"
+                  />
+                </div>
               )}
             </div>
             {editLogged && !editing && (

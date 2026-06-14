@@ -5,9 +5,12 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { Hourglass } from "lucide-react";
 import { Icon, I } from "@/components/os/icon";
+import { Badge, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { ThreadConversation } from "@/components/os/thread-conversation";
-import { threads, type Thread, type Channel } from "@/lib/fixtures/firm";
+import { threads, CURRENT_USER_ID, type Thread, type Channel } from "@/lib/fixtures/firm";
+import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { DEMO_DATE } from "@/lib/fixtures/vocab";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -41,9 +44,9 @@ function WaitingChip({ since, className }: { since: string; className?: string }
   const n = waitingDays(since);
   if (n < 1) return null;
   return (
-    <span className={cn("inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium tabular-nums text-amber-700", className)}>
-      client waiting {n} day{n === 1 ? "" : "s"}
-    </span>
+    <Badge tone="amber" icon={Hourglass} className={cn("tabular-nums", className)}>
+      Waiting {n}d
+    </Badge>
   );
 }
 
@@ -123,12 +126,15 @@ function ThreadPane({ thread }: { thread: Thread }) {
 export default function InboxPage() {
   const [filter, setFilter] = useState<string>("open");
   const [channel, setChannel] = useState<"all" | Channel>("all");
+  const [scope, setScope] = useState<Scope>("firm");
+  useAssignVersion(); // re-filter when a client is reassigned
   const f = inboxFilters.find(x => x.key === filter)!;
-  const list = threads.filter(t => f.test(t) && (channel === "all" || t.channel === channel));
+  const scopeOk = (t: Thread) => scope === "firm" || assigneeOf(t.householdId) === CURRENT_USER_ID;
+  const list = threads.filter(t => f.test(t) && scopeOk(t) && (channel === "all" || t.channel === channel));
   const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open")?.id ?? threads[0].id);
   const thread = list.find(t => t.id === selected) || list[0];
 
-  const counts = inboxFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(x.test).length; return a; }, {});
+  const counts = inboxFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(t => x.test(t) && scopeOk(t)).length; return a; }, {});
 
   return (
     <div className="flex h-full flex-col">
@@ -137,6 +143,8 @@ export default function InboxPage() {
         <Icon icon={I.inbox} size={16} className="text-[var(--os-ink-muted)]" />
         <h1 className="text-[14px] font-semibold text-[var(--os-ink)] os-display">Inbox</h1>
         <div className="ml-auto flex items-center gap-1.5">
+          <ScopeToggle scope={scope} onChange={setScope} />
+          <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
           <button title="Search" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.search} size={15} /></button>
           <button title="Compose" aria-label="Compose" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.edit} size={15} /></button>
         </div>
@@ -147,7 +155,7 @@ export default function InboxPage() {
         {inboxFilters.map(t => (
           <button
             key={t.key}
-            onClick={() => { setFilter(t.key); const next = threads.filter(x => t.test(x) && (channel === "all" || x.channel === channel)); if (next.length) setSelected(next[0].id); }}
+            onClick={() => { setFilter(t.key); const next = threads.filter(x => t.test(x) && scopeOk(x) && (channel === "all" || x.channel === channel)); if (next.length) setSelected(next[0].id); }}
             className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] transition-colors", focusRing, filter === t.key ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}
           >
             {t.label}
@@ -158,7 +166,7 @@ export default function InboxPage() {
           {(["all", ...CHANNEL_ORDER] as const).map(c => (
             <button
               key={c}
-              onClick={() => { setChannel(c); const next = threads.filter(x => f.test(x) && (c === "all" || x.channel === c)); if (next.length) setSelected(next[0].id); }}
+              onClick={() => { setChannel(c); const next = threads.filter(x => f.test(x) && scopeOk(x) && (c === "all" || x.channel === c)); if (next.length) setSelected(next[0].id); }}
               className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[12px] transition-colors", focusRing, channel === c ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}
             >
               {c !== "all" && <span className={cn("size-1.5 rounded-full", channelMeta[c].dot)} />}
@@ -173,11 +181,20 @@ export default function InboxPage() {
         <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[340px]">
           {list.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">Nothing in this view — switch filters, or compose to start a thread.</div>
-          ) : list.map(t => (
+          ) : list.map(t => {
+            // one uniform context line per row + waiting as a small inline icon
+            const ai = t.transcript
+              ? `Petal extracted ${t.transcript.followUps.length} follow-up${t.transcript.followUps.length === 1 ? "" : "s"} from the call`
+              : t.extraction ? t.extraction.summary
+              : t.petalDraft ? "Petal drafted a reply"
+              : null;
+            const meta = ai ?? contextLine(t);
+            const waitDays = t.waitingOnFirmSince ? waitingDays(t.waitingOnFirmSince) : 0;
+            return (
             <button
               key={t.id}
               onClick={() => setSelected(t.id)}
-              className={cn("group flex gap-2.5 border-b border-[var(--os-border)] px-3.5 py-3 text-left transition-colors", focusRing, t.id === thread?.id ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}
+              className={cn("group flex items-start gap-2.5 border-b border-[var(--os-border)] px-3.5 py-2.5 text-left transition-colors", focusRing, t.id === thread?.id ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}
             >
               <div className="relative mt-0.5 shrink-0">
                 <span className="grid size-7 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(t.clientName)}</span>
@@ -186,32 +203,25 @@ export default function InboxPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-semibold" : "font-medium")}>{t.clientName}</span>
-                  <span className="ml-auto shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.time}</span>
-                  {t.unread && <span className="size-2 shrink-0 rounded-full bg-[var(--os-accent)]" />}
+                  <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                    {waitDays >= 1 && (
+                      <span title={`Client waiting ${waitDays} day${waitDays === 1 ? "" : "s"}`} className="inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums text-amber-600">
+                        <Hourglass className="size-3" /> {waitDays}d
+                      </span>
+                    )}
+                    <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.time}</span>
+                    {t.unread && <span className="size-2 rounded-full bg-[var(--os-accent)]" />}
+                  </div>
                 </div>
                 <div className="mt-0.5 truncate text-[13px] text-[var(--os-ink)]">{t.subject}</div>
-                {!t.transcript && (
-                  <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    {t.petalDraft && <PetalMark className="size-3 shrink-0" />}
-                    <span className="truncate">{contextLine(t)}</span>
-                  </div>
-                )}
-                {t.waitingOnFirmSince && <WaitingChip since={t.waitingOnFirmSince} className="mt-1.5" />}
-                {t.extraction && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    <PetalMark className="size-3 shrink-0" />
-                    <span className="truncate">{t.extraction.summary}</span>
-                  </div>
-                )}
-                {t.transcript && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    <PetalMark className="size-3 shrink-0" />
-                    <span className="truncate">Petal extracted {t.transcript.followUps.length} follow-up{t.transcript.followUps.length === 1 ? "" : "s"} from the call</span>
-                  </div>
-                )}
+                <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
+                  {ai && <PetalMark className="size-3 shrink-0" />}
+                  <span className="truncate">{meta}</span>
+                </div>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Thread */}

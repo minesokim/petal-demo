@@ -2,17 +2,20 @@
 
 import "./os-theme.css";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
+import { CommandSearch } from "@/components/os/command-search";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
-  Settings, Home, FileText, Folder, MailWarning, Receipt, BookOpen,
+  Settings, Home, FileText, Folder, MailWarning, Receipt, BookOpen, LogOut,
+  PanelLeftClose, PanelLeftOpen, Activity,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
 
@@ -30,7 +33,7 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
           : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
       )}
     >
-      {item.logo ? <PetalLogo size={16} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={16} className="shrink-0" /> : item.glyph ? <PetalMark className="size-4 shrink-0" /> : IconC ? <IconC className="size-4 shrink-0" /> : null}
+      {item.logo ? <PetalLogo size={14} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={14} className="shrink-0" /> : item.glyph ? <PetalMark className="size-3.5 shrink-0" /> : IconC ? <IconC className="size-3.5 shrink-0" /> : null}
       <span className="truncate">{item.label}</span>
       {item.badge ? (
         <span className="ml-auto rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">
@@ -64,6 +67,28 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const needsYou = useLiveNeedsYou().length;
 
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [wsOpen, setWsOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const wsRef = useRef<HTMLDivElement>(null);
+
+  // ⌘K / Ctrl-K opens search anywhere
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setSearchOpen(true); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // close the workspace menu on outside click
+  useEffect(() => {
+    if (!wsOpen) return;
+    const onDown = (e: MouseEvent) => { if (wsRef.current && !wsRef.current.contains(e.target as Node)) setWsOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [wsOpen]);
+
   // Review mode and debug surfaces render full-screen, outside the shell chrome.
   if (pathname.startsWith("/os/review") || pathname.startsWith("/os/debug")) {
     return (
@@ -88,25 +113,83 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const petalAi: Item[] = [
     { label: "Skills", href: "/os/skills", hugeicon: I.skills },
     { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
+    { label: "Activity", href: "/os/activity", icon: Activity },
   ];
   const system: Item[] = [
     { label: "Settings", href: "/os/settings", icon: Settings },
   ];
 
   return (
-    <div className="petal-os flex h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
+    <div className="petal-os relative flex h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
+      {/* expand control — only when collapsed */}
+      {collapsed && (
+        <button
+          onClick={() => setCollapsed(false)}
+          aria-label="Expand sidebar"
+          className="absolute left-2 top-3 z-30 grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+        >
+          <PanelLeftOpen className="size-[18px]" strokeWidth={1.5} />
+        </button>
+      )}
+
       {/* ── SIDEBAR ── */}
-      <aside className="relative flex w-[208px] shrink-0 flex-col">
+      <aside className={cn("group/sidebar relative flex shrink-0 flex-col transition-[width] duration-200 ease-out", collapsed ? "w-0 overflow-hidden" : "w-[208px]")}>
         {/* workspace switcher + search / compose (Linear) */}
         <div className="flex items-center gap-1.5 px-3 py-2.5">
-          <div className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]">
-            <PetalMark className="size-3.5" />
+          <div className="relative min-w-0 flex-1" ref={wsRef}>
+            <button
+              onClick={() => setWsOpen(o => !o)}
+              aria-expanded={wsOpen}
+              className="-mx-1 flex min-w-0 w-full items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:bg-[var(--os-hover)]"
+            >
+              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]">
+                <PetalMark className="size-3.5" />
+              </span>
+              <span className="truncate text-[14px] font-semibold text-[var(--os-ink)]">Vazant EA</span>
+              <ChevronsUpDown className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
+            </button>
+
+            {wsOpen && (
+              <div className="absolute left-0 top-[calc(100%+6px)] z-30 w-[224px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-1.5 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                <div className="flex items-center gap-2.5 px-2 py-2">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]"><PetalMark className="size-4" /></span>
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-semibold text-[var(--os-ink)]">Vazant EA</div>
+                    <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">Antonio Vazquez · EA</div>
+                  </div>
+                </div>
+                <div className="my-1 h-px bg-[var(--os-border)]" />
+                {[
+                  { label: "Firm settings", href: "/os/settings", icon: Settings },
+                  { label: "Members", href: "/os/settings", icon: Users },
+                  { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
+                ].map(it => (
+                  <Link key={it.label} href={it.href} onClick={() => setWsOpen(false)} className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]">
+                    <it.icon className="size-4 shrink-0 text-[var(--os-ink-subtle)]" /> {it.label}
+                  </Link>
+                ))}
+                <div className="my-1 h-px bg-[var(--os-border)]" />
+                <button onClick={() => setWsOpen(false)} className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+                  <LogOut className="size-4 shrink-0 text-[var(--os-ink-subtle)]" /> Sign out
+                </button>
+              </div>
+            )}
           </div>
-          <button className="flex min-w-0 items-center gap-1">
-            <span className="truncate text-[14px] font-semibold">Vazant EA</span>
-            <ChevronsUpDown className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
+
+          <button
+            aria-label="Collapse sidebar"
+            onClick={() => setCollapsed(true)}
+            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] opacity-0 transition-all hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:opacity-100 group-hover/sidebar:opacity-100"
+          >
+            <PanelLeftClose className="size-[17px]" strokeWidth={1.5} />
           </button>
-          <button aria-label="Search" className="ml-auto grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.search} size={16} /></button>
+          <button
+            aria-label="Search"
+            onClick={() => setSearchOpen(true)}
+            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
+          >
+            <Icon icon={I.search} size={16} />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
@@ -114,8 +197,8 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
           </div>
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
-          <NavGroup label="Records" icon={<Folder className="size-4 shrink-0" />} items={records} isActive={isActive} defaultOpen />
-          <NavGroup label="Petal AI" icon={<PetalMark className="size-4 shrink-0" />} items={petalAi} isActive={isActive} defaultOpen={false} />
+          <NavGroup label="Records" icon={<Folder className="size-3.5 shrink-0" />} items={records} isActive={isActive} defaultOpen />
+          <NavGroup label="Petal AI" icon={<PetalMark className="size-3.5 shrink-0" />} items={petalAi} isActive={isActive} defaultOpen={false} />
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">
             {system.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
@@ -127,11 +210,15 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── MAIN ── */}
-      <main className="min-w-0 flex-1 overflow-hidden p-2.5 pt-3">
+      <main className={cn("min-w-0 flex-1 overflow-hidden p-2.5 pt-3 transition-[padding] duration-200 ease-out", collapsed && "pl-11")}>
         <div className="h-full overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-canvas)] shadow-[0_1px_2px_rgba(17,17,26,0.04),0_4px_14px_-6px_rgba(17,17,26,0.07)]">
           {children}
         </div>
       </main>
+
+      <AnimatePresence>
+        {searchOpen && <CommandSearch onClose={() => setSearchOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

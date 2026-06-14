@@ -13,18 +13,19 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
-import { Icon, I } from "@/components/os/icon";
 import { AskComposer } from "@/components/os/ask-composer";
 import { WeeklyDigestLink } from "@/components/os/roi-strip";
 import { FeatureCallout } from "@/components/os/callout";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { SkillPetal } from "@/components/os/primitives";
+import { TodayBrief } from "@/components/os/today-brief";
+import { FilingReadiness } from "@/components/os/filing-readiness";
 import { DEMO_DATE_LABEL } from "@/lib/fixtures/vocab";
 import {
-  FIRM_PROFILE, brief, briefToneDot,
+  FIRM_PROFILE,
   taskById, householdById, skillById, runById, engagementById,
 } from "@/lib/fixtures/firm";
-import { healthCounts, roiWeek, filingReadiness } from "@/lib/fixtures/derive";
+import { healthCounts, roiWeek } from "@/lib/fixtures/derive";
 import { useLiveNeedsYou } from "@/lib/demo-store";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -75,10 +76,6 @@ export default function TodayPage() {
   // The first decision in the queue — embedded as the callout's live preview.
   const previewTask = queue[0];
 
-  // Filing readiness — the tax analytics that replace the books card.
-  const fr = filingReadiness();
-  const frPct = (n: number) => (fr.total ? (n / fr.total) * 100 : 0);
-
   // Today's call — the Fuentes 1120S review; the brief is a running Pre-call Brief run.
   const callTask = taskById("t-brief-fuentes")!;
   const callHousehold = householdById(callTask.householdId)!;
@@ -114,42 +111,46 @@ export default function TodayPage() {
           {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* ── review queue — the crafted moment (hidden once the queue is clear) ── */}
+          {/* ── Filing readiness — card opens the full modal (who's lagging, what needs review) ── */}
+          <FilingReadiness />
+
+          {/* ── review queue — the crafted moment, under filing readiness (hidden once the queue is clear) ── */}
           {needsYou > 0 && (
           <FeatureCallout
             eyebrow={<><PetalMark className="size-3.5" /> Review mode</>}
             title={`${needsYou} items are ready for your sign-off`}
-            body={`Approve, edit, or skip each one with its sources alongside — keyboard A, E, S. About ${reviewMinutes} minutes.`}
+            body={`Approve or skip each one with its sources and reasoning alongside — keyboard A and S. About ${reviewMinutes} minutes.`}
             action={{ label: "Start reviewing", href: "/os/review" }}
             secondary={{ label: "View all tasks", href: "/os/tasks" }}
             preview={
               previewTask && (
                 <div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--os-ink-subtle)]">
-                    <SkillPetal category={skillById(previewTask.skillId)!.category} size={11} />
+                  <div className="flex items-center gap-1.5 text-[10.5px] font-medium text-[var(--os-ink-subtle)]">
+                    <SkillPetal category={skillById(previewTask.skillId)!.category} size={12} />
                     1 of {needsYou} · {householdById(previewTask.householdId)!.name}
                   </div>
-                  <div className="mt-1 text-[12px] font-semibold leading-snug text-[var(--os-ink)]">{previewTask.title}</div>
-                  <div className="mt-2 space-y-1">
-                    {previewTask.proposedActions?.slice(0, 3).map(a => (
-                      <div
-                        key={a.key}
-                        className={cn(
-                          "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10.5px] leading-tight",
-                          a.key === previewTask.recommendedAction
-                            ? "border-[var(--os-border-strong)] bg-[var(--os-card)] font-medium text-[var(--os-ink)]"
-                            : "border-[var(--os-border)] text-[var(--os-ink-muted)]",
-                        )}
-                      >
-                        <span className="font-semibold">{a.key}</span>
-                        <span className="truncate">{a.label}</span>
-                        {a.key === previewTask.recommendedAction && (
-                          <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-[9.5px] text-[var(--os-ink-subtle)]">
-                            <PetalMark className="size-2.5" /> recommends
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="mt-1.5 line-clamp-1 text-[13px] font-semibold leading-snug text-[var(--os-ink)]">{previewTask.title}</div>
+                  <div className="mt-3 space-y-1.5">
+                    {previewTask.proposedActions?.slice(0, 3).map(a => {
+                      const rec = a.key === previewTask.recommendedAction;
+                      return (
+                        <div
+                          key={a.key}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px]",
+                            rec ? "border-[var(--os-border-strong)] bg-[var(--os-card)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-[var(--os-border)]",
+                          )}
+                        >
+                          <span className={cn("grid size-[18px] shrink-0 place-items-center rounded-md text-[10px] font-semibold", rec ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{a.key}</span>
+                          <span className={cn("min-w-0 flex-1 truncate", rec ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>{a.label}</span>
+                          {rec && (
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-[var(--os-selected)] px-1.5 py-0.5 text-[9.5px] font-medium text-[var(--os-ink-muted)]">
+                              <PetalMark className="size-2.5" /> Recommended
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )
@@ -157,76 +158,8 @@ export default function TodayPage() {
           />
           )}
 
-          {/* ── Filing readiness — tax analytics: who's on track to file on time ── */}
-          <Link
-            href="/os/practice"
-            className={cn("block rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]", focusRing)}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">Filing readiness</h3>
-              <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
-                <span className="tabular-nums">{fr.total}</span> returns <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
-              </span>
-            </div>
-            <p className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">Extension season — Sep 15 business, Oct 15 individual</p>
-            <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
-              <div className="h-full bg-emerald-500" style={{ width: `${frPct(fr.filed)}%` }} />
-              <div className="h-full bg-blue-500" style={{ width: `${frPct(fr.onTrack)}%` }} />
-              <div className="h-full bg-amber-500" style={{ width: `${frPct(fr.atRisk)}%` }} />
-            </div>
-            <div className="mt-3.5 flex items-center gap-10">
-              {([
-                ["Filed", fr.filed, "bg-emerald-500"],
-                ["On track", fr.onTrack, "bg-blue-500"],
-                ["At risk", fr.atRisk, "bg-amber-500"],
-              ] as const).map(([label, count, dot]) => (
-                <div key={label}>
-                  <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    <span className={cn("size-2 rounded-full", dot)} /> {label}
-                  </div>
-                  <div className="os-display mt-1 text-[20px] font-semibold tabular-nums text-[var(--os-ink)]">{count}</div>
-                </div>
-              ))}
-            </div>
-          </Link>
-
-          {/* ── Today's brief (the newspaper) ── */}
-          <Card>
-            <CardHead title="Today's brief" mark />
-            <ul className="-mx-2 flex-1">
-              {brief.map((b, i) => {
-                const body = (
-                  <>
-                    <span className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", briefToneDot[b.tone])} />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-baseline gap-x-1.5">
-                        <span className="text-[13px] font-medium leading-snug text-[var(--os-ink)]">{b.headline}</span>
-                        {b.source && <span className="shrink-0 text-[10px] font-medium tracking-wide text-[var(--os-ink-subtle)]">{b.source}</span>}
-                      </span>
-                      <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{b.detail}</span>
-                    </span>
-                  </>
-                );
-                return (
-                  <li key={i}>
-                    {b.href ? (
-                      <Link href={b.href} className={cn("flex gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", focusRing)}>{body}</Link>
-                    ) : (
-                      <div className="flex gap-2.5 px-2 py-2">{body}</div>
-                    )}
-                    {b.runId && (
-                      <div className="mb-1 ml-6 mr-2">
-                        <ProvenancePanel runId={b.runId} />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-            <Link href="/os/activity" className={cn("-mx-2 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
-              View activity log <Icon icon={I.chevronRight} size={13} />
-            </Link>
-          </Card>
+          {/* ── Today's brief (the newspaper — situational awareness, modal per item) ── */}
+          <TodayBrief />
 
           {/* ── Today's calls ── */}
           <Card>

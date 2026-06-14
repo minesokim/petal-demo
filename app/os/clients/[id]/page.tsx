@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar } from "@/components/os/primitives";
+import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
 import { DocRow, ReviewModal, EngagementDocsHeader } from "@/components/os/doc-gallery";
@@ -21,9 +21,10 @@ import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import {
   householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
   positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById, FIRM_PROFILE,
-  preparerOf, memberById,
   type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
 } from "@/lib/fixtures/firm";
+import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
+import { AssigneePicker } from "@/components/os/assignee-picker";
 import {
   householdStage, householdDeadline, householdFee, docsOfHousehold, docsOf, invoiceOf,
   invoiceStatusMeta, engagementDeadline, activityFeed, transcriptWatchCount, clientHealth,
@@ -153,6 +154,7 @@ function ClientRecordInner() {
 
   const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
   const [panel, setPanel] = useState<"@Petal" | "Details">("@Petal");
+  useAssignVersion(); // reflect reassignments in the returns list avatars
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -548,11 +550,8 @@ function ClientRecordInner() {
                         </div>
                       ))}
                       <div className="ml-auto">
-                        <div className="text-[11px] text-[var(--os-ink-muted)]">Lead preparer</div>
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <MemberAvatar memberId={preparerOf(h.id)} size={20} />
-                          <span className="text-[13px] font-medium text-[var(--os-ink)]">{memberById(preparerOf(h.id))?.name}</span>
-                        </div>
+                        <div className="mb-1 text-[11px] text-[var(--os-ink-muted)]">Lead preparer</div>
+                        <AssigneePicker householdId={h.id} align="right" className="-ml-1.5" />
                       </div>
                     </div>
 
@@ -580,7 +579,7 @@ function ClientRecordInner() {
                                 </span>
                               )}
                               <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
-                              <MemberAvatar memberId={preparerOf(e.householdId)} size={20} />
+                              <MemberAvatar memberId={assigneeOf(e.householdId)} size={20} />
                               <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
                             </div>
                             {/* docs progress mini-bar (ported from the board card) */}
@@ -715,7 +714,7 @@ function ClientRecordInner() {
                             <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
                               {skill && <SkillPetal category={skill.category} size={15} />}
                               <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
-                              {t.flagged && <Icon icon={I.flag} size={13} className="shrink-0 text-[var(--os-warning)]" />}
+                              {t.flagged && <BookmarkFlag size={13} />}
                               <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
                               {verb && (
                                 <button
