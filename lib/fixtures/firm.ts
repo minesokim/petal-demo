@@ -19,10 +19,72 @@ export const FIRM_PROFILE = {
   admin: { id: "u-elena", name: "Elena Reyes", role: "Part-time admin" },
 } as const;
 
-export const STAFF: Record<string, string> = {
-  "u-antonio": "Antonio Vazquez",
-  "u-elena": "Elena Reyes",
+// ── Firm team (roles, permissions, assignment) ───────────────
+export type FirmRole = "owner" | "preparer" | "reviewer" | "admin";
+
+export interface FirmMember {
+  id: string;
+  name: string;
+  role: FirmRole;
+  credential?: string; // EA / CPA
+  email: string;
+  active: boolean;
+}
+
+/** who is "logged in" — the demo runs as the owner */
+export const CURRENT_USER_ID = "u-antonio";
+
+export const firmMembers: FirmMember[] = [
+  { id: "u-antonio", name: "Antonio Vazquez", role: "owner", credential: "EA", email: "antonio@vazantea.com", active: true },
+  { id: "u-raj", name: "Raj Patel", role: "reviewer", credential: "CPA", email: "raj@vazantea.com", active: true },
+  { id: "u-daniel", name: "Daniel Okonkwo", role: "preparer", email: "daniel@vazantea.com", active: true },
+  { id: "u-hannah", name: "Hannah Brooks", role: "preparer", email: "hannah@vazantea.com", active: true },
+  { id: "u-elena", name: "Elena Reyes", role: "admin", email: "elena@vazantea.com", active: true },
+];
+
+export const roleMeta: Record<FirmRole, { label: string; blurb: string; tint: string; dot: string }> = {
+  owner:    { label: "Owner",    blurb: "Signs and e-files returns. Full access to clients, billing, and team.", tint: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+  reviewer: { label: "Reviewer", blurb: "Reviews and approves drafts across the firm. Cannot sign.",            tint: "bg-violet-50 text-violet-700",  dot: "bg-violet-500" },
+  preparer: { label: "Preparer", blurb: "Drafts returns and chases documents. The owner signs and files.",      tint: "bg-blue-50 text-blue-700",      dot: "bg-blue-500" },
+  admin:    { label: "Admin",    blurb: "Intake, documents, and billing. Cannot prepare or sign returns.",       tint: "bg-amber-50 text-amber-700",    dot: "bg-amber-500" },
 };
+
+export type Permission =
+  | "sign_returns" | "efile" | "approve_drafts" | "prepare_returns" | "manage_billing" | "manage_team" | "intake_docs";
+export const PERMISSIONS: Permission[] = ["sign_returns", "efile", "approve_drafts", "prepare_returns", "manage_billing", "manage_team", "intake_docs"];
+export const PERMISSION_LABEL: Record<Permission, string> = {
+  sign_returns: "Sign returns",
+  efile: "Transmit e-file",
+  approve_drafts: "Approve drafts",
+  prepare_returns: "Prepare returns",
+  manage_billing: "Manage billing",
+  manage_team: "Manage team",
+  intake_docs: "Intake & documents",
+};
+export const ROLE_PERMISSIONS: Record<FirmRole, Permission[]> = {
+  owner: ["sign_returns", "efile", "approve_drafts", "prepare_returns", "manage_billing", "manage_team", "intake_docs"],
+  reviewer: ["approve_drafts", "prepare_returns", "intake_docs"],
+  preparer: ["prepare_returns", "intake_docs"],
+  admin: ["intake_docs", "manage_billing"],
+};
+
+export const memberById = (id?: string) => firmMembers.find(m => m.id === id);
+export const memberInitials = (id?: string) => {
+  const m = memberById(id);
+  return m ? m.name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase() : "?";
+};
+export const isCurrentUser = (id?: string) => id === CURRENT_USER_ID;
+
+/** who leads each client relationship — the assigned preparer */
+export const HOUSEHOLD_PREPARER: Record<string, string> = {
+  "h-chen": "u-antonio", "h-rodriguez": "u-antonio", "h-park": "u-antonio", "h-fuentes": "u-antonio",
+  "h-sharma": "u-daniel", "h-nakamura": "u-daniel", "h-mendez": "u-daniel", "h-russo": "u-daniel",
+  "h-williams": "u-hannah", "h-sandoval": "u-hannah", "h-obrien": "u-hannah",
+};
+export const preparerOf = (householdId: string) => HOUSEHOLD_PREPARER[householdId] ?? "u-antonio";
+
+// legacy name map — now derived from the full roster
+export const STAFF: Record<string, string> = Object.fromEntries(firmMembers.map(m => [m.id, m.name]));
 
 // ── Households ───────────────────────────────────────────────
 export type HouseholdKind = "individual" | "business" | "mixed";

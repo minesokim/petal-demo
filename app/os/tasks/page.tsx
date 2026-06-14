@@ -10,9 +10,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, DeadlineChip, SkillPetal } from "@/components/os/primitives";
+import { StatusPill, DeadlineChip, SkillPetal, MemberAvatar, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
-import { tasks, householdById, skillById, engagementById, taskById, type Task } from "@/lib/fixtures/firm";
+import { tasks, householdById, skillById, engagementById, taskById, preparerOf, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
 import { demoStore, useDemoVersion, useLiveNeedsYou } from "@/lib/demo-store";
 import { TASK_STATUS_ORDER, taskStatusMeta, type TaskStatus } from "@/lib/fixtures/vocab";
 
@@ -121,6 +121,7 @@ function Row({
             {t.feeContext && (
               <span className="hidden max-w-[190px] shrink-0 truncate text-[11px] text-[var(--os-ink-subtle)] xl:inline">{t.feeContext}</span>
             )}
+            <MemberAvatar memberId={preparerOf(t.householdId)} size={20} className="hidden shrink-0 sm:grid" />
           </>
         )}
         {verb && (
@@ -149,6 +150,7 @@ function TasksPageInner() {
   const deepLink = params.get("task");
 
   const [selected, setSelected] = useState<string | null>(() => (deepLink && taskById(deepLink) ? deepLink : null));
+  const [scope, setScope] = useState<Scope>("firm");
   const [sort, setSort] = useState<SortKey>("deadline");
   const [groupByClient, setGroupByClient] = useState(false);
   const [flaggedOnly, setFlaggedOnly] = useState(false);
@@ -176,7 +178,11 @@ function TasksPageInner() {
   const needsYou = useLiveNeedsYou().length;
 
   const groups: Group[] = useMemo(() => {
-    const list = liveTasks.filter(t => (!flaggedOnly || t.flagged) && (!blockedOnly || isBlocked(t)));
+    const list = liveTasks.filter(t =>
+      (!flaggedOnly || t.flagged) &&
+      (!blockedOnly || isBlocked(t)) &&
+      (scope === "firm" || preparerOf(t.householdId) === CURRENT_USER_ID),
+    );
     const sorted = [...list].sort(sorters[sort]);
     if (groupByClient) {
       const names = [...new Set(sorted.map(clientName))].sort((a, b) => a.localeCompare(b));
@@ -185,7 +191,7 @@ function TasksPageInner() {
     return TASK_STATUS_ORDER
       .map(s => ({ key: s as string, status: s, items: sorted.filter(t => t.status === s) }))
       .filter(g => g.items.length > 0);
-  }, [liveTasks, sort, groupByClient, flaggedOnly, blockedOnly]);
+  }, [liveTasks, sort, groupByClient, flaggedOnly, blockedOnly, scope]);
 
   const item = selected ? taskById(selected) ?? null : null;
   const approvable = liveTasks.filter(t => t.status === "ready_to_approve");
@@ -205,8 +211,10 @@ function TasksPageInner() {
         <h1 className="os-display text-[14px] font-semibold text-[var(--os-ink)]">Tasks</h1>
       </div>
 
-      {/* toolbar: sort · group · filter chips · bulk approve */}
+      {/* toolbar: scope · sort · group · filter chips · bulk approve */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--os-border)] px-8 py-1.5">
+        <ScopeToggle scope={scope} onChange={setScope} />
+        <span className="mr-0.5 h-5 w-px bg-[var(--os-border)]" />
         <label className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] px-2 text-[12px] text-[var(--os-ink-muted)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--os-accent)]">
           <Icon icon={I.sort} size={13} />
           <span className="sr-only">Sort by</span>

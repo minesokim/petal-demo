@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag } from "@/components/os/primitives";
+import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
 import { DocRow, ReviewModal, EngagementDocsHeader } from "@/components/os/doc-gallery";
@@ -21,6 +21,7 @@ import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import {
   householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
   positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById, FIRM_PROFILE,
+  preparerOf, memberById,
   type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
 } from "@/lib/fixtures/firm";
 import {
@@ -546,6 +547,13 @@ function ClientRecordInner() {
                           <div className={cn("os-display mt-0.5 text-[17px] font-semibold tabular-nums", i === 3 && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
                         </div>
                       ))}
+                      <div className="ml-auto">
+                        <div className="text-[11px] text-[var(--os-ink-muted)]">Lead preparer</div>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <MemberAvatar memberId={preparerOf(h.id)} size={20} />
+                          <span className="text-[13px] font-medium text-[var(--os-ink)]">{memberById(preparerOf(h.id))?.name}</span>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
@@ -572,6 +580,7 @@ function ClientRecordInner() {
                                 </span>
                               )}
                               <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
+                              <MemberAvatar memberId={preparerOf(e.householdId)} size={20} />
                               <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
                             </div>
                             {/* docs progress mini-bar (ported from the board card) */}

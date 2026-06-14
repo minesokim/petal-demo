@@ -5,6 +5,7 @@ import {
   SKILL_CATEGORY_ORDER, daysUntil, fmtDate,
   type TaskStatus, type Stage, type SkillCategory, type TrustTier,
 } from "@/lib/fixtures/vocab";
+import { memberById, memberInitials, roleMeta } from "@/lib/fixtures/firm";
 
 /** Each agent's petal mark, keyed by its identity gradient. */
 const PETAL_BY_GRADIENT: Record<string, string> = {
@@ -184,5 +185,44 @@ export function TrustTierTag({ tier, className }: { tier: TrustTier; className?:
     <span className={cn("inline-flex items-center gap-1 rounded-full border border-[var(--os-border)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]", className)} title={m.blurb}>
       {m.code} · {m.label}
     </span>
+  );
+}
+
+// ── Team / firm-wide ──────────────────────────────────────────
+
+/** Flat initials avatar for a firm member (records stay monochrome). */
+export function MemberAvatar({ memberId, size = 22, className }: { memberId?: string; size?: number; className?: string }) {
+  const m = memberById(memberId);
+  return (
+    <span
+      className={cn("grid shrink-0 place-items-center rounded-full bg-[var(--os-selected)] font-semibold text-[var(--os-ink-muted)]", className)}
+      style={{ width: size, height: size, fontSize: size <= 20 ? 9 : 10 }}
+      title={m ? `${m.name}${m.credential ? ` · ${m.credential}` : ""} — ${roleMeta[m.role].label}` : "Unassigned"}
+    >
+      {memberInitials(memberId)}
+    </span>
+  );
+}
+
+export type Scope = "mine" | "firm";
+
+/** "Mine / Firm" segmented toggle — the firm-wide view control. */
+export function ScopeToggle({ scope, onChange, className }: { scope: Scope; onChange: (s: Scope) => void; className?: string }) {
+  return (
+    <div className={cn("flex items-center rounded-md border border-[var(--os-border)] p-0.5", className)} role="group" aria-label="View scope">
+      {(["mine", "firm"] as const).map(s => (
+        <button
+          key={s}
+          onClick={() => onChange(s)}
+          aria-pressed={scope === s}
+          className={cn(
+            "h-6 rounded px-2 text-[12px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+            scope === s ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]",
+          )}
+        >
+          {s === "mine" ? "Mine" : "Firm"}
+        </button>
+      ))}
+    </div>
   );
 }

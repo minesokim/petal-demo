@@ -4,13 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   households, people, engagements, entitiesOf, householdById, entityById,
-  type HouseholdKind, type Person,
+  preparerOf, CURRENT_USER_ID,
+  type HouseholdKind, type Person, type Household, type Engagement,
 } from "@/lib/fixtures/firm";
 import { STAGE_ORDER, stageMeta, money, type Stage } from "@/lib/fixtures/vocab";
 import {
   householdStage, householdDeadline, docsOfHousehold, docsOf, invoiceOf, engagementDeadline,
 } from "@/lib/fixtures/derive";
-import { StageTag, DeadlineChip } from "@/components/os/primitives";
+import { StageTag, DeadlineChip, MemberAvatar, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 
@@ -58,13 +59,13 @@ function DocsBar({ label, inHand, denom }: { label: string; inHand: number; deno
 const EmDash = () => <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>;
 
 // ── Clients (households) — the deliverable table ──
-const CLIENT_COLS = "grid-cols-[minmax(220px,1.6fr)_minmax(118px,1fr)_136px_104px_148px_100px_92px]";
+const CLIENT_COLS = "grid-cols-[minmax(220px,1.6fr)_minmax(110px,1fr)_136px_104px_148px_100px_84px_56px]";
 
-function ClientsTable() {
+function ClientsTable({ rows }: { rows: Household[] }) {
   return (
-    <div className="min-w-[1000px]">
-      <HeaderRow cols={CLIENT_COLS} labels={["Name", "Forms", "Stage", "Deadline", "Docs", "Balance", "Tier"]} right={["Balance"]} />
-      {households.map(h => {
+    <div className="min-w-[1040px]">
+      <HeaderRow cols={CLIENT_COLS} labels={["Name", "Forms", "Stage", "Deadline", "Docs", "Balance", "Tier", "Owner"]} right={["Balance"]} />
+      {rows.map(h => {
         const ents = entitiesOf(h.id);
         const docs = docsOfHousehold(h.id);
         const dl = householdDeadline(h.id);
@@ -95,6 +96,7 @@ function ClientsTable() {
             <div>
               <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{h.serviceTier}</span>
             </div>
+            <div><MemberAvatar memberId={preparerOf(h.id)} size={24} /></div>
           </Link>
         );
       })}
@@ -103,13 +105,13 @@ function ClientsTable() {
 }
 
 // ── Returns (engagements) ──
-const RETURN_COLS = "grid-cols-[minmax(220px,1.7fr)_136px_104px_148px_96px]";
+const RETURN_COLS = "grid-cols-[minmax(220px,1.7fr)_136px_104px_148px_96px_56px]";
 
-function ReturnsTable() {
+function ReturnsTable({ rows }: { rows: Engagement[] }) {
   return (
-    <div className="min-w-[840px]">
-      <HeaderRow cols={RETURN_COLS} labels={["Return", "Stage", "Deadline", "Docs", "Fee"]} right={["Fee"]} />
-      {engagements.map(e => {
+    <div className="min-w-[880px]">
+      <HeaderRow cols={RETURN_COLS} labels={["Return", "Stage", "Deadline", "Docs", "Fee", "Owner"]} right={["Fee"]} />
+      {rows.map(e => {
         const entity = entityById(e.entityId);
         const hh = householdById(e.householdId);
         const docs = docsOf(e.id);
@@ -132,6 +134,7 @@ function ReturnsTable() {
             <div>{closed ? <EmDash /> : <DeadlineChip iso={dl.iso} extended={dl.extended} />}</div>
             <DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} />
             <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
+            <div><MemberAvatar memberId={preparerOf(e.householdId)} size={24} /></div>
           </Link>
         );
       })}
@@ -140,12 +143,12 @@ function ReturnsTable() {
 }
 
 // ── People (contacts) ──
-const PEOPLE_COLS = "grid-cols-[minmax(210px,1.6fr)_120px_minmax(150px,1.1fr)_140px]";
+const PEOPLE_COLS = "grid-cols-[minmax(210px,1.6fr)_120px_minmax(150px,1.1fr)_140px_56px]";
 
 function PeopleTable({ rows }: { rows: Person[] }) {
   return (
-    <div className="min-w-[760px]">
-      <HeaderRow cols={PEOPLE_COLS} labels={["Name", "Role", "Client", "Phone"]} />
+    <div className="min-w-[800px]">
+      <HeaderRow cols={PEOPLE_COLS} labels={["Name", "Role", "Client", "Phone", "Owner"]} />
       {rows.map(p => (
         <Link
           key={p.id}
@@ -164,6 +167,7 @@ function PeopleTable({ rows }: { rows: Person[] }) {
           </div>
           <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{householdById(p.householdId)?.name}</div>
           <div className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{p.phone}</div>
+          <div><MemberAvatar memberId={preparerOf(p.householdId)} size={24} /></div>
         </Link>
       ))}
     </div>
@@ -221,21 +225,27 @@ function StageBoard({ items }: { items: BoardItem[] }) {
 export default function ClientsPage() {
   const [view, setView] = useState<View>("clients");
   const [layout, setLayout] = useState<Layout>("list");
+  const [scope, setScope] = useState<Scope>("firm");
+
+  const mine = scope === "mine";
+  const hhRows = mine ? households.filter(h => preparerOf(h.id) === CURRENT_USER_ID) : households;
+  const engRows = mine ? engagements.filter(e => preparerOf(e.householdId) === CURRENT_USER_ID) : engagements;
+  const peopleRows = mine ? people.filter(p => preparerOf(p.householdId) === CURRENT_USER_ID) : people;
 
   const counts: Record<View, number> = {
-    clients: households.length,
-    returns: engagements.length,
-    people: people.length,
+    clients: hhRows.length,
+    returns: engRows.length,
+    people: peopleRows.length,
   };
 
   // board items reflect the active object view — both group on the 7 canon stages
   const boardItems: BoardItem[] = view === "returns"
-    ? engagements.map(e => {
+    ? engRows.map(e => {
         const entity = entityById(e.entityId);
         const hh = householdById(e.householdId);
         return { id: e.id, href: `/os/returns/${e.id}`, name: entity?.name ?? hh?.name ?? e.form, sub: `${hh?.name} · ${e.taxYear}`, pills: [e.form], stage: e.stage };
       })
-    : households.map(h => ({
+    : hhRows.map(h => ({
         id: h.id, href: `/os/clients/${h.id}`, name: h.name, sub: kindLabel[h.kind],
         pills: entitiesOf(h.id).map(x => x.form), stage: householdStage(h.id), tag: h.serviceTier,
       }));
@@ -271,25 +281,28 @@ export default function ClientsPage() {
           </button>
         ))}
 
-        {/* layout — list / board (board not applicable to People) */}
-        {view !== "people" && (
-          <div className="ml-auto flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">
-            <button onClick={() => setLayout("list")} aria-label="List layout" className={cn("grid size-6 place-items-center rounded transition-colors", FOCUS, layout === "list" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewList} size={14} /></button>
-            <button onClick={() => setLayout("board")} aria-label="Board layout" className={cn("grid size-6 place-items-center rounded transition-colors", FOCUS, layout === "board" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewBoard} size={14} /></button>
-          </div>
-        )}
+        {/* scope + layout */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <ScopeToggle scope={scope} onChange={setScope} />
+          {view !== "people" && (
+            <div className="flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">
+              <button onClick={() => setLayout("list")} aria-label="List layout" className={cn("grid size-6 place-items-center rounded transition-colors", FOCUS, layout === "list" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewList} size={14} /></button>
+              <button onClick={() => setLayout("board")} aria-label="Board layout" className={cn("grid size-6 place-items-center rounded transition-colors", FOCUS, layout === "board" ? "bg-[var(--os-selected)] text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]")}><Icon icon={I.viewBoard} size={14} /></button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* body — one scroll container so narrow viewports pan the whole table */}
       <div className="min-h-0 flex-1 overflow-auto">
         {view === "people" ? (
-          <PeopleTable rows={people} />
+          <PeopleTable rows={peopleRows} />
         ) : layout === "board" ? (
           <StageBoard items={boardItems} />
         ) : view === "clients" ? (
-          <ClientsTable />
+          <ClientsTable rows={hhRows} />
         ) : (
-          <ReturnsTable />
+          <ReturnsTable rows={engRows} />
         )}
       </div>
     </div>

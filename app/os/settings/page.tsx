@@ -5,25 +5,26 @@ import type { IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
-import { AgentAvatar, SkillPetal, TrustDial } from "@/components/os/primitives";
+import { AgentAvatar, SkillPetal, TrustDial, MemberAvatar } from "@/components/os/primitives";
 import { integrations, integrationCategories, type Integration } from "@/lib/os-integrations";
 import { mcpServer, accessTokens } from "@/lib/os-api";
-import { skills } from "@/lib/fixtures/firm";
+import {
+  skills, firmMembers, roleMeta, ROLE_PERMISSIONS, PERMISSIONS, PERMISSION_LABEL, isCurrentUser,
+  type FirmRole,
+} from "@/lib/fixtures/firm";
 import { skillCategoryMeta, trustTierMeta, type TrustTier } from "@/lib/fixtures/vocab";
+
+const ROLE_ORDER: FirmRole[] = ["owner", "reviewer", "preparer", "admin"];
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
 
-const SOON_BEFORE = [
-  { label: "General", icon: I.settings },
-  { label: "Members", icon: I.clients },
-];
 const SOON_AFTER = [
   { label: "Billing", icon: I.returns },
 ];
 
 const connectedCount = integrations.filter(i => i.status === "connected").length;
 
-type SectionId = "trust" | "integrations" | "developer";
+type SectionId = "members" | "trust" | "integrations" | "developer";
 
 function SoonRow({ label, icon }: { label: string; icon: IconSvgElement }) {
   return (
@@ -70,7 +71,7 @@ function IntegrationCard({ it }: { it: Integration }) {
 export default function SettingsPage() {
   const [tab, setTab] = useState<"connected" | "all">("all");
   const [copied, setCopied] = useState(false);
-  const [active, setActive] = useState<SectionId>("trust");
+  const [active, setActive] = useState<SectionId>("members");
 
   // Trust & autonomy — per-skill dials, local state seeded from fixtures.
   const [tiers, setTiers] = useState<Record<string, TrustTier>>(
@@ -115,7 +116,8 @@ export default function SettingsPage() {
         <aside className="flex w-[208px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] px-2.5 py-3">
           <div className="os-label mb-1 px-2">Workspace</div>
           <div className="mb-3 space-y-0.5">
-            {SOON_BEFORE.map(s => <SoonRow key={s.label} label={s.label} icon={s.icon} />)}
+            <SoonRow label="General" icon={I.settings} />
+            {navBtn("members", "Members", I.clients)}
             {navBtn("trust", "Trust & autonomy", I.shield)}
             {SOON_AFTER.map(s => <SoonRow key={s.label} label={s.label} icon={s.icon} />)}
           </div>
@@ -128,8 +130,74 @@ export default function SettingsPage() {
         {/* main */}
         <div className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[840px] px-6 py-6">
+            {/* ── Members ── */}
+            <div id="members" className="mb-4 scroll-mt-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-[15px] font-semibold os-display">Members</h2>
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]">Your firm's team and what each role can do.</p>
+                </div>
+                <button className={cn("flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>
+                  <Icon icon={I.plus} size={14} /> Invite member
+                </button>
+              </div>
+            </div>
+
+            {/* roster */}
+            <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+              {firmMembers.map(m => (
+                <div key={m.id} className="flex items-center gap-3 border-b border-[var(--os-border)] px-3.5 py-3 last:border-b-0">
+                  <MemberAvatar memberId={m.id} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-[13px] font-medium text-[var(--os-ink)]">{m.name}</span>
+                      {m.credential && <span className="text-[11px] font-medium text-[var(--os-ink-subtle)]">{m.credential}</span>}
+                      {isCurrentUser(m.id) && <span className="rounded bg-[var(--os-selected)] px-1.5 text-[10px] font-medium text-[var(--os-ink-muted)]">You</span>}
+                    </div>
+                    <div className="truncate text-[12px] text-[var(--os-ink-subtle)]">{m.email}</div>
+                  </div>
+                  <span className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium", roleMeta[m.role].tint)} title={roleMeta[m.role].blurb}>
+                    {roleMeta[m.role].label}
+                  </span>
+                  <button aria-label="Member options" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+                    <Icon icon={I.more} size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* permissions matrix */}
+            <div className="mb-10 mt-5">
+              <div className="os-label mb-2">Role permissions</div>
+              <div className="overflow-x-auto rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+                <div className="min-w-[520px]">
+                  <div className="grid border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)]" style={{ gridTemplateColumns: "minmax(150px,1.4fr) repeat(4, 1fr)" }}>
+                    <div className="px-3.5 py-2 os-label">Permission</div>
+                    {ROLE_ORDER.map(r => (
+                      <div key={r} className="flex items-center gap-1.5 px-3 py-2">
+                        <span className={cn("size-1.5 rounded-full", roleMeta[r].dot)} />
+                        <span className="text-[11px] font-medium text-[var(--os-ink-muted)]">{roleMeta[r].label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {PERMISSIONS.map(p => (
+                    <div key={p} className="grid border-b border-[var(--os-border)] last:border-b-0" style={{ gridTemplateColumns: "minmax(150px,1.4fr) repeat(4, 1fr)" }}>
+                      <div className="px-3.5 py-2 text-[13px] text-[var(--os-ink)]">{PERMISSION_LABEL[p]}</div>
+                      {ROLE_ORDER.map(r => (
+                        <div key={r} className="flex items-center px-3 py-2">
+                          {ROLE_PERMISSIONS[r].includes(p)
+                            ? <Icon icon={I.check} size={14} className="text-emerald-600" />
+                            : <span className="text-[var(--os-border-strong)]">—</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* ── Trust & autonomy ── */}
-            <div id="trust" className="mb-4 scroll-mt-4">
+            <div id="trust" className="scroll-mt-4 border-t border-[var(--os-border)] pt-6 mb-4">
               <h2 className="text-[15px] font-semibold os-display">Trust &amp; autonomy</h2>
               <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]">
                 Petal prepares everything; what it may <span className="font-medium text-[var(--os-ink)]">do</span> is set per skill.
