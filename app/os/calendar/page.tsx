@@ -1,15 +1,18 @@
 "use client";
 
-// /os/calendar — the firm calendar. Month grid in the Notion/Linear idiom
-// (hairline grid, day numbers top-left, today circled, events as dot + text),
-// plus an Upcoming rail of the deadlines and calls that matter. Demo date is
-// Thursday, June 25, 2026, so the calendar opens on June 2026.
+// /os/calendar — the firm scheduling calendar. Month grid in the Notion/Linear
+// idiom (hairline cells, day numbers, today circled, events as dot + text) + an
+// Upcoming rail. This surface is for SCHEDULED things (meetings, calls, focus
+// blocks, office closures) — deadlines live in Today/Tasks/Notices. Clicking an
+// event opens a detail modal; nothing navigates away. Opens on June 2026.
 
 import Link from "next/link";
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
-import { DEMO_DATE, daysUntil } from "@/lib/fixtures/vocab";
+import { PetalMark } from "@/components/petal-mark";
+import { DEMO_DATE, daysUntil, fmtDateYear } from "@/lib/fixtures/vocab";
 import { householdById } from "@/lib/fixtures/firm";
 import { calendarEvents, calEventMeta, eventsOn, upcomingEvents, type CalEvent } from "@/lib/fixtures/calendar";
 
@@ -22,10 +25,10 @@ const iso = (y: number, m: number, d: number) =>
 
 const TODAY_ISO = iso(DEMO_DATE.getFullYear(), DEMO_DATE.getMonth(), DEMO_DATE.getDate());
 
-/** the 5–6 week grid of ISO dates covering `month` of `year` (Sun-started weeks) */
+/** the week grid of ISO dates covering `month` of `year` (Sun-started weeks) */
 function monthGrid(year: number, month: number): string[] {
   const first = new Date(year, month, 1);
-  const start = new Date(year, month, 1 - first.getDay()); // back up to Sunday
+  const start = new Date(year, month, 1 - first.getDay());
   const weeks = Math.ceil((first.getDay() + new Date(year, month + 1, 0).getDate()) / 7);
   const cells: string[] = [];
   for (let i = 0; i < weeks * 7; i++) {
@@ -36,29 +39,16 @@ function monthGrid(year: number, month: number): string[] {
   return cells;
 }
 
-function EventRow({ e, compact }: { e: CalEvent; compact?: boolean }) {
-  const inner = (
-    <>
-      <span className={cn("mt-[5px] size-1.5 shrink-0 rounded-full", calEventMeta[e.type].dot, e.done && "opacity-40")} />
-      <span className="min-w-0 flex-1 truncate">
-        {e.time && <span className="mr-1 tabular-nums text-[var(--os-ink-subtle)]">{e.time}</span>}
-        <span className={cn(e.done ? "text-[var(--os-ink-subtle)] line-through decoration-[var(--os-border-strong)]" : "text-[var(--os-ink)]")}>{e.title}</span>
-      </span>
-    </>
-  );
-  const cls = cn("flex items-start gap-1.5 rounded px-1 py-0.5 text-[11px] leading-tight transition-colors", e.href && "hover:bg-[var(--os-selected)]", compact && "py-px");
-  return e.href ? (
-    <Link href={e.href} className={cn(cls, FOCUS)} onClick={ev => ev.stopPropagation()}>{inner}</Link>
-  ) : (
-    <div className={cls}>{inner}</div>
-  );
+function whenLabel(dateIso: string): string {
+  const dleft = daysUntil(dateIso);
+  return dleft === 0 ? "Today" : dleft === 1 ? "Tomorrow" : dleft > 0 ? `in ${dleft} days` : fmtDateYear(dateIso);
 }
 
 export default function CalendarPage() {
-  // open on the demo month
   const [view, setView] = useState({ year: DEMO_DATE.getFullYear(), month: DEMO_DATE.getMonth() });
+  const [open, setOpen] = useState<CalEvent | null>(null);
   const cells = monthGrid(view.year, view.month);
-  const upcoming = upcomingEvents(TODAY_ISO, 7);
+  const upcoming = upcomingEvents(TODAY_ISO, 8);
 
   const go = (delta: number) => {
     const m = view.month + delta;
@@ -85,13 +75,11 @@ export default function CalendarPage() {
       <div className="flex min-h-0 flex-1">
         {/* ── month grid ── */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* weekday header */}
           <div className="grid grid-cols-7 border-b border-[var(--os-border)]">
             {WEEKDAYS.map(d => (
               <div key={d} className="px-2 py-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{d}</div>
             ))}
           </div>
-          {/* cells */}
           <div
             className="grid min-h-0 flex-1 grid-cols-7 overflow-y-auto"
             style={{ gridTemplateRows: `repeat(${cells.length / 7}, minmax(96px, 1fr))` }}
@@ -121,7 +109,19 @@ export default function CalendarPage() {
                     </span>
                   </div>
                   <div className="space-y-0.5">
-                    {evts.slice(0, 3).map(e => <EventRow key={e.id} e={e} />)}
+                    {evts.slice(0, 3).map(e => (
+                      <button
+                        key={e.id}
+                        onClick={() => setOpen(e)}
+                        className={cn("flex w-full items-start gap-1.5 rounded px-1 py-0.5 text-left text-[11px] leading-tight transition-colors hover:bg-[var(--os-selected)]", FOCUS)}
+                      >
+                        <span className={cn("mt-[5px] size-1.5 shrink-0 rounded-full", calEventMeta[e.type].dot, e.done && "opacity-40")} />
+                        <span className="min-w-0 flex-1 truncate">
+                          {e.time && <span className="mr-1 tabular-nums text-[var(--os-ink-subtle)]">{e.time}</span>}
+                          <span className={cn(e.done ? "text-[var(--os-ink-subtle)] line-through decoration-[var(--os-border-strong)]" : "text-[var(--os-ink)]")}>{e.title}</span>
+                        </span>
+                      </button>
+                    ))}
                     {evts.length > 3 && (
                       <div className="px-1 text-[10.5px] font-medium text-[var(--os-ink-muted)]">+{evts.length - 3} more</div>
                     )}
@@ -136,49 +136,121 @@ export default function CalendarPage() {
         <div className="hidden w-[300px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex">
           <div className="border-b border-[var(--os-border)] px-5 py-3">
             <h2 className="text-[13px] font-semibold text-[var(--os-ink)]">Upcoming</h2>
-            <p className="mt-0.5 text-[11px] text-[var(--os-ink-muted)]">What's next on the firm's calendar.</p>
+            <p className="mt-0.5 text-[11px] text-[var(--os-ink-muted)]">Your next scheduled meetings and blocks.</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
             {upcoming.map(e => {
               const hh = e.householdId ? householdById(e.householdId) : undefined;
-              const dleft = daysUntil(e.date);
-              const when = dleft === 0 ? "Today" : dleft === 1 ? "Tomorrow" : `in ${dleft} days`;
-              const row = (
-                <>
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => setOpen(e)}
+                  className={cn("flex w-full items-start gap-2.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
+                >
                   <span className={cn("mt-1 size-2 shrink-0 rounded-full", calEventMeta[e.type].dot)} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{e.title}</div>
                     <div className="truncate text-[11px] text-[var(--os-ink-muted)]">
-                      {e.time ? `${e.time} · ` : ""}{when}{hh ? ` · ${hh.name}` : ""}
+                      {e.time ? `${e.time} · ` : ""}{whenLabel(e.date)}{hh ? ` · ${hh.name}` : ""}
                     </div>
                   </div>
-                  {e.type === "deadline" && (
-                    <span className={cn("shrink-0 text-[11px] font-medium tabular-nums", dleft < 14 ? "text-[var(--os-danger)]" : "text-[var(--os-ink-subtle)]")}>{dleft}d</span>
-                  )}
-                </>
-              );
-              const cls = "flex items-start gap-2.5 rounded-md px-3 py-2 transition-colors hover:bg-[var(--os-hover)]";
-              return e.href ? (
-                <Link key={e.id} href={e.href} className={cn(cls, FOCUS)}>{row}</Link>
-              ) : (
-                <div key={e.id} className={cls}>{row}</div>
+                </button>
               );
             })}
           </div>
-          {/* legend */}
           <div className="border-t border-[var(--os-border)] px-5 py-3">
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-              {(Object.keys(calEventMeta) as (keyof typeof calEventMeta)[])
-                .filter(t => calendarEvents.some(e => e.type === t))
-                .map(t => (
-                  <span key={t} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--os-ink-muted)]">
-                    <span className={cn("size-1.5 rounded-full", calEventMeta[t].dot)} /> {calEventMeta[t].label}
-                  </span>
-                ))}
+              {(Object.keys(calEventMeta) as (keyof typeof calEventMeta)[]).map(t => (
+                <span key={t} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--os-ink-muted)]">
+                  <span className={cn("size-1.5 rounded-full", calEventMeta[t].dot)} /> {calEventMeta[t].label}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── event detail modal ── */}
+      <EventModal event={open} onClose={() => setOpen(null)} />
     </div>
+  );
+}
+
+function Field({ icon, children }: { icon: typeof I.calendar; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 text-[13px]">
+      <Icon icon={icon} size={15} className="mt-0.5 shrink-0 text-[var(--os-ink-subtle)]" />
+      <span className="min-w-0 flex-1 text-[var(--os-ink)]">{children}</span>
+    </div>
+  );
+}
+
+function EventModal({ event, onClose }: { event: CalEvent | null; onClose: () => void }) {
+  const e = event;
+  const hh = e?.householdId ? householdById(e.householdId) : undefined;
+  return (
+    <AnimatePresence>
+      {e && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            onClick={ev => ev.stopPropagation()}
+            className="w-full max-w-[440px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-white shadow-[0_12px_40px_-8px_rgba(17,17,26,0.22)]"
+          >
+            {/* header */}
+            <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-5 py-3">
+              <span className={cn("size-2 shrink-0 rounded-full", calEventMeta[e.type].dot)} />
+              <span className="text-[12px] font-medium text-[var(--os-ink-muted)]">{calEventMeta[e.type].label}</span>
+              {e.done && <span className="rounded-full bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]">Completed</span>}
+              <button onClick={onClose} aria-label="Close" className={cn("ml-auto grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+                <Icon icon={I.close} size={15} />
+              </button>
+            </div>
+
+            {/* body */}
+            <div className="space-y-3 px-5 py-4">
+              <h3 className="os-display text-[16px] font-semibold leading-snug text-[var(--os-ink)]">{e.title}</h3>
+              <Field icon={I.calendar}>
+                {fmtDateYear(e.date)}{e.time ? <span className="text-[var(--os-ink-muted)]"> · {e.time}{e.endTime ? `–${e.endTime}` : ""}</span> : null}
+              </Field>
+              {e.location && <Field icon={e.location === "Zoom" ? I.globe : e.location === "Phone" ? I.call : I.building}>{e.location}</Field>}
+              {e.with && (
+                <Field icon={I.persona}>
+                  {e.with}{hh ? <span className="text-[var(--os-ink-muted)]"> · {hh.name}</span> : null}
+                </Field>
+              )}
+              {e.notes && (
+                <div className="rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2.5">
+                  <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Notes</div>
+                  <p className="text-[12.5px] leading-relaxed text-[var(--os-ink)]">{e.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* actions */}
+            <div className="flex items-center gap-1.5 border-t border-[var(--os-border)] px-5 py-3">
+              {hh && (
+                <Link href={`/os/clients/${hh.id}`} className={cn("inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>
+                  Open client record <Icon icon={I.chevronRight} size={13} />
+                </Link>
+              )}
+              {!e.done && e.location && e.location !== "In office" && (
+                <button className={cn("inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                  <Icon icon={e.location === "Zoom" ? I.globe : I.call} size={14} /> Join {e.location}
+                </button>
+              )}
+              <button onClick={onClose} className={cn("ml-auto inline-flex h-8 items-center rounded-md px-2.5 text-[13px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", FOCUS)}>
+                Reschedule
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
