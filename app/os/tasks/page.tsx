@@ -199,15 +199,10 @@ function TasksPageInner() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* header: title + the needs-you context line */}
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-[var(--os-border)] px-8 py-3">
-        <div className="flex items-center gap-2">
-          <Icon icon={I.tasks} size={16} className="text-[var(--os-ink-muted)]" />
-          <h1 className="os-display text-[14px] font-semibold text-[var(--os-ink)]">Tasks</h1>
-        </div>
-        <p className="text-[12px] text-[var(--os-ink-muted)]">
-          {needsYou} need you — the rest are running, scheduled, waiting, or done.
-        </p>
+      {/* header */}
+      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
+        <Icon icon={I.tasks} size={16} className="text-[var(--os-ink-muted)]" />
+        <h1 className="os-display text-[14px] font-semibold text-[var(--os-ink)]">Tasks</h1>
       </div>
 
       {/* toolbar: sort · group · filter chips · bulk approve */}
