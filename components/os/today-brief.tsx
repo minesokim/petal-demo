@@ -1,6 +1,6 @@
 "use client";
 
-// Today's brief — situational awareness, not a task mirror. A newspaper grouped by
+// Today's brief - situational awareness, not a task mirror. A newspaper grouped by
 // "desk" (IRS & regulatory · Your firm · Season · Practice). Each item expands inline
 // with an animation: the briefing (what changed, why it matters, optional action)
 // unfolds in place rather than opening a modal.

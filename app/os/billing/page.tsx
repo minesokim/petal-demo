@@ -51,7 +51,7 @@ function ToolbarPill({ label, icon, chevron, active, onClick }: { label: string;
   );
 }
 
-/** Inline summary stat — no box (Mercury). */
+/** Inline summary stat - no box (Mercury). */
 function Stat({ label, value, sub, valueClass, dot }: { label: string; value: string; sub: string; valueClass?: string; dot?: string }) {
   return (
     <div className="min-w-0">
@@ -151,7 +151,7 @@ function Drawer({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
           <Icon icon={I.attach} size={16} className="text-[var(--os-ink-subtle)]" />
           <div className="text-[12px] text-[var(--os-ink-muted)]">Drag a receipt or click to upload</div>
         </div>
-        <div className="mt-2 text-[11px] text-[var(--os-ink-subtle)]">or email invoices to <span className="text-[var(--os-accent)]">billing@vazant.tax</span></div>
+        <div className="mt-2 text-[11px] text-[var(--os-ink-subtle)]">or email invoices to <span className="text-[var(--os-ink)]">billing@vazant.tax</span></div>
       </div>
 
       {/* comment */}
@@ -188,7 +188,7 @@ export default function BillingPage() {
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1 overflow-y-auto">
           <div className="px-8 py-6">
-            {/* toolbar — Mercury pills */}
+            {/* toolbar - Mercury pills */}
             <div className="flex flex-wrap items-center gap-2">
               <ToolbarPill label="Filters" icon={I.filter} />
               <ToolbarPill label="Date" chevron />
@@ -212,7 +212,7 @@ export default function BillingPage() {
               <ToolbarPill label="Amount" chevron />
             </div>
 
-            {/* inline summary stats — no boxes */}
+            {/* inline summary stats - no boxes */}
             <div className="mt-6 flex flex-wrap gap-x-12 gap-y-4">
               <Stat label="Outstanding" value={money(kpis.outstandingTotal)} sub={`${kpis.outstandingCount} invoices awaiting payment`} />
               <Stat label="Overdue" value={money(kpis.overdueTotal)} sub={`${kpis.overdueCount} past due · Petal can chase`} valueClass="text-[var(--os-danger)]" dot="bg-red-500" />

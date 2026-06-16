@@ -1,6 +1,6 @@
 "use client";
 
-// Filing readiness — the Today card opens an ANALYTICS modal: overall readiness, a
+// Filing readiness - the Today card opens an ANALYTICS modal: overall readiness, a
 // breakdown by return type and by risk reason, and an at-risk client roster with
 // avatars. Read-only (it's a dashboard, not a queue). Derives from lib/fixtures/derive.
 
@@ -46,19 +46,7 @@ function ReadinessSummary({ fr, size = "card" }: { fr: ReturnType<typeof filingR
   );
 }
 
-/** Thin three-state distribution bar. */
-function MiniBar({ filed, onTrack, atRisk }: { filed: number; onTrack: number; atRisk: number }) {
-  const total = filed + onTrack + atRisk || 1;
-  return (
-    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
-      <div className="h-full bg-emerald-500" style={{ width: `${(filed / total) * 100}%` }} />
-      <div className="h-full bg-blue-500" style={{ width: `${(onTrack / total) * 100}%` }} />
-      <div className="h-full bg-amber-500" style={{ width: `${(atRisk / total) * 100}%` }} />
-    </div>
-  );
-}
-
-/** Ramp-style radial gauge — animated arc with the figure centered. */
+/** Ramp-style radial gauge - animated arc with the figure centered. */
 function RadialGauge({ value, label, sublabel, color }: { value: number; label: string; sublabel: string; color: string }) {
   const r = 50;
   const circ = 2 * Math.PI * r;
@@ -105,29 +93,16 @@ export function FilingReadiness() {
   const fr = filingReadiness();
   const lagging = atRiskHouseholds();
 
-  // breakdown by return type (individual = 1040; everything else is business)
-  const typeStats = (["Individual", "Business"] as const).map(t => {
-    const es = engagements.filter(e => (e.form.startsWith("1040") ? "Individual" : "Business") === t);
-    let filed = 0, onTrack = 0, atRisk = 0;
-    es.forEach(e => { const s = filingStateOf(e); if (s === "filed") filed++; else if (s === "on_track") onTrack++; else atRisk++; });
-    return { t, total: es.length, filed, onTrack, atRisk };
-  });
-
-  // why returns are at risk
-  const atRiskEng = engagements.filter(e => filingStateOf(e) === "at_risk");
-  const depositUnpaid = atRiskEng.filter(e => !e.depositPaid).length;
-  const blocked = atRiskEng.filter(e => e.depositPaid && e.blockedBy).length;
-  const reasonPct = (n: number) => (fr.atRisk ? (n / fr.atRisk) * 100 : 0);
 
   const onTrackShare = fr.total ? Math.round(((fr.filed + fr.onTrack) / fr.total) * 100) : 0;
 
-  // two gauge metrics — our own context (readiness vs. money collected)
+  // two gauge metrics - our own context (readiness vs. money collected)
   const depositsPaid = engagements.filter(e => e.depositPaid).length;
   const depositShare = fr.total ? Math.round((depositsPaid / fr.total) * 100) : 0;
 
   return (
     <>
-      {/* card — opens the modal */}
+      {/* card - opens the modal */}
       <button
         onClick={() => setOpen(true)}
         className={cn("block w-full rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 text-left transition-colors duration-200 hover:border-[var(--os-border-hover)]", focusRing)}
@@ -138,11 +113,11 @@ export function FilingReadiness() {
             <span className="tabular-nums">{fr.total}</span> returns <Icon icon={I.chevronRight} size={13} className="text-[var(--os-ink-subtle)]" />
           </span>
         </div>
-        <p className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">Extension season — Sep 15 business, Oct 15 individual</p>
+        <p className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">Extension season - Sep 15 business, Oct 15 individual</p>
         <div className="mt-4"><ReadinessSummary fr={fr} /></div>
       </button>
 
-      {/* modal — analytics */}
+      {/* modal - analytics */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -155,7 +130,7 @@ export function FilingReadiness() {
               transition={{ duration: 0.18, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
               role="dialog" aria-modal="true" aria-label="Filing readiness"
-              className="flex max-h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+              className="flex max-h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
             >
               {/* header */}
               <div className="flex items-start justify-between gap-3 border-b border-[var(--os-border)] px-6 py-4">
@@ -179,45 +154,7 @@ export function FilingReadiness() {
                   </div>
                 </div>
 
-                {/* analytics grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="rounded-xl border border-[var(--os-border)] p-4">
-                    <div className="os-label mb-3.5">By return type</div>
-                    <div className="space-y-3.5">
-                      {typeStats.map(g => (
-                        <div key={g.t}>
-                          <div className="mb-1.5 flex items-baseline justify-between">
-                            <span className="text-[12.5px] text-[var(--os-ink)]">{g.t}</span>
-                            <span className="text-[12px] tabular-nums text-[var(--os-ink-muted)]"><span className="font-semibold text-[var(--os-ink)]">{g.total}</span> returns</span>
-                          </div>
-                          <MiniBar filed={g.filed} onTrack={g.onTrack} atRisk={g.atRisk} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-[var(--os-border)] p-4">
-                    <div className="os-label mb-3.5">Why at risk</div>
-                    <div className="space-y-3.5">
-                      <div>
-                        <div className="mb-1.5 flex items-baseline justify-between">
-                          <span className="text-[12.5px] text-[var(--os-ink)]">Deposit unpaid</span>
-                          <span className="text-[12px] font-semibold tabular-nums text-[var(--os-ink)]">{depositUnpaid}</span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--os-selected)]"><div className="h-full bg-amber-500" style={{ width: `${reasonPct(depositUnpaid)}%` }} /></div>
-                      </div>
-                      <div>
-                        <div className="mb-1.5 flex items-baseline justify-between">
-                          <span className="text-[12.5px] text-[var(--os-ink)]">Blocked on a decision</span>
-                          <span className="text-[12px] font-semibold tabular-nums text-[var(--os-ink)]">{blocked}</span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--os-selected)]"><div className="h-full bg-red-500" style={{ width: `${reasonPct(blocked)}%` }} /></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* at-risk roster — avatars, read-only */}
+                {/* at-risk roster - avatars, read-only */}
                 <div>
                   <div className="os-label mb-2.5">At-risk clients <span className="tabular-nums text-[var(--os-ink-subtle)]">{lagging.length}</span></div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

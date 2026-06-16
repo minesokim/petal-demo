@@ -13,7 +13,7 @@ import {
 import { memberById, memberInitials, roleMeta } from "@/lib/fixtures/firm";
 
 // ════════════════════════════════════════════════════════════
-// Badge — THE small-component family. Soft-fill, square-ish (5px),
+// Badge - THE small-component family. Soft-fill, square-ish (5px),
 // no outline, optional leading icon or dot. One shape everywhere:
 // statuses, deadlines, roles, trust tiers, metadata. (ref IMG_7007)
 // ════════════════════════════════════════════════════════════
@@ -30,7 +30,7 @@ const TONE: Record<Tone, { soft: string; text: string; dot: string; icon: string
   neutral: { soft: "bg-[var(--os-selected)]", text: "text-[var(--os-ink-muted)]", dot: "bg-[var(--os-ink-subtle)]", icon: "text-[var(--os-ink-subtle)]" },
 };
 
-/** Flagged indicator — a fully-yellow bookmark. The single "flagged" glyph everywhere. */
+/** Flagged indicator - a fully-yellow bookmark. The single "flagged" glyph everywhere. */
 export function BookmarkFlag({ size = 13, className }: { size?: number; className?: string }) {
   return <Bookmark size={size} className={cn("shrink-0 fill-yellow-400 text-yellow-400", className)} />;
 }
@@ -72,7 +72,7 @@ const PETAL_BY_GRADIENT: Record<string, string> = {
 };
 
 /**
- * Agent identity avatar — each agent owns a colored petal on a white app-icon.
+ * Agent identity avatar - each agent owns a colored petal on a white app-icon.
  * Keyed off the agent's `gradient`, so every call site updates with no changes.
  */
 export function AgentAvatar({
@@ -106,7 +106,7 @@ export function AgentAvatar({
   );
 }
 
-/** The full colorful Petal mark (the logo flower) — used for the Petal Agents surface. */
+/** The full colorful Petal mark (the logo flower) - used for the Petal Agents surface. */
 export function PetalLogo({ size = 18, className }: { size?: number; className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/petals/petalagents.png" alt="" className={cn("shrink-0 object-contain mix-blend-multiply", className)} style={{ width: size, height: size }} />;
@@ -136,7 +136,7 @@ export function Pill({
 
 // ════════════════════════════════════════════════════════════
 // Canonical-vocabulary primitives (lib/fixtures). One status
-// language everywhere — these are the ONLY renderers for it.
+// language everywhere - these are the ONLY renderers for it.
 // ════════════════════════════════════════════════════════════
 
 /** task status → badge tone + icon. The single status grammar for every surface. */
@@ -156,7 +156,7 @@ export function StatusPill({ status, size = "md", className }: { status: TaskSta
   return <Badge tone={b.tone} icon={b.icon} size={size} className={className}>{taskStatusMeta[status].label}</Badge>;
 }
 
-/** Status as a section heading — colored icon + label, no fill. For group/list headers. */
+/** Status as a section heading - colored icon + label, no fill. For group/list headers. */
 export function StatusHeading({ status, className }: { status: TaskStatus; className?: string }) {
   const b = STATUS_BADGE[status];
   const t = TONE[b.tone];
@@ -179,7 +179,7 @@ export function StageTag({ stage, className }: { stage: Stage; className?: strin
   );
 }
 
-/** Deadline — colored text by proximity (<14d danger, <45d warning, else muted). Calm in dense
+/** Deadline - colored text by proximity (<14d danger, <45d warning, else muted). Calm in dense
  * lists: no fill, urgent dates get a small clock. "Ext" prefix for extended deadlines. */
 export function DeadlineChip({ iso, extended, className }: { iso: string; extended?: boolean; className?: string }) {
   const d = daysUntil(iso);
@@ -192,7 +192,7 @@ export function DeadlineChip({ iso, extended, className }: { iso: string; extend
   );
 }
 
-/** Monochrome skill-category glyph — the calmer alternative to the colored petal in dense lists. */
+/** Monochrome skill-category glyph - the calmer alternative to the colored petal in dense lists. */
 const SKILL_ICON: Record<SkillCategory, React.ComponentType<{ size?: number; className?: string }>> = {
   prep_filing: FileText,
   signatures_chase: Send,
@@ -220,7 +220,7 @@ export function SkillPetal({ category, size = 16, className }: { category: Skill
   );
 }
 
-/** The six petal colors, mapped — render wherever petals appear without context. */
+/** The six petal colors, mapped - render wherever petals appear without context. */
 export function PetalLegend({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-1.5", className)}>
@@ -247,7 +247,7 @@ export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onCh
             aria-checked={active}
             disabled={!onChange}
             onClick={() => onChange?.(t)}
-            title={`${m.code} ${m.label} — ${m.blurb}`}
+            title={`${m.code} ${m.label} - ${m.blurb}`}
             className={cn(
               "rounded px-2 py-1 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
               active ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "text-[var(--os-ink-muted)]",
@@ -281,7 +281,7 @@ export function MemberAvatar({ memberId, size = 22, className }: { memberId?: st
     <span
       className={cn("grid shrink-0 place-items-center rounded-full bg-[var(--os-selected)] font-semibold text-[var(--os-ink-muted)]", className)}
       style={{ width: size, height: size, fontSize: size <= 20 ? 9 : 10 }}
-      title={m ? `${m.name}${m.credential ? ` · ${m.credential}` : ""} — ${roleMeta[m.role].label}` : "Unassigned"}
+      title={m ? `${m.name}${m.credential ? ` · ${m.credential}` : ""} - ${roleMeta[m.role].label}` : "Unassigned"}
     >
       {memberInitials(memberId)}
     </span>
@@ -290,7 +290,7 @@ export function MemberAvatar({ memberId, size = 22, className }: { memberId?: st
 
 export type Scope = "mine" | "firm";
 
-/** "Mine / Firm" segmented toggle — raised white chip on a recessed track. */
+/** "Mine / Firm" segmented toggle - raised white chip on a recessed track. */
 export function ScopeToggle({ scope, onChange, className }: { scope: Scope; onChange: (s: Scope) => void; className?: string }) {
   return (
     <Segmented
@@ -302,7 +302,7 @@ export function ScopeToggle({ scope, onChange, className }: { scope: Scope; onCh
   );
 }
 
-/** Generic segmented control — active option rides a raised surface chip. */
+/** Generic segmented control - active option rides a raised surface chip. */
 export function Segmented<T extends string>({
   options, value, onChange, className,
 }: {
@@ -334,7 +334,7 @@ export function Segmented<T extends string>({
 }
 
 // ════════════════════════════════════════════════════════════
-// Button — one family. 2 sizes × 4 variants, identical motion.
+// Button - one family. 2 sizes × 4 variants, identical motion.
 // ════════════════════════════════════════════════════════════
 
 export function Button({
@@ -367,7 +367,7 @@ export function Button({
 }
 
 // ════════════════════════════════════════════════════════════
-// FileGlyph — a page shape with a folded corner + type badge.
+// FileGlyph - a page shape with a folded corner + type badge.
 // ════════════════════════════════════════════════════════════
 
 const FILE_BADGE: Record<string, { badge: string; label: string }> = {

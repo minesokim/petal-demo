@@ -1,4 +1,4 @@
-// Petal OS — API & MCP surface data.
+// Petal OS - API & MCP surface data.
 // The firm's OS is readable from anywhere: Claude, Cursor, Raycast, Zapier.
 // Reads are open to authorized keys; every WRITE is gated by a skill's trust tier.
 // Modeled on Attio Developers + Exa's MCP framing.
@@ -26,7 +26,7 @@ export interface AccessToken {
 }
 
 export const accessTokens: AccessToken[] = [
-  { id: "k1", name: "Antonio — Claude Desktop", masked: "ptl_live_••••••••a91f", scope: "Read", created: "Jan 12, 2026", lastUsed: "2 min ago", createdBy: "Antonio Vazquez" },
+  { id: "k1", name: "Antonio - Claude Desktop", masked: "ptl_live_••••••••a91f", scope: "Read", created: "Jan 12, 2026", lastUsed: "2 min ago", createdBy: "Antonio Vazquez" },
   { id: "k2", name: "Firm reporting (read-only)", masked: "ptl_live_••••••••7c30", scope: "Read", created: "Feb 3, 2026", lastUsed: "Today", createdBy: "Antonio Vazquez" },
   { id: "k3", name: "Bookkeeping sync", masked: "ptl_live_••••••••4b8e", scope: "Read + write", created: "Mar 20, 2026", lastUsed: "Yesterday", createdBy: "Elena Reyes" },
 ];
@@ -36,15 +36,15 @@ export interface ResourceScope {
   endpoint: string;
   desc: string;
   count: number;
-  /** the write policy — this is where trust tiers govern the API */
+  /** the write policy - this is where trust tiers govern the API */
   write: string;
 }
 
 export const resourceScopes: ResourceScope[] = [
-  { resource: "Tasks", endpoint: "/api/os/tasks", desc: "The review queue", count: tasks.length, write: "Approve / snooze — gated by trust tier" },
-  { resource: "Clients", endpoint: "/api/os/clients", desc: "Households — the relationship hub", count: households.length, write: "Creates a draft task" },
+  { resource: "Tasks", endpoint: "/api/os/tasks", desc: "The review queue", count: tasks.length, write: "Approve / snooze - gated by trust tier" },
+  { resource: "Clients", endpoint: "/api/os/clients", desc: "Households - the relationship hub", count: households.length, write: "Creates a draft task" },
   { resource: "Entities", endpoint: "/api/os/entities", desc: "Each thing that files", count: entities.length, write: "Creates a draft task" },
-  { resource: "Returns", endpoint: "/api/os/returns", desc: "Engagement × tax year", count: engagements.length, write: "Drafts only — never files" },
+  { resource: "Returns", endpoint: "/api/os/returns", desc: "Engagement × tax year", count: engagements.length, write: "Drafts only - never files" },
   { resource: "People", endpoint: "/api/os/people", desc: "Contacts across households", count: people.length, write: "Creates a draft task" },
   { resource: "Knowledge", endpoint: "/api/os/knowledge", desc: "Firm Constitution + reference", count: 6, write: "Requires approval" },
   { resource: "Skills & runs", endpoint: "/api/os/skills", desc: "The skill library and its runs", count: skills.length, write: "Read-only" },

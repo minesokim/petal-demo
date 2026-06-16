@@ -1,6 +1,6 @@
 "use client";
 
-// Assignee picker — reassign a client (household) to a firm member. Writes to the
+// Assignee picker - reassign a client (household) to a firm member. Writes to the
 // assign store, so every avatar + Mine/Firm filter updates live. Two looks: a labelled
 // "chip" (name + avatar) for headers, and a bare "avatar" for dense table cells.
 

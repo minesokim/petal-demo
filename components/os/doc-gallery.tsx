@@ -1,6 +1,6 @@
 "use client";
 
-// Document gallery — canonical-fixture edition. Docs attach to ENGAGEMENTS
+// Document gallery - canonical-fixture edition. Docs attach to ENGAGEMENTS
 // (ExpectedDoc from lib/fixtures/firm); statuses render only via expectedDocMeta.
 // The Documents page and the client-record Documents tab share these exact contracts.
 
@@ -19,7 +19,7 @@ import { expectedDocMeta, type ExpectedDocStatus } from "@/lib/fixtures/vocab";
 
 const CONFIDENCE_BAR = 0.95;
 
-/** Boring already-in-hand checklist docs — may render compactly, always counted. */
+/** Boring already-in-hand checklist docs - may render compactly, always counted. */
 export const isChecklistDoc = (d: ExpectedDoc) => d.source.includes("per 2024 checklist");
 
 /** The run that touched this document (provenance), found by source ref. Extraction docs only. */
@@ -68,7 +68,7 @@ export function EngagementDocsHeader({ engagementId }: { engagementId: string })
   );
 }
 
-/** Stylized document preview — no real PDFs in the mock, so render a tasteful faux page. */
+/** Stylized document preview - no real PDFs in the mock, so render a tasteful faux page. */
 export function DocThumb({ doc }: { doc: ExpectedDoc }) {
   if (doc.status === "requested") {
     return (
@@ -139,7 +139,7 @@ export function DocRow({ doc, onOpen }: { doc: ExpectedDoc; onOpen: (d: Expected
         <span className="hidden shrink-0 text-[11px] text-[var(--os-ink-subtle)] sm:inline">{doc.type}</span>
       </div>
       <div><StatusDot status={doc.status} /></div>
-      <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{doc.receivedVia ?? "—"}</div>
+      <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{doc.receivedVia ?? "-"}</div>
       <div className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{doc.when ?? ""}</div>
     </button>
   );
@@ -244,7 +244,7 @@ export function ReviewModal({ doc, onClose }: { doc: ExpectedDoc; onClose: () =>
                 {reminderQueued ? (
                   <div className="mt-4 flex items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink)]">
-                      <Icon icon={I.check} size={14} className="text-emerald-600" /> Queued — lands in Tasks
+                      <Icon icon={I.check} size={14} className="text-emerald-600" /> Queued - lands in Tasks
                     </span>
                     {household && <Link href={`/os/clients/${household.id}`} className={secondaryBtn}>Open record</Link>}
                   </div>
@@ -301,12 +301,12 @@ export function ReviewModal({ doc, onClose }: { doc: ExpectedDoc; onClose: () =>
                     </div>
                   ) : (
                     <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                      <Icon icon={I.sendBack} size={14} /> Sent back — Petal will re-extract
+                      <Icon icon={I.sendBack} size={14} /> Sent back - Petal will re-extract
                     </div>
                   )
                 ) : (
                   <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                    <Icon icon={I.check} size={14} className="text-emerald-600" /> In hand — filed to the engagement
+                    <Icon icon={I.check} size={14} className="text-emerald-600" /> In hand - filed to the engagement
                   </div>
                 )}
               </>

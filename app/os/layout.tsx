@@ -44,7 +44,7 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
   );
 }
 
-/** Collapsible nav section — condenses the sidebar (Solve pattern). */
+/** Collapsible nav section - condenses the sidebar (Solve pattern). */
 function NavGroup({ label, icon, items, isActive, defaultOpen = true }: { label: string; icon: React.ReactNode; items: Item[]; isActive: (h: string) => boolean; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -121,7 +121,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="petal-os relative flex h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
-      {/* expand control — only when collapsed */}
+      {/* expand control - only when collapsed */}
       {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
@@ -150,7 +150,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             </button>
 
             {wsOpen && (
-              <div className="absolute left-0 top-[calc(100%+6px)] z-30 w-[224px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-1.5 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+              <div className="absolute left-0 top-[calc(100%+6px)] z-30 w-[224px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] p-1.5 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
                 <div className="flex items-center gap-2.5 px-2 py-2">
                   <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]"><PetalMark className="size-4" /></span>
                   <div className="min-w-0">
@@ -205,7 +205,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* bottom — Ask Petal chat zone (Recent · history · New chat); history slides up over the sidebar */}
+        {/* bottom - Ask Petal chat zone (Recent · history · New chat); history slides up over the sidebar */}
         <SidebarChat />
       </aside>
 

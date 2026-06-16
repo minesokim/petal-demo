@@ -14,7 +14,7 @@ import {
   FileExportIcon, CheckmarkBadge02Icon,
 } from "@hugeicons/core-free-icons";
 
-/** Premium icon set — Hugeicons (stroke-rounded). Single source of truth for the OS. */
+/** Premium icon set - Hugeicons (stroke-rounded). Single source of truth for the OS. */
 export const I = {
   search: Search01Icon,
   tasks: Task01Icon,

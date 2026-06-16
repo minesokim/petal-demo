@@ -1,6 +1,6 @@
 "use client";
 
-// Activity — the firm-wide immutable log (the flight recorder). Every run and
+// Activity - the firm-wide immutable log (the flight recorder). Every run and
 // approval lands here; nothing can be edited. All rows come from activityFeed().
 
 import Link from "next/link";
@@ -24,7 +24,7 @@ function isoOfDay(day: number): string {
   return `${y}-${m}-${String(day).padStart(2, "0")}`;
 }
 
-/** "Wednesday, Jun 24" — weekday derived from the day number, never hard-coded. */
+/** "Wednesday, Jun 24" - weekday derived from the day number, never hard-coded. */
 function dayHeading(day: number): string {
   return new Date(DEMO_DATE.getFullYear(), DEMO_DATE.getMonth(), day).toLocaleDateString("en-US", {
     weekday: "long",
@@ -63,7 +63,7 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-/** Actor chip — PetalMark for Petal (AI layer), flat initials for the human. */
+/** Actor chip - PetalMark for Petal (AI layer), flat initials for the human. */
 function ActorChip({ actor }: { actor: ActivityEvent["actor"] }) {
   if (actor === "Petal") {
     return (
@@ -220,69 +220,76 @@ function ActivityLog() {
               </p>
               <button
                 onClick={clearFilters}
-                className={cn("text-[12px] font-medium text-[var(--os-accent)] hover:underline", focusRing)}
+                className={cn("text-[12px] font-medium text-[var(--os-link)] hover:underline", focusRing)}
               >
                 Clear filters to see the full log
               </button>
             </div>
           ) : (
-            visibleDays.map(d => (
-              <section key={d}>
-                <div className="flex items-center gap-2 pt-5 pb-1.5 first:pt-0">
-                  <h2 className="os-label">
-                    {dayHeading(d)}
-                    {d === DEMO_DATE.getDate() ? " · Today" : ""}
-                  </h2>
+            visibleDays.map(d => {
+              const dayEvents = list.filter(a => a.day === d);
+              return (
+              <section key={d} className="mb-1">
+                {/* sticky day header */}
+                <div className="sticky top-0 z-10 -mx-8 mb-3 flex items-center gap-2 bg-[var(--os-canvas)]/90 px-8 py-1.5 backdrop-blur-sm">
+                  <h2 className="text-[12px] font-semibold text-[var(--os-ink)]">{dayHeading(d)}</h2>
+                  {d === DEMO_DATE.getDate() && (
+                    <span className="rounded-full bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--os-ink-muted)]">Today</span>
+                  )}
+                  <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{dayEvents.length}</span>
                   <span className="h-px flex-1 bg-[var(--os-border)]" aria-hidden />
                 </div>
 
-                {list.filter(a => a.day === d).map(ev => {
+                {/* actor timeline - avatar nodes on a hairline spine */}
+                {dayEvents.map((ev, i) => {
                   const isFocus = ev.id === focusEventId;
                   const isOpen = expanded.has(ev.id);
+                  const last = i === dayEvents.length - 1;
                   return (
-                    <div
-                      key={ev.id}
-                      ref={isFocus ? focusRowRef : undefined}
-                      className={cn(
-                        "border-b border-[var(--os-border)] px-2 py-2 transition-colors",
-                        isFocus ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]",
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="w-[58px] shrink-0 text-[12px] tabular-nums text-[var(--os-ink-subtle)]">
-                          {ev.at}
-                        </span>
+                    <div key={ev.id} ref={isFocus ? focusRowRef : undefined} className="flex gap-3">
+                      {/* spine */}
+                      <div className="relative flex w-5 shrink-0 flex-col items-center">
                         <ActorChip actor={ev.actor} />
-                        <span className="min-w-[180px] flex-1 text-[13px] text-[var(--os-ink)]">
-                          {ev.label}
-                        </span>
-                        {ev.householdId && (
-                          <Link
-                            href={`/os/clients/${ev.householdId}`}
-                            className={cn("shrink-0 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)] hover:underline", focusRing)}
-                          >
-                            {householdById(ev.householdId)?.name}
-                          </Link>
-                        )}
-                        {ev.runId && (
-                          <button
-                            onClick={() => toggleRun(ev.id)}
-                            aria-expanded={isOpen}
-                            className={cn("inline-flex shrink-0 items-center gap-1 text-[12px] font-medium text-[var(--os-accent)] hover:underline", focusRing)}
-                          >
-                            {isOpen ? "Hide run" : "View run"}
-                            <Icon icon={I.chevronDown} size={11} className={cn("transition-transform", !isOpen && "-rotate-90")} />
-                          </button>
-                        )}
+                        {!last && <span className="mt-1 w-px flex-1 bg-[var(--os-border)]" />}
                       </div>
-                      {isOpen && ev.runId && (
-                        <ProvenancePanel runId={ev.runId} defaultOpen className="mt-2" />
-                      )}
+                      {/* content */}
+                      <div className={cn("min-w-0 flex-1 pb-5", isFocus && "-ml-2 rounded-lg bg-[var(--os-selected)] px-2 py-1.5")}>
+                        <div className="flex items-baseline gap-2">
+                          <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--os-ink)]">{ev.label}</span>
+                          <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{ev.at}</span>
+                        </div>
+                        {(ev.householdId || ev.runId) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
+                            {ev.householdId && (
+                              <Link
+                                href={`/os/clients/${ev.householdId}`}
+                                className={cn("inline-flex items-center gap-1 text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-link)] hover:underline", focusRing)}
+                              >
+                                <Icon icon={I.clients} size={11} className="text-[var(--os-ink-subtle)]" />
+                                {householdById(ev.householdId)?.name}
+                              </Link>
+                            )}
+                            {ev.householdId && ev.runId && <span className="text-[var(--os-border-strong)]">·</span>}
+                            {ev.runId && (
+                              <button
+                                onClick={() => toggleRun(ev.id)}
+                                aria-expanded={isOpen}
+                                className={cn("inline-flex items-center gap-1 font-medium text-[var(--os-link)] hover:underline", focusRing)}
+                              >
+                                {isOpen ? "Hide run" : "View run"}
+                                <Icon icon={I.chevronDown} size={11} className={cn("transition-transform", !isOpen && "-rotate-90")} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {isOpen && ev.runId && <ProvenancePanel runId={ev.runId} defaultOpen className="mt-2" />}
+                      </div>
                     </div>
                   );
                 })}
               </section>
-            ))
+              );
+            })
           )}
         </div>
       </div>

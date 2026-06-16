@@ -37,7 +37,7 @@ const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
 
 // Ramp-style grid: every cell stretches full row height (so the vertical dividers are
-// continuous), centers its content, and carries a right divider — last cell omits it.
+// continuous), centers its content, and carries a right divider - last cell omits it.
 const CELL =
   "[&>*]:flex [&>*]:min-w-0 [&>*]:items-center [&>*]:border-r [&>*]:border-[var(--os-border)] [&>*]:px-3 [&>*:first-child]:pl-8 [&>*:first-child]:pr-8 [&>*:last-child]:border-r-0 [&>*:last-child]:pr-8";
 
@@ -53,23 +53,29 @@ function HeaderRow({ cols, labels, right }: { cols: string; labels: string[]; ri
   );
 }
 
-/** Thin docs progress bar + the canonical "have/denom" label. */
+/** Thin docs progress bar + the canonical "have/denom" label.
+ *  Color-coded by collection progress: green = complete, amber = half-in, red = behind. */
 function DocsBar({ label, inHand, denom }: { label: string; inHand: number; denom: number }) {
   const pct = denom > 0 ? Math.round((inHand / denom) * 100) : 100;
   const complete = denom > 0 && inHand >= denom;
+  const tone = complete
+    ? { bar: "bg-emerald-500", text: "text-[var(--os-ink-subtle)]" }
+    : pct >= 50
+      ? { bar: "bg-amber-500", text: "text-[var(--os-warning)]" }
+      : { bar: "bg-red-500", text: "text-[var(--os-danger)]" };
   return (
     <div className="flex items-center gap-2">
       <div className="h-1 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--os-selected)]">
-        <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${pct}%` }} />
+        <div className={cn("h-full rounded-full", tone.bar)} style={{ width: `${pct}%` }} />
       </div>
-      <span className={cn("text-[11px] tabular-nums", complete ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{label}</span>
+      <span className={cn("text-[11px] tabular-nums", tone.text)}>{label}</span>
     </div>
   );
 }
 
-const EmDash = () => <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>;
+const EmDash = () => <span className="text-[12px] text-[var(--os-ink-subtle)]">-</span>;
 
-// ── Clients (households) — the deliverable table ──
+// ── Clients (households) - the deliverable table ──
 const CLIENT_COLS = "grid-cols-[minmax(300px,1.7fr)_150px_136px_104px_148px_104px_92px_96px]";
 
 function ClientsTable({ rows }: { rows: Household[] }) {
@@ -251,7 +257,7 @@ export default function ClientsPage() {
     people: peopleRows.length,
   };
 
-  // board items reflect the active object view — both group on the 7 canon stages
+  // board items reflect the active object view - both group on the 7 canon stages
   const boardItems: BoardItem[] = view === "returns"
     ? engRows.map(e => {
         const entity = entityById(e.entityId);
@@ -294,7 +300,7 @@ export default function ClientsPage() {
         ))}
       </div>
 
-      {/* controls row — search on the left, scope + layout on the right */}
+      {/* controls row - search on the left, scope + layout on the right */}
       <div className="flex items-center gap-3 border-b border-[var(--os-border)] px-8 py-2">
         <div className="relative w-full max-w-[300px]">
           <Icon icon={I.search} size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--os-ink-subtle)]" />
@@ -322,7 +328,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* body — one scroll container so narrow viewports pan the whole table */}
+      {/* body - one scroll container so narrow viewports pan the whole table */}
       <div className="min-h-0 flex-1 overflow-auto">
         {view === "people" ? (
           <PeopleTable rows={peopleRows} />

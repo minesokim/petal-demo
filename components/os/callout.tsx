@@ -1,6 +1,6 @@
 "use client";
 
-// FeatureCallout — the "crafted moment" panel (DESIGN.md §7): a soft sage→cream
+// FeatureCallout - the "crafted moment" panel (DESIGN.md §7): a soft sage→cream
 // gradient box with copy + one primary action on the left and a live, slightly
 // inset preview of the real artifact on the right. Max one per page.
 
@@ -22,7 +22,7 @@ export function FeatureCallout({
   body: string;
   action: { label: string; href: string };
   secondary?: { label: string; href: string };
-  /** the embedded artifact preview — rendered on the tinted right pane */
+  /** the embedded artifact preview - rendered on the tinted right pane */
   preview: React.ReactNode;
   className?: string;
 }) {
@@ -60,7 +60,7 @@ export function FeatureCallout({
         </div>
       </div>
 
-      {/* embedded artifact preview — a clean floating card on the same gradient */}
+      {/* embedded artifact preview - a clean floating card on the same gradient */}
       <Link
         href={action.href}
         aria-label={action.label}

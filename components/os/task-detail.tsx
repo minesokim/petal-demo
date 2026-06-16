@@ -1,6 +1,6 @@
 "use client";
 
-// Task detail panel — the right pane of /os/tasks (also openable via ?task= deep links).
+// Task detail panel - the right pane of /os/tasks (also openable via ?task= deep links).
 // Renders the canonical Task shape from lib/fixtures/firm: why · proposed actions (A/B/C,
 // recommended highlighted) · the drafted artifact ("Petal drafted", monochrome mark) ·
 // ProvenancePanel when a run exists · deep links to the notice and the client record.
@@ -68,7 +68,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.draftText ?? "");
   const [editLogged, setEditLogged] = useState(false);
-  // "Something else" — the open-ended escape hatch: redirect Petal in your own words.
+  // "Something else" - the open-ended escape hatch: redirect Petal in your own words.
   const [otherText, setOtherText] = useState("");
   const [redrafting, setRedrafting] = useState(false);
   const [redrafted, setRedrafted] = useState(false);
@@ -96,7 +96,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     setRedrafting(true);
     redraftTimer.current = setTimeout(() => {
       setDraft(
-        `Updated per your direction — "${note}".\n\nI've revised the response accordingly and flagged the open item for follow-up. Review below and approve when you're ready.`,
+        `Updated per your direction - "${note}".\n\nI've revised the response accordingly and flagged the open item for follow-up. Review below and approve when you're ready.`,
       );
       setRedrafting(false);
       setRedrafted(true);
@@ -104,7 +104,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     }, 1100);
   }
 
-  // Decide / Approve / Approve & send resolve the task and close the panel —
+  // Decide / Approve / Approve & send resolve the task and close the panel -
   // the item leaves the needs-you queue across the app (session-only; reload resets).
   function resolveAndClose() {
     demoStore.resolve(task.id);
@@ -115,7 +115,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     if (!verbLabel) return;
     if (verbLabel === "Decide") {
       const opt = task.proposedActions?.find(a => a.key === chosen);
-      show(chosen === "other" ? "Decided — your direction" : chosen ? `Decided ${chosen}${opt ? ` — ${opt.label}` : ""}` : "Decided");
+      show(chosen === "other" ? "Decided - your direction" : chosen ? `Decided ${chosen}${opt ? ` - ${opt.label}` : ""}` : "Decided");
       resolveAndClose();
     } else if (verbLabel === "Approve & send") {
       show("Approved & sent");
@@ -173,7 +173,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           {task.feeContext && <span className="text-[11px]">{task.feeContext}</span>}
         </div>
 
-        {/* actions — the ONE primary verb + ghost Edit + ghost Skip */}
+        {/* actions - the ONE primary verb + ghost Edit + ghost Skip */}
         <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
           {verbLabel === "View run" && task.runId ? (
             <Link href={`/os/activity?run=${task.runId}`} className={PRIMARY_BTN}>
@@ -196,13 +196,15 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
 
       {/* body */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        {/* why */}
+        {/* why - context callout, set apart with a hairline accent */}
         <section>
           <div className="os-label mb-1.5">Why</div>
-          <p className="text-[13px] leading-relaxed text-[var(--os-ink-muted)]">{task.why}</p>
+          <div className="border-l-2 border-[var(--os-border-strong)] pl-3">
+            <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{task.why}</p>
+          </div>
         </section>
 
-        {/* proposed actions — A/B/C, recommended highlighted */}
+        {/* proposed actions - A/B/C, recommended highlighted */}
         {task.proposedActions && task.proposedActions.length > 0 && (
           <section className="mt-6">
             <div className="os-label mb-2">Proposed actions</div>
@@ -216,16 +218,18 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                     onClick={() => setChosen(a.key)}
                     aria-pressed={isChosen}
                     className={cn(
-                      "w-full rounded-xl border px-3.5 py-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
-                      isChosen
-                        ? "border-[var(--os-border-strong)] bg-[var(--os-card)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-                        : "border-[var(--os-border)] hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]",
+                      "relative w-full rounded-md border border-[var(--os-border)] px-3.5 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+                      isChosen ? "bg-[var(--os-card)]" : "hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]",
                     )}
                   >
-                    <div className="flex items-center gap-2.5">
+                    {/* selection stroke - soft gray, no animation */}
+                    {isChosen && (
+                      <span className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-[var(--os-ink-subtle)]" />
+                    )}
+                    <div className="relative flex items-center gap-2.5">
                       <span
                         className={cn(
-                          "grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-semibold transition-colors",
+                          "grid size-[17px] shrink-0 place-items-center rounded-full text-[9px] font-semibold leading-none transition-colors",
                           isChosen
                             ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]"
                             : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]",
@@ -240,13 +244,13 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                         </span>
                       )}
                     </div>
-                    <p className="mt-1.5 pl-[30px] text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
+                    <p className="relative mt-1.5 pl-[30px] text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
                   </button>
                 );
               })}
             </div>
 
-            {/* Something else — the open-ended escape: redirect Petal in your own words */}
+            {/* Something else - the open-ended escape: redirect Petal in your own words */}
             <div className="mt-2">
               {chosen !== "other" ? (
                 <button
@@ -254,7 +258,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
                   className="flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 text-left text-[12.5px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
                 >
                   <CornerDownRight className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
-                  Something else — tell Petal what to do instead
+                  Something else - tell Petal what to do instead
                 </button>
               ) : (
                 <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
@@ -296,7 +300,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           </p>
         )}
 
-        {/* the drafted artifact — Petal-marked, monochrome. Edit lives in the header;
+        {/* the drafted artifact - Petal-marked, monochrome. Edit lives in the header;
             the body itself is click-to-edit. Appears after a "Something else" redraft too. */}
         {(task.draftText || redrafted) && (
           <section className="mt-6">
@@ -355,12 +359,12 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
               )}
             </div>
             {editLogged && !editing && (
-              <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Edit logged — Petal will learn from this edit.</p>
+              <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Edit logged - Petal will learn from this edit.</p>
             )}
           </section>
         )}
 
-        {/* sources & reasoning — every Petal artifact carries provenance */}
+        {/* sources & reasoning - every Petal artifact carries provenance */}
         {task.runId && (
           <section className="mt-6">
             <ProvenancePanel runId={task.runId} />
@@ -385,5 +389,5 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
   );
 }
 
-/** Back-compat alias — older surfaces import { Detail }. */
+/** Back-compat alias - older surfaces import { Detail }. */
 export const Detail = TaskDetail;

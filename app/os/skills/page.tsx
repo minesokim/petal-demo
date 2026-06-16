@@ -1,8 +1,8 @@
 "use client";
 
-// Skills — the library of what Petal runs for the firm. Two-pane: grouped list (left),
+// Skills - the library of what Petal runs for the firm. Two-pane: grouped list (left),
 // detail with trust dial, variants, graduation, and run history w/ provenance (right).
-// Data: lib/fixtures only. One assistant — every byline is "Run by Petal".
+// Data: lib/fixtures only. One assistant - every byline is "Run by Petal".
 
 import { useState } from "react";
 import Link from "next/link";
@@ -108,7 +108,7 @@ function SkillDetail({
           </div>
         </div>
         <p className="mt-1.5 text-[12px] text-[var(--os-ink-muted)]">
-          {trustTierMeta[tier].code} {trustTierMeta[tier].label} — {trustTierMeta[tier].blurb}
+          {trustTierMeta[tier].code} {trustTierMeta[tier].label} - {trustTierMeta[tier].blurb}
         </p>
       </div>
 
@@ -162,7 +162,7 @@ function SkillDetail({
                     {household && (
                       <Link
                         href={`/os/clients/${household.id}`}
-                        className={cn("ml-auto inline-flex shrink-0 items-center gap-1 text-[12px] text-[var(--os-accent)] hover:underline", FOCUS)}
+                        className={cn("ml-auto inline-flex shrink-0 items-center gap-1 text-[12px] text-[var(--os-link)] hover:underline", FOCUS)}
                       >
                         {household.name} <Icon icon={I.chevronRight} size={11} />
                       </Link>
@@ -174,7 +174,7 @@ function SkillDetail({
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2.5">
                 <span className="text-[13px] font-medium text-[var(--os-ink)]">Firm default</span>
                 <span className="text-[12px] text-[var(--os-ink-muted)]">
-                  Applies to every client — fork a per-client variant from any client record.
+                  Applies to every client - fork a per-client variant from any client record.
                 </span>
               </div>
             )}
@@ -206,13 +206,13 @@ function SkillDetail({
           {g && promoted && (
             <div className="mt-7 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink)]">
               <Icon icon={I.check} size={14} className="shrink-0 text-emerald-600" />
-              {skill.name} promoted to {trustTierMeta[g.promoteTo].code} — acts after 24h unless you stop it
+              {skill.name} promoted to {trustTierMeta[g.promoteTo].code} - acts after 24h unless you stop it
             </div>
           )}
           {g && dismissed && !promoted && (
             <div className="mt-7 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink-muted)]">
               <Icon icon={I.check} size={14} className="shrink-0" />
-              Keeping approval on every send — {skill.name} stays at {trustTierMeta[skill.trust].code}.
+              Keeping approval on every send - {skill.name} stays at {trustTierMeta[skill.trust].code}.
             </div>
           )}
 
@@ -226,7 +226,7 @@ function SkillDetail({
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-4 text-[12px] text-[var(--os-ink-muted)]">
-              No runs yet — the first run will be logged here with its sources and reasoning.
+              No runs yet - the first run will be logged here with its sources and reasoning.
             </div>
           )}
         </div>
@@ -252,7 +252,7 @@ export default function SkillsPage() {
       <div className="border-b border-[var(--os-border)] px-4 pt-6 pb-5 md:px-8">
         <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Skills</h1>
         <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">
-          What Petal runs for the firm — every run logged, every send governed by its trust tier.
+          What Petal runs for the firm - every run logged, every send governed by its trust tier.
         </p>
         <PetalLegend className="mt-3" />
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// WeeklyDigestLink — the ROI story lives as a sentence in the Today hero (Ferndesk's
+// WeeklyDigestLink - the ROI story lives as a sentence in the Today hero (Ferndesk's
 // stats-as-a-sentence); this is the quiet trigger for the weekly digest. The modal mirrors
 // the Knowledge page's reading language: a Petal context banner + a key-numbers table.
 // Numbers derive from roiWeek().
@@ -54,7 +54,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
               transition={{ duration: 0.16, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
               role="dialog" aria-modal="true" aria-label="Weekly digest"
-              className="w-full max-w-[440px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+              className="w-full max-w-[440px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
             >
               {/* header (Knowledge reading-meta language) */}
               <div className="flex items-start justify-between gap-3 border-b border-[var(--os-border)] px-5 py-3.5">
@@ -78,7 +78,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
                     <PetalMark className="size-4" />
                   </span>
                   <div className="text-[12px] text-[var(--os-ink-muted)]">
-                    <span className="font-medium text-[var(--os-ink)]">Petal returned about {roi.hoursReturned} hours</span> this week at {FIRM_PROFILE.name} — every return pre-approved by you.
+                    <span className="font-medium text-[var(--os-ink)]">Petal returned about {roi.hoursReturned} hours</span> this week at {FIRM_PROFILE.name} - every return pre-approved by you.
                   </div>
                 </div>
 

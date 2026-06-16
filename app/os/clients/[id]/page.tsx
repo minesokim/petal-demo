@@ -1,6 +1,6 @@
 "use client";
 
-// Client record — the deepest /os surface. Header strip + 9 explicit tabs +
+// Client record - the deepest /os surface. Header strip + 9 explicit tabs +
 // "Run skill" menu + "View as client" portal preview + @Petal right rail.
 // Every number on this page derives from lib/fixtures at render time; the
 // Park exemplar must tie (Ready to Prep · 32/34 · $1,900 · $1,140) everywhere.
@@ -34,14 +34,14 @@ import {
 } from "@/lib/fixtures/derive";
 import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, healthMeta, expectedDocMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
 
-/* ── constants / small helpers (presentation only — no data) ── */
+/* ── constants / small helpers (presentation only - no data) ── */
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-// Notices are a firm-wide deadline queue — they live in the sidebar, not as a per-client tab.
+// Notices are a firm-wide deadline queue - they live in the sidebar, not as a per-client tab.
 const TABS = ["Overview", "Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance"] as const;
 type Tab = (typeof TABS)[number];
 // 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
-// Notes is NOT a content tab — it lives in the right rail next to Ask Petal / Details.
+// Notes is NOT a content tab - it lives in the right rail next to Ask Petal / Details.
 const PRIMARY_TABS: Tab[] = ["Overview", "Returns", "Documents", "Tasks", "Messages"];
 const MORE_TABS: Tab[] = ["Activity", "Billing", "Positions", "Compliance"];
 const tabFromParam = (p: string | null): Tab =>
@@ -61,10 +61,10 @@ const channelDot: Record<Channel, string> = {
   call: "bg-yellow-500",
 };
 
-/* The portal preview speaks to the client — stageMeta stages, said in client words. */
+/* The portal preview speaks to the client - stageMeta stages, said in client words. */
 const clientStageWords: Record<Stage, string> = {
   collecting_docs: "We're collecting your documents",
-  ready_to_prep: "Everything's in — preparation is next",
+  ready_to_prep: "Everything's in - preparation is next",
   in_preparation: "Your return is being prepared",
   in_review: "Your return is ready for review",
   pay_and_sign: "Waiting on your signature",
@@ -81,7 +81,7 @@ const docKind = (source: string) => {
   return m ? m[1].replace("jpeg", "jpg") : "pdf";
 };
 
-/** The one primary verb — same derivation as the Tasks page. */
+/** The one primary verb - same derivation as the Tasks page. */
 const verbOf = (t: Task) => {
   const v = taskStatusMeta[t.status].verb;
   return v === "Approve" && t.draftText ? "Approve & send" : v;
@@ -126,7 +126,7 @@ function FormChip({ form }: { form: string }) {
   );
 }
 
-/* ── Linear-style card — small header + body. `flush` lets list content bleed to the
+/* ── Linear-style card - small header + body. `flush` lets list content bleed to the
    edges with dividers; otherwise the body is padded. Used in the rail and every tab. ── */
 function LCard({ title, action, flush, children }: { title: string; action?: React.ReactNode; flush?: boolean; children: React.ReactNode }) {
   return (
@@ -141,14 +141,14 @@ function LCard({ title, action, flush, children }: { title: string; action?: Rea
 }
 const FOCUS_G = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
 
-/* ── Main-content language (airy, typographic — not boxes) ── */
+/* ── Main-content language (airy, typographic - not boxes) ── */
 /** Quiet section header: title + optional count, with a subtle right action. */
 function SectionHead({ title, count, action }: { title: string; count?: number | string; action?: React.ReactNode }) {
   return (
     <div className="mb-1.5 flex items-center justify-between gap-3">
       <h3 className="flex items-baseline gap-2 text-[13px] font-semibold text-[var(--os-ink)]">
         {title}
-        {count !== undefined && <span className="text-[12px] font-normal tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
+        {count !== undefined && <span className="text-[12px] font-normal tabular-nums text-[var(--os-ink)]">{count}</span>}
       </h3>
       {action}
     </div>
@@ -162,7 +162,7 @@ function ViewAll({ onClick }: { onClick: () => void }) {
     </button>
   );
 }
-/** Airy hover row — borderless, rounded highlight on hover (Linear list). */
+/** Airy hover row - borderless, rounded highlight on hover (Linear list). */
 const AROW = "group -mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--os-hover)]";
 function ARow({ onClick, href, children }: { onClick?: () => void; href?: string; children: React.ReactNode }) {
   if (href) return <Link href={href} className={cn(AROW, FOCUS_G)}>{children}</Link>;
@@ -170,7 +170,7 @@ function ARow({ onClick, href, children }: { onClick?: () => void; href?: string
   return <div className={cn(AROW, "hover:bg-transparent")}>{children}</div>;
 }
 
-/* ── Linear project-panel card — title + chevron, optional right action, padded body ── */
+/* ── Linear project-panel card - title + chevron, optional right action, padded body ── */
 function Card({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4", className)}>
@@ -196,44 +196,15 @@ function StatLine({ icon, dot, label, value }: { icon?: React.ReactNode; dot?: s
     </div>
   );
 }
-/** Linear-style progress chart — a smooth cumulative curve: green "completed" area under
- *  the curve, a soft "remaining" band above it up to the goal line. Reads well at any %. */
-function ProgressArea({ pct, start, end }: { pct: number; start: string; end: string }) {
-  const W = 320, H = 116, TOP = 8;
-  const p = Math.max(0, Math.min(100, pct)) / 100;
-  const N = 24;
-  const ease = (t: number) => 1 - Math.pow(1 - t, 1.85); // ease-out — fast rise, gentle plateau
-  const pts = Array.from({ length: N + 1 }, (_, i) => {
-    const t = i / N;
-    return [+(W * t).toFixed(1), +(H - (H - TOP) * p * ease(t)).toFixed(1)] as const;
-  });
-  const line = pts.map(([x, y], i) => (i ? `L${x},${y}` : `M${x},${y}`)).join(" ");
-  const green = `${line} L${W},${H} L0,${H} Z`;
-  const remain = `${line} L${W},${TOP} L0,${TOP} Z`;
-  const endY = pts[N][1];
+/** Segmented stacked progress bar (ClickUp / monday "battery" idiom). Colored segments
+ *  fill left→right; the remainder shows as the track. */
+function SegBar({ segments }: { segments: { value: number; color: string }[] }) {
+  const total = segments.reduce((s, x) => s + x.value, 0);
   return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" style={{ height: 132 }}>
-        <defs>
-          <linearGradient id="pa-green" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--os-brand)" stopOpacity="0.30" />
-            <stop offset="100%" stopColor="var(--os-brand)" stopOpacity="0.03" />
-          </linearGradient>
-          <linearGradient id="pa-soft" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f472b6" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#f472b6" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <path d={remain} fill="url(#pa-soft)" />
-        <path d={green} fill="url(#pa-green)" />
-        {/* goal line */}
-        <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--os-border-strong)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
-        <path d={line} fill="none" stroke="var(--os-brand)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        <circle cx={W} cy={endY} r="3" fill="var(--os-brand)" />
-      </svg>
-      <div className="mt-1.5 flex items-center justify-between text-[11px] tabular-nums text-[var(--os-ink-subtle)]">
-        <span>{start}</span><span className="font-medium text-[var(--os-ink-muted)]">{pct}%</span><span>{end}</span>
-      </div>
+    <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
+      {total > 0 && segments.map((s, i) => s.value > 0 && (
+        <div key={i} className={cn("h-full", s.color, i > 0 && "border-l-2 border-[var(--os-surface)]")} style={{ width: `${(s.value / total) * 100}%` }} />
+      ))}
     </div>
   );
 }
@@ -268,7 +239,7 @@ function NoticeStatus({ n }: { n: Notice }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
-      <span className="truncate">Response drafted — awaiting your approval</span>
+      <span className="truncate">Response drafted - awaiting your approval</span>
     </span>
   );
 }
@@ -288,7 +259,7 @@ function ClientRecordInner() {
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  // record-level overflow (⋯) menu — View as client · Copy link · Archive · Delete
+  // record-level overflow (⋯) menu - View as client · Copy link · Archive · Delete
   const [hdrMenuOpen, setHdrMenuOpen] = useState(false);
   const hdrMenuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -297,7 +268,7 @@ function ClientRecordInner() {
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, [hdrMenuOpen]);
-  // close the More menu on an outside click (robust — no overlay div to race the open)
+  // close the More menu on an outside click (robust - no overlay div to race the open)
   useEffect(() => {
     if (!moreOpen) return;
     const onDown = (e: MouseEvent) => {
@@ -315,26 +286,28 @@ function ClientRecordInner() {
   const [wpRun, setWpRun] = useState<string | null>(null);
   const { msg, show } = useToast();
 
-  // interactive @Petal rail — scoped to this household (scripted demo bank)
+  // interactive @Petal rail - scoped to this household (scripted demo bank)
   const chat = usePetalChat(h?.id);
   const [chatInput, setChatInput] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chat.messages]);
   const sendChat = (text?: string) => {
     const q = (text ?? chatInput).trim();
-    if (!q) return;
-    chat.send(q);
+    if (!q && attachments.length === 0) return;
+    chat.send(q, attachments);
     setChatInput("");
+    setAttachments([]);
   };
-  // drag a document onto the rail → Petal looks at it
+  // drag a document onto the rail → attach it to the composer (don't auto-send)
   const [petalDropOver, setPetalDropOver] = useState(false);
   const [progressTab, setProgressTab] = useState<"Documents" | "Returns">("Documents");
   const [ovTab, setOvTab] = useState<"Documents" | "Returns">("Documents");
-  const askPetalAboutDoc = (name: string) => { setPanel("Ask Petal"); sendChat(`Take a look at ${name} and flag anything that needs my attention.`); };
+  const attachDoc = (name: string) => { setPanel("Ask Petal"); setAttachments(prev => prev.includes(name) ? prev : [...prev, name]); };
 
-  // ?tab= preselect — also when the param changes in place (deep links from health/positions).
+  // ?tab= preselect - also when the param changes in place (deep links from health/positions).
   useEffect(() => {
     if (tabParam) setTab(tabFromParam(tabParam));
   }, [tabParam]);
@@ -359,9 +332,9 @@ function ClientRecordInner() {
   const feed = activityFeed({ householdId: h.id });
   const openTasks = hhTasks.filter(t => t.status !== "done");
 
-  // The canned @Petal answer — composed from the SAME derivations as the header strip.
+  // The canned @Petal answer - composed from the SAME derivations as the header strip.
   const petalAnswer =
-    `${h.name} is ${stageMeta[stage].label} — docs ${docs.label}. ` +
+    `${h.name} is ${stageMeta[stage].label} - docs ${docs.label}. ` +
     `${openTasks.length} open task${openTasks.length === 1 ? "" : "s"}` +
     (deadline ? `; next deadline ${fmtDate(deadline.iso)}.` : `; no live deadlines.`);
 
@@ -430,7 +403,7 @@ function ClientRecordInner() {
                     queuedSkills.has(s.id) ? (
                       <div key={s.id} className="flex h-8 items-center gap-2 rounded-md px-2.5 text-[12px] font-medium text-[var(--os-ink)]">
                         <Icon icon={I.check} size={14} className="shrink-0 text-emerald-600" />
-                        Queued — lands in Tasks
+                        Queued - lands in Tasks
                         <span className="ml-auto truncate text-[11px] font-normal text-[var(--os-ink-subtle)]">{s.name}</span>
                       </div>
                     ) : (
@@ -482,13 +455,13 @@ function ClientRecordInner() {
       </div>
 
       {viewAsClient ? (
-        /* ── Read-only portal preview — what this client sees ── */
+        /* ── Read-only portal preview - what this client sees ── */
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--os-bg-subtle)]">
           <div className="mx-auto w-full max-w-[560px] px-4 py-6 sm:py-8">
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3.5 py-2.5 text-[12px] text-[var(--os-ink-muted)]">
               <Icon icon={I.eye} size={14} className="shrink-0" />
-              <span>Viewing as <span className="font-medium text-[var(--os-ink)]">{h.name}</span> — read-only</span>
-              <button onClick={() => setViewAsClient(false)} className={cn("ml-auto shrink-0 text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
+              <span>Viewing as <span className="font-medium text-[var(--os-ink)]">{h.name}</span> - read-only</span>
+              <button onClick={() => setViewAsClient(false)} className={cn("ml-auto shrink-0 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
                 Back to the record
               </button>
             </div>
@@ -499,7 +472,7 @@ function ClientRecordInner() {
                 <h3 className="text-[13px] font-semibold text-[var(--os-ink)]">Your documents</h3>
                 <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">
                   <span className="font-medium tabular-nums text-[var(--os-ink)]">{docs.inHand} of {docs.denom}</span> received
-                  {docs.requested > 0 ? ` — ${docs.requested} still to send` : " — all set"}
+                  {docs.requested > 0 ? ` - ${docs.requested} still to send` : " - all set"}
                 </p>
                 <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
                   <div className="h-full rounded-full bg-[var(--os-ink)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
@@ -544,7 +517,7 @@ function ClientRecordInner() {
           {/* Center: tabs + content */}
           <div className="flex min-w-0 flex-1 flex-col">
             {/* 6 primary tabs inline + a "More" dropdown for the rest (Attio pattern).
-                No overflow-x clipping here — it would hide the absolutely-positioned dropdown. */}
+                No overflow-x clipping here - it would hide the absolutely-positioned dropdown. */}
             <div className="flex flex-wrap items-center gap-1 border-b border-[var(--os-border)] px-4 sm:px-8">
               {PRIMARY_TABS.map(t => (
                 <button
@@ -558,13 +531,13 @@ function ClientRecordInner() {
                 >
                   {t}
                   {tabCount[t] !== undefined && tabCount[t]! > 0 && (
-                    <span className="ml-1 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{tabCount[t]}</span>
+                    <span className="ml-1 text-[11px] tabular-nums text-[var(--os-ink)]">{tabCount[t]}</span>
                   )}
                   {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
                 </button>
               ))}
 
-              {/* More ▾ — overflow tabs (ref-based outside-click close) */}
+              {/* More ▾ - overflow tabs (ref-based outside-click close) */}
               <div ref={moreRef} className="relative shrink-0">
                 <button
                   onClick={() => setMoreOpen(o => !o)}
@@ -593,7 +566,7 @@ function ClientRecordInner() {
                       >
                         <span className="flex-1">{t}</span>
                         {tabCount[t] !== undefined && tabCount[t]! > 0 && (
-                          <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{tabCount[t]}</span>
+                          <span className="text-[11px] tabular-nums text-[var(--os-ink)]">{tabCount[t]}</span>
                         )}
                       </button>
                     ))}
@@ -652,23 +625,27 @@ function ClientRecordInner() {
                       <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
                     </Card>
 
-                    {/* Progress — gradient chart + segmented + stat rows */}
+                    {/* Progress - segmented bar + legend stat rows */}
                     <Card title="Progress">
-                      <ProgressArea
-                        pct={ovTab === "Documents" ? docsPct : returnsPct}
-                        start="Season start"
-                        end={deadline ? fmtDate(deadline.iso) : "Today"}
-                      />
                       <Segmented
-                        className="mt-3"
+                        className="mb-3.5"
                         value={ovTab}
                         onChange={v => setOvTab(v as "Documents" | "Returns")}
                         options={[{ value: "Documents", label: "Documents" }, { value: "Returns", label: "Returns" }]}
                       />
-                      <div className="mt-1.5 border-t border-[var(--os-border)] pt-0.5">
+                      <div className="mb-2.5 flex items-baseline justify-between">
+                        <span className="os-display text-[22px] font-semibold leading-none tabular-nums text-[var(--os-ink)]">{ovTab === "Documents" ? docsPct : returnsPct}%</span>
+                        <span className="text-[12px] text-[var(--os-ink-muted)]">{ovTab === "Documents" ? `${docs.inHand} of ${docs.denom} received` : `${filed} of ${engs.length} filed`}</span>
+                      </div>
+                      <SegBar
+                        segments={ovTab === "Documents"
+                          ? [{ value: docs.have, color: "bg-emerald-500" }, { value: docs.needsReview, color: "bg-amber-500" }]
+                          : [{ value: filed, color: "bg-emerald-500" }, { value: inProg, color: "bg-blue-500" }]}
+                      />
+                      <div className="mt-3 border-t border-[var(--os-border)] pt-1">
                         {ovTab === "Documents" ? (
                           <>
-                            <StatLine icon={<Icon icon={I.check} size={14} className="shrink-0 text-[var(--os-success)]" />} label="Received" value={docs.have} />
+                            <StatLine dot="bg-emerald-500" label="Received" value={docs.have} />
                             <StatLine dot="bg-amber-500" label="Needs review" value={docs.needsReview} />
                             <StatLine dot="bg-[var(--os-border-strong)]" label="Requested" value={docs.requested} />
                           </>
@@ -686,7 +663,7 @@ function ClientRecordInner() {
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <Card title="Needs you" action={openTasks.length > 0 ? <ViewAll onClick={() => setTab("Tasks")} /> : undefined}>
                         {openTasks.length === 0 ? (
-                          <p className="text-[12.5px] text-[var(--os-ink-subtle)]">All clear — nothing waiting on you.</p>
+                          <p className="text-[12.5px] text-[var(--os-ink-subtle)]">All clear - nothing waiting on you.</p>
                         ) : (
                           <div className="-mx-2 -mb-1">
                             {openTasks.slice(0, 4).map(t => {
@@ -752,7 +729,7 @@ function ClientRecordInner() {
                     ) : (
                       <>
                         <SectionHead title="Timeline" />
-                        {/* a true timeline — a hairline spine with dotted events */}
+                        {/* a true timeline - a hairline spine with dotted events */}
                         <div className="relative ml-1 mt-1 space-y-4 border-l border-[var(--os-border)] pl-5">
                           {feed.map(a => {
                             const expanded = expandedEvents.has(a.id);
@@ -775,7 +752,7 @@ function ClientRecordInner() {
                                         })
                                       }
                                       aria-expanded={expanded}
-                                      className={cn("text-[11px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
+                                      className={cn("text-[11px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}
                                     >
                                       {expanded ? "Hide run" : "View run"}
                                     </button>
@@ -793,60 +770,60 @@ function ClientRecordInner() {
 
                 {/* ── Returns ── Linear cards ── */}
                 {tab === "Returns" && (
-                  <div className="mx-auto max-w-[760px] space-y-4">
-                    {/* summary card */}
+                  <div className="mx-auto max-w-[760px] space-y-8">
+                    {/* summary - boxed stat band (Overview idiom) */}
                     <Card>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-[var(--os-border)]">
+                      <div className="grid grid-cols-2 gap-y-5 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-[var(--os-border)]">
                         {([
                           ["Returns", String(engs.length), false],
-                          ["Next deadline", deadline ? fmtDate(deadline.iso) : "—", false],
+                          ["Next deadline", deadline ? fmtDate(deadline.iso) : "-", false],
                           ["Fees", money(householdFee(h.id)), false],
                           ["Blocked", money(engs.filter(e => e.blockedBy).reduce((s, e) => s + e.fee, 0)), true],
                         ] as const).map(([label, value, warn], i) => (
-                          <div key={label} className={cn("py-1", i > 0 && "sm:pl-5 pt-3 sm:pt-1", i < 3 && "sm:pr-5")}>
-                            <div className="text-[11px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">{label}</div>
-                            <div className={cn("os-display mt-1.5 text-[19px] font-semibold tabular-nums", warn && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
+                          <div key={label} className={cn(i > 0 && "sm:pl-5", i < 3 && "sm:pr-5")}>
+                            <div className="text-[12px] text-[var(--os-ink-muted)]">{label}</div>
+                            <div className={cn("os-display mt-1 text-[16px] font-semibold tabular-nums", warn && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
                           </div>
                         ))}
                       </div>
                     </Card>
 
-                    {/* returns list card */}
-                    <Card title="Returns" action={<span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{engs.length}</span>}>
-                      <div className="-mx-2 -mb-1 divide-y divide-[var(--os-border)]">
-                        {engs.map(e => {
-                          const d = engagementDeadline(e);
-                          const dc = docsOf(e.id);
-                          const pct = dc.denom > 0 ? Math.round((dc.inHand / dc.denom) * 100) : 0;
-                          const runTask = hhTasks.find(t => t.engagementId === e.id && t.status === "running");
-                          const runSkill = runTask ? skillById(runTask.skillId) : undefined;
-                          return (
-                            <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group block rounded-md px-2 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
-                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <FormChip form={e.form} />
-                                <span className="min-w-0 truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</span>
-                                <StageTag stage={e.stage} />
-                                <DeadlineChip iso={d.iso} extended={d.extended} />
-                                {runSkill && <span className="inline-flex items-center gap-1 text-[11px] text-[var(--os-ink-muted)]"><SkillPetal category={runSkill.category} size={13} /> running</span>}
-                                <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
-                                <MemberAvatar memberId={assigneeOf(e.householdId)} size={20} />
-                              </div>
-                              <div className="mt-2 flex items-center gap-2">
-                                <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
-                                  <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${pct}%` }} />
-                                </div>
-                                <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-muted)]">Docs {dc.label}</span>
-                              </div>
-                              {e.blockedBy && (
-                                <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--os-warning)]">
-                                  <Icon icon={I.alert} size={12} className="shrink-0" /> Blocked by {e.blockedBy}
-                                </div>
-                              )}
-                            </Link>
-                          );
-                        })}
+                    {/* returns - clean table */}
+                    <section>
+                      <SectionHead title="Returns" count={engs.length} />
+                      <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 border-b border-[var(--os-border)] px-2 pb-2 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                        <div>Return</div>
+                        <div>Stage</div>
+                        <div>Deadline</div>
+                        <div className="text-right">Docs</div>
+                        <div className="text-right">Fee</div>
                       </div>
-                    </Card>
+                      {engs.map(e => {
+                        const d = engagementDeadline(e);
+                        const dc = docsOf(e.id);
+                        const complete = dc.inHand >= dc.denom;
+                        return (
+                          <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] items-center gap-x-3 border-b border-[var(--os-border)] px-2 py-3 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <FormChip form={e.form} />
+                              <div className="min-w-0">
+                                <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</div>
+                                {e.blockedBy && <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[var(--os-warning)]"><Icon icon={I.alert} size={11} className="shrink-0" /> Blocked</div>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--os-ink-muted)]"><span className={cn("size-1.5 shrink-0 rounded-full", stageMeta[e.stage].dot)} /><span className="truncate">{stageMeta[e.stage].label}</span></div>
+                            <div className="text-[12.5px] tabular-nums text-[var(--os-ink-muted)]">{d.extended ? "Ext · " : ""}{fmtDate(d.iso)}</div>
+                            <div className={cn("text-right text-[12.5px] tabular-nums", complete ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{dc.label}</div>
+                            <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
+                          </Link>
+                        );
+                      })}
+                      {/* totals footer */}
+                      <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 px-2 pt-2.5 text-[12px]">
+                        <div className="col-span-4 text-[var(--os-ink-muted)]">Total fees</div>
+                        <div className="text-right font-semibold tabular-nums text-[var(--os-ink)]">{money(householdFee(h.id))}</div>
+                      </div>
+                    </section>
 
                     {/* relationships */}
                     {k1Links.length > 0 && (
@@ -875,10 +852,10 @@ function ClientRecordInner() {
                                 <span className="font-medium tabular-nums text-[var(--os-ink)]">{row.amount}</span>
                                 <span className="truncate text-[var(--os-ink-muted)]">{row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}</span>
                                 {row.runId ? (
-                                  <button onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))} aria-expanded={wpRun === `${wp.id}-${i}`} className={cn("text-left text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
+                                  <button onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))} aria-expanded={wpRun === `${wp.id}-${i}`} className={cn("text-left text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
                                     {wpRun === `${wp.id}-${i}` ? "Hide run" : "View run"}
                                   </button>
-                                ) : <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>}
+                                ) : <span className="text-[12px] text-[var(--os-ink-subtle)]">-</span>}
                               </div>
                             ))}
                           </div>
@@ -907,7 +884,7 @@ function ClientRecordInner() {
                       </p>
                     </section>
 
-                    {/* per-engagement document checklist — clean file cards */}
+                    {/* per-engagement document checklist - clean file cards */}
                     {engs.map(e => {
                       const rows = [...docsOfEngagement(e.id)].sort((a, b) => DOC_STATUS_ORDER[a.status] - DOC_STATUS_ORDER[b.status]);
                       const dc = docsOf(e.id);
@@ -921,7 +898,7 @@ function ClientRecordInner() {
                           </div>
                           {rows.length === 0 ? (
                             <p className="rounded-xl border border-dashed border-[var(--os-border-strong)] px-3.5 py-4 text-[13px] text-[var(--os-ink-muted)]">
-                              No checklist yet — import last year&apos;s return and Petal builds it.
+                              No checklist yet - import last year&apos;s return and Petal builds it.
                             </p>
                           ) : (
                             <div className="space-y-2">
@@ -937,7 +914,7 @@ function ClientRecordInner() {
                                     tabIndex={inHand ? 0 : undefined}
                                     onKeyDown={ev => { if (inHand && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); setOpenDoc(d); } }}
                                     className={cn(
-                                      "group flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
+                                      "group flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors",
                                       inHand
                                         ? "cursor-grab border-[var(--os-border)] bg-[var(--os-surface)] hover:border-[var(--os-border-strong)] active:cursor-grabbing"
                                         : "border-dashed border-[var(--os-border)]",
@@ -1042,7 +1019,7 @@ function ClientRecordInner() {
                 {/* ── Billing ── mirrors the Billing page invoice drawer ── */}
                 {tab === "Billing" && (
                   <div className="mx-auto max-w-[560px] space-y-5">
-                    {/* hero — balance + status (same idiom as the Billing drawer) */}
+                    {/* hero - balance + status (same idiom as the Billing drawer) */}
                     <div>
                       <div className="text-[12px] text-[var(--os-ink-muted)]">{invoice.status === "paid" ? "Paid in full" : invoice.status === "overdue" ? "Balance overdue" : "Balance due"}</div>
                       <div className={cn("os-display mt-1 text-[30px] font-semibold leading-none tabular-nums", invoice.status === "overdue" && "text-[var(--os-danger)]")}>{money(invoice.status === "paid" ? invoice.invoiced : invoice.balance)}</div>
@@ -1149,7 +1126,7 @@ function ClientRecordInner() {
                     : { label: "Not yet generated", dot: "bg-[var(--os-border-strong)]" };
                   return (
                     <div className="mx-auto max-w-[760px] space-y-8">
-                      {/* firm-level credentials — borderless rows */}
+                      {/* firm-level credentials - borderless rows */}
                       <section>
                         <SectionHead title="Preparer & authorizations" />
                         <div className="divide-y divide-[var(--os-border)]">
@@ -1158,7 +1135,7 @@ function ClientRecordInner() {
                             ["PTIN & EFIN", "On file", true],
                             ["Engagement letter", `Signed · ${h.since} season`, true],
                             ["§7216 consent to disclose", "On file", true],
-                            ["Form 8821 (transcript access)", h.has8821 ? "On file — transcripts monitored" : "Not on file", h.has8821],
+                            ["Form 8821 (transcript access)", h.has8821 ? "On file - transcripts monitored" : "Not on file", h.has8821],
                             ["WISP (data security plan)", "On file", true],
                           ] as const).map(([label, value, ok]) => (
                             <div key={label} className="flex items-center gap-3 py-2.5 text-[13px]">
@@ -1172,7 +1149,7 @@ function ClientRecordInner() {
                         </div>
                       </section>
 
-                      {/* per-engagement e-file compliance — airy rows */}
+                      {/* per-engagement e-file compliance - airy rows */}
                       <section>
                         <SectionHead title="E-file authorization by return" />
                         <div className="space-y-0.5">
@@ -1211,11 +1188,11 @@ function ClientRecordInner() {
           </div>
 
           {/* Right rail: Ask Petal (assistant) · Details (properties) · Notes.
-              Also a drop target — drag a document here and Petal reviews it. */}
+              Also a drop target - drag a document here and Petal reviews it. */}
           <aside
             onDragOver={e => { if (e.dataTransfer.types.includes("text/petal-doc")) { e.preventDefault(); setPetalDropOver(true); } }}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setPetalDropOver(false); }}
-            onDrop={e => { e.preventDefault(); const name = e.dataTransfer.getData("text/petal-doc"); setPetalDropOver(false); if (name) askPetalAboutDoc(name); }}
+            onDrop={e => { e.preventDefault(); const name = e.dataTransfer.getData("text/petal-doc"); setPetalDropOver(false); if (name) attachDoc(name); }}
             className="relative hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex"
           >
             <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-3">
@@ -1234,12 +1211,12 @@ function ClientRecordInner() {
             {panel === "Ask Petal" && (
               <div className="flex min-h-0 flex-1 flex-col">
                 <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
-                  {/* Petal's opening read — plain assistant prose */}
+                  {/* Petal's opening read - plain assistant prose */}
                   <div>
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
                     <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
                     {openTasks.length > 0 && (
-                      <button onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
+                      <button onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
                         Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
                       </button>
                     )}
@@ -1248,8 +1225,21 @@ function ClientRecordInner() {
                   {/* conversation */}
                   {chat.messages.map(m =>
                     m.role === "user" ? (
-                      <div key={m.id} className="flex justify-end">
-                        <div className="max-w-[85%] rounded-2xl bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">{m.text}</div>
+                      <div key={m.id} className="flex flex-col items-end gap-1.5">
+                        {m.attachments && m.attachments.length > 0 && (
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            {m.attachments.map(name => (
+                              <span key={name} className="inline-flex items-center gap-2.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] py-1.5 pl-2 pr-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)]">
+                                <FileGlyph kind={docKind(name)} size={26} className="shrink-0" />
+                                <span className="flex min-w-0 flex-col">
+                                  <span className="max-w-[150px] truncate text-[12px] font-medium leading-tight text-[var(--os-ink)]">{name}</span>
+                                  <span className="text-[10px] font-medium uppercase leading-tight tracking-wide text-[var(--os-ink-subtle)]">{docKind(name)}</span>
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {m.text && <div className="max-w-[85%] rounded-2xl bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">{m.text}</div>}
                       </div>
                     ) : (
                       <div key={m.id}>
@@ -1265,7 +1255,7 @@ function ClientRecordInner() {
                     ),
                   )}
 
-                  {/* suggested prompts — pill chips before any conversation */}
+                  {/* suggested prompts - pill chips before any conversation */}
                   {chat.messages.length === 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {[`What's blocking ${first(h.name)}?`, "What's next?", "Summarize open items"].map(s => (
@@ -1278,22 +1268,36 @@ function ClientRecordInner() {
                   <div ref={chatBottomRef} />
                 </div>
 
-                {/* composer — clean rounded box (ChatGPT idiom) */}
+                {/* composer - clean rounded box (ChatGPT idiom) */}
                 <div className="px-3 pb-3">
                   <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-colors focus-within:border-[var(--os-border-strong)]">
+                    {attachments.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {attachments.map(name => (
+                          <span key={name} className="inline-flex items-center gap-2.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] py-1.5 pl-2 pr-1.5 shadow-[0_1px_2px_rgba(17,17,26,0.04)]">
+                            <FileGlyph kind={docKind(name)} size={26} className="shrink-0" />
+                            <span className="flex min-w-0 flex-col">
+                              <span className="max-w-[150px] truncate text-[12px] font-medium leading-tight text-[var(--os-ink)]">{name}</span>
+                              <span className="text-[10px] font-medium uppercase leading-tight tracking-wide text-[var(--os-ink-subtle)]">{docKind(name)}</span>
+                            </span>
+                            <button onClick={() => setAttachments(prev => prev.filter(n => n !== name))} aria-label={`Remove ${name}`} className="grid size-5 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.close} size={12} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <textarea
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
                       rows={1}
-                      placeholder="Ask Petal…"
+                      placeholder={attachments.length ? "Add a message, or send to have Petal review…" : "Ask Petal…"}
                       className="max-h-28 w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
                     />
                     <div className="mt-1 flex items-center gap-1">
                       <button className={cn("grid size-7 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={15} /></button>
                       <button
                         onClick={() => sendChat()}
-                        disabled={!chatInput.trim()}
+                        disabled={!chatInput.trim() && attachments.length === 0}
                         className={cn("ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-opacity disabled:opacity-25", FOCUS)}
                         aria-label="Send"
                       >
@@ -1320,7 +1324,7 @@ function ClientRecordInner() {
                   </div>
                 </LCard>
 
-                {/* Progress — segmented Documents / Returns with stat rows (Linear) */}
+                {/* Progress - segmented Documents / Returns with stat rows (Linear) */}
                 <LCard title="Progress">
                   <Segmented
                     value={progressTab}
@@ -1332,7 +1336,7 @@ function ClientRecordInner() {
                     <>
                       <div className="mb-1 flex items-center gap-2 px-0.5">
                         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
-                          <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
+                          <div className={cn("h-full rounded-full", docs.inHand >= docs.denom ? "bg-emerald-500" : docs.denom > 0 && docs.inHand / docs.denom >= 0.5 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
                         </div>
                         <span className="shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">{docs.label}</span>
                       </div>
@@ -1361,7 +1365,7 @@ function ClientRecordInner() {
                 </LCard>
 
                 {/* Entities */}
-                <LCard title="Entities" action={<span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{ents.length}</span>}>
+                <LCard title="Entities" action={<span className="text-[11px] tabular-nums text-[var(--os-ink)]">{ents.length}</span>}>
                   <div className="space-y-0.5">
                     {ents.map(e => (
                       <div key={e.id} className="flex items-center gap-2.5 px-0.5 py-1.5">
@@ -1376,7 +1380,7 @@ function ClientRecordInner() {
                 </LCard>
 
                 {/* People */}
-                <LCard title="People" action={<span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{ppl.length}</span>}>
+                <LCard title="People" action={<span className="text-[11px] tabular-nums text-[var(--os-ink)]">{ppl.length}</span>}>
                   <div className="space-y-0.5">
                     {ppl.map(p => (
                       <div key={p.id} className="flex items-center gap-2.5 px-0.5 py-1.5">
@@ -1405,8 +1409,8 @@ function ClientRecordInner() {
 
             {/* drop overlay */}
             {petalDropOver && (
-              <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-[var(--os-brand)]/[0.06] ring-2 ring-inset ring-[var(--os-brand)]">
-                <div className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--os-brand)] bg-[var(--os-surface)] px-3 py-2 text-[12.5px] font-medium text-[var(--os-brand)] shadow-sm">
+              <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-[var(--os-accent)]/[0.06] ring-2 ring-inset ring-[var(--os-accent)]">
+                <div className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--os-accent)] bg-[var(--os-surface)] px-3 py-2 text-[12.5px] font-medium text-[var(--os-accent)] shadow-sm">
                   <PetalMark className="size-3.5" /> Drop to ask Petal
                 </div>
               </div>
@@ -1425,7 +1429,7 @@ function ClientRecordInner() {
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
               transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()}
-              className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+              className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
             >
               <TaskDetail task={taskItem} onClose={() => setTaskOpen(null)} />
             </motion.div>

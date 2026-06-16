@@ -1,9 +1,9 @@
 "use client";
 
-// /os/calendar — the firm scheduling calendar. Month grid in the Notion/Linear
+// /os/calendar - the firm scheduling calendar. Month grid in the Notion/Linear
 // idiom (hairline cells, day numbers, today circled, events as dot + text) + an
 // Upcoming rail. This surface is for SCHEDULED things (meetings, calls, focus
-// blocks, office closures) — deadlines live in Today/Tasks/Notices. Clicking an
+// blocks, office closures) - deadlines live in Today/Tasks/Notices. Clicking an
 // event opens a detail modal; nothing navigates away. Opens on June 2026.
 
 import Link from "next/link";
@@ -200,7 +200,7 @@ function EventModal({ event, onClose }: { event: CalEvent | null; onClose: () =>
             initial={{ opacity: 0, y: 8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
             onClick={ev => ev.stopPropagation()}
-            className="w-full max-w-[440px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-white shadow-[0_12px_40px_-8px_rgba(17,17,26,0.22)]"
+            className="w-full max-w-[440px] overflow-hidden rounded-md border border-[var(--os-border)] bg-white shadow-[0_12px_40px_-8px_rgba(17,17,26,0.22)]"
           >
             {/* header */}
             <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-5 py-3">

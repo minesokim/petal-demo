@@ -1,10 +1,10 @@
 "use client";
 
-// Today — the command center. Every number derives from lib/fixtures/derive at
+// Today - the command center. Every number derives from lib/fixtures/derive at
 // render time; nothing is hard-coded (see /os/debug/tie-out).
 //
 // Layout language: the ORIGINAL Today card grammar (the deployed design the user
-// prefers — petal-os.vercel.app circa Jun 9, 2026): one centered column of soft
+// prefers - petal-os.vercel.app circa Jun 9, 2026): one centered column of soft
 // cream cards (--os-card fill, border-strong), each with a small muted header
 // INSIDE the card; compact rows; tone dots live only inside cards; big tabular
 // numbers as focal points. Kept from the redesign journey: the hero banner, the
@@ -32,12 +32,12 @@ const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
-/** The original soft card — cream fill, stronger border, hover border only. */
+/** The original soft card - cream fill, stronger border, hover border only. */
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("flex flex-col rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-4 transition-colors duration-200 hover:border-[var(--os-border-hover)]", className)}>{children}</div>;
 }
 
-/** Card header — the `title` token (15/600 ink) so containers announce themselves. */
+/** Card header - the `title` token (15/600 ink) so containers announce themselves. */
 function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark?: boolean; badge?: number; href?: string; hrefLabel?: string }) {
   return (
     <div className="mb-3 flex items-center gap-2">
@@ -53,7 +53,7 @@ function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark
   );
 }
 
-// flat people avatar — records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
+// flat people avatar - records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
 function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
   return (
     <span
@@ -73,10 +73,10 @@ export default function TodayPage() {
   const roi = roiWeek();
   const reviewMinutes = queue.reduce((s, t) => s + t.estimatedMin, 0);
 
-  // The first decision in the queue — embedded as the callout's live preview.
+  // The first decision in the queue - embedded as the callout's live preview.
   const previewTask = queue[0];
 
-  // Today's call — the Fuentes 1120S review; the brief is a running Pre-call Brief run.
+  // Today's call - the Fuentes 1120S review; the brief is a running Pre-call Brief run.
   const callTask = taskById("t-brief-fuentes")!;
   const callHousehold = householdById(callTask.householdId)!;
   const callSkill = skillById(callTask.skillId)!;
@@ -100,7 +100,7 @@ export default function TodayPage() {
               </div>
               <h2 className="os-display text-[22px] font-semibold leading-tight text-white">Good morning, {firstName}</h2>
               <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/85">
-                Petal ran <span className="font-semibold text-white tabular-nums">{roi.actions}</span> actions this week — about{" "}
+                Petal ran <span className="font-semibold text-white tabular-nums">{roi.actions}</span> actions this week - about{" "}
                 <span className="font-semibold text-white tabular-nums">{roi.hoursReturned} hours</span> returned.{" "}
                 <span className="font-semibold text-white tabular-nums">{needsYou}</span> items need you, and{" "}
                 <span className="font-semibold text-white tabular-nums">{atRiskCount}</span> clients are at risk.
@@ -111,15 +111,15 @@ export default function TodayPage() {
           {/* ── Ask Petal ── */}
           <AskComposer />
 
-          {/* ── Filing readiness — card opens the full modal (who's lagging, what needs review) ── */}
+          {/* ── Filing readiness - card opens the full modal (who's lagging, what needs review) ── */}
           <FilingReadiness />
 
-          {/* ── review queue — the crafted moment, under filing readiness (hidden once the queue is clear) ── */}
+          {/* ── review queue - the crafted moment, under filing readiness (hidden once the queue is clear) ── */}
           {needsYou > 0 && (
           <FeatureCallout
             eyebrow={<><PetalMark className="size-3.5" /> Review mode</>}
             title={`${needsYou} items are ready for your sign-off`}
-            body={`Approve or skip each one with its sources and reasoning alongside — keyboard A and S. About ${reviewMinutes} minutes.`}
+            body={`Approve or skip each one with its sources and reasoning alongside - keyboard A and S. About ${reviewMinutes} minutes.`}
             action={{ label: "Start reviewing", href: "/os/review" }}
             secondary={{ label: "View all tasks", href: "/os/tasks" }}
             preview={
@@ -137,11 +137,11 @@ export default function TodayPage() {
                         <div
                           key={a.key}
                           className={cn(
-                            "flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px]",
+                            "flex items-center gap-2 rounded-md border px-2 py-1.5 text-[11px]",
                             rec ? "border-[var(--os-border-strong)] bg-[var(--os-card)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-[var(--os-border)]",
                           )}
                         >
-                          <span className={cn("grid size-[18px] shrink-0 place-items-center rounded-md text-[10px] font-semibold", rec ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{a.key}</span>
+                          <span className={cn("grid size-[17px] shrink-0 place-items-center rounded-full text-[8px] font-semibold leading-none ring-1", rec ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)] ring-[var(--os-primary)]" : "bg-[var(--os-surface)] text-[var(--os-ink-muted)] ring-[var(--os-border-strong)]")}>{a.key}</span>
                           <span className={cn("min-w-0 flex-1 truncate", rec ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>{a.label}</span>
                           {rec && (
                             <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-[var(--os-selected)] px-1.5 py-0.5 text-[9.5px] font-medium text-[var(--os-ink-muted)]">
@@ -158,7 +158,7 @@ export default function TodayPage() {
           />
           )}
 
-          {/* ── Today's brief (the newspaper — situational awareness, modal per item) ── */}
+          {/* ── Today's brief (the newspaper - situational awareness, modal per item) ── */}
           <TodayBrief />
 
           {/* ── Today's calls ── */}
@@ -168,7 +168,7 @@ export default function TodayPage() {
               <span className="w-14 shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">3:00 PM</span>
               <PersonAvatar name={callHousehold.name} size={24} />
               <div className="min-w-0 flex-1">
-                <Link href={`/os/clients/${callHousehold.id}`} className={cn("truncate rounded text-[13px] text-[var(--os-ink)] hover:underline", focusRing)}>
+                <Link href={`/os/clients/${callHousehold.id}`} className={cn("truncate rounded text-[13px] text-[var(--os-link)] hover:underline", focusRing)}>
                   {callHousehold.name}
                 </Link>
                 <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</div>

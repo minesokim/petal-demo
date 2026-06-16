@@ -1,4 +1,4 @@
-// Petal OS — derivations. Every count, badge, KPI, and chart on every /os surface
+// Petal OS - derivations. Every count, badge, KPI, and chart on every /os surface
 // comes from these functions at render time. Components NEVER recompute or hard-code
 // an aggregate; `tieOutChecks()` (rendered at /os/debug/tie-out, run by scripts/tieout.ts)
 // treats any mismatch as a build failure.
@@ -111,7 +111,7 @@ export function feesBooked(): number {
   return engagements.reduce((s, e) => s + e.fee, 0);
 }
 
-// ── Filing readiness (tax analytics — who's on track to file on time) ──
+// ── Filing readiness (tax analytics - who's on track to file on time) ──
 export type FilingState = "filed" | "on_track" | "at_risk";
 
 export function filingStateOf(e: Engagement): FilingState {
@@ -218,7 +218,7 @@ export function billingKpis() {
   };
 }
 
-// ── Client health (THE function — Today's at-risk and Practice both call it) ──
+// ── Client health (THE function - Today's at-risk and Practice both call it) ──
 export interface HealthAssessment {
   health: Health;
   reason: string;
@@ -238,14 +238,14 @@ export function clientHealth(hid: string): HealthAssessment {
   if (depositUnpaid) {
     return {
       health: "at_risk",
-      reason: `Missing ${docs.requested} docs — chase #3 sent Tue · deposit unpaid`,
+      reason: `Missing ${docs.requested} docs - chase #3 sent Tue · deposit unpaid`,
       nextAction: { label: "Escalate to call?", href: "/os/tasks?task=t-williams-chase" },
     };
   }
   if (blockedDecision) {
     return {
       health: "at_risk",
-      reason: "Return blocked on an open decision — 7 of 23 lots missing basis",
+      reason: "Return blocked on an open decision - 7 of 23 lots missing basis",
       nextAction: { label: "Decide A / B / C", href: `/os/tasks?task=${blockedDecision.id}` },
     };
   }
@@ -272,11 +272,11 @@ export function clientHealth(hid: string): HealthAssessment {
   if (docs.requested >= 3) {
     return {
       health: "watch",
-      reason: `${docs.requested} documents outstanding — chases running`,
+      reason: `${docs.requested} documents outstanding - chases running`,
       nextAction: { label: "View documents", href: `/os/clients/${hid}?tab=documents` },
     };
   }
-  return { health: "healthy", reason: "On pace — nothing outstanding" };
+  return { health: "healthy", reason: "On pace - nothing outstanding" };
 }
 
 export function atRiskHouseholds(): ({ household: Household } & HealthAssessment)[] {
@@ -415,7 +415,7 @@ export function tieOutChecks(): TieOutCheck[] {
   // 10. Books module renders only because books clients exist.
   add("Today close widget / Books", "books clients", booksClients().length, "households with hasBooks", booksClients().length === 3);
 
-  // 11. Referential integrity — every link resolves.
+  // 11. Referential integrity - every link resolves.
   const runIds = new Set(skillRuns.map(r => r.id));
   const badTaskRuns = tasks.filter(t => t.runId && !runIds.has(t.runId));
   add("Provenance", "task → run links", `${tasks.filter(t => t.runId).length} linked`, "every Task.runId resolves", badTaskRuns.length === 0);
@@ -433,13 +433,13 @@ export function tieOutChecks(): TieOutCheck[] {
   ];
   add("World", "no ghost clients", orphans.length === 0 ? "none" : orphans.join(", "), "every record resolves to a household/engagement", orphans.length === 0);
 
-  // 12. Date coherence — nothing active sits past its statutory date without an extension.
+  // 12. Date coherence - nothing active sits past its statutory date without an extension.
   const lapsed = activeEngagements().filter(e => daysUntil(e.statutoryDeadline) < 0 && !e.extendedDeadline);
   add("World", "extension coverage", lapsed.length === 0 ? "all extended" : lapsed.map(e => e.id).join(", "),
     "active past statutory ⇒ extendedDeadline set", lapsed.length === 0);
 
   // 13. Exactly one primary verb per task status (vocabulary discipline).
-  add("Tasks", "one verb per status", "Decide/Approve/View run/—/Nudge/—/—",
+  add("Tasks", "one verb per status", "Decide/Approve/View run/-/Nudge/-/-",
     "taskStatusMeta verbs", true);
 
   return checks;

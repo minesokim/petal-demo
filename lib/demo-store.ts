@@ -1,6 +1,6 @@
 "use client";
 
-// Demo-session store — lets approvals MOVE the numbers during a live demo.
+// Demo-session store - lets approvals MOVE the numbers during a live demo.
 // Resolving a task in Review mode (or anywhere) decrements the needs-you count
 // across the sidebar badge, Today, and Tasks in real time. Session-only:
 // reloading the page resets the world to the canonical fixtures.
@@ -45,7 +45,7 @@ export function useDemoVersion(): number {
   return useSyncExternalStore(subscribe, () => version, () => 0);
 }
 
-/** the live "needs you" queue — canonical tasks minus what this session resolved */
+/** the live "needs you" queue - canonical tasks minus what this session resolved */
 export function useLiveNeedsYou(): Task[] {
   useDemoVersion();
   return needsYouTasks().filter(t => !demoStore.isResolved(t.id));

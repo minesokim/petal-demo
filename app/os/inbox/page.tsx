@@ -94,7 +94,7 @@ function ThreadPane({ thread }: { thread: Thread }) {
           </div>
           <div>
             <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Client</div>
-            <Link href={`/os/clients/${thread.householdId}`} className={cn("flex items-center gap-1.5 text-[13px] text-[var(--os-ink)] hover:underline", focusRing)}>
+            <Link href={`/os/clients/${thread.householdId}`} className={cn("flex items-center gap-1.5 text-[13px] text-[var(--os-link)] hover:underline", focusRing)}>
               <span className="grid size-5 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials(thread.clientName)}</span>
               {thread.clientName}
             </Link>
@@ -138,7 +138,7 @@ export default function InboxPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header — Compose is a ghost icon; the primary affordance lives in the composer ("Draft with Petal") */}
+      {/* Header - Compose is a ghost icon; the primary affordance lives in the composer ("Draft with Petal") */}
       <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-5 pt-6 pb-5 sm:px-8">
         <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Inbox</h1>
         <div className="ml-auto flex items-center gap-1.5">
@@ -179,7 +179,7 @@ export default function InboxPage() {
         {/* Conversation list (Linear) */}
         <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[340px]">
           {list.length === 0 ? (
-            <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">Nothing in this view — switch filters, or compose to start a thread.</div>
+            <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">Nothing in this view - switch filters, or compose to start a thread.</div>
           ) : list.map(t => {
             // one uniform context line per row + waiting as a small inline icon
             const ai = t.transcript

@@ -1,6 +1,6 @@
 "use client";
 
-// Books — books-to-tax readiness for the firm's books clients. This module
+// Books - books-to-tax readiness for the firm's books clients. This module
 // exists to get each ledger tax-ready; every row + count derives from
 // lib/fixtures. Petal runs reconciliation/categorization; the owner signs off.
 
@@ -19,7 +19,7 @@ import {
 import { trustTierMeta } from "@/lib/fixtures/vocab";
 import { booksClients } from "@/lib/fixtures/derive";
 
-/** Status circle — the old close-checklist row glyph, kept verbatim. */
+/** Status circle - the old close-checklist row glyph, kept verbatim. */
 function StatusGlyph({ status }: { status: BooksStatus }) {
   return (
     <span
@@ -38,7 +38,7 @@ function StatusGlyph({ status }: { status: BooksStatus }) {
 }
 
 function Row({ item }: { item: BooksItem }) {
-  // bk-1 (the completed reconciliation with run-recon-park) opens by default —
+  // bk-1 (the completed reconciliation with run-recon-park) opens by default -
   // the worked example of a completed Petal run with provenance.
   const [open, setOpen] = useState(item.id === "bk-1");
   const [queued, setQueued] = useState(false);
@@ -91,7 +91,7 @@ function Row({ item }: { item: BooksItem }) {
           queued ? (
             <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
               <PetalMark className="size-3 shrink-0" />
-              Queued — lands in Tasks for your approval
+              Queued - lands in Tasks for your approval
             </span>
           ) : (
             <button
@@ -151,14 +151,14 @@ export default function BooksPage() {
 
       {/* checklist grouped by status */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* the crafted moment — run the remaining readiness items with Petal */}
+        {/* the crafted moment - run the remaining readiness items with Petal */}
         {runnable.length > 0 && (
           <div className="px-8 pt-5">
             <FeatureCallout
               className="mb-5"
               eyebrow={<><SkillPetal category="books" size={13} /> Books-to-Tax Close · {trustTierMeta[skillById("sk-books")!.trust].code} {trustTierMeta[skillById("sk-books")!.trust].label}</>}
               title={`Petal can run ${runnable.length} of the open items`}
-              body="Reconciliations and categorization queue as drafts for your approval — owner sign-off stays yours. Every run logs its sources."
+              body="Reconciliations and categorization queue as drafts for your approval - owner sign-off stays yours. Every run logs its sources."
               action={{ label: "Run with Petal", href: "/os/tasks?task=t-park-books" }}
               secondary={{ label: "See a finished run", href: "/os/activity?run=run-recon-park" }}
               preview={
@@ -192,7 +192,7 @@ export default function BooksPage() {
             <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
             <p className="text-[13px] text-[var(--os-ink-muted)]">
               Nothing on the books checklist yet. Petal starts the {booksMonth} run at month
-              end for {clients.length} clients — or run a skill from any client record now.
+              end for {clients.length} clients - or run a skill from any client record now.
             </p>
           </div>
         ) : (

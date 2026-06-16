@@ -1,6 +1,6 @@
 "use client";
 
-// /os/documents — the FIRM's own files (not client documents). A Google-Drive-style
+// /os/documents - the FIRM's own files (not client documents). A Google-Drive-style
 // browser over the firm's credentials, compliance docs, templates, tax reference,
 // admin records, and SOPs. Client tax documents live on each client's record.
 
@@ -98,7 +98,7 @@ export default function DocumentsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--os-border)] px-8 pb-5 pt-6">
         <div>
           <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Documents</h1>
-          <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Your firm's files — credentials, templates, policies, and tax reference.</p>
+          <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Your firm's files - credentials, templates, policies, and tax reference.</p>
         </div>
         <div className="flex items-center gap-2">
           <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
@@ -234,7 +234,7 @@ export default function DocumentsPage() {
           {/* upload hint */}
           <div className="flex items-center gap-1.5 border-t border-[var(--os-border)] px-5 py-2.5 text-[12px] text-[var(--os-ink-subtle)] sm:px-8">
             <Upload className="size-3.5 shrink-0" />
-            Drop files here or email them to <span className="text-[var(--os-ink-muted)]">files@vazantea.com</span> — Petal files them to the right folder.
+            Drop files here or email them to <span className="text-[var(--os-ink-muted)]">files@vazantea.com</span> - Petal files them to the right folder.
           </div>
         </div>
       </div>

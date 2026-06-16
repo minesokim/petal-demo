@@ -1,7 +1,7 @@
 "use client";
 
-// "Sources & reasoning" — the provenance affordance every Petal-produced artifact carries.
-// Collapsed, it is a single quiet text line (no box — boxes-in-boxes read as noise);
+// "Sources & reasoning" - the provenance affordance every Petal-produced artifact carries.
+// Collapsed, it is a single quiet text line (no box - boxes-in-boxes read as noise);
 // the bordered panel draws only when opened. Rendering an AI artifact without this
 // affordance is a bug (docs/superpowers/plans/2026-06-09-petal-os-overhaul.md §3.4).
 
@@ -116,7 +116,7 @@ export function ProvenancePanel({
             {run.approvedBy && (<><span>·</span><span>Approved by {run.approvedBy}{run.approvedAt ? ` · ${run.approvedAt}` : ""}</span></>)}
             <Link
               href={`/os/activity?run=${run.id}`}
-              className="ml-auto inline-flex items-center gap-1 text-[var(--os-accent)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+              className="ml-auto inline-flex items-center gap-1 text-[var(--os-link)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
             >
               View in activity log <Icon icon={I.chevronRight} size={11} />
             </Link>

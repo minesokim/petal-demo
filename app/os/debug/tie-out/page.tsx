@@ -1,7 +1,7 @@
 "use client";
 
 // Hidden acceptance surface: every displayed aggregate next to its derivation.
-// Any FAIL here is a build failure. Not linked from nav — visit /os/debug/tie-out.
+// Any FAIL here is a build failure. Not linked from nav - visit /os/debug/tie-out.
 
 import { tieOutChecks } from "@/lib/fixtures/derive";
 import { DEMO_DATE_LABEL } from "@/lib/fixtures/vocab";
@@ -27,7 +27,7 @@ export default function TieOutPage() {
               : "border-[var(--os-border)] bg-[var(--os-card)] text-[var(--os-success)]",
           )}
         >
-          {bad.length ? `${bad.length} mismatch(es) — the world does not tie out.` : `All ${checks.length} checks tie out.`}
+          {bad.length ? `${bad.length} mismatch(es) - the world does not tie out.` : `All ${checks.length} checks tie out.`}
         </div>
 
         <div className="mt-5 overflow-hidden rounded-lg border border-[var(--os-border)]">

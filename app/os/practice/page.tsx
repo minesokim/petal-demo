@@ -1,6 +1,6 @@
 "use client";
 
-// Practice — where the firm stands. Every KPI and chart derives from
+// Practice - where the firm stands. Every KPI and chart derives from
 // lib/fixtures/derive at render time; the Client health card calls the same
 // clientHealth() that powers Today's at-risk module, so the two always agree.
 

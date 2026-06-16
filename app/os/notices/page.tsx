@@ -1,6 +1,6 @@
 "use client";
 
-// Notices — every IRS/state notice the firm is handling, with the response
+// Notices - every IRS/state notice the firm is handling, with the response
 // drafted for approval. All rows + counts derive from lib/fixtures.
 
 import Link from "next/link";
@@ -44,7 +44,7 @@ function StatusCell({ n }: { n: Notice }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
-      <span className="truncate">Response drafted — awaiting your approval</span>
+      <span className="truncate">Response drafted - awaiting your approval</span>
     </span>
   );
 }
@@ -78,7 +78,7 @@ export default function NoticesPage() {
             </div>
           ) : (
             <>
-              {/* table — horizontal scroll at narrow widths */}
+              {/* table - horizontal scroll at narrow widths */}
               <div className="overflow-x-auto">
                 <div className="min-w-[780px]">
                   <div className={cn("grid items-center gap-x-4 border-b border-[var(--os-border)] px-2 py-2", COLS)}>
@@ -108,7 +108,7 @@ export default function NoticesPage() {
                 </div>
               </div>
 
-              {/* quiet caption — always under the table */}
+              {/* quiet caption - always under the table */}
               <div className="flex items-center gap-1.5 px-2 py-3 text-[12px] text-[var(--os-ink-subtle)]">
                 <PetalMark className="size-3 shrink-0" />
                 Petal is watching transcripts for {watching} clients.

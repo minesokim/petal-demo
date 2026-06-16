@@ -1,10 +1,10 @@
-// Petal OS — the scripted demo brain behind Ask Petal.
+// Petal OS - the scripted demo brain behind Ask Petal.
 // Typed questions are keyword-matched against this bank; every answer is BUILT
 // from the canonical fixtures at call time, so chat numbers always tie out.
 // Unmatched questions get a graceful fallback with suggestions (live-demo safety).
 //
 // Flagship answers (risk scan, revenue, capacity) carry an agentic step trace,
-// stat metrics, an inline chart, and ranked findings — the deepest expression of
+// stat metrics, an inline chart, and ranked findings - the deepest expression of
 // the product: Petal reasoning across the whole book, every finding grounded.
 
 import { money, fmtDate, stageMeta, daysUntil, MINUTES_RETURNED, STAGE_ORDER, type SkillCategory, type ActivityKind } from "./vocab";
@@ -36,7 +36,7 @@ export interface ChatFinding {
 export interface ChatAnswer {
   /** plain text paragraphs; **bold** spans supported */
   paragraphs: string[];
-  /** agentic reasoning trace — reveals step by step before the prose */
+  /** agentic reasoning trace - reveals step by step before the prose */
   steps?: ChatStep[];
   /** stat callout row (number-over-label) */
   metrics?: ChatMetric[];
@@ -46,7 +46,7 @@ export interface ChatAnswer {
   findings?: ChatFinding[];
   sources?: string[];
   links?: { label: string; href: string }[];
-  /** the "Do" card — turns the answer into a run */
+  /** the "Do" card - turns the answer into a run */
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };
   /** suggestion chips that SEND a new question */
   suggest?: string[];
@@ -78,7 +78,7 @@ interface Exposure {
   href: string;
 }
 
-/** Scan the whole book for exposures — notices, blocked decisions, flags, open positions, unpaid deposits. */
+/** Scan the whole book for exposures - notices, blocked decisions, flags, open positions, unpaid deposits. */
 function practiceExposures(): Exposure[] {
   const out: Exposure[] = [];
 
@@ -86,7 +86,7 @@ function practiceExposures(): Exposure[] {
     const h = householdById(n.householdId)!;
     out.push({
       severity: "high", household: h.name,
-      title: `${n.type} — ${h.name}`,
+      title: `${n.type} - ${h.name}`,
       detail: `${n.amount} proposed by the IRS. Respond by ${fmtDate(n.respondBy)}. Response already drafted with the position documented.`,
       impact: n.amount ?? "IRS notice",
       href: `/os/notices/${n.id}`,
@@ -109,7 +109,7 @@ function practiceExposures(): Exposure[] {
     const h = householdById(p.householdId)!;
     out.push({
       severity: p.confidence < 0.6 ? "high" : "medium", household: h.name,
-      title: `${p.issue} — ${h.name}`,
+      title: `${p.issue} - ${h.name}`,
       detail: `${p.authorityLevel} · ${Math.round(p.confidence * 100)}% confidence · ${p.documentation.length} supporting docs attached. Unresolved.`,
       impact: p.authorityLevel,
       href: `/os/clients/${p.householdId}?tab=positions`,
@@ -121,7 +121,7 @@ function practiceExposures(): Exposure[] {
     const missing = docsOfHousehold(h.id).requested;
     out.push({
       severity: "medium", household: h.name,
-      title: `${h.name} — deposit unpaid, ${missing} docs missing`,
+      title: `${h.name} - deposit unpaid, ${missing} docs missing`,
       detail: "New client; deposit never collected and the W-2 is still outstanding after three chases. At risk of slipping the deadline.",
       impact: money(e.fee),
       href: `/os/clients/${h.id}`,
@@ -197,8 +197,8 @@ export const QA_BANK: QAEntry[] = [
       const mins = queue.reduce((s, t) => s + t.estimatedMin, 0);
       return {
         paragraphs: [
-          `**${queue.length} items** are waiting on you — ${decisions.length} decisions and ${queue.length - decisions.length} drafts ready to approve. About **${mins} minutes** end to end.`,
-          `The one I'd start with: **${decisions[0].title}** — ${householdById(decisions[0].householdId)!.name}. I've laid out three options and recommend option A.`,
+          `**${queue.length} items** are waiting on you - ${decisions.length} decisions and ${queue.length - decisions.length} drafts ready to approve. About **${mins} minutes** end to end.`,
+          `The one I'd start with: **${decisions[0].title}** - ${householdById(decisions[0].householdId)!.name}. I've laid out three options and recommend option A.`,
         ],
         links: [
           { label: "Start reviewing", href: "/os/review" },
@@ -229,8 +229,8 @@ export const QA_BANK: QAEntry[] = [
           { label: "Ranked exposure across the book" },
         ],
         paragraphs: [
-          `I found **${exps.length} exposures** worth your attention — **${high} high-severity**. The book is healthy overall, but two items could cost real money or a missed deadline if they slip.`,
-          `The sharpest two are **${exps[0].title}** and **${exps[1].title}**. Both already have a drafted next step waiting in your queue — you're not starting from scratch on either.`,
+          `I found **${exps.length} exposures** worth your attention - **${high} high-severity**. The book is healthy overall, but two items could cost real money or a missed deadline if they slip.`,
+          `The sharpest two are **${exps[0].title}** and **${exps[1].title}**. Both already have a drafted next step waiting in your queue - you're not starting from scratch on either.`,
         ],
         metrics: [
           { value: String(exps.length), label: "exposures flagged" },
@@ -264,8 +264,8 @@ export const QA_BANK: QAEntry[] = [
           { label: "Flagged fees blocked behind missing documents" },
         ],
         paragraphs: [
-          `**${money(feesBooked())} booked** this season. You've collected **${money(k.collectedTotal)}**; **${money(k.outstandingTotal)}** is still outstanding, and **${money(feesBlockedByDocs())}** of the pipeline is stuck behind missing documents — which is exactly what the document chases are clearing.`,
-          `One invoice is overdue (DeShawn — deposit never collected). Everything else is on schedule for the extension deadlines.`,
+          `**${money(feesBooked())} booked** this season. You've collected **${money(k.collectedTotal)}**; **${money(k.outstandingTotal)}** is still outstanding, and **${money(feesBlockedByDocs())}** of the pipeline is stuck behind missing documents - which is exactly what the document chases are clearing.`,
+          `One invoice is overdue (DeShawn - deposit never collected). Everything else is on schedule for the extension deadlines.`,
         ],
         metrics: [
           { value: money(feesBooked()), label: "fees booked" },
@@ -288,11 +288,11 @@ export const QA_BANK: QAEntry[] = [
       paragraphs: [
         "Marcus's W-2 wages fell from **$96,400** to **$58,000** because his second restaurant location closed in May 2026. That matches his Jun 23 email, where he confirmed winding down the Riverside spot.",
         "His K-1 income from Golden Dragon actually rose 19% over the same period, so total household income is down only ~8%, not 40%.",
-        "One thing to confirm before filing: the reduction isn't backed by a termination letter in his documents, so I've flagged it rather than treating it as final — the flag is in your review queue.",
+        "One thing to confirm before filing: the reduction isn't backed by a termination letter in his documents, so I've flagged it rather than treating it as final - the flag is in your review queue.",
       ],
-      sources: ["W-2 — Golden Dragon LLC", "Jun 23 email — Marcus", "2024 Return.pdf"],
+      sources: ["W-2 - Golden Dragon LLC", "Jun 23 email - Marcus", "2024 Return.pdf"],
       links: [{ label: "Open the flag", href: "/os/tasks?task=t-chen-wages" }],
-      action: { title: "Clear the flag with his email as support?", desc: "Logs the confirmation and lets prep continue — lands in Tasks for your approval.", button: "Queue it", category: "prep_filing" },
+      action: { title: "Clear the flag with his email as support?", desc: "Logs the confirmation and lets prep continue - lands in Tasks for your approval.", button: "Queue it", category: "prep_filing" },
     }),
   },
   {
@@ -309,11 +309,11 @@ export const QA_BANK: QAEntry[] = [
       const t = taskById("t-russo-basis")!;
       return {
         paragraphs: [
-          "Anthony's Schwab 1099-B is missing cost basis on **7 of 23 lots** — filing as-is would overstate the gain by roughly **$3,100 of tax**, so I stopped rather than guess.",
-          "Your options: **A** — request the purchase confirmations from Anthony (I've drafted the ask). **B** — pull historical basis from Schwab, which needs his authorization. **C** — proceed with $0 basis, which is compliant but costs him money.",
+          "Anthony's Schwab 1099-B is missing cost basis on **7 of 23 lots** - filing as-is would overstate the gain by roughly **$3,100 of tax**, so I stopped rather than guess.",
+          "Your options: **A** - request the purchase confirmations from Anthony (I've drafted the ask). **B** - pull historical basis from Schwab, which needs his authorization. **C** - proceed with $0 basis, which is compliant but costs him money.",
           "I recommend **A**. He answered the CP14 same-day earlier this month, so turnaround should be quick.",
         ],
-        sources: ["1099-B — Schwab", "Schedule D worksheet"],
+        sources: ["1099-B - Schwab", "Schedule D worksheet"],
         links: [{ label: "Decide now", href: `/os/tasks?task=${t.id}` }],
       };
     },
@@ -327,10 +327,10 @@ export const QA_BANK: QAEntry[] = [
       const days = noticeCountdown(n);
       return {
         paragraphs: [
-          `The IRS proposes **+$1,210 of tax** on 2024 interest income it says was unreported. It WAS reported — the same interest is on Schedule B of the filed return; the payer matched it to the wrong year.`,
-          `I drafted the response disputing the notice with Schedule B and the 1099-INT attached. The respond-by date is **${fmtDate(n.respondBy)}** — ${days} days out — and yesterday's transcript sweep picked up the matching AUR marker, so nothing new is hiding.`,
+          `The IRS proposes **+$1,210 of tax** on 2024 interest income it says was unreported. It WAS reported - the same interest is on Schedule B of the filed return; the payer matched it to the wrong year.`,
+          `I drafted the response disputing the notice with Schedule B and the 1099-INT attached. The respond-by date is **${fmtDate(n.respondBy)}** - ${days} days out - and yesterday's transcript sweep picked up the matching AUR marker, so nothing new is hiding.`,
         ],
-        sources: ["IRS CP2000 — tax year 2024", "2024 Return — Schedule B", "1099-INT — Chase"],
+        sources: ["IRS CP2000 - tax year 2024", "2024 Return - Schedule B", "1099-INT - Chase"],
         links: [{ label: "Review the response", href: "/os/notices/n-cp2000" }],
       };
     },
@@ -342,9 +342,9 @@ export const QA_BANK: QAEntry[] = [
     build: () => ({
       paragraphs: [
         "Two clients show no Q2 payment confirmation: **Sandoval Plumbing** and **Park Family Dental**. The other 7 voucher clients all confirmed by Jun 15.",
-        "Follow-ups with voucher copies are drafted and sitting in your queue — paying this week keeps any penalty negligible.",
+        "Follow-ups with voucher copies are drafted and sitting in your queue - paying this week keeps any penalty negligible.",
       ],
-      sources: ["Q2 voucher ledger", "Safe-harbor worksheet — 2025 returns"],
+      sources: ["Q2 voucher ledger", "Safe-harbor worksheet - 2025 returns"],
       links: [{ label: "Approve the follow-ups", href: "/os/tasks?task=t-est-q2" }],
     }),
   },
@@ -356,7 +356,7 @@ export const QA_BANK: QAEntry[] = [
       const filed = filedThisWeek();
       return {
         paragraphs: [
-          `**${filed.length} returns** went out clean on ${fmtDate(filed[0].eFiledOn!)} after your approval — Linda's 1040 + Etsy Schedule C and Karen's 1040. All accepted by the IRS the next morning.`,
+          `**${filed.length} returns** went out clean on ${fmtDate(filed[0].eFiledOn!)} after your approval - Linda's 1040 + Etsy Schedule C and Karen's 1040. All accepted by the IRS the next morning.`,
           "Every transmission is logged with its sources and your approval in the activity log.",
         ],
         links: [
@@ -381,8 +381,8 @@ export const QA_BANK: QAEntry[] = [
           { label: "Priced each against your minutes-per-task" },
         ],
         paragraphs: [
-          `**${roi.actions} actions** this week — ${roi.docsCollected} documents collected, ${roi.returnsFiled} returns e-filed, ${roi.noticesDrafted} notice responses drafted. That's **~${roi.hoursReturned} hours returned**.`,
-          "Most of it was the work you'd never bill for anyway — chasing documents and keying in extractions. Here's where the time came back:",
+          `**${roi.actions} actions** this week - ${roi.docsCollected} documents collected, ${roi.returnsFiled} returns e-filed, ${roi.noticesDrafted} notice responses drafted. That's **~${roi.hoursReturned} hours returned**.`,
+          "Most of it was the work you'd never bill for anyway - chasing documents and keying in extractions. Here's where the time came back:",
         ],
         metrics: [
           { value: `${roi.hoursReturned}h`, label: "returned this week", tone: "brand" },
@@ -413,7 +413,7 @@ export const QA_BANK: QAEntry[] = [
         ],
         paragraphs: [
           `At **~${roi.hoursReturned} hours a week** returned, that's roughly **${monthly} hours a month** back in your calendar.`,
-          `At your average of ~${perReturn} hours per return, that's headroom for about **${headroom} more returns** — or the bandwidth to take on the advisory work you've been turning away. The point isn't to replace you; it's to let one EA carry the book of three.`,
+          `At your average of ~${perReturn} hours per return, that's headroom for about **${headroom} more returns** - or the bandwidth to take on the advisory work you've been turning away. The point isn't to replace you; it's to let one EA carry the book of three.`,
         ],
         metrics: [
           { value: `~${monthly}h`, label: "returned per month", tone: "brand" },
@@ -437,8 +437,8 @@ export const QA_BANK: QAEntry[] = [
       const top = list.filter(x => x.health === "at_risk");
       return {
         paragraphs: [
-          `**${counts.at_risk} at risk, ${counts.watch} on watch.** The two that matter today: **${top[0].household.name}** — ${top[0].reason.toLowerCase()} — and **${top[1].household.name}** — ${top[1].reason.toLowerCase()}.`,
-          "Both have a next step already drafted in your queue. The watch-list four are flagged decisions and open documents — nothing time-critical yet.",
+          `**${counts.at_risk} at risk, ${counts.watch} on watch.** The two that matter today: **${top[0].household.name}** - ${top[0].reason.toLowerCase()} - and **${top[1].household.name}** - ${top[1].reason.toLowerCase()}.`,
+          "Both have a next step already drafted in your queue. The watch-list four are flagged decisions and open documents - nothing time-critical yet.",
         ],
         links: [
           { label: "Open clients", href: "/os/clients" },
@@ -454,12 +454,12 @@ export const QA_BANK: QAEntry[] = [
     match: [["deshawn|williams", "chase|w-2|w2|remind|doc"]],
     build: () => ({
       paragraphs: [
-        "DeShawn's W-2 from Hartline Logistics is still the only thing blocking his return — three messages since Jun 12, no upload. Chase #4 is drafted, and this one offers a 10-minute call instead of another reminder.",
+        "DeShawn's W-2 from Hartline Logistics is still the only thing blocking his return - three messages since Jun 12, no upload. Chase #4 is drafted, and this one offers a 10-minute call instead of another reminder.",
         "His deposit is also unpaid, so I'd send this one personally.",
       ],
-      sources: ["Document checklist — DeShawn Williams", "SMS thread"],
+      sources: ["Document checklist - DeShawn Williams", "SMS thread"],
       links: [{ label: "Approve & send", href: "/os/tasks?task=t-williams-chase" }],
-      action: { title: "Escalate to a call?", desc: "Books a 10-minute slot and sends him the link — lands in Tasks first.", button: "Queue it", category: "signatures_chase" },
+      action: { title: "Escalate to a call?", desc: "Books a 10-minute slot and sends him the link - lands in Tasks first.", button: "Queue it", category: "signatures_chase" },
     }),
   },
   {
@@ -468,10 +468,10 @@ export const QA_BANK: QAEntry[] = [
     match: [["fuentes|roberto", "sign|8879|signature"], ["8879"]],
     build: () => ({
       paragraphs: [
-        "Not yet — Roberto **viewed the 8879 on Jun 23** and stopped. The 1120S is final and transmits the moment he signs.",
-        "A nudge is drafted in your queue, and you have him on the phone at 3:00 today — his bonus-depreciation question from Monday is probably what's holding him. The answer is yes, the two trucks qualify for 60% bonus.",
+        "Not yet - Roberto **viewed the 8879 on Jun 23** and stopped. The 1120S is final and transmits the moment he signs.",
+        "A nudge is drafted in your queue, and you have him on the phone at 3:00 today - his bonus-depreciation question from Monday is probably what's holding him. The answer is yes, the two trucks qualify for 60% bonus.",
       ],
-      sources: ["E-sign envelope status", "Jun 22 email — Roberto"],
+      sources: ["E-sign envelope status", "Jun 22 email - Roberto"],
       links: [
         { label: "Approve the nudge", href: "/os/tasks?task=t-fuentes-8879" },
         { label: "Pre-call brief", href: "/os/tasks?task=t-brief-fuentes" },
@@ -486,8 +486,8 @@ export const QA_BANK: QAEntry[] = [
       const clients = booksClients();
       return {
         paragraphs: [
-          `May books for ${clients.map(h => h.name).join(", ")} are **wrapping up — 2 of 7 items complete, 3 in progress**.`,
-          "I can run the three reconciliation and categorization items; the AP review and owner sign-off stay with you. Park's bank rec is already done — 142 of 145 matched, and David confirmed the three stragglers by email.",
+          `May books for ${clients.map(h => h.name).join(", ")} are **wrapping up - 2 of 7 items complete, 3 in progress**.`,
+          "I can run the three reconciliation and categorization items; the AP review and owner sign-off stay with you. Park's bank rec is already done - 142 of 145 matched, and David confirmed the three stragglers by email.",
         ],
         links: [{ label: "Open books", href: "/os/books" }],
         action: { title: "Run the remaining items?", desc: "Reconciliations and categorization queue as drafts for your approval.", button: "Run with Petal", category: "books", href: "/os/books" },
@@ -509,11 +509,11 @@ function buildClientStatus(h: Household): ChatAnswer {
   const health = clientHealth(h.id);
   return {
     paragraphs: [
-      `**${h.name}** is **${stage}** — documents **${docs.label}**, fee **${money(householdFee(h.id))}**, balance **${money(inv.balance)}**${deadline ? `, next deadline **${fmtDate(deadline.iso)}**` : ""}.`,
+      `**${h.name}** is **${stage}** - documents **${docs.label}**, fee **${money(householdFee(h.id))}**, balance **${money(inv.balance)}**${deadline ? `, next deadline **${fmtDate(deadline.iso)}**` : ""}.`,
       blocked
         ? `Blocking item: ${blocked.blockedBy}. ${open.length ? `${open.length} item${open.length > 1 ? "s" : ""} for this client ${open.length > 1 ? "are" : "is"} in your queue.` : ""}`
         : health.health === "healthy"
-          ? "Nothing is blocking — on pace."
+          ? "Nothing is blocking - on pace."
           : `Health: ${health.reason}.`,
     ],
     links: [
@@ -529,7 +529,7 @@ function buildClientDocs(h: Household): ChatAnswer {
     expectedDocs.filter(d => d.engagementId === e.id && d.status === "requested").map(d => d.source));
   return {
     paragraphs: [
-      `**${docs.label} in hand** — ${docs.requested} still out${docs.needsReview ? `, ${docs.needsReview} extraction awaiting your review` : ""}.`,
+      `**${docs.label} in hand** - ${docs.requested} still out${docs.needsReview ? `, ${docs.needsReview} extraction awaiting your review` : ""}.`,
       missing.length ? `Still missing: ${missing.slice(0, 4).join(" · ")}${missing.length > 4 ? ` and ${missing.length - 4} more` : ""}. The chase cadence is running.` : "The checklist is complete.",
     ],
     links: [{ label: "Open documents", href: `/os/clients/${h.id}?tab=documents` }],
@@ -540,7 +540,7 @@ function buildClientBalance(h: Household): ChatAnswer {
   const inv = invoiceOf(h.id);
   return {
     paragraphs: [
-      `Invoiced **${money(inv.invoiced)}**, collected **${money(inv.collected)}** — balance **${money(inv.balance)}** (${inv.status === "overdue" ? `overdue, ${inv.due.toLowerCase()}` : inv.due.toLowerCase()}).`,
+      `Invoiced **${money(inv.invoiced)}**, collected **${money(inv.collected)}** - balance **${money(inv.balance)}** (${inv.status === "overdue" ? `overdue, ${inv.due.toLowerCase()}` : inv.due.toLowerCase()}).`,
     ],
     links: [{ label: "Open billing", href: `/os/clients/${h.id}?tab=billing` }],
   };
@@ -566,8 +566,8 @@ export function fallbackAnswer(scopeHouseholdId?: string): ChatAnswer {
   return {
     paragraphs: [
       h
-        ? `In the full product I answer anything from ${h.name}'s records — returns, documents, billing, history. In this demo, try one of these:`
-        : "In the full product I answer anything from your firm's records — every answer cited to its sources. In this demo, try one of these:",
+        ? `In the full product I answer anything from ${h.name}'s records - returns, documents, billing, history. In this demo, try one of these:`
+        : "In the full product I answer anything from your firm's records - every answer cited to its sources. In this demo, try one of these:",
     ],
     suggest: h
       ? [`Where does ${h.name.split(" ")[0]} stand?`, "What documents are missing?", "What do they owe?"]

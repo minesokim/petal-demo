@@ -1,4 +1,4 @@
-// Petal OS — the firm's OWN files (NOT client documents). This is the CPA/EA's
+// Petal OS - the firm's OWN files (NOT client documents). This is the CPA/EA's
 // own drive: credentials, compliance, templates, tax reference, firm admin, SOPs.
 // Rendered Google-Drive-style in /os/documents. Demo date is Jun 25, 2026.
 
@@ -10,7 +10,7 @@ export interface FirmFile {
   kind: FileKind;
   size: string;
   modified: string; // display
-  /** sort key — higher is newer (for the Recent rail) */
+  /** sort key - higher is newer (for the Recent rail) */
   ts: number;
   owner: string; // Antonio Vazquez / Elena Reyes
   starred?: boolean;
@@ -42,10 +42,10 @@ export const firmFolders: FirmFolder[] = [
     id: "f-compliance", name: "Compliance & Security",
     description: "WISP, §7216 consents, and safeguard policies.",
     files: [
-      { id: "fl-wisp", name: "WISP — Written Information Security Plan.docx", kind: "docx", size: "145 KB", modified: "Jun 12, 2026", ts: 96, owner: A, starred: true },
+      { id: "fl-wisp", name: "WISP - Written Information Security Plan.docx", kind: "docx", size: "145 KB", modified: "Jun 12, 2026", ts: 96, owner: A, starred: true },
       { id: "fl-7216d", name: "§7216 Consent to Disclose (template).pdf", kind: "pdf", size: "64 KB", modified: "Jan 2026", ts: 60, owner: A },
       { id: "fl-7216u", name: "§7216 Consent to Use (template).pdf", kind: "pdf", size: "62 KB", modified: "Jan 2026", ts: 60, owner: A },
-      { id: "fl-4557", name: "IRS Pub 4557 — Safeguarding Taxpayer Data.pdf", kind: "pdf", size: "880 KB", modified: "2025", ts: 40, owner: A },
+      { id: "fl-4557", name: "IRS Pub 4557 - Safeguarding Taxpayer Data.pdf", kind: "pdf", size: "880 KB", modified: "2025", ts: 40, owner: A },
       { id: "fl-retention", name: "Data Retention Policy.docx", kind: "docx", size: "72 KB", modified: "Mar 2026", ts: 70, owner: E },
     ],
   },
@@ -53,8 +53,8 @@ export const firmFolders: FirmFolder[] = [
     id: "f-templates", name: "Templates & Letters",
     description: "Engagement letters, organizers, and client correspondence.",
     files: [
-      { id: "fl-eng-1040", name: "Engagement Letter — 1040 (template).docx", kind: "docx", size: "88 KB", modified: "Jan 2026", ts: 60, owner: A, starred: true },
-      { id: "fl-eng-biz", name: "Engagement Letter — Business (template).docx", kind: "docx", size: "94 KB", modified: "Jan 2026", ts: 60, owner: A },
+      { id: "fl-eng-1040", name: "Engagement Letter - 1040 (template).docx", kind: "docx", size: "88 KB", modified: "Jan 2026", ts: 60, owner: A, starred: true },
+      { id: "fl-eng-biz", name: "Engagement Letter - Business (template).docx", kind: "docx", size: "94 KB", modified: "Jan 2026", ts: 60, owner: A },
       { id: "fl-organizer", name: "Client Organizer 2025.pdf", kind: "pdf", size: "1.4 MB", modified: "Jan 2026", ts: 60, owner: A },
       { id: "fl-doc-req", name: "Document Request Checklist.docx", kind: "docx", size: "52 KB", modified: "Jun 18, 2026", ts: 98, owner: E },
       { id: "fl-8879", name: "8879 Cover Letter (template).docx", kind: "docx", size: "40 KB", modified: "Feb 2026", ts: 66, owner: A },
@@ -78,7 +78,7 @@ export const firmFolders: FirmFolder[] = [
     id: "f-admin", name: "Firm Administration",
     description: "Business license, insurance, and operating records.",
     files: [
-      { id: "fl-license", name: "Vazant EA — Business License.pdf", kind: "pdf", size: "156 KB", modified: "2024", ts: 32, owner: A },
+      { id: "fl-license", name: "Vazant EA - Business License.pdf", kind: "pdf", size: "156 KB", modified: "2024", ts: 32, owner: A },
       { id: "fl-ein", name: "EIN Assignment Letter.pdf", kind: "pdf", size: "88 KB", modified: "2020", ts: 10, owner: A },
       { id: "fl-eo", name: "E&O Insurance Policy 2026.pdf", kind: "pdf", size: "420 KB", modified: "Jan 2026", ts: 60, owner: A, starred: true },
       { id: "fl-operating", name: "Operating Agreement.pdf", kind: "pdf", size: "240 KB", modified: "2020", ts: 10, owner: A },
@@ -87,12 +87,12 @@ export const firmFolders: FirmFolder[] = [
   },
   {
     id: "f-sops", name: "Firm SOPs",
-    description: "How the practice runs — review, intake, and software setup.",
+    description: "How the practice runs - review, intake, and software setup.",
     files: [
       { id: "fl-constitution", name: "Firm Constitution.docx", kind: "docx", size: "64 KB", modified: "Jun 2026", ts: 92, owner: A, starred: true },
       { id: "fl-review", name: "Return Review Checklist.docx", kind: "docx", size: "56 KB", modified: "May 2026", ts: 84, owner: A },
       { id: "fl-intake", name: "New Client Intake SOP.docx", kind: "docx", size: "48 KB", modified: "Mar 2026", ts: 70, owner: E },
-      { id: "fl-olt", name: "OLT Pro — E-file Setup Guide.pdf", kind: "pdf", size: "310 KB", modified: "2025", ts: 40, owner: A },
+      { id: "fl-olt", name: "OLT Pro - E-file Setup Guide.pdf", kind: "pdf", size: "310 KB", modified: "2025", ts: 40, owner: A },
       { id: "fl-eservices", name: "IRS e-Services Setup.pdf", kind: "pdf", size: "280 KB", modified: "2025", ts: 40, owner: A },
     ],
   },

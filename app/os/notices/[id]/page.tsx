@@ -1,6 +1,6 @@
 "use client";
 
-// Notice detail — facts, the drafted response with provenance, the linked
+// Notice detail - facts, the drafted response with provenance, the linked
 // transcript change, and the approve/edit actions. n-cp2000 is the exemplar;
 // n-cp14 renders the resolved state.
 
@@ -39,7 +39,7 @@ export default function NoticeDetailPage() {
       <div className="grid h-full place-items-center px-8">
         <div className="text-center">
           <p className="text-[13px] text-[var(--os-ink-muted)]">This notice isn&apos;t on file.</p>
-          <Link href="/os/notices" className={cn("mt-2 inline-flex items-center gap-1 text-[13px] text-[var(--os-accent)] hover:underline", FOCUS)}>
+          <Link href="/os/notices" className={cn("mt-2 inline-flex items-center gap-1 text-[13px] text-[var(--os-link)] hover:underline", FOCUS)}>
             Back to Notices <Icon icon={I.chevronRight} size={13} />
           </Link>
         </div>
@@ -62,11 +62,11 @@ export default function NoticeDetailPage() {
         <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" />
         <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">{n.type}</span>
         <span className="truncate text-[13px] font-semibold text-[var(--os-ink)]">
-          {n.type} — {household?.name}
+          {n.type} - {household?.name}
         </span>
         <span className="ml-auto hidden shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)] sm:inline-flex">
           <span className={cn("size-1.5 rounded-full", resolved ? "bg-emerald-500" : "bg-amber-500")} />
-          {resolved ? `Resolved by ${n.resolvedBy}` : "Response drafted — awaiting your approval"}
+          {resolved ? `Resolved by ${n.resolvedBy}` : "Response drafted - awaiting your approval"}
         </span>
       </div>
 
@@ -123,7 +123,7 @@ export default function NoticeDetailPage() {
             <section className="space-y-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-bg-subtle)] p-3">
               <div className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
                 <PetalMark className="size-3.5 shrink-0" />
-                Transcript change detected {transcriptDay} — matches this notice
+                Transcript change detected {transcriptDay} - matches this notice
               </div>
               <ProvenancePanel runId={transcriptRun.id} />
             </section>
@@ -141,7 +141,7 @@ export default function NoticeDetailPage() {
             )
           ) : approved ? (
             <div className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--os-success)]">
-              <Icon icon={I.check} size={15} /> Approved &amp; mailed — deadline cleared from your queue
+              <Icon icon={I.check} size={15} /> Approved &amp; mailed - deadline cleared from your queue
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2 pb-2">

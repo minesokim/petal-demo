@@ -41,7 +41,7 @@ const SEED: Doc[] = [
     id: "voice", group: "constitution", title: "Voice & tone", summary: "How Petal writes to clients on the firm's behalf.",
     updated: "2 weeks ago", version: "v3", usedBy: 4,
     body: [
-      { kind: "p", text: "Every client-facing message Petal drafts should sound like Antonio: warm, plain-spoken, and precise. We are an enrolled-agent practice that values human relationships — the writing should reflect that." },
+      { kind: "p", text: "Every client-facing message Petal drafts should sound like Antonio: warm, plain-spoken, and precise. We are an enrolled-agent practice that values human relationships - the writing should reflect that." },
       { kind: "h", text: "Principles" },
       { kind: "bullets", items: [
         { lead: "Plain language", text: "no jargon. If a tax term is unavoidable, define it in one short clause." },
@@ -66,36 +66,36 @@ const SEED: Doc[] = [
   },
   { id: "categorization", group: "constitution", title: "Categorization rules", summary: "Chart-of-accounts mapping and the auto-categorize threshold.", updated: "3 weeks ago", version: "v4", usedBy: 1, body: [{ kind: "p", text: "When reconciling books, match transactions to the client's prior categorization patterns first. Hold anything ambiguous for a human." }, { kind: "bullets", items: [{ lead: "Threshold", text: "auto-categorize only transactions at or below $250 with a confident historical match." }, { lead: "New vendors", text: "never auto-create a category; surface it." }] }], history: [{ v: "v4", note: "Raised threshold to $250", when: "3 weeks ago" }] },
   { id: "safe-harbor", group: "constitution", title: "Safe-harbor method", summary: "How estimated payments are computed.", updated: "2 months ago", version: "v2", usedBy: 1, body: [{ kind: "p", text: "Compute quarterly estimates using the prior-year safe harbor: 110% of prior-year tax for AGI over $150k, otherwise 100%. Prefer safe harbor unless the client requests annualized." }], history: [{ v: "v2", note: "Clarified the 110% threshold", when: "2 months ago" }] },
-  { id: "naming", group: "constitution", title: "Naming conventions", summary: "How entities, files, and returns are named.", updated: "1 month ago", version: "v2", usedBy: 6, body: [{ kind: "p", text: "Consistent names keep documents findable across years and agents." }, { kind: "bullets", items: [{ lead: "Documents", text: "{Year} {FormType} {Description} — e.g. \"2025 W-2 Golden Dragon\"." }, { lead: "Entities", text: "legal name as registered; DBA in parentheses." }] }], history: [{ v: "v2", note: "Added entity naming rule", when: "1 month ago" }] },
+  { id: "naming", group: "constitution", title: "Naming conventions", summary: "How entities, files, and returns are named.", updated: "1 month ago", version: "v2", usedBy: 6, body: [{ kind: "p", text: "Consistent names keep documents findable across years and agents." }, { kind: "bullets", items: [{ lead: "Documents", text: "{Year} {FormType} {Description} - e.g. \"2025 W-2 Golden Dragon\"." }, { lead: "Entities", text: "legal name as registered; DBA in parentheses." }] }], history: [{ v: "v2", note: "Added entity naming rule", when: "1 month ago" }] },
   { id: "review", group: "constitution", title: "Review & approval", summary: "Who approves what, and the quarantine rule.", updated: "3 weeks ago", version: "v3", usedBy: 4, body: [{ kind: "p", text: "AI output never touches a client record until a human approves it. Drafts land in Tasks; the assigned preparer or a reviewer approves." }, { kind: "bullets", items: [{ lead: "Returns", text: "approved by Antonio or a designated reviewer." }, { lead: "Client messages", text: "approved by the assigned preparer before sending." }] }], history: [{ v: "v3", note: "Added quarantine rule", when: "3 weeks ago" }] },
 
   // ── Reference library: Checklists (structured, entity-typed) ──
   {
-    id: "ck-1040", group: "reference", category: "Checklists", title: "1040 — Individual", summary: "Documents required for an individual return.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "ck-1040", group: "reference", category: "Checklists", title: "1040 - Individual", summary: "Documents required for an individual return.", updated: "Jan 2026", version: "v1", body: [], history: [],
     checklist: { form: "1040", entityLabel: "individual", items: [
       { label: "W-2s", note: "all employers" }, { label: "1099s", note: "NEC, INT, DIV, B, R" }, { label: "1098 mortgage interest" }, { label: "Prior-year return" }, { label: "Dependent SSNs & DOBs" }, { label: "1095 health coverage" }, { label: "Childcare provider + EIN" }, { label: "Charitable contribution receipts" }, { label: "Estimated payments record" },
     ] },
   },
   {
-    id: "ck-1120s", group: "reference", category: "Checklists", title: "1120S — S-Corp", summary: "Documents required for an S-Corporation return.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "ck-1120s", group: "reference", category: "Checklists", title: "1120S - S-Corp", summary: "Documents required for an S-Corporation return.", updated: "Jan 2026", version: "v1", body: [], history: [],
     checklist: { form: "1120S", entityLabel: "S-Corp", items: [
       { label: "P&L and balance sheet", note: "trial balance" }, { label: "Payroll reports", note: "941s, W-3, state" }, { label: "Shareholder basis schedule" }, { label: "Fixed-asset & depreciation schedule" }, { label: "Bank & credit-card statements" }, { label: "Loan statements" }, { label: "Prior-year return + K-1s" }, { label: "Officer health insurance (2% S/H)" },
     ] },
   },
   {
-    id: "ck-1065", group: "reference", category: "Checklists", title: "1065 — Partnership", summary: "Documents required for a partnership return.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "ck-1065", group: "reference", category: "Checklists", title: "1065 - Partnership", summary: "Documents required for a partnership return.", updated: "Jan 2026", version: "v1", body: [], history: [],
     checklist: { form: "1065", entityLabel: "partnership", items: [
       { label: "P&L and balance sheet" }, { label: "Partner ownership %" }, { label: "Capital contributions & distributions" }, { label: "Fixed-asset schedule" }, { label: "Guaranteed payments" }, { label: "Prior-year return + K-1s" },
     ] },
   },
   {
-    id: "ck-schc", group: "reference", category: "Checklists", title: "Schedule C — Sole Prop", summary: "Documents for a sole-proprietor business on the 1040.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "ck-schc", group: "reference", category: "Checklists", title: "Schedule C - Sole Prop", summary: "Documents for a sole-proprietor business on the 1040.", updated: "Jan 2026", version: "v1", body: [], history: [],
     checklist: { form: "Sch C", entityLabel: "sole-prop", items: [
       { label: "Income summary + 1099-NECs" }, { label: "Expense totals by category" }, { label: "Mileage log", note: "business miles" }, { label: "Home-office square footage" }, { label: "Asset purchases", note: "§179 candidates" }, { label: "Health insurance premiums" },
     ] },
   },
   {
-    id: "ck-sche", group: "reference", category: "Checklists", title: "Schedule E — Rental", summary: "Documents for rental-property income.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "ck-sche", group: "reference", category: "Checklists", title: "Schedule E - Rental", summary: "Documents for rental-property income.", updated: "Jan 2026", version: "v1", body: [], history: [],
     checklist: { form: "Sch E", entityLabel: "rental", items: [
       { label: "Rental income by property" }, { label: "1098 mortgage interest" }, { label: "Property tax statements" }, { label: "Repairs vs improvements log" }, { label: "Depreciation schedule" }, { label: "Days rented vs personal use" },
     ] },
@@ -103,16 +103,16 @@ const SEED: Doc[] = [
 
   // ── Key numbers ──
   {
-    id: "key-2025", group: "reference", category: "Key numbers", title: "Key numbers — 2025", summary: "The figures agents compute and cite against.", updated: "Jan 2026", version: "v1", body: [], history: [],
+    id: "key-2025", group: "reference", category: "Key numbers", title: "Key numbers - 2025", summary: "The figures agents compute and cite against.", updated: "Jan 2026", version: "v1", body: [], history: [],
     keyNumbers: [
       { group: "Individual", rows: [
-        { label: "Standard deduction — Single", value: "$15,000" }, { label: "Standard deduction — MFJ", value: "$30,000" }, { label: "Standard deduction — HoH", value: "$22,500" }, { label: "Top marginal bracket", value: "37%" }, { label: "Standard mileage rate", value: "70¢ / mi" }, { label: "1099-K reporting threshold", value: "$2,500" },
+        { label: "Standard deduction - Single", value: "$15,000" }, { label: "Standard deduction - MFJ", value: "$30,000" }, { label: "Standard deduction - HoH", value: "$22,500" }, { label: "Top marginal bracket", value: "37%" }, { label: "Standard mileage rate", value: "70¢ / mi" }, { label: "1099-K reporting threshold", value: "$2,500" },
       ] },
       { group: "Business", rows: [
         { label: "§179 expensing limit", value: "$1,250,000" }, { label: "Bonus depreciation", value: "100%" }, { label: "QBI phase-out start (MFJ)", value: "$394,600" }, { label: "SE tax rate", value: "15.3%" },
       ] },
       { group: "Retirement & health", rows: [
-        { label: "401(k) elective deferral", value: "$23,500" }, { label: "401(k) catch-up (50+)", value: "$7,500" }, { label: "IRA contribution", value: "$7,000" }, { label: "HSA — self / family", value: "$4,300 / $8,550" },
+        { label: "401(k) elective deferral", value: "$23,500" }, { label: "401(k) catch-up (50+)", value: "$7,500" }, { label: "IRA contribution", value: "$7,000" }, { label: "HSA - self / family", value: "$4,300 / $8,550" },
       ] },
     ],
   },
@@ -123,9 +123,9 @@ const SEED: Doc[] = [
   { id: "tpl-8879", group: "reference", category: "Templates", title: "8879 e-sign instructions", summary: "How clients e-sign the 8879 authorization.", updated: "Jan 2026", version: "v1", fileType: "Template", body: [{ kind: "p", text: "Step-by-step the client receives to authorize e-file. Required before any return is transmitted." }], history: [] },
 
   // ── Authorities ──
-  { id: "auth-pub17", group: "reference", category: "Authorities", title: "IRS Publication 17", summary: "Your Federal Income Tax — the individual reference.", updated: "2025 ed.", version: "v1", fileType: "IRS Pub", external: "irs.gov/pub17", body: [{ kind: "p", text: "The authoritative individual-tax reference. Petal cites this for individual-return positions." }], history: [] },
+  { id: "auth-pub17", group: "reference", category: "Authorities", title: "IRS Publication 17", summary: "Your Federal Income Tax - the individual reference.", updated: "2025 ed.", version: "v1", fileType: "IRS Pub", external: "irs.gov/pub17", body: [{ kind: "p", text: "The authoritative individual-tax reference. Petal cites this for individual-return positions." }], history: [] },
   { id: "auth-pub535", group: "reference", category: "Authorities", title: "IRS Publication 535", summary: "Business Expenses.", updated: "2025 ed.", version: "v1", fileType: "IRS Pub", external: "irs.gov/pub535", body: [{ kind: "p", text: "Deductibility of business expenses. Cited for Schedule C and entity returns." }], history: [] },
-  { id: "auth-ca540", group: "reference", category: "Authorities", title: "CA FTB — Form 540 & PTE", summary: "California 540 and the pass-through entity elective tax.", updated: "2025 ed.", version: "v1", fileType: "State", external: "ftb.ca.gov", body: [{ kind: "p", text: "California reference: 540 individual return and the PTE elective tax workaround relevant to our S-Corp and partnership clients." }], history: [] },
+  { id: "auth-ca540", group: "reference", category: "Authorities", title: "CA FTB - Form 540 & PTE", summary: "California 540 and the pass-through entity elective tax.", updated: "2025 ed.", version: "v1", fileType: "State", external: "ftb.ca.gov", body: [{ kind: "p", text: "California reference: 540 individual return and the PTE elective tax workaround relevant to our S-Corp and partnership clients." }], history: [] },
 
   // ── SOPs ──
   { id: "sop-close", group: "reference", category: "SOPs", title: "Month-end close process", summary: "Internal steps for closing a client's books.", updated: "Nov 2025", version: "v1", fileType: "SOP", body: [{ kind: "p", text: "The firm's standard close sequence: reconcile → categorize → closing entries → review → deliver." }], history: [] },
@@ -133,13 +133,13 @@ const SEED: Doc[] = [
 ];
 
 function flatten(blocks: Block[]): string {
-  return blocks.map(b => { if (b.kind === "h") return "## " + b.text; if (b.kind === "p") return b.text; return b.items.map(it => "- " + (it.lead ? `**${it.lead}** — ` : "") + it.text).join("\n"); }).join("\n\n");
+  return blocks.map(b => { if (b.kind === "h") return "## " + b.text; if (b.kind === "p") return b.text; return b.items.map(it => "- " + (it.lead ? `**${it.lead}** - ` : "") + it.text).join("\n"); }).join("\n\n");
 }
 function parse(raw: string): Block[] {
   return raw.split(/\n\s*\n/).map(chunk => {
     const lines = chunk.split("\n").filter(l => l.trim());
     if (lines.length === 0) return null;
-    if (lines.every(l => l.startsWith("- "))) return { kind: "bullets", items: lines.map(l => { const t = l.slice(2); const m = t.match(/^\*\*(.+?)\*\*\s*—\s*(.*)$/); return m ? { lead: m[1], text: m[2] } : { text: t }; }) } as Block;
+    if (lines.every(l => l.startsWith("- "))) return { kind: "bullets", items: lines.map(l => { const t = l.slice(2); const m = t.match(/^\*\*(.+?)\*\*\s*-\s*(.*)$/); return m ? { lead: m[1], text: m[2] } : { text: t }; }) } as Block;
     if (lines.length === 1 && lines[0].startsWith("## ")) return { kind: "h", text: lines[0].slice(3) } as Block;
     return { kind: "p", text: chunk.replace(/\n/g, " ").trim() } as Block;
   }).filter(Boolean) as Block[];
@@ -152,7 +152,7 @@ function DocBody({ blocks }: { blocks: Block[] }) {
       {blocks.map((b, i) => {
         if (b.kind === "h") return <h3 key={i} className="pt-1 text-[15px] font-semibold text-[var(--os-ink)] os-display">{b.text}</h3>;
         if (b.kind === "p") return <p key={i} className="text-[13px] leading-relaxed text-[var(--os-ink)]">{b.text}</p>;
-        return <ul key={i} className="space-y-2">{b.items.map((it, j) => (<li key={j} className="flex gap-2.5 text-[13px] leading-relaxed text-[var(--os-ink)]"><span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--os-border-strong)]" /><span>{it.lead && <span className="font-medium">{it.lead}</span>}{it.lead ? " — " : ""}{it.text}</span></li>))}</ul>;
+        return <ul key={i} className="space-y-2">{b.items.map((it, j) => (<li key={j} className="flex gap-2.5 text-[13px] leading-relaxed text-[var(--os-ink)]"><span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--os-border-strong)]" /><span>{it.lead && <span className="font-medium">{it.lead}</span>}{it.lead ? " - " : ""}{it.text}</span></li>))}</ul>;
       })}
     </div>
   );
@@ -165,7 +165,7 @@ export default function KnowledgePage() {
   const [draft, setDraft] = useState({ title: "", summary: "", body: "" });
   const [addMenu, setAddMenu] = useState(false);
   const [sourceModal, setSourceModal] = useState(false);
-  // collapsible rail — only the active group is open by default (low cognitive load)
+  // collapsible rail - only the active group is open by default (low cognitive load)
   const [open, setOpen] = useState<Set<string>>(() => new Set(["constitution"]));
   const toggle = (k: string) => setOpen(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const openGroup = (k: string) => setOpen(p => new Set(p).add(k));
@@ -218,7 +218,7 @@ export default function KnowledgePage() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        {/* Rail — collapsible groups (only the active group open by default) */}
+        {/* Rail - collapsible groups (only the active group open by default) */}
         <div className="flex w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] px-2 py-3">
           {/* Firm Constitution group */}
           <button onClick={() => toggle("constitution")} className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[var(--os-hover)]">
@@ -286,7 +286,7 @@ export default function KnowledgePage() {
                 </div>
               )}
 
-              {/* Checklist — used by Doc Chase */}
+              {/* Checklist - used by Doc Chase */}
               {doc.checklist && (
                 <>
                   <div className="mt-4 flex items-center gap-2.5 rounded-lg bg-[var(--os-bg-subtle)] px-3.5 py-2.5">
@@ -299,7 +299,7 @@ export default function KnowledgePage() {
                       <div key={i} className="flex items-center gap-3 px-3.5 py-2.5">
                         <span className="grid size-4 shrink-0 place-items-center rounded border border-[var(--os-border-strong)]" />
                         <span className="text-[13px] text-[var(--os-ink)]">{it.label}</span>
-                        {it.note && <span className="text-[12px] text-[var(--os-ink-subtle)]">— {it.note}</span>}
+                        {it.note && <span className="text-[12px] text-[var(--os-ink-subtle)]">- {it.note}</span>}
                       </div>
                     ))}
                   </div>
@@ -324,7 +324,7 @@ export default function KnowledgePage() {
               {!doc.checklist && !doc.keyNumbers && (
                 <div className="mt-6">
                   {editing ? (
-                    <><textarea value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} style={{ minHeight: 320 }} className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] focus:outline-none" placeholder="Write the policy…" /><p className="mt-2 text-[11px] text-[var(--os-ink-subtle)]">Formatting: <code className="rounded bg-[var(--os-selected)] px-1">## Heading</code> · <code className="rounded bg-[var(--os-selected)] px-1">- bullet</code> · <code className="rounded bg-[var(--os-selected)] px-1">- **Lead** — text</code></p></>
+                    <><textarea value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} style={{ minHeight: 320 }} className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] focus:outline-none" placeholder="Write the policy…" /><p className="mt-2 text-[11px] text-[var(--os-ink-subtle)]">Formatting: <code className="rounded bg-[var(--os-selected)] px-1">## Heading</code> · <code className="rounded bg-[var(--os-selected)] px-1">- bullet</code> · <code className="rounded bg-[var(--os-selected)] px-1">- **Lead** - text</code></p></>
                   ) : (
                     <>
                       <DocBody blocks={doc.body} />

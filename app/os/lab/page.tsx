@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * COMPONENT LAB — scratch surface for crafting the "little things".
+ * COMPONENT LAB - scratch surface for crafting the "little things".
  * Proposed variants live INLINE here so we can iterate freely without
  * touching components/os/primitives.tsx. Once a look is locked, we
  * promote the winner into primitives.tsx and delete its lab copy.
  *
- * Not linked in nav for users — reach it at /os/lab.
+ * Not linked in nav for users - reach it at /os/lab.
  */
 
 import { useState, type ReactNode } from "react";
@@ -23,7 +23,7 @@ import {
 import { TASK_STATUS_ORDER, taskStatusMeta } from "@/lib/fixtures/vocab";
 
 // ════════════════════════════════════════════════════════════
-// PROPOSED — Badge (one primitive, soft-fill + optional icon)
+// PROPOSED - Badge (one primitive, soft-fill + optional icon)
 // ════════════════════════════════════════════════════════════
 
 type Tone = "emerald" | "amber" | "red" | "blue" | "violet" | "slate" | "neutral";
@@ -77,7 +77,7 @@ const STATUS_BADGE: Record<string, { tone: Tone; icon: React.ComponentType<{ cla
 };
 
 // ════════════════════════════════════════════════════════════
-// PROPOSED — FileGlyph (page shape + folded corner + type badge)
+// PROPOSED - FileGlyph (page shape + folded corner + type badge)
 // ════════════════════════════════════════════════════════════
 
 type FileKind = "pdf" | "docx" | "xlsx" | "png" | "jpg";
@@ -118,7 +118,7 @@ function KindTileCurrent({ kind }: { kind: FileKind }) {
 }
 
 // ════════════════════════════════════════════════════════════
-// PROPOSED — Button family (2 sizes × 4 variants, identical states)
+// PROPOSED - Button family (2 sizes × 4 variants, identical states)
 // ════════════════════════════════════════════════════════════
 
 function Btn({
@@ -149,7 +149,7 @@ function Btn({
 }
 
 // ════════════════════════════════════════════════════════════
-// PROPOSED — Segmented (crisp active state, sliding indicator feel)
+// PROPOSED - Segmented (crisp active state, sliding indicator feel)
 // ════════════════════════════════════════════════════════════
 
 function Segmented<T extends string>({
@@ -227,7 +227,7 @@ export default function LabPage() {
         {/* ── BADGES ───────────────────────────────────────── */}
         <Section
           title="Status badges"
-          blurb="Today every status is a bare dot + gray text. The proposal: one soft-fill pill with a small leading icon and color-matched text — the same family everywhere (ref: IMG_7007)."
+          blurb="Today every status is a bare dot + gray text. The proposal: one soft-fill pill with a small leading icon and color-matched text - the same family everywhere (ref: IMG_7007)."
         >
           <Row label="Current">
             {TASK_STATUS_ORDER.map(s => <StatusPill key={s} status={s} />)}
@@ -255,7 +255,7 @@ export default function LabPage() {
         {/* ── DEADLINE CHIPS ───────────────────────────────── */}
         <Section
           title="Deadline chips"
-          blurb="Proximity-colored date pills. The proposal keeps the proximity logic but aligns the chip to the badge family — same radius, same soft-fill, optional clock icon."
+          blurb="Proximity-colored date pills. The proposal keeps the proximity logic but aligns the chip to the badge family - same radius, same soft-fill, optional clock icon."
         >
           <Row label="Current">
             <DeadlineChip iso="2026-06-30" />
@@ -291,7 +291,7 @@ export default function LabPage() {
         {/* ── FILE GLYPHS ──────────────────────────────────── */}
         <Section
           title="File glyphs"
-          blurb="Documents uses flat colored squares — they don't read as files. The proposal: a page shape with a folded corner and the type badge sitting on it (ref: IMG_6999 / 7001 / 7002)."
+          blurb="Documents uses flat colored squares - they don't read as files. The proposal: a page shape with a folded corner and the type badge sitting on it (ref: IMG_6999 / 7001 / 7002)."
         >
           <Row label="Current">
             {FILE_KINDS.map(k => <KindTileCurrent key={k} kind={k} />)}
@@ -340,7 +340,7 @@ export default function LabPage() {
         {/* ── SEGMENTED ────────────────────────────────────── */}
         <Section
           title="Segmented controls"
-          blurb="The Mine/Firm toggle and view switchers are flat. The proposal gives the active segment a raised white chip on a recessed track — crisper, more tactile (ref: IMG_7038–7045)."
+          blurb="The Mine/Firm toggle and view switchers are flat. The proposal gives the active segment a raised white chip on a recessed track - crisper, more tactile (ref: IMG_7038–7045)."
         >
           <Row label="Current">
             <ScopeToggle scope={scope} onChange={setScope} />

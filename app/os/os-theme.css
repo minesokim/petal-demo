@@ -1,4 +1,4 @@
-/* Petal OS — locked design tokens (see docs/DESIGN.md). Scoped to .petal-os so it
+/* Petal OS - locked design tokens (see docs/DESIGN.md). Scoped to .petal-os so it
    never collides with the legacy /dashboard theme. Verified 1-to-1 against Attio. */
 .petal-os {
   --os-bg: #ffffff;
@@ -20,13 +20,18 @@
 
   --os-primary: #1c1c1e;
   --os-primary-fg: #ffffff;
+  /* interactive accent - used for unread dots + focus rings. Counts use the
+     neutral chip; inline links use --os-link. */
   --os-accent: #2f6bff;
+  --os-accent-soft: #eef0fe;
+  /* inline text links / actions - the one blue */
+  --os-link: #2563eb;
 
   --os-success: #16794c;
   --os-warning: #b45309;
   --os-danger: #c2410c;
 
-  /* the one structural green — progress + positive marks share a single hue ramp */
+  /* the one structural green - progress + positive marks share a single hue ramp */
   --os-brand: #16794c;
   --os-brand-soft: #16794c47;
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/os/icon";
-import { Mic, Upload, HardDrive, Landmark, ChevronRight } from "lucide-react";
+import { Mic, Upload, ChevronRight } from "lucide-react";
 
 /** The Ask Petal composer embedded on the home screen (Solve "complete a task" pattern). */
 export function AskComposer() {
@@ -45,18 +45,13 @@ export function AskComposer() {
                 <Upload className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} /> Upload files
               </button>
               <button onClick={() => setAppsOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]">
-                <HardDrive className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} />
+                <img src="/logos/google-drive.svg" alt="" className="size-[18px] shrink-0 object-contain" />
                 <span className="flex-1">Google Drive</span>
                 <ChevronRight className="size-4 shrink-0 text-[var(--os-ink-subtle)]" />
               </button>
               <div className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] text-[var(--os-ink)]">
-                <Icon icon={I.billing} size={18} className="shrink-0 text-[var(--os-ink-muted)]" />
-                <span className="flex-1">QuickBooks</span>
-                <button onClick={connect} className="text-[12px] font-medium text-[var(--os-ink-muted)] underline underline-offset-2 transition-colors hover:text-[var(--os-ink)]">Connect</button>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] text-[var(--os-ink)]">
-                <Landmark className="size-[18px] shrink-0 text-[var(--os-ink-muted)]" strokeWidth={1.75} />
-                <span className="flex-1">Link bank account</span>
+                <img src="/logos/xero.svg" alt="" className="size-[18px] shrink-0 object-contain" />
+                <span className="flex-1">Xero</span>
                 <button onClick={connect} className="text-[12px] font-medium text-[var(--os-ink-muted)] underline underline-offset-2 transition-colors hover:text-[var(--os-ink)]">Connect</button>
               </div>
             </div>

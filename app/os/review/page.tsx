@@ -1,6 +1,6 @@
 "use client";
 
-// Review mode — a focused, three-zone task BROWSER over every task. Filters + Mine/Firm
+// Review mode - a focused, three-zone task BROWSER over every task. Filters + Mine/Firm
 // scope mirror the Tasks page. Center artifact + Petal copilot. Approve (A) / Skip (S)
 // on needs-you items; ← / → / Enter to move through the rest. Esc exits.
 
@@ -57,7 +57,7 @@ function ToggleRow({ on, onClick, icon, children }: { on: boolean; onClick: () =
   );
 }
 
-/** Drafted artifact — editable in place (Edit in the header + click-to-edit body),
+/** Drafted artifact - editable in place (Edit in the header + click-to-edit body),
  *  mirroring the regular task view. `value`/`onChange` are owned by the parent so the
  *  edited text survives Ask-Petal redrafts. */
 function DraftCard({ task, value, onChange }: { task: Task; value: string; onChange: (v: string) => void }) {
@@ -117,13 +117,13 @@ function DraftCard({ task, value, onChange }: { task: Task; value: string; onCha
         )}
       </div>
       {editLogged && !editing && (
-        <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Edit logged — Petal will learn from this edit.</p>
+        <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Edit logged - Petal will learn from this edit.</p>
       )}
     </div>
   );
 }
 
-/** The interactive artifact — selectable A/B/C, "Something else" redirect, recommendation,
+/** The interactive artifact - selectable A/B/C, "Something else" redirect, recommendation,
  * and the drafted result. Mirrors the Tasks detail panel. Keyed by task.id so it resets. */
 type Chosen = "A" | "B" | "C" | "other" | undefined;
 function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen; onChosen: (c: Chosen) => void }) {
@@ -142,7 +142,7 @@ function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen
     if (!note || redrafting) return;
     setRedrafting(true);
     timer.current = setTimeout(() => {
-      setDraft(`Updated per your direction — "${note}".\n\nI've revised the response accordingly and flagged the open item for follow-up. Review below and approve when you're ready.`);
+      setDraft(`Updated per your direction - "${note}".\n\nI've revised the response accordingly and flagged the open item for follow-up. Review below and approve when you're ready.`);
       setRedrafting(false);
       setRedrafted(true);
     }, 1100);
@@ -163,12 +163,15 @@ function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen
                   onClick={() => onChosen(a.key as Chosen)}
                   aria-pressed={isChosen}
                   className={cn(
-                    "w-full rounded-xl border px-3.5 py-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
-                    isChosen ? "border-[var(--os-border-strong)] bg-[var(--os-card)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-[var(--os-border)] hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]",
+                    "relative w-full rounded-md border border-[var(--os-border)] px-3.5 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+                    isChosen ? "bg-[var(--os-card)]" : "hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]",
                   )}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className={cn("grid size-5 shrink-0 place-items-center rounded-md text-[11px] font-semibold transition-colors", isChosen ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{a.key}</span>
+                  {isChosen && (
+                    <span className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-[var(--os-ink-subtle)]" />
+                  )}
+                  <div className="relative flex items-center gap-2.5">
+                    <span className={cn("grid size-[17px] shrink-0 place-items-center rounded-full text-[9px] font-semibold leading-none transition-colors", isChosen ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{a.key}</span>
                     <span className="min-w-0 flex-1 text-[13px] font-medium text-[var(--os-ink)]">{a.label}</span>
                     {isRec && (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-[var(--os-selected)] px-1.5 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]">
@@ -176,18 +179,18 @@ function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 pl-[30px] text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
+                  <p className="relative mt-1.5 pl-[30px] text-[12px] leading-relaxed text-[var(--os-ink-muted)]">{a.detail}</p>
                 </button>
               );
             })}
           </div>
 
-          {/* Something else — the open-ended escape */}
+          {/* Something else - the open-ended escape */}
           <div className="mt-2">
             {chosen !== "other" ? (
               <button onClick={() => onChosen("other")} className="flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 text-left text-[12.5px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
                 <CornerDownRight className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" />
-                Something else — tell Petal what to do instead
+                Something else - tell Petal what to do instead
               </button>
             ) : (
               <div className="rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
@@ -236,7 +239,7 @@ type ChatMsg = { role: "you" | "petal"; text: string };
 
 function petalAnswer(task: Task, householdName: string): string {
   const rec = task.proposedActions?.find(a => a.key === task.recommendedAction);
-  if (rec) return `For ${householdName}, I'd take ${task.recommendedAction} — ${rec.label.toLowerCase()}. ${task.recommendation ?? rec.detail} I can redraft to a different option or pull the underlying sources if you want to double-check.`;
+  if (rec) return `For ${householdName}, I'd take ${task.recommendedAction} - ${rec.label.toLowerCase()}. ${task.recommendation ?? rec.detail} I can redraft to a different option or pull the underlying sources if you want to double-check.`;
   return `${task.recommendation ?? task.why} If you'd like a different angle, tell me what to change and I'll revise the draft.`;
 }
 
@@ -272,79 +275,67 @@ function PetalPanel({ task, household }: { task: Task; household?: { name: strin
       ? ["What should I check before sending?", "Make it more concise", "Pull the sources"]
       : ["Summarize this for me", "What should I do next?", "Pull the sources"];
 
+  const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--os-surface)]">
-      {/* header */}
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-4 py-2.5">
-        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
-        <span className="text-[13px] font-semibold text-[var(--os-ink)]">Petal</span>
-        <span className="text-[11px] text-[var(--os-ink-subtle)]">copilot</span>
-      </div>
-
       {/* conversation / read */}
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {/* Petal's opening read — framed as the first message */}
-        <div className="rounded-2xl rounded-tl-md border border-[var(--os-border)] bg-[var(--os-card)] p-3.5">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-[var(--os-ink-subtle)]">
-            <PetalMark className="size-3" /> Petal&apos;s read
-          </div>
-          <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{task.recommendation ?? task.why}</p>
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+        {/* Petal's opening read - plain assistant prose */}
+        <div>
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
+          <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{task.recommendation ?? task.why}</p>
         </div>
 
         {/* the conversation */}
         {messages.map((m, i) => (
           m.role === "you" ? (
-            <div key={i} className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[var(--os-primary)] px-3 py-2 text-[12.5px] leading-relaxed text-[var(--os-primary-fg)]">{m.text}</div>
+            <div key={i} className="flex justify-end">
+              <div className="max-w-[85%] rounded-2xl bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">{m.text}</div>
+            </div>
           ) : (
-            <div key={i} className="max-w-[92%] rounded-2xl rounded-tl-md border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2.5 text-[12.5px] leading-relaxed text-[var(--os-ink)]">
-              <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--os-ink-subtle)]"><PetalMark className="size-2.5" /> Petal</span>
-              {m.text}
+            <div key={i}>
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
+              <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{m.text}</p>
             </div>
           )
         ))}
         {thinking && (
-          <div className="inline-flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink-muted)]">
+          <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--os-ink-muted)]">
             <PetalMark className="size-3 animate-pulse" /> Petal is thinking…
           </div>
         )}
 
-        {/* suggested prompts — fill the panel, make the copilot inviting */}
+        {/* suggested prompts - pill chips before any conversation */}
         {messages.length === 0 && !thinking && (
-          <div className="pt-1">
-            <div className="os-label mb-1.5 px-0.5">Ask Petal</div>
-            <div className="space-y-1.5">
-              {suggestions.map(s => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="group/sug flex w-full items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-2 text-left text-[12.5px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
-                >
-                  <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" />
-                  <span className="min-w-0 flex-1 truncate">{s}</span>
-                  <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/sug:opacity-100" />
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {suggestions.map(s => (
+              <button key={s} onClick={() => send(s)} className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-1.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+                <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" /> {s}
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* composer */}
-      <div className="border-t border-[var(--os-border)] p-3">
-        <div className="flex items-end gap-1.5 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-2.5 py-1.5 transition-colors focus-within:border-[var(--os-border-hover)]">
+      {/* composer - clean rounded box (ChatGPT idiom) */}
+      <div className="px-3 pb-3">
+        <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-colors focus-within:border-[var(--os-border-strong)]">
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
             rows={1}
-            placeholder="Ask Petal, or tell it what to change…"
-            className="min-h-[20px] max-h-24 flex-1 resize-none bg-transparent text-[12.5px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
+            placeholder="Ask Petal…"
+            className="max-h-28 w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
           />
-          <button onClick={() => send(input)} disabled={!input.trim() || thinking} aria-label="Ask Petal" className="grid size-7 shrink-0 place-items-center rounded-lg bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-40">
-            <Icon icon={I.chevronRight} size={14} className="-rotate-90" />
-          </button>
+          <div className="mt-1 flex items-center gap-1">
+            <button className={cn("grid size-7 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={15} /></button>
+            <button onClick={() => send(input)} disabled={!input.trim() || thinking} aria-label="Send" className={cn("ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-opacity disabled:opacity-25", FOCUS)}>
+              <Icon icon={I.send} size={14} />
+            </button>
+          </div>
         </div>
-        <p className="mt-1.5 px-1 text-[10.5px] text-[var(--os-ink-subtle)]">Petal can redraft, pull sources, or take a different approach.</p>
+        <p className="mt-1.5 text-center text-[10.5px] text-[var(--os-ink-subtle)]">Petal can make mistakes. Verify important details.</p>
       </div>
     </div>
   );
@@ -406,7 +397,7 @@ export default function ReviewPage() {
     return () => document.removeEventListener("mousedown", onDown);
   }, [filtersOpen]);
 
-  // keyboard — A approve · S skip · ← → / Enter navigate · Esc exit
+  // keyboard - A approve · S skip · ← → / Enter navigate · Esc exit
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
@@ -427,7 +418,7 @@ export default function ReviewPage() {
 
   const approveLabel =
     task?.status === "needs_decision"
-      ? (chosen === "other" ? "Approve — your direction" : chosen ? `Approve ${chosen}` : "Decide")
+      ? (chosen === "other" ? "Approve - your direction" : chosen ? `Approve ${chosen}` : "Decide")
       : "Approve & send";
 
   return (
@@ -528,19 +519,19 @@ export default function ReviewPage() {
                         {task.flagged && <BookmarkFlag size={13} />}
                       </div>
                       <h2 className="os-display text-[22px] font-semibold leading-[28px] text-[var(--os-ink)]">{task.title}</h2>
-                      <Link href={`/os/clients/${task.householdId}`} className="mt-1 inline-block text-[12.5px] text-[var(--os-ink-muted)] hover:text-[var(--os-ink)] hover:underline">{household?.name}</Link>
+                      <Link href={`/os/clients/${task.householdId}`} className="mt-1 inline-block text-[12.5px] text-[var(--os-ink-muted)] hover:text-[var(--os-link)] hover:underline">{household?.name}</Link>
                     </div>
 
                     <ReviewArtifact key={task.id} task={task} chosen={chosen} onChosen={setChosen} />
 
-                    {/* sources & reasoning — every Petal artifact carries provenance */}
+                    {/* sources & reasoning - every Petal artifact carries provenance */}
                     {task.runId && (
                       <section className="mt-6">
                         <ProvenancePanel runId={task.runId} defaultOpen />
                       </section>
                     )}
 
-                    {/* deep links — jump to the notice (if any) and the client record */}
+                    {/* deep links - jump to the notice (if any) and the client record */}
                     <section className="mt-5 flex flex-wrap items-center gap-1.5 pb-2">
                       {task.noticeId && (
                         <Link href={`/os/notices/${task.noticeId}`} className={LINK_BTN}>
@@ -564,7 +555,7 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          {/* action bar — Approve (A) / Skip (S) on needs-you; Next / Back otherwise */}
+          {/* action bar - Approve (A) / Skip (S) on needs-you; Next / Back otherwise */}
           {!done && (
             <footer className="shrink-0 border-t border-[var(--os-border)] bg-[var(--os-canvas)]">
               <div className="mx-auto flex w-full max-w-[680px] flex-wrap items-center gap-2 px-6 py-3">

@@ -1,6 +1,6 @@
 "use client";
 
-// /os/tasks — the single work queue. One vocabulary (TASK_STATUS_ORDER + StatusPill),
+// /os/tasks - the single work queue. One vocabulary (TASK_STATUS_ORDER + StatusPill),
 // one list grouped by status (or by client), exactly ONE primary verb per row from
 // taskStatusMeta[status].verb. "Flagged" is a filter chip, not a tab. Every count on
 // this page derives from lib/fixtures at render time.
@@ -138,7 +138,7 @@ function Row({
   );
 }
 
-/* ── board (kanban) — one lane per status, cards stacked ── */
+/* ── board (kanban) - one lane per status, cards stacked ── */
 function BoardCard({ t, active, onOpen, onVerb }: { t: Task; active: boolean; onOpen: () => void; onVerb: (t: Task, verb: string) => void }) {
   const skill = skillById(t.skillId);
   const verb = verbOf(t);
@@ -279,7 +279,7 @@ function TasksPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveTasks, sort, groupByClient, flaggedOnly, blockedOnly, scope, assignVersion]);
 
-  // board lanes — always by status, same filters as the list (board ignores group-by-client)
+  // board lanes - always by status, same filters as the list (board ignores group-by-client)
   const columns = useMemo(() => {
     const list = liveTasks.filter(t =>
       (!flaggedOnly || t.flagged) &&
@@ -301,7 +301,7 @@ function TasksPageInner() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* header — title left, Review mode right */}
+      {/* header - title left, Review mode right */}
       <div className="flex items-center justify-between gap-6 border-b border-[var(--os-border)] px-8 pt-6 pb-5">
         <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Tasks</h1>
 
@@ -320,7 +320,7 @@ function TasksPageInner() {
       {/* toolbar: scope (Mine/Firm) · filters … list/board on the right */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--os-border)] px-8 py-1.5">
         <ScopeToggle scope={scope} onChange={setScope} />
-        {/* filters — sort + group + flagged + blocked, collapsed into one popover */}
+        {/* filters - sort + group + flagged + blocked, collapsed into one popover */}
         <div className="relative" ref={filtersRef}>
           <button
             onClick={() => setFiltersOpen(o => !o)}
@@ -410,7 +410,7 @@ function TasksPageInner() {
                   onClick={() => { setFlaggedOnly(false); setBlockedOnly(false); }}
                   className="mt-2 inline-flex h-7 items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
                 >
-                  Clear filters — show all {tasks.length} tasks
+                  Clear filters - show all {tasks.length} tasks
                 </button>
               </div>
             </div>
@@ -441,7 +441,7 @@ function TasksPageInner() {
           )}
         </div>
 
-        {/* LIST view — detail opens as a right side panel (also via ?task= deep links) */}
+        {/* LIST view - detail opens as a right side panel (also via ?task= deep links) */}
         {view === "list" && item && (
           <AnimatePresence mode="wait">
             <motion.div
@@ -458,7 +458,7 @@ function TasksPageInner() {
         )}
       </div>
 
-      {/* BOARD view — detail opens as a centered modal over a blurred page */}
+      {/* BOARD view - detail opens as a centered modal over a blurred page */}
       <AnimatePresence>
         {view === "board" && item && (
           <motion.div
@@ -471,7 +471,7 @@ function TasksPageInner() {
               initial={{ opacity: 0, y: 8, scale: 0.99 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.99 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
-              className="flex h-[82vh] w-full max-w-[640px] overflow-hidden rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_16px_48px_rgba(17,17,26,0.2)]"
+              className="flex h-[82vh] w-full max-w-[640px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_16px_48px_rgba(17,17,26,0.2)]"
             >
               <TaskDetail task={item} onClose={close} />
             </motion.div>

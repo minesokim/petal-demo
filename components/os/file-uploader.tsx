@@ -1,6 +1,6 @@
 "use client";
 
-// FileUploader — a polished drag-and-drop upload zone + uploading/uploaded file cards.
+// FileUploader - a polished drag-and-drop upload zone + uploading/uploaded file cards.
 // Demo-interactive: choosing or dropping files adds cards that animate a simulated
 // upload to 100%. Each finished file is draggable (e.g. onto the Ask Petal rail).
 
@@ -80,8 +80,8 @@ export function FileUploader({
         onDragLeave={() => setOver(false)}
         onDrop={e => { e.preventDefault(); setOver(false); if (e.dataTransfer.files?.length) add(e.dataTransfer.files); }}
         className={cn(
-          "flex items-center gap-4 rounded-xl border px-5 py-4 transition-colors",
-          over ? "border-dashed border-[var(--os-brand)] bg-[var(--os-brand)]/[0.04]" : "border-[var(--os-border)] bg-[var(--os-surface)]",
+          "flex items-center gap-4 rounded-lg border px-5 py-4 transition-colors",
+          over ? "border-dashed border-[var(--os-accent)] bg-[var(--os-accent)]/[0.04]" : "border-[var(--os-border)] bg-[var(--os-surface)]",
         )}
       >
         <div className="min-w-0 flex-1">
@@ -104,7 +104,7 @@ export function FileUploader({
           draggable={f.status === "done"}
           onDragStart={e => { if (f.status === "done") { e.dataTransfer.effectAllowed = "copy"; e.dataTransfer.setData("text/plain", f.name); onDragFileStart?.(e, f.name); } }}
           className={cn(
-            "group/uf flex items-center gap-3 rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] px-4 py-3 transition-colors",
+            "group/uf flex items-center gap-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-4 py-3 transition-colors",
             f.status === "done" && "cursor-grab hover:border-[var(--os-border-strong)] active:cursor-grabbing",
           )}
         >

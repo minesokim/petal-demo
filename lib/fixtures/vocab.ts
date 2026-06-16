@@ -1,4 +1,4 @@
-// Petal OS — single status/stage/category vocabulary. Used identically on every surface.
+// Petal OS - single status/stage/category vocabulary. Used identically on every surface.
 // Canon rules: no other status words exist anywhere in /os; every count derives from
 // lib/fixtures/firm.ts via lib/fixtures/derive.ts. See docs/superpowers/plans/2026-06-09-petal-os-overhaul.md.
 
@@ -33,10 +33,10 @@ export const taskStatusMeta: Record<TaskStatus, { label: string; dot: string; ve
   waiting_third_party: { label: "Waiting on third party", dot: "bg-slate-400",              verb: null },
   done:                { label: "Done",                   dot: "bg-emerald-500",            verb: null },
 };
-/** "Needs you" — THE number. Today's headline, the Tasks badge, and Review mode all derive from this. */
+/** "Needs you" - THE number. Today's headline, the Tasks badge, and Review mode all derive from this. */
 export const NEEDS_YOU_STATUSES: TaskStatus[] = ["needs_decision", "ready_to_approve"];
 
-// ── Engagement stages (7 — extensions are a deadline attribute, not a stage) ──
+// ── Engagement stages (7 - extensions are a deadline attribute, not a stage) ──
 export type Stage =
   | "collecting_docs" | "ready_to_prep" | "in_preparation" | "in_review"
   | "pay_and_sign" | "e_filed" | "accepted";
@@ -89,7 +89,7 @@ export const expectedDocMeta: Record<ExpectedDocStatus, { label: string; dot: st
   na:           { label: "N/A",          dot: "bg-[var(--os-border-strong)]" },
 };
 
-// ── Client health (ONE function's vocabulary — Today + Practice share it) ──
+// ── Client health (ONE function's vocabulary - Today + Practice share it) ──
 export type Health = "at_risk" | "watch" | "healthy";
 export const healthMeta: Record<Health, { label: string; dot: string; text: string }> = {
   at_risk: { label: "At risk", dot: "bg-red-500",     text: "text-[var(--os-danger)]" },

@@ -51,13 +51,13 @@ function Toast({ msg }: { msg: string | null }) {
 }
 
 /** Per-channel conversation + reply composer. Shared by the Inbox and the client record Messages tab.
- *  Renders as a flex-1 scrolling message area + a composer pinned beneath — drop it into a flex-col parent. */
+ *  Renders as a flex-1 scrolling message area + a composer pinned beneath - drop it into a flex-col parent. */
 /** A contextual reply Petal "drafts" for threads without a scripted one (session-only). */
 function petalDraftFor(thread: Thread): string {
   const f = first(thread.clientName);
   if (thread.id === "th-fuentes")
-    return `Hi ${f} — yes, both trucks qualify for 60% bonus depreciation in 2025 since they were placed in service this year. I've already factored that into the 1120S draft, so the moment you sign the 8879 we're clear to transmit. Happy to walk through the numbers on our call this afternoon. Best, Antonio`;
-  return `Hi ${f} — thanks for reaching out. I've got this and will follow up with the details shortly. Let me know if anything's urgent in the meantime. Best, Antonio`;
+    return `Hi ${f} - yes, both trucks qualify for 60% bonus depreciation in 2025 since they were placed in service this year. I've already factored that into the 1120S draft, so the moment you sign the 8879 we're clear to transmit. Happy to walk through the numbers on our call this afternoon. Best, Antonio`;
+  return `Hi ${f} - thanks for reaching out. I've got this and will follow up with the details shortly. Let me know if anything's urgent in the meantime. Best, Antonio`;
 }
 
 export function ThreadConversation({ thread }: { thread: Thread }) {
@@ -120,13 +120,13 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
 
   return (
     <>
-      {/* Conversation — rendered per channel */}
+      {/* Conversation - rendered per channel */}
       <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
         <div className={cn("mx-auto max-w-[640px]", thread.channel === "sms" ? "space-y-2.5" : thread.channel === "email" ? "space-y-0" : "space-y-5")}>
           {/* ── Call: Petal summary first, full transcript on demand, follow-ups ── */}
           {thread.channel === "call" && thread.transcript && (
             <div className="space-y-4">
-              {/* medium + meta line — phone and video both live here */}
+              {/* medium + meta line - phone and video both live here */}
               <div className="flex items-center gap-2 text-[12px] text-[var(--os-ink-muted)]">
                 {thread.transcript.medium === "video"
                   ? <Video className="size-3.5 shrink-0" />
@@ -137,7 +137,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                 </span>
               </div>
 
-              {/* Petal call summary — the primary read; transcript folds underneath */}
+              {/* Petal call summary - the primary read; transcript folds underneath */}
               <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4">
                 <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
                   <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> Call summary
@@ -177,7 +177,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                 </AnimatePresence>
               </div>
 
-              {/* Follow-ups Petal pulled out of the call — numbered, task-linked */}
+              {/* Follow-ups Petal pulled out of the call - numbered, task-linked */}
               <div className="overflow-hidden rounded-xl border border-[var(--os-border)]">
                 <div className="flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2.5">
                   <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
@@ -261,7 +261,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                   <PetalMark className="mt-0.5 size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[12px] leading-relaxed text-[var(--os-ink)]">{thread.extraction.summary}</p>
-                    <Link href="/os/documents" className={cn("mt-1 inline-flex items-center gap-1 text-[12px] text-[var(--os-accent)] hover:underline", focusRing)}>
+                    <Link href="/os/documents" className={cn("mt-1 inline-flex items-center gap-1 text-[12px] text-[var(--os-link)] hover:underline", focusRing)}>
                       Review in Documents <Icon icon={I.chevronRight} size={11} />
                     </Link>
                   </div>
@@ -292,14 +292,14 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
           {thread.petalDraft && !sent && (
             <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-1.5 text-[12px]">
               <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
-              <span className="text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-ink)]">{draftSkillName}</span> drafted this reply — review before sending.</span>
+              <span className="text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-ink)]">{draftSkillName}</span> drafted this reply - review before sending.</span>
             </div>
           )}
           {thread.petalCanAnswer && answerRevealed && !sent && (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-t-lg border border-b-0 border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-1.5 text-[12px]">
               <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
-              <span className="text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-ink)]">Petal</span> drafted this answer — review before sending.</span>
-              <Link href={`/os/tasks?task=${thread.petalCanAnswer.taskId}`} className={cn("ml-auto inline-flex items-center gap-1 text-[var(--os-accent)] hover:underline", focusRing)}>
+              <span className="text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-ink)]">Petal</span> drafted this answer - review before sending.</span>
+              <Link href={`/os/tasks?task=${thread.petalCanAnswer.taskId}`} className={cn("ml-auto inline-flex items-center gap-1 text-[var(--os-link)] hover:underline", focusRing)}>
                 View task <Icon icon={I.chevronRight} size={11} />
               </Link>
             </div>

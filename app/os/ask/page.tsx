@@ -1,6 +1,6 @@
 "use client";
 
-// Ask Petal — the full-page chat. Answers come from the scripted demo bank
+// Ask Petal - the full-page chat. Answers come from the scripted demo bank
 // (lib/fixtures/demo-chat) keyword-matched against whatever is typed; every
 // number in an answer derives from canon. ?q= runs a question on arrival
 // (the Today composer hands off here).
@@ -14,6 +14,58 @@ import { Icon, I } from "@/components/os/icon";
 import { Mic } from "lucide-react";
 import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/petal-chat";
 import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
+import { skills } from "@/lib/fixtures/firm";
+import { SkillPetal } from "@/components/os/primitives";
+
+/** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
+function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean }) {
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  return (
+    <div className="rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }}
+        rows={1}
+        autoFocus={autoFocus}
+        placeholder="Ask Petal anything, or describe work to run…"
+        className={cn("max-h-40 w-full resize-none bg-transparent leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none", big ? "text-[15px]" : "text-[14px]")}
+      />
+      <div className="mt-2.5 flex items-center gap-1.5">
+        <button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button>
+        {/* Skills picker */}
+        <div className="relative">
+          <button
+            onClick={() => setSkillsOpen(o => !o)}
+            aria-expanded={skillsOpen}
+            className={cn("flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition-colors", skillsOpen ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]" : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]")}
+          >
+            <PetalMark className="size-3.5" /> Skills
+          </button>
+          {skillsOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setSkillsOpen(false)} />
+              <div className="absolute bottom-full left-0 z-40 mb-2 max-h-[300px] w-[286px] overflow-y-auto rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_12px_34px_-8px_rgba(17,17,26,0.2)]">
+                <div className="os-label px-2.5 pb-1 pt-1.5">Run a skill</div>
+                {skills.map(s => (
+                  <button key={s.id} onClick={() => { onChange(`Run the ${s.name} skill`); setSkillsOpen(false); }} className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors hover:bg-[var(--os-hover)]">
+                    <SkillPetal category={s.category} size={15} />
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{s.name}</span>
+                    <Icon icon={I.chevronRight} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          <button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button>
+          <button onClick={onSubmit} disabled={!value.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
   { icon: I.shield, label: "Run a risk scan across my book", prompt: "Run a risk scan across my book" },
@@ -57,7 +109,6 @@ function AskPetalInner() {
   const params = useSearchParams();
   const { messages, send, reset } = usePetalChat();
   const [input, setInput] = useState("");
-  const [mode, setMode] = useState<"ask" | "research" | "do">("ask");
   const bottomRef = useRef<HTMLDivElement>(null);
   const ranParam = useRef(false);
 
@@ -116,7 +167,7 @@ function AskPetalInner() {
                 <div ref={bottomRef} />
               </div>
             ) : (
-              // Empty state — chat-first starter
+              // Empty state - chat-first starter
               <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-6 pb-6">
                 <div className="flex-1" />
                 <PetalMark className="mb-3 size-6" />
@@ -132,22 +183,8 @@ function AskPetalInner() {
                   ))}
                 </div>
 
-                <div className="mt-7 rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
-                  <input
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") submit(); }}
-                    placeholder="Ask Petal anything, or describe work to run…"
-                    autoFocus
-                    className="w-full bg-transparent text-[15px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
-                  />
-                  <div className="mt-2.5 flex items-center gap-1.5">
-                    <button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button>
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button>
-                      <button onClick={() => submit()} disabled={!input.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
-                    </div>
-                  </div>
+                <div className="mt-7">
+                  <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus big />
                 </div>
               </div>
             )}
@@ -157,43 +194,7 @@ function AskPetalInner() {
           {hasConvo && (
           <div className="px-6 pb-5 pt-2">
             <div className="mx-auto max-w-[720px]">
-              <div className="rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3 py-2.5 shadow-sm transition-shadow focus-within:shadow-md">
-                <input
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") submit(); }}
-                  placeholder="Ask Petal anything, or describe work to run…"
-                  autoFocus
-                  className="w-full bg-transparent text-[13px] text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
-                />
-                <div className="mt-2.5 flex items-center gap-1.5">
-                  {/* mode segmented */}
-                  <div className="flex items-center gap-0.5 rounded-lg bg-[var(--os-bg-subtle)] p-0.5">
-                    {([["ask", I.sparkle, "Ask"], ["research", I.globe, "Research"], ["do", I.trigger, "Do"]] as const).map(([key, icon, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => setMode(key)}
-                        className={cn(
-                          "flex h-6 items-center gap-1.5 rounded-md px-2 text-[12px] transition-colors",
-                          mode === key ? "bg-[var(--os-surface)] font-medium text-[var(--os-ink)] shadow-sm" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]",
-                        )}
-                      >
-                        <Icon icon={icon} size={13} /> {label}
-                      </button>
-                    ))}
-                  </div>
-                  <button className="flex h-6 items-center gap-1.5 rounded-md px-2 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]">
-                    <Icon icon={I.attach} size={14} />
-                  </button>
-                  <button
-                    onClick={() => submit()}
-                    disabled={!input.trim()}
-                    className="ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"
-                  >
-                    <Icon icon={I.send} size={15} />
-                  </button>
-                </div>
-              </div>
+              <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus />
               <p className="mt-1.5 text-center text-[11px] text-[var(--os-ink-subtle)]">Petal answers only from sources it can cite. Output never touches a record until you approve it.</p>
             </div>
           </div>

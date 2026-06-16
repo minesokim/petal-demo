@@ -1,6 +1,6 @@
 "use client";
 
-// Petal chat runtime — shared by /os/ask and the client-record @Petal rail.
+// Petal chat runtime - shared by /os/ask and the client-record @Petal rail.
 // Answers come from the scripted demo bank (lib/fixtures/demo-chat); this file
 // owns the conversation state, the agentic reveal (steps → prose → chart →
 // findings), and the answer renderer.
@@ -17,7 +17,7 @@ import {
 } from "@/lib/fixtures/demo-chat";
 
 export type ChatMsg =
-  | { id: number; role: "user"; text: string }
+  | { id: number; role: "user"; text: string; attachments?: string[] }
   | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean };
 
 let msgSeq = 1;
@@ -25,17 +25,17 @@ let msgSeq = 1;
 export function usePetalChat(scopeHouseholdId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
 
-  const send = useCallback((text: string) => {
+  const send = useCallback((text: string, attachments?: string[]) => {
     const q = text.trim();
-    if (!q) return;
+    if (!q && !attachments?.length) return;
     const userId = ++msgSeq;
     const thinkingId = ++msgSeq;
     setMessages(m => [
       ...m,
-      { id: userId, role: "user", text: q },
+      { id: userId, role: "user", text: q, attachments },
       { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true },
     ]);
-    const answer = matchQuestion(q, scopeHouseholdId);
+    const answer = matchQuestion(q || (attachments?.join(", ") ?? ""), scopeHouseholdId);
     window.setTimeout(() => {
       setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
     }, 1400);

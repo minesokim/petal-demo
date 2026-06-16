@@ -1,6 +1,6 @@
 "use client";
 
-// Command search — the sidebar search (and ⌘K). Jumps to any page or client.
+// Command search - the sidebar search (and ⌘K). Jumps to any page or client.
 // Keyboard: ↑/↓ move, ↵ open, Esc close. Results = nav pages + every household.
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -39,7 +39,7 @@ const CLIENTS: Result[] = households.map(h => ({
   group: "Clients",
 }));
 
-// On open (empty query) we show a small, intentional launchpad — not the whole nav.
+// On open (empty query) we show a small, intentional launchpad - not the whole nav.
 // Full search across every page + client only kicks in once you start typing.
 const QUICK_IDS = ["p-today", "p-tasks", "p-clients", "p-inbox"];
 const QUICK: Result[] = QUICK_IDS.map(id => PAGES.find(p => p.id === id)!).filter(Boolean);
