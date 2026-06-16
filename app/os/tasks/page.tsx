@@ -106,7 +106,7 @@ function Row({
   const skill = skillById(t.skillId);
   const verb = verbOf(t);
   return (
-    <div className={cn("relative flex h-11 items-center px-8 transition-colors", active ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}>
+    <div className={cn("relative flex h-14 items-center px-8 transition-colors", active ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}>
       {/* full-row open target (keyboard-focusable) */}
       <button
         onClick={onOpen}

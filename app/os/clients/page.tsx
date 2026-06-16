@@ -104,9 +104,7 @@ function ClientsTable({ rows }: { rows: Household[] }) {
             <div>{dl ? <DeadlineChip iso={dl.iso} extended={dl.extended} /> : <EmDash />}</div>
             <div className="gap-2"><DocsBar label={docs.label} inHand={docs.inHand} denom={docs.denom} /></div>
             <div className={cn("justify-end text-[13px] tabular-nums", balance > 0 ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>{money(balance)}</div>
-            <div>
-              <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{h.serviceTier}</span>
-            </div>
+            <div className="text-[12px] text-[var(--os-ink-muted)]">{h.serviceTier}</div>
             <div className="justify-end"><AssigneePicker householdId={h.id} variant="avatar" align="right" /></div>
           </Link>
         );
@@ -173,9 +171,7 @@ function PeopleTable({ rows }: { rows: Person[] }) {
               <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
             </div>
           </div>
-          <div>
-            <span className="inline-flex items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">{p.role}</span>
-          </div>
+          <div className="text-[12px] text-[var(--os-ink-muted)]">{p.role}</div>
           <div className="truncate text-[12px] text-[var(--os-ink-muted)]"><span className="truncate">{householdById(p.householdId)?.name}</span></div>
           <div className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{p.phone}</div>
           <div className="justify-end"><AssigneePicker householdId={p.householdId} variant="avatar" align="right" /></div>

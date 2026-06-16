@@ -101,11 +101,11 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const primary: Item[] = [
     { label: "Home", href: "/os/today", icon: Home },
     { label: "Tasks", href: "/os/tasks", icon: ListChecks, badge: needsYou },
+    { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Inbox", href: "/os/inbox", icon: Inbox },
     { label: "Calendar", href: "/os/calendar", icon: CalendarDays },
   ];
   const records: Item[] = [
-    { label: "Clients", href: "/os/clients", icon: Users },
     { label: "Documents", href: "/os/documents", icon: FileText },
     { label: "Notices", href: "/os/notices", icon: MailWarning },
     { label: "Billing", href: "/os/billing", icon: CreditCard },

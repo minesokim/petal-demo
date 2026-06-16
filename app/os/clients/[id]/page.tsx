@@ -6,16 +6,18 @@
 // Park exemplar must tie (Ready to Prep · 32/34 · $1,900 · $1,140) everywhere.
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
+import { Archive, Trash2, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag } from "@/components/os/primitives";
+import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
-import { DocRow, ReviewModal, EngagementDocsHeader } from "@/components/os/doc-gallery";
+import { ReviewModal } from "@/components/os/doc-gallery";
+import { FileUploader } from "@/components/os/file-uploader";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import {
@@ -30,19 +32,20 @@ import {
   invoiceStatusMeta, engagementDeadline, activityFeed, transcriptWatchCount, clientHealth,
   noticeCountdown,
 } from "@/lib/fixtures/derive";
-import { stageMeta, taskStatusMeta, healthMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
+import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, healthMeta, expectedDocMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
 
 /* ── constants / small helpers (presentation only — no data) ── */
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
 // Notices are a firm-wide deadline queue — they live in the sidebar, not as a per-client tab.
-const TABS = ["Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance", "Notes"] as const;
+const TABS = ["Overview", "Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance"] as const;
 type Tab = (typeof TABS)[number];
-// 5 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
-const PRIMARY_TABS: Tab[] = ["Activity", "Returns", "Documents", "Tasks", "Messages"];
-const MORE_TABS: Tab[] = ["Billing", "Positions", "Compliance", "Notes"];
+// 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
+// Notes is NOT a content tab — it lives in the right rail next to Ask Petal / Details.
+const PRIMARY_TABS: Tab[] = ["Overview", "Returns", "Documents", "Tasks", "Messages"];
+const MORE_TABS: Tab[] = ["Activity", "Billing", "Positions", "Compliance"];
 const tabFromParam = (p: string | null): Tab =>
-  TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Activity";
+  TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Overview";
 
 const kindLabel: Record<HouseholdKind, string> = {
   individual: "Individual",
@@ -70,7 +73,13 @@ const clientStageWords: Record<Stage, string> = {
 };
 
 const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2);
+const first = (name: string) => name.split(" ")[0];
 const DOC_STATUS_ORDER: Record<ExpectedDoc["status"], number> = { needs_review: 0, requested: 1, have: 2, na: 3 };
+/** Best-effort file kind for the colored FileGlyph badge (tax docs default to PDF). */
+const docKind = (source: string) => {
+  const m = source.toLowerCase().match(/\.(pdf|png|jpe?g|xlsx|docx)\b/);
+  return m ? m[1].replace("jpeg", "jpg") : "pdf";
+};
 
 /** The one primary verb — same derivation as the Tasks page. */
 const verbOf = (t: Task) => {
@@ -109,20 +118,140 @@ function Toast({ msg }: { msg: string | null }) {
   );
 }
 
-function Attr({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-3 px-3 py-2">
-      <span className="text-[12px] text-[var(--os-ink-muted)]">{label}</span>
-      <span className="max-w-[60%] text-right text-[13px] text-[var(--os-ink)]">{children}</span>
-    </div>
-  );
-}
-
 function FormChip({ form }: { form: string }) {
   return (
     <span className="shrink-0 rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--os-ink-muted)]">
       {form}
     </span>
+  );
+}
+
+/* ── Linear-style card — small header + body. `flush` lets list content bleed to the
+   edges with dividers; otherwise the body is padded. Used in the rail and every tab. ── */
+function LCard({ title, action, flush, children }: { title: string; action?: React.ReactNode; flush?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+      <div className="flex items-center justify-between gap-2 px-3.5 pb-2 pt-2.5">
+        <span className="text-[12.5px] font-semibold text-[var(--os-ink)]">{title}</span>
+        {action}
+      </div>
+      <div className={cn(flush ? "" : "px-3.5 pb-3.5", title ? "" : "pt-3.5")}>{children}</div>
+    </div>
+  );
+}
+const FOCUS_G = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
+
+/* ── Main-content language (airy, typographic — not boxes) ── */
+/** Quiet section header: title + optional count, with a subtle right action. */
+function SectionHead({ title, count, action }: { title: string; count?: number | string; action?: React.ReactNode }) {
+  return (
+    <div className="mb-1.5 flex items-center justify-between gap-3">
+      <h3 className="flex items-baseline gap-2 text-[13px] font-semibold text-[var(--os-ink)]">
+        {title}
+        {count !== undefined && <span className="text-[12px] font-normal tabular-nums text-[var(--os-ink-subtle)]">{count}</span>}
+      </h3>
+      {action}
+    </div>
+  );
+}
+/** Subtle "View all →" affordance for a section header. */
+function ViewAll({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={cn("group/va inline-flex items-center gap-0.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", FOCUS_G)}>
+      View all <Icon icon={I.chevronRight} size={12} className="transition-transform group-hover/va:translate-x-0.5" />
+    </button>
+  );
+}
+/** Airy hover row — borderless, rounded highlight on hover (Linear list). */
+const AROW = "group -mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--os-hover)]";
+function ARow({ onClick, href, children }: { onClick?: () => void; href?: string; children: React.ReactNode }) {
+  if (href) return <Link href={href} className={cn(AROW, FOCUS_G)}>{children}</Link>;
+  if (onClick) return <button onClick={onClick} className={cn(AROW, FOCUS_G)}>{children}</button>;
+  return <div className={cn(AROW, "hover:bg-transparent")}>{children}</div>;
+}
+
+/* ── Linear project-panel card — title + chevron, optional right action, padded body ── */
+function Card({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4", className)}>
+      {title && (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="flex items-center gap-1 text-[13px] font-semibold text-[var(--os-ink)]">
+            {title}<Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" />
+          </h3>
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+/** Stat line inside a card (Linear "On track · 1"). */
+function StatLine({ icon, dot, label, value }: { icon?: React.ReactNode; dot?: string; label: string; value: number | string }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 text-[13px]">
+      {icon ?? (dot && <span className={cn("size-2 shrink-0 rounded-full", dot)} />)}
+      <span className="min-w-0 flex-1 truncate text-[var(--os-ink)]">{label}</span>
+      <span className="shrink-0 tabular-nums text-[var(--os-ink-muted)]">{value}</span>
+    </div>
+  );
+}
+/** Linear-style progress chart — a smooth cumulative curve: green "completed" area under
+ *  the curve, a soft "remaining" band above it up to the goal line. Reads well at any %. */
+function ProgressArea({ pct, start, end }: { pct: number; start: string; end: string }) {
+  const W = 320, H = 116, TOP = 8;
+  const p = Math.max(0, Math.min(100, pct)) / 100;
+  const N = 24;
+  const ease = (t: number) => 1 - Math.pow(1 - t, 1.85); // ease-out — fast rise, gentle plateau
+  const pts = Array.from({ length: N + 1 }, (_, i) => {
+    const t = i / N;
+    return [+(W * t).toFixed(1), +(H - (H - TOP) * p * ease(t)).toFixed(1)] as const;
+  });
+  const line = pts.map(([x, y], i) => (i ? `L${x},${y}` : `M${x},${y}`)).join(" ");
+  const green = `${line} L${W},${H} L0,${H} Z`;
+  const remain = `${line} L${W},${TOP} L0,${TOP} Z`;
+  const endY = pts[N][1];
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" style={{ height: 132 }}>
+        <defs>
+          <linearGradient id="pa-green" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--os-brand)" stopOpacity="0.30" />
+            <stop offset="100%" stopColor="var(--os-brand)" stopOpacity="0.03" />
+          </linearGradient>
+          <linearGradient id="pa-soft" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f472b6" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#f472b6" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={remain} fill="url(#pa-soft)" />
+        <path d={green} fill="url(#pa-green)" />
+        {/* goal line */}
+        <line x1="0" y1={TOP} x2={W} y2={TOP} stroke="var(--os-border-strong)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+        <path d={line} fill="none" stroke="var(--os-brand)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        <circle cx={W} cy={endY} r="3" fill="var(--os-brand)" />
+      </svg>
+      <div className="mt-1.5 flex items-center justify-between text-[11px] tabular-nums text-[var(--os-ink-subtle)]">
+        <span>{start}</span><span className="font-medium text-[var(--os-ink-muted)]">{pct}%</span><span>{end}</span>
+      </div>
+    </div>
+  );
+}
+function LRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[78px_1fr] items-center gap-2 px-0.5 py-1.5">
+      <span className="text-[12px] text-[var(--os-ink-muted)]">{label}</span>
+      <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-[var(--os-ink)]">{children}</span>
+    </div>
+  );
+}
+function StatRow({ dot, label, value }: { dot: string; label: string; value: number | string }) {
+  return (
+    <div className="flex items-center gap-2 px-0.5 py-1.5 text-[13px]">
+      <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
+      <span className="min-w-0 flex-1 truncate text-[var(--os-ink)]">{label}</span>
+      <span className="shrink-0 tabular-nums text-[var(--os-ink-muted)]">{value}</span>
+    </div>
   );
 }
 
@@ -153,11 +282,21 @@ function ClientRecordInner() {
   const h = householdById(id);
 
   const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
-  const [panel, setPanel] = useState<"@Petal" | "Details">("@Petal");
+  const [panel, setPanel] = useState<"Ask Petal" | "Details" | "Notes">("Ask Petal");
   useAssignVersion(); // reflect reassignments in the returns list avatars
+  const router = useRouter();
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  // record-level overflow (⋯) menu — View as client · Copy link · Archive · Delete
+  const [hdrMenuOpen, setHdrMenuOpen] = useState(false);
+  const hdrMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!hdrMenuOpen) return;
+    const onDown = (e: MouseEvent) => { if (hdrMenuRef.current && !hdrMenuRef.current.contains(e.target as Node)) setHdrMenuOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [hdrMenuOpen]);
   // close the More menu on an outside click (robust — no overlay div to race the open)
   useEffect(() => {
     if (!moreOpen) return;
@@ -189,6 +328,11 @@ function ClientRecordInner() {
     chat.send(q);
     setChatInput("");
   };
+  // drag a document onto the rail → Petal looks at it
+  const [petalDropOver, setPetalDropOver] = useState(false);
+  const [progressTab, setProgressTab] = useState<"Documents" | "Returns">("Documents");
+  const [ovTab, setOvTab] = useState<"Documents" | "Returns">("Documents");
+  const askPetalAboutDoc = (name: string) => { setPanel("Ask Petal"); sendChat(`Take a look at ${name} and flag anything that needs my attention.`); };
 
   // ?tab= preselect — also when the param changes in place (deep links from health/positions).
   useEffect(() => {
@@ -269,19 +413,6 @@ function ClientRecordInner() {
         <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
         <span className="truncate text-[13px] font-semibold text-[var(--os-ink)]">{h.name}</span>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={() => setViewAsClient(v => !v)}
-            aria-pressed={viewAsClient}
-            className={cn(
-              "flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] transition-colors",
-              viewAsClient
-                ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] font-medium text-[var(--os-ink)]"
-                : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
-              FOCUS,
-            )}
-          >
-            <Icon icon={I.eye} size={13} /> View as client
-          </button>
           <div className="relative">
             <button
               onClick={() => setRunMenuOpen(o => !o)}
@@ -318,16 +449,36 @@ function ClientRecordInner() {
               </>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Header strip — all derived; Park reads Ready to Prep · Ext Sep 15 · 32/34 · $1,900 · $1,140 */}
-      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 border-b border-[var(--os-border)] px-4 py-2 text-[12px] text-[var(--os-ink-muted)] sm:px-8">
-        <StageTag stage={stage} />
-        {deadline && <DeadlineChip iso={deadline.iso} extended={deadline.extended} />}
-        <span>Docs <span className="font-medium tabular-nums text-[var(--os-ink)]">{docs.label}</span></span>
-        <span>Fee <span className="font-medium tabular-nums text-[var(--os-ink)]">{money(fee)}</span></span>
-        <span>Balance <span className="font-medium tabular-nums text-[var(--os-ink)]">{money(invoice.balance)}</span></span>
+          {/* record-level overflow menu */}
+          <div ref={hdrMenuRef} className="relative">
+            <button
+              onClick={() => setHdrMenuOpen(o => !o)}
+              aria-label="More actions"
+              aria-expanded={hdrMenuOpen}
+              className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}
+            >
+              <Icon icon={I.more} size={16} />
+            </button>
+            {hdrMenuOpen && (
+              <div className="absolute right-0 top-full z-30 mt-1 min-w-[184px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_8px_28px_-8px_rgba(17,17,26,0.18)]">
+                <button onClick={() => { setViewAsClient(true); setHdrMenuOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                  <Icon icon={I.eye} size={14} className="text-[var(--os-ink-muted)]" /> View as client
+                </button>
+                <button onClick={() => { show("Link copied"); setHdrMenuOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                  <Link2 className="size-3.5 text-[var(--os-ink-muted)]" /> Copy link
+                </button>
+                <div className="my-1 h-px bg-[var(--os-border)]" />
+                <button onClick={() => { show(`Archived ${h.name}`); setHdrMenuOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                  <Archive className="size-3.5 text-[var(--os-ink-muted)]" /> Archive client
+                </button>
+                <button onClick={() => { setHdrMenuOpen(false); show(`Deleted ${h.name}`); router.push("/os/clients"); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-danger)] transition-colors hover:bg-red-50", FOCUS)}>
+                  <Trash2 className="size-3.5" /> Delete client
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {viewAsClient ? (
@@ -484,29 +635,136 @@ function ClientRecordInner() {
               })()
             ) : (
               <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
-                {/* ── Activity ── */}
+                {/* ── Overview ── Linear project-panel cards ── */}
+                {tab === "Overview" && (() => {
+                  const docsPct = docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100;
+                  const filed = engs.filter(e => e.stage === "e_filed" || e.stage === "accepted").length;
+                  const inProg = engs.length - filed;
+                  const blocked = engs.filter(e => e.blockedBy).length;
+                  const returnsPct = engs.length ? Math.round((filed / engs.length) * 100) : 0;
+                  return (
+                  <div className="mx-auto max-w-[760px] space-y-4">
+                    {/* Catch me up */}
+                    <Card>
+                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]">
+                        <PetalMark className="size-3" /> Catch me up
+                      </div>
+                      <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
+                    </Card>
+
+                    {/* Progress — gradient chart + segmented + stat rows */}
+                    <Card title="Progress">
+                      <ProgressArea
+                        pct={ovTab === "Documents" ? docsPct : returnsPct}
+                        start="Season start"
+                        end={deadline ? fmtDate(deadline.iso) : "Today"}
+                      />
+                      <Segmented
+                        className="mt-3"
+                        value={ovTab}
+                        onChange={v => setOvTab(v as "Documents" | "Returns")}
+                        options={[{ value: "Documents", label: "Documents" }, { value: "Returns", label: "Returns" }]}
+                      />
+                      <div className="mt-1.5 border-t border-[var(--os-border)] pt-0.5">
+                        {ovTab === "Documents" ? (
+                          <>
+                            <StatLine icon={<Icon icon={I.check} size={14} className="shrink-0 text-[var(--os-success)]" />} label="Received" value={docs.have} />
+                            <StatLine dot="bg-amber-500" label="Needs review" value={docs.needsReview} />
+                            <StatLine dot="bg-[var(--os-border-strong)]" label="Requested" value={docs.requested} />
+                          </>
+                        ) : (
+                          <>
+                            <StatLine dot="bg-emerald-500" label="Filed" value={filed} />
+                            <StatLine dot="bg-blue-500" label="In preparation" value={inProg} />
+                            {blocked > 0 && <StatLine dot="bg-red-500" label="Blocked" value={blocked} />}
+                          </>
+                        )}
+                      </div>
+                    </Card>
+
+                    {/* Needs you · Returns */}
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <Card title="Needs you" action={openTasks.length > 0 ? <ViewAll onClick={() => setTab("Tasks")} /> : undefined}>
+                        {openTasks.length === 0 ? (
+                          <p className="text-[12.5px] text-[var(--os-ink-subtle)]">All clear — nothing waiting on you.</p>
+                        ) : (
+                          <div className="-mx-2 -mb-1">
+                            {openTasks.slice(0, 4).map(t => {
+                              const sk = skillById(t.skillId);
+                              return (
+                                <button key={t.id} onClick={() => setTaskOpen(t.id)} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                                  {sk && <SkillPetal category={sk.category} size={15} />}
+                                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
+                                  <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </Card>
+
+                      <Card title="Returns" action={<ViewAll onClick={() => setTab("Returns")} />}>
+                        <div className="-mx-2 -mb-1">
+                          {engs.map(e => (
+                            <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                              <FormChip form={e.form} />
+                              <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
+                              <StageTag stage={e.stage} className="hidden shrink-0 sm:inline-flex" />
+                              <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover:opacity-100" />
+                            </Link>
+                          ))}
+                        </div>
+                      </Card>
+                    </div>
+
+                    {/* Recent activity */}
+                    {feed.length > 0 && (
+                      <Card title="Activity" action={<ViewAll onClick={() => setTab("Activity")} />}>
+                        <div className="-mt-0.5 space-y-3">
+                          {feed.slice(0, 4).map(a => (
+                            <div key={a.id} className="flex items-start gap-2.5">
+                              <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", a.actor === "Petal" ? "bg-[var(--os-selected)]" : "bg-[var(--os-selected)]")}>
+                                {a.actor === "Petal" ? <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> : <span className="size-1.5 rounded-full bg-[var(--os-border-strong)]" />}
+                              </span>
+                              <span className="min-w-0 flex-1 text-[13px] leading-snug">
+                                <span className="font-medium text-[var(--os-ink)]">{a.actor}</span>{" "}
+                                <span className="text-[var(--os-ink-muted)]">{a.label}</span>
+                                <span className="ml-1.5 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">· Jun {a.day}</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+                  </div>
+                  );
+                })()}
+
+                {/* ── Activity ── airy timeline ── */}
                 {tab === "Activity" && (
-                  <>
-                    <div className="mb-4 rounded-lg bg-[var(--os-bg-subtle)] p-3.5">
-                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Catch me up</div>
-                      <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
+                  <div className="mx-auto max-w-[680px]">
+                    <div className="mb-6 rounded-xl bg-[var(--os-bg-subtle)] px-4 py-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Catch me up</div>
+                      <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
                     </div>
                     {feed.length === 0 ? (
                       <p className="py-8 text-center text-[13px] text-[var(--os-ink-muted)]">Nothing logged this week. Run a skill to put {h.name} in motion.</p>
                     ) : (
-                      <div className="space-y-3">
-                        {feed.map(a => {
-                          const expanded = expandedEvents.has(a.id);
-                          return (
-                            <div key={a.id} className="flex gap-2.5">
-                              <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", a.actor === "Petal" ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
-                              <div className="min-w-0 flex-1">
+                      <>
+                        <SectionHead title="Timeline" />
+                        {/* a true timeline — a hairline spine with dotted events */}
+                        <div className="relative ml-1 mt-1 space-y-4 border-l border-[var(--os-border)] pl-5">
+                          {feed.map(a => {
+                            const expanded = expandedEvents.has(a.id);
+                            return (
+                              <div key={a.id} className="relative">
+                                <span className={cn("absolute -left-[23px] top-[5px] size-1.5 rounded-full ring-4 ring-[var(--os-canvas)]", a.actor === "Petal" ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
                                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">Jun {a.day} · {a.at}</span>
                                   <span className="text-[13px] leading-snug">
                                     <span className="font-medium text-[var(--os-ink)]">{a.actor}</span>{" "}
                                     <span className="text-[var(--os-ink-muted)]">{a.label}</span>
                                   </span>
+                                  <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">· Jun {a.day} · {a.at}</span>
                                   {a.runId && (
                                     <button
                                       onClick={() =>
@@ -517,7 +775,7 @@ function ClientRecordInner() {
                                         })
                                       }
                                       aria-expanded={expanded}
-                                      className={cn("shrink-0 text-[11px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
+                                      className={cn("text-[11px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
                                     >
                                       {expanded ? "Hide run" : "View run"}
                                     </button>
@@ -525,321 +783,354 @@ function ClientRecordInner() {
                                 </div>
                                 {a.runId && expanded && <ProvenancePanel runId={a.runId} defaultOpen className="mt-2" />}
                               </div>
-                            </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Returns ── Linear cards ── */}
+                {tab === "Returns" && (
+                  <div className="mx-auto max-w-[760px] space-y-4">
+                    {/* summary card */}
+                    <Card>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-[var(--os-border)]">
+                        {([
+                          ["Returns", String(engs.length), false],
+                          ["Next deadline", deadline ? fmtDate(deadline.iso) : "—", false],
+                          ["Fees", money(householdFee(h.id)), false],
+                          ["Blocked", money(engs.filter(e => e.blockedBy).reduce((s, e) => s + e.fee, 0)), true],
+                        ] as const).map(([label, value, warn], i) => (
+                          <div key={label} className={cn("py-1", i > 0 && "sm:pl-5 pt-3 sm:pt-1", i < 3 && "sm:pr-5")}>
+                            <div className="text-[11px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">{label}</div>
+                            <div className={cn("os-display mt-1.5 text-[19px] font-semibold tabular-nums", warn && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+
+                    {/* returns list card */}
+                    <Card title="Returns" action={<span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{engs.length}</span>}>
+                      <div className="-mx-2 -mb-1 divide-y divide-[var(--os-border)]">
+                        {engs.map(e => {
+                          const d = engagementDeadline(e);
+                          const dc = docsOf(e.id);
+                          const pct = dc.denom > 0 ? Math.round((dc.inHand / dc.denom) * 100) : 0;
+                          const runTask = hhTasks.find(t => t.engagementId === e.id && t.status === "running");
+                          const runSkill = runTask ? skillById(runTask.skillId) : undefined;
+                          return (
+                            <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group block rounded-md px-2 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                <FormChip form={e.form} />
+                                <span className="min-w-0 truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</span>
+                                <StageTag stage={e.stage} />
+                                <DeadlineChip iso={d.iso} extended={d.extended} />
+                                {runSkill && <span className="inline-flex items-center gap-1 text-[11px] text-[var(--os-ink-muted)]"><SkillPetal category={runSkill.category} size={13} /> running</span>}
+                                <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
+                                <MemberAvatar memberId={assigneeOf(e.householdId)} size={20} />
+                              </div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
+                                  <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-muted)]">Docs {dc.label}</span>
+                              </div>
+                              {e.blockedBy && (
+                                <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--os-warning)]">
+                                  <Icon icon={I.alert} size={12} className="shrink-0" /> Blocked by {e.blockedBy}
+                                </div>
+                              )}
+                            </Link>
                           );
                         })}
                       </div>
-                    )}
-                  </>
-                )}
+                    </Card>
 
-                {/* ── Returns ── */}
-                {tab === "Returns" && (
-                  <div className="space-y-6">
-                    {/* per-client summary — ported from the firm-wide returns board strip */}
-                    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-4 py-3">
-                      {([
-                        ["Returns", String(engs.length)],
-                        ["Next deadline", deadline ? fmtDate(deadline.iso) : "—"],
-                        ["Fees", money(householdFee(h.id))],
-                        ["Blocked", money(engs.filter(e => e.blockedBy).reduce((s, e) => s + e.fee, 0))],
-                      ] as const).map(([label, value], i) => (
-                        <div key={label}>
-                          <div className="text-[11px] text-[var(--os-ink-muted)]">{label}</div>
-                          <div className={cn("os-display mt-0.5 text-[17px] font-semibold tabular-nums", i === 3 && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
-                        </div>
-                      ))}
-                      <div className="ml-auto">
-                        <div className="mb-1 text-[11px] text-[var(--os-ink-muted)]">Lead preparer</div>
-                        <AssigneePicker householdId={h.id} align="right" className="-ml-1.5" />
-                      </div>
-                    </div>
-
-                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
-                      {engs.map(e => {
-                        const d = engagementDeadline(e);
-                        const dc = docsOf(e.id);
-                        const pct = dc.denom > 0 ? Math.round((dc.inHand / dc.denom) * 100) : 0;
-                        const runTask = hhTasks.find(t => t.engagementId === e.id && t.status === "running");
-                        const runSkill = runTask ? skillById(runTask.skillId) : undefined;
-                        return (
-                          <Link
-                            key={e.id}
-                            href={`/os/returns/${e.id}`}
-                            className={cn("block px-3.5 py-2.5 transition-colors hover:bg-[var(--os-hover)]", FOCUS, "focus-visible:-outline-offset-2")}
-                          >
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <FormChip form={e.form} />
-                              <span className="min-w-0 truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</span>
-                              <StageTag stage={e.stage} />
-                              <DeadlineChip iso={d.iso} extended={d.extended} />
-                              {runSkill && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--os-ink-muted)]" title={`${runSkill.name} — running`}>
-                                  <SkillPetal category={runSkill.category} size={13} /> running
-                                </span>
-                              )}
-                              <span className="ml-auto text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</span>
-                              <MemberAvatar memberId={assigneeOf(e.householdId)} size={20} />
-                              <Icon icon={I.chevronRight} size={14} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                            </div>
-                            {/* docs progress mini-bar (ported from the board card) */}
-                            <div className="mt-2 flex items-center gap-2">
-                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
-                                <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-muted)]">Docs {dc.label}</span>
-                            </div>
-                            {e.blockedBy && (
-                              <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--os-warning)]">
-                                <Icon icon={I.alert} size={12} className="shrink-0" /> Blocked by {e.blockedBy}
-                              </div>
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-
-                    {/* relationship graph — entity owners + K-1 flow */}
+                    {/* relationships */}
                     {k1Links.length > 0 && (
-                      <section>
-                        <div className="os-label mb-2">Relationship graph</div>
-                        <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                      <Card title="Relationships">
+                        <div className="-mx-2 -mb-1">
                           {k1Links.map(l => (
-                            <div key={l.key} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                              <span className="text-[13px] text-[var(--os-ink)]">{l.line}</span>
+                            <div key={l.key} className="flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] text-[var(--os-ink)]">
+                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" /> {l.line}
                             </div>
                           ))}
                         </div>
-                      </section>
+                      </Card>
                     )}
 
-                    {/* workpapers — the audit trail behind the return */}
+                    {/* workpapers */}
                     {workpapers.map(({ eng, wp }) => (
-                      <section key={wp.id}>
-                        <div className="os-label mb-2">Workpaper — {entityById(eng.entityId)?.name} {eng.form}</div>
-                        <div className="overflow-x-auto rounded-lg border border-[var(--os-border)]">
+                      <Card key={wp.id} title={`Workpaper · ${entityById(eng.entityId)?.name} ${eng.form}`}>
+                        <div className="overflow-x-auto">
                           <div className="min-w-[520px]">
-                            <div className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
+                            <div className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] pb-1.5">
                               {["Line", "Amount", "Source document", "Run"].map(c => <div key={c} className="os-label">{c}</div>)}
                             </div>
                             {wp.rows.map((row, i) => (
-                              <div key={i} className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] px-3.5 py-2 text-[13px] last:border-b-0">
+                              <div key={i} className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] py-2 text-[13px] last:border-0">
                                 <span className="truncate text-[var(--os-ink)]">{row.line}</span>
                                 <span className="font-medium tabular-nums text-[var(--os-ink)]">{row.amount}</span>
-                                <span className="truncate text-[var(--os-ink-muted)]">
-                                  {row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}
-                                </span>
+                                <span className="truncate text-[var(--os-ink-muted)]">{row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}</span>
                                 {row.runId ? (
-                                  <button
-                                    onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))}
-                                    aria-expanded={wpRun === `${wp.id}-${i}`}
-                                    className={cn("text-left text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}
-                                  >
+                                  <button onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))} aria-expanded={wpRun === `${wp.id}-${i}`} className={cn("text-left text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
                                     {wpRun === `${wp.id}-${i}` ? "Hide run" : "View run"}
                                   </button>
-                                ) : (
-                                  <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>
-                                )}
+                                ) : <span className="text-[12px] text-[var(--os-ink-subtle)]">—</span>}
                               </div>
                             ))}
                           </div>
                         </div>
-                        {wp.rows.map((row, i) =>
-                          row.runId && wpRun === `${wp.id}-${i}` ? <ProvenancePanel key={i} runId={row.runId} defaultOpen className="mt-2" /> : null,
-                        )}
-                        <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
-                          <PetalMark className="size-3 shrink-0" />
-                          Trace any line on the return back to the run, the workpaper, and the source document.
+                        {wp.rows.map((row, i) => row.runId && wpRun === `${wp.id}-${i}` ? <ProvenancePanel key={i} runId={row.runId} defaultOpen className="mt-2" /> : null)}
+                        <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
+                          <PetalMark className="size-3 shrink-0" /> Trace any line back to the run, the workpaper, and the source document.
                         </p>
-                      </section>
+                      </Card>
                     ))}
                   </div>
                 )}
 
                 {/* ── Documents ── */}
                 {tab === "Documents" && (
-                  <div className="space-y-7">
+                  <div className="mx-auto max-w-[760px] space-y-8">
+                    {/* upload zone */}
+                    <section>
+                      <SectionHead title="Upload documents" />
+                      <FileUploader
+                        hint="PDF, PNG, JPG, XLSX or DOCX, up to 50 MB"
+                        onDragFileStart={(e, name) => e.dataTransfer.setData("text/petal-doc", name)}
+                      />
+                      <p className="mt-2 flex items-center gap-1.5 px-0.5 text-[11.5px] text-[var(--os-ink-subtle)]">
+                        <PetalMark className="size-3 shrink-0" /> Drag any file onto the Ask Petal panel to have Petal review it.
+                      </p>
+                    </section>
+
+                    {/* per-engagement document checklist — clean file cards */}
                     {engs.map(e => {
                       const rows = [...docsOfEngagement(e.id)].sort((a, b) => DOC_STATUS_ORDER[a.status] - DOC_STATUS_ORDER[b.status]);
-                      if (rows.length === 0) {
-                        return (
-                          <section key={e.id}>
-                            <div className="mb-2 flex items-center gap-2">
-                              <FormChip form={e.form} />
-                              <span className="text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
-                            </div>
-                            <p className="rounded-lg border border-dashed border-[var(--os-border-strong)] px-3.5 py-4 text-[13px] text-[var(--os-ink-muted)]">
-                              No checklist yet — import last year&apos;s return and Petal builds it.
-                            </p>
-                          </section>
-                        );
-                      }
+                      const dc = docsOf(e.id);
                       return (
                         <section key={e.id}>
                           <div className="mb-2 flex items-center gap-2">
                             <FormChip form={e.form} />
-                            <span className="text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
-                            <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
+                            <h3 className="text-[13px] font-semibold text-[var(--os-ink)]">{entityById(e.entityId)?.name}</h3>
+                            <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
+                            <span className={cn("ml-auto text-[12px] tabular-nums", dc.inHand >= dc.denom ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{dc.label} received</span>
                           </div>
-                          <EngagementDocsHeader engagementId={e.id} />
-                          <div className="mt-3 overflow-hidden rounded-lg border border-[var(--os-border)]">
-                            {rows.map(d => <DocRow key={d.id} doc={d} onOpen={setOpenDoc} />)}
-                          </div>
+                          {rows.length === 0 ? (
+                            <p className="rounded-xl border border-dashed border-[var(--os-border-strong)] px-3.5 py-4 text-[13px] text-[var(--os-ink-muted)]">
+                              No checklist yet — import last year&apos;s return and Petal builds it.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {rows.map(d => {
+                                const inHand = d.status === "have" || d.status === "needs_review";
+                                return (
+                                  <div
+                                    key={d.id}
+                                    draggable={inHand}
+                                    onDragStart={ev => { if (inHand) { ev.dataTransfer.effectAllowed = "copy"; ev.dataTransfer.setData("text/petal-doc", d.source); } }}
+                                    onClick={() => { if (inHand) setOpenDoc(d); }}
+                                    role={inHand ? "button" : undefined}
+                                    tabIndex={inHand ? 0 : undefined}
+                                    onKeyDown={ev => { if (inHand && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); setOpenDoc(d); } }}
+                                    className={cn(
+                                      "group flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
+                                      inHand
+                                        ? "cursor-grab border-[var(--os-border)] bg-[var(--os-surface)] hover:border-[var(--os-border-strong)] active:cursor-grabbing"
+                                        : "border-dashed border-[var(--os-border)]",
+                                      FOCUS,
+                                    )}
+                                  >
+                                    <FileGlyph kind={docKind(d.source)} size={34} className={cn(!inHand && "opacity-45")} />
+                                    <div className="min-w-0 flex-1">
+                                      <div className={cn("truncate text-[13.5px] font-medium", inHand ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>{d.source}</div>
+                                      <div className="mt-0.5 truncate text-[12px] text-[var(--os-ink-subtle)]">
+                                        {d.when ? `${d.receivedVia ?? "Received"} · ${d.when}` : d.priorYearValue ? `Last year ${d.priorYearValue}` : "Not yet received"}
+                                      </div>
+                                    </div>
+                                    {d.status === "have" ? (
+                                      <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-[var(--os-success)]"><Icon icon={I.check} size={14} /> Filed</span>
+                                    ) : d.status === "needs_review" ? (
+                                      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2 py-0.5 text-[11.5px] font-medium text-amber-700"><span className="size-1.5 rounded-full bg-amber-500" /> Needs review</span>
+                                    ) : (
+                                      <span className="shrink-0 text-[12px] text-[var(--os-ink-subtle)]">{expectedDocMeta[d.status].label}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </section>
                       );
                     })}
                   </div>
                 )}
 
-                {/* ── Tasks ── */}
+                {/* ── Tasks ── grouped by status, breathing-room cards ── */}
                 {tab === "Tasks" && (
                   hhTasks.length === 0 ? (
-                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
+                    <div className="grid place-items-center gap-1.5 rounded-xl border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
                       <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
                       <p className="text-[13px] text-[var(--os-ink-muted)]">No tasks for {h.name}. Run a skill from the header to queue one.</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
-                      {hhTasks.map(t => {
-                        const skill = skillById(t.skillId);
-                        const verb = verbOf(t);
+                    <div className="space-y-6">
+                      {TASK_STATUS_ORDER.map(status => {
+                        const group = hhTasks.filter(t => t.status === status);
+                        if (group.length === 0) return null;
+                        const meta = taskStatusMeta[status];
                         return (
-                          <div key={t.id} className="relative flex h-11 items-center px-3.5 transition-colors hover:bg-[var(--os-hover)]">
-                            <button
-                              onClick={() => setTaskOpen(t.id)}
-                              aria-label={`Open ${t.title}`}
-                              className="absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
-                            />
-                            <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
-                              {skill && <SkillPetal category={skill.category} size={15} />}
-                              <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
-                              {t.flagged && <BookmarkFlag size={13} />}
-                              <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
-                              {verb && (
-                                <button
-                                  onClick={() => onTaskVerb(t, verb)}
-                                  className="pointer-events-auto h-6 shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 text-[11.5px] font-medium text-[var(--os-ink)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
-                                >
-                                  {verb}
-                                </button>
-                              )}
+                          <section key={status}>
+                            <div className="mb-2.5 flex items-center gap-2 px-0.5">
+                              <span className={cn("size-2 shrink-0 rounded-full", meta.dot)} />
+                              <span className="text-[12.5px] font-medium text-[var(--os-ink)]">{meta.label}</span>
+                              <span className="text-[12px] tabular-nums text-[var(--os-ink-subtle)]">{group.length}</span>
                             </div>
-                          </div>
+                            <div className="space-y-2.5">
+                              {group.map(t => {
+                                const skill = skillById(t.skillId);
+                                const verb = verbOf(t);
+                                return (
+                                  <div
+                                    key={t.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => setTaskOpen(t.id)}
+                                    onKeyDown={ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setTaskOpen(t.id); } }}
+                                    className={cn("group cursor-pointer rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-3.5 transition-all hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(17,17,26,0.05)]", FOCUS)}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      {skill && (
+                                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--os-bg-subtle)]">
+                                          <SkillPetal category={skill.category} size={16} />
+                                        </span>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-start gap-2">
+                                          <span className="min-w-0 flex-1 text-[13.5px] font-medium leading-snug text-[var(--os-ink)]">{t.title}</span>
+                                          {t.flagged && <BookmarkFlag size={13} />}
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--os-ink-muted)]">
+                                          {skill && <span>{skill.name}</span>}
+                                          {t.deadline && (<><span className="text-[var(--os-border-strong)]">·</span><DeadlineChip iso={t.deadline} /></>)}
+                                          {t.estimatedMin > 0 && (<><span className="text-[var(--os-border-strong)]">·</span><span className="tabular-nums">~{t.estimatedMin} min</span></>)}
+                                        </div>
+                                      </div>
+                                      {verb && (
+                                        <button
+                                          onClick={ev => { ev.stopPropagation(); onTaskVerb(t, verb); }}
+                                          className={cn("h-7 shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]", FOCUS)}
+                                        >
+                                          {verb}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </section>
                         );
                       })}
                     </div>
                   )
                 )}
 
-                {/* ── Billing ── */}
+                {/* ── Billing ── mirrors the Billing page invoice drawer ── */}
                 {tab === "Billing" && (
-                  <div className="space-y-7">
-                    {/* invoice summary — all from invoiceOf */}
-                    <section>
-                      <div className="mb-2.5 flex items-center justify-between">
-                        <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Invoice</h3>
-                        <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
-                          <span className={cn("size-1.5 rounded-full", invoiceStatusMeta[invoice.status].dot)} />
-                          {invoiceStatusMeta[invoice.status].label}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 divide-x divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
-                        {([["Invoiced", invoice.invoiced], ["Collected", invoice.collected], ["Balance", invoice.balance]] as const).map(([label, n]) => (
-                          <div key={label} className="px-3.5 py-3">
-                            <div className="os-label">{label}</div>
-                            <div className="mt-1 text-[15px] font-semibold tabular-nums text-[var(--os-ink)]">{money(n)}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[12px] text-[var(--os-ink-muted)]">
-                        <span className="tabular-nums">{invoice.number}</span>
-                        <span>Issued {invoice.issued}</span>
-                        <span>{invoice.due}</span>
-                        <span>{invoice.serviceTier} tier</span>
-                      </div>
-                    </section>
+                  <div className="mx-auto max-w-[560px] space-y-5">
+                    {/* hero — balance + status (same idiom as the Billing drawer) */}
+                    <div>
+                      <div className="text-[12px] text-[var(--os-ink-muted)]">{invoice.status === "paid" ? "Paid in full" : invoice.status === "overdue" ? "Balance overdue" : "Balance due"}</div>
+                      <div className={cn("os-display mt-1 text-[30px] font-semibold leading-none tabular-nums", invoice.status === "overdue" && "text-[var(--os-danger)]")}>{money(invoice.status === "paid" ? invoice.invoiced : invoice.balance)}</div>
+                      <span className={cn("mt-2.5 inline-flex items-center gap-1.5 text-[12px]", invoiceStatusMeta[invoice.status].accent)}>
+                        <span className={cn("size-1.5 shrink-0 rounded-full", invoiceStatusMeta[invoice.status].dot)} /> {invoiceStatusMeta[invoice.status].label}
+                      </span>
+                    </div>
+
+                    {/* breakdown box (same as drawer) */}
+                    <div className="divide-y divide-[var(--os-border)] overflow-hidden rounded-lg border border-[var(--os-border)]">
+                      {([["Invoiced", invoice.invoiced, false], ["Collected", invoice.collected, false], ["Balance", invoice.balance, true]] as const).map(([label, val, bold]) => (
+                        <div key={label} className="flex items-center justify-between px-3.5 py-2.5">
+                          <span className="text-[12px] text-[var(--os-ink-muted)]">{label}</span>
+                          <span className={cn("text-[13px] tabular-nums", bold ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>{money(val)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-0.5 text-[12px] text-[var(--os-ink-muted)]">
+                      <span className="tabular-nums">{invoice.number}</span>
+                      <span>Issued {invoice.issued}</span>
+                      <span>{invoice.due}</span>
+                      <span>{invoice.serviceTier} tier</span>
+                    </div>
 
                     {(invoice.blockedByDocs || invoice.chaseTaskId) && (
-                      <section className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {invoice.chaseTaskId && (
-                          <Link
-                            href={`/os/tasks?task=${invoice.chaseTaskId}`}
-                            className={cn("flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
-                          >
+                          <Link href={`/os/tasks?task=${invoice.chaseTaskId}`} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>
                             <PetalMark className="size-3.5" /> Chase with Petal
                           </Link>
                         )}
                         {invoice.blockedByDocs && (
-                          <button
-                            onClick={() => setTab("Documents")}
-                            className={cn("inline-flex h-7 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100", FOCUS)}
-                          >
+                          <button onClick={() => setTab("Documents")} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100", FOCUS)}>
                             Fee blocked by missing docs <Icon icon={I.chevronRight} size={11} />
                           </button>
                         )}
-                      </section>
+                      </div>
                     )}
 
-                    {/* payment method (prior idiom) */}
-                    <section>
-                      <div className="mb-2.5 flex items-center justify-between">
-                        <h3 className="text-[14px] font-semibold text-[var(--os-ink)]">Payment method</h3>
-                        <button className={cn("grid size-6 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}><Icon icon={I.plus} size={15} /></button>
-                      </div>
+                    {/* payment method (drawer idiom) */}
+                    <div>
+                      <div className="os-label mb-1.5">Payment method</div>
                       <div className="flex items-center gap-3 rounded-lg border border-[var(--os-border)] px-3.5 py-3">
                         <span className="grid h-6 w-9 shrink-0 place-items-center rounded bg-[var(--os-ink)] text-[8px] font-bold tracking-wide text-[var(--os-primary-fg)]">VISA</span>
                         <span className="text-[13px] tabular-nums text-[var(--os-ink)]">•••• {String(1000 + (h.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 9000))}</span>
                         <span className="rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)]">Default</span>
                         <span className="ml-auto text-[12px] text-[var(--os-ink-subtle)]">On file for deposits</span>
                       </div>
-                    </section>
+                    </div>
                   </div>
                 )}
 
                 {/* ── Positions ── */}
                 {tab === "Positions" && (
                   hhPositions.length === 0 ? (
-                    <div className="grid place-items-center gap-1.5 rounded-lg border border-dashed border-[var(--os-border-strong)] px-4 py-10 text-center">
-                      <PetalMark className="size-4 text-[var(--os-ink-subtle)]" />
-                      <p className="text-[13px] text-[var(--os-ink-muted)]">No documented positions for {h.name}. Positions land here as returns are prepared.</p>
-                    </div>
+                    <p className="py-8 text-center text-[13px] text-[var(--os-ink-muted)]">No documented positions for {h.name}. Positions land here as returns are prepared.</p>
                   ) : (
-                    <div className="space-y-2.5">
-                      {hhPositions.map(p => {
-                        const eng = engagementById(p.engagementId);
-                        return (
-                          <div key={p.id} className="rounded-lg border border-[var(--os-border)] p-3.5">
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                              {eng && <FormChip form={eng.form} />}
-                              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--os-ink)]">{p.issue}</span>
-                              {p.status === "open" ? (
-                                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
-                                  <span className="size-1.5 rounded-full bg-amber-500" /> Open
-                                </span>
-                              ) : (
-                                <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                                  <span className="size-1.5 rounded-full bg-emerald-500" /> Resolved by {p.resolvedBy}{p.resolvedOn ? ` · ${fmtDate(p.resolvedOn)}` : ""}
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--os-ink-muted)]">
-                              <span className="inline-flex items-center rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] font-medium">{p.authorityLevel}</span>
-                              <span className="tabular-nums">Confidence {Math.round(p.confidence * 100)}%</span>
-                            </div>
-                            <div className="mt-2.5">
-                              <div className="os-label mb-1">Documentation</div>
-                              <ul className="space-y-0.5">
+                    <div className="mx-auto max-w-[760px]">
+                      <SectionHead title="Documented positions" count={hhPositions.length} />
+                      <div className="space-y-5">
+                        {hhPositions.map((p, idx) => {
+                          const eng = engagementById(p.engagementId);
+                          return (
+                            <div key={p.id} className={cn("pt-4", idx > 0 && "border-t border-[var(--os-border)]")}>
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                {eng && <FormChip form={eng.form} />}
+                                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--os-ink)]">{p.issue}</span>
+                                {p.status === "open" ? (
+                                  <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-[var(--os-ink-muted)]"><span className="size-1.5 rounded-full bg-amber-500" /> Open</span>
+                                ) : (
+                                  <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]"><span className="size-1.5 rounded-full bg-emerald-500" /> Resolved by {p.resolvedBy}{p.resolvedOn ? ` · ${fmtDate(p.resolvedOn)}` : ""}</span>
+                                )}
+                              </div>
+                              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--os-ink-muted)]">
+                                <span className="inline-flex items-center rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[11px] font-medium">{p.authorityLevel}</span>
+                                <span className="tabular-nums">Confidence {Math.round(p.confidence * 100)}%</span>
+                              </div>
+                              <ul className="mt-2 space-y-0.5">
                                 {p.documentation.map((d, i) => (
-                                  <li key={i} className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink)]">
+                                  <li key={i} className="flex items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
                                     <Icon icon={I.file} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" /> {d}
                                   </li>
                                 ))}
                               </ul>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )
                 )}
@@ -857,10 +1148,10 @@ function ClientRecordInner() {
                     : s === "pay_and_sign" ? { label: "Out for signature", dot: "bg-amber-500" }
                     : { label: "Not yet generated", dot: "bg-[var(--os-border-strong)]" };
                   return (
-                    <div className="space-y-4">
-                      {/* firm-level credentials */}
-                      <div className="rounded-lg border border-[var(--os-border)] p-3.5">
-                        <div className="os-label mb-2">Preparer & authorizations</div>
+                    <div className="mx-auto max-w-[760px] space-y-8">
+                      {/* firm-level credentials — borderless rows */}
+                      <section>
+                        <SectionHead title="Preparer & authorizations" />
                         <div className="divide-y divide-[var(--os-border)]">
                           {([
                             ["ERO / signing preparer", `${FIRM_PROFILE.owner.name}, ${FIRM_PROFILE.owner.credential}`, true],
@@ -870,7 +1161,7 @@ function ClientRecordInner() {
                             ["Form 8821 (transcript access)", h.has8821 ? "On file — transcripts monitored" : "Not on file", h.has8821],
                             ["WISP (data security plan)", "On file", true],
                           ] as const).map(([label, value, ok]) => (
-                            <div key={label} className="flex items-center gap-3 py-2 text-[13px]">
+                            <div key={label} className="flex items-center gap-3 py-2.5 text-[13px]">
                               <span className="min-w-0 flex-1 text-[var(--os-ink-muted)]">{label}</span>
                               <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-[var(--os-ink)]">
                                 <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
@@ -879,60 +1170,56 @@ function ClientRecordInner() {
                             </div>
                           ))}
                         </div>
-                      </div>
+                      </section>
 
-                      {/* per-engagement e-file compliance */}
-                      <div>
-                        <div className="os-label mb-2 px-0.5">E-file authorization by return</div>
-                        <div className="overflow-hidden rounded-lg border border-[var(--os-border)]">
-                          {engs.map((e, i) => {
+                      {/* per-engagement e-file compliance — airy rows */}
+                      <section>
+                        <SectionHead title="E-file authorization by return" />
+                        <div className="space-y-0.5">
+                          {engs.map(e => {
                             const auth = authStatus(e.stage);
                             const ef = efileStatus(e.stage);
                             const ent = entityById(e.entityId);
                             return (
-                              <div key={e.id} className={cn("flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3.5 py-3", i > 0 && "border-t border-[var(--os-border)]")}>
+                              <div key={e.id} className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg px-2 py-2.5">
                                 <div className="flex min-w-0 flex-[2] items-center gap-2">
                                   <FormChip form={e.form} />
                                   <span className="min-w-0 truncate text-[13px] text-[var(--os-ink)]">{ent?.name}</span>
                                   <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
                                 </div>
                                 <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                                  <span className={cn("size-1.5 shrink-0 rounded-full", auth.dot)} />
-                                  <span className="truncate">8879 · {auth.label}</span>
+                                  <span className={cn("size-1.5 shrink-0 rounded-full", auth.dot)} /> <span className="truncate">8879 · {auth.label}</span>
                                 </div>
                                 <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                                  <span className={cn("size-1.5 shrink-0 rounded-full", ef.dot)} />
-                                  <span className="truncate">E-file · {ef.label}</span>
+                                  <span className={cn("size-1.5 shrink-0 rounded-full", ef.dot)} /> <span className="truncate">E-file · {ef.label}</span>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
                         <p className="mt-2 flex items-start gap-1.5 px-0.5 text-[12px] text-[var(--os-ink-subtle)]">
-                          <PetalMark className="mt-0.5 size-3 shrink-0" />
-                          Petal never transmits a return until its 8879 is signed and you've approved it — every authorization is logged in the activity record.
+                          <PetalMark className="mt-0.5 size-3 shrink-0" /> Petal never transmits a return until its 8879 is signed and you&apos;ve approved it.
                         </p>
-                      </div>
+                      </section>
                     </div>
                   );
                 })()}
 
                 {/* ── Notes ── */}
-                {tab === "Notes" && (
-                  <textarea
-                    placeholder={`Private notes about ${h.name}…`}
-                    aria-label={`Private notes about ${h.name}`}
-                    className={cn("h-full min-h-[220px] w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]", FOCUS)}
-                  />
-                )}
               </div>
             )}
           </div>
 
-          {/* Right rail: @Petal chat + Details (Assembly composition, preserved) */}
-          <aside className="hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex">
+          {/* Right rail: Ask Petal (assistant) · Details (properties) · Notes.
+              Also a drop target — drag a document here and Petal reviews it. */}
+          <aside
+            onDragOver={e => { if (e.dataTransfer.types.includes("text/petal-doc")) { e.preventDefault(); setPetalDropOver(true); } }}
+            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setPetalDropOver(false); }}
+            onDrop={e => { e.preventDefault(); const name = e.dataTransfer.getData("text/petal-doc"); setPetalDropOver(false); if (name) askPetalAboutDoc(name); }}
+            className="relative hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex"
+          >
             <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-3">
-              {(["@Petal", "Details"] as const).map(p => (
+              {(["Ask Petal", "Details", "Notes"] as const).map(p => (
                 <button
                   key={p}
                   onClick={() => setPanel(p)}
@@ -944,119 +1231,183 @@ function ClientRecordInner() {
               ))}
             </div>
 
-            {panel === "@Petal" && (
+            {panel === "Ask Petal" && (
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-                  {/* the question */}
-                  <div className="flex gap-2.5">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-semibold text-[var(--os-ink-muted)]">AV</span>
-                    <div className="min-w-0">
-                      <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Antonio</span><span className="text-[11px] text-[var(--os-ink-subtle)]">9:32 AM</span></div>
-                      <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-accent)]">@Petal</span> where does {h.name} stand?</p>
-                    </div>
-                  </div>
-                  {/* the answer — composed from the same derivations as the header strip */}
-                  <div className="flex gap-2.5">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-ink)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Petal</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
-                      <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
-                      {openTasks.length > 0 && (
-                        <button
-                          onClick={() => setTab("Tasks")}
-                          className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] text-[var(--os-accent)] hover:underline", FOCUS)}
-                        >
-                          Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
-                        </button>
-                      )}
-                    </div>
+                <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+                  {/* Petal's opening read — plain assistant prose */}
+                  <div>
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
+                    <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
+                    {openTasks.length > 0 && (
+                      <button onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-accent)] hover:underline", FOCUS)}>
+                        Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
+                      </button>
+                    )}
                   </div>
 
-                  {/* live conversation — typed questions matched against the demo bank */}
+                  {/* conversation */}
                   {chat.messages.map(m =>
                     m.role === "user" ? (
-                      <div key={m.id} className="flex gap-2.5">
-                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-semibold text-[var(--os-ink-muted)]">AV</span>
-                        <div className="min-w-0">
-                          <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Antonio</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
-                          <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]"><span className="font-medium text-[var(--os-accent)]">@Petal</span> {m.text}</p>
-                        </div>
+                      <div key={m.id} className="flex justify-end">
+                        <div className="max-w-[85%] rounded-2xl bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">{m.text}</div>
                       </div>
                     ) : (
-                      <div key={m.id} className="flex gap-2.5">
-                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-ink)] text-[var(--os-primary-fg)]"><PetalMark className="size-3.5" /></span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-1.5"><span className="text-[13px] font-medium text-[var(--os-ink)]">Petal</span><span className="text-[11px] text-[var(--os-ink-subtle)]">just now</span></div>
-                          <div className="mt-1">
-                            <PetalAnswerView
-                              answer={m.answer}
-                              thinking={m.thinking}
-                              compact
-                              stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
-                              onSuggest={q => sendChat(q)}
-                            />
-                          </div>
-                        </div>
+                      <div key={m.id}>
+                        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
+                        <PetalAnswerView
+                          answer={m.answer}
+                          thinking={m.thinking}
+                          compact
+                          stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
+                          onSuggest={q => sendChat(q)}
+                        />
                       </div>
                     ),
                   )}
+
+                  {/* suggested prompts — pill chips before any conversation */}
+                  {chat.messages.length === 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {[`What's blocking ${first(h.name)}?`, "What's next?", "Summarize open items"].map(s => (
+                        <button key={s} onClick={() => sendChat(s)} className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-1.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+                          <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" /> {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div ref={chatBottomRef} />
                 </div>
-                {/* composer */}
-                <div className="border-t border-[var(--os-border)] p-3">
-                  <div className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-2 transition-colors focus-within:border-[var(--os-border-strong)]">
-                    <input
+
+                {/* composer — clean rounded box (ChatGPT idiom) */}
+                <div className="px-3 pb-3">
+                  <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-colors focus-within:border-[var(--os-border-strong)]">
+                    <textarea
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") sendChat(); }}
-                      placeholder={`Ask Petal about ${h.name}`}
-                      className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                      rows={1}
+                      placeholder="Ask Petal…"
+                      className="max-h-28 w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
                     />
-                    <div className="mt-2 flex items-center gap-0.5">
-                      <button className={cn("grid size-6 place-items-center rounded text-[14px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)}>@</button>
-                      <button className={cn("grid size-6 place-items-center rounded text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={14} /></button>
+                    <div className="mt-1 flex items-center gap-1">
+                      <button className={cn("grid size-7 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={15} /></button>
                       <button
                         onClick={() => sendChat()}
                         disabled={!chatInput.trim()}
-                        className={cn("ml-auto grid size-6 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)] disabled:opacity-30", FOCUS)}
+                        className={cn("ml-auto grid size-7 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-opacity disabled:opacity-25", FOCUS)}
                         aria-label="Send"
                       >
-                        <Icon icon={I.send} size={13} />
+                        <Icon icon={I.send} size={14} />
                       </button>
                     </div>
                   </div>
+                  <p className="mt-1.5 text-center text-[10.5px] text-[var(--os-ink-subtle)]">Petal can make mistakes. Verify important details.</p>
                 </div>
               </div>
             )}
 
             {panel === "Details" && (
-              <div className="flex-1 overflow-y-auto pb-4">
-                <div className="divide-y divide-[var(--os-border)] border-b border-[var(--os-border)]">
-                  <Attr label="Type">{kindLabel[h.kind]}</Attr>
-                  <Attr label="Stage"><StageTag stage={stage} /></Attr>
-                  <Attr label="Service">{h.serviceTier}</Attr>
-                  <Attr label="Entities"><span className="tabular-nums">{ents.length}</span></Attr>
-                  <Attr label="Returns"><span className="tabular-nums">{engs.length}</span></Attr>
-                  <Attr label="Docs"><span className="tabular-nums">{docs.label}</span></Attr>
-                  <Attr label="Total fee"><span className="tabular-nums">{money(fee)}</span></Attr>
-                  <Attr label="Balance"><span className="tabular-nums">{money(invoice.balance)}</span></Attr>
-                  <Attr label="Health"><span className={healthMeta[health.health].text}>{healthMeta[health.health].label}</span></Attr>
-                  <Attr label="8821 on file">{h.has8821 ? "Yes — transcripts watched" : "No"}</Attr>
-                  <Attr label="Client since"><span className="tabular-nums">{h.since}</span></Attr>
-                </div>
+              <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--os-bg-subtle)] p-3">
+                {/* Properties */}
+                <LCard title="Properties">
+                  <div className="space-y-0.5">
+                    <LRow label="Status"><StageTag stage={stage} /></LRow>
+                    <LRow label="Owner"><AssigneePicker householdId={h.id} className="-ml-1" /></LRow>
+                    <LRow label="Type">{kindLabel[h.kind]}</LRow>
+                    <LRow label="Service">{h.serviceTier}</LRow>
+                    <LRow label="Since"><span className="tabular-nums">{h.since}</span></LRow>
+                    <LRow label="8821">{h.has8821 ? "On file" : "Not on file"}</LRow>
+                  </div>
+                </LCard>
 
-                <div className="os-label px-3 pb-2 pt-4">People</div>
-                <div className="divide-y divide-[var(--os-border)] border-y border-[var(--os-border)]">
-                  {ppl.map(p => (
-                    <div key={p.id} className="flex items-center gap-2.5 px-3 py-2">
-                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] text-[var(--os-ink)]">{p.name}</div>
-                        <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
+                {/* Progress — segmented Documents / Returns with stat rows (Linear) */}
+                <LCard title="Progress">
+                  <Segmented
+                    value={progressTab}
+                    onChange={v => setProgressTab(v as "Documents" | "Returns")}
+                    options={[{ value: "Documents", label: "Documents" }, { value: "Returns", label: "Returns" }]}
+                    className="mb-3"
+                  />
+                  {progressTab === "Documents" ? (
+                    <>
+                      <div className="mb-1 flex items-center gap-2 px-0.5">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
+                          <div className="h-full rounded-full bg-[var(--os-ink-muted)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
+                        </div>
+                        <span className="shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">{docs.label}</span>
                       </div>
-                      <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
-                    </div>
-                  ))}
+                      <div className="mt-1.5 border-t border-[var(--os-border)] pt-1">
+                        <StatRow dot="bg-emerald-500" label="Received" value={docs.have} />
+                        {docs.needsReview > 0 && <StatRow dot="bg-amber-500" label="Needs review" value={docs.needsReview} />}
+                        <StatRow dot="bg-[var(--os-border-strong)]" label="Requested" value={docs.requested} />
+                      </div>
+                    </>
+                  ) : (() => {
+                    const filed = engs.filter(e => e.stage === "e_filed" || e.stage === "accepted").length;
+                    const inProg = engs.length - filed;
+                    return (
+                      <>
+                        <div className="mb-1 flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--os-selected)]">
+                          <div className="h-full bg-emerald-500" style={{ width: `${engs.length ? (filed / engs.length) * 100 : 0}%` }} />
+                          <div className="h-full bg-blue-500" style={{ width: `${engs.length ? (inProg / engs.length) * 100 : 0}%` }} />
+                        </div>
+                        <div className="mt-1.5 border-t border-[var(--os-border)] pt-1">
+                          <StatRow dot="bg-emerald-500" label="Filed" value={filed} />
+                          <StatRow dot="bg-blue-500" label="In progress" value={inProg} />
+                        </div>
+                      </>
+                    );
+                  })()}
+                </LCard>
+
+                {/* Entities */}
+                <LCard title="Entities" action={<span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{ents.length}</span>}>
+                  <div className="space-y-0.5">
+                    {ents.map(e => (
+                      <div key={e.id} className="flex items-center gap-2.5 px-0.5 py-1.5">
+                        <FormChip form={e.form} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13px] text-[var(--os-ink)]">{e.name}</div>
+                          <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{e.type}{e.ein ? ` · EIN ${e.ein}` : ""}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </LCard>
+
+                {/* People */}
+                <LCard title="People" action={<span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{ppl.length}</span>}>
+                  <div className="space-y-0.5">
+                    {ppl.map(p => (
+                      <div key={p.id} className="flex items-center gap-2.5 px-0.5 py-1.5">
+                        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(p.name)}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13px] text-[var(--os-ink)]">{p.name}</div>
+                          <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
+                        </div>
+                        <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                </LCard>
+              </div>
+            )}
+
+            {panel === "Notes" && (
+              <div className="flex min-h-0 flex-1 flex-col p-3">
+                <textarea
+                  placeholder={`Private notes about ${h.name}…`}
+                  aria-label={`Private notes about ${h.name}`}
+                  className={cn("min-h-0 flex-1 w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]", FOCUS)}
+                />
+              </div>
+            )}
+
+            {/* drop overlay */}
+            {petalDropOver && (
+              <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center bg-[var(--os-brand)]/[0.06] ring-2 ring-inset ring-[var(--os-brand)]">
+                <div className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--os-brand)] bg-[var(--os-surface)] px-3 py-2 text-[12.5px] font-medium text-[var(--os-brand)] shadow-sm">
+                  <PetalMark className="size-3.5" /> Drop to ask Petal
                 </div>
               </div>
             )}

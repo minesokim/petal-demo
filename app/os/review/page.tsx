@@ -57,17 +57,68 @@ function ToggleRow({ on, onClick, icon, children }: { on: boolean; onClick: () =
   );
 }
 
-/** Drafted artifact — read-only (editing happens elsewhere). */
-function DraftCard({ task }: { task: Task }) {
+/** Drafted artifact — editable in place (Edit in the header + click-to-edit body),
+ *  mirroring the regular task view. `value`/`onChange` are owned by the parent so the
+ *  edited text survives Ask-Petal redrafts. */
+function DraftCard({ task, value, onChange }: { task: Task; value: string; onChange: (v: string) => void }) {
   const skill = skillById(task.skillId);
+  const [editing, setEditing] = useState(false);
+  const [editLogged, setEditLogged] = useState(false);
+  const preEdit = useRef(value);
+
+  const startEdit = () => { preEdit.current = value; setEditing(true); };
+  const save = () => { setEditing(false); setEditLogged(true); };
+  const cancel = () => { onChange(preEdit.current); setEditing(false); };
+
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
-      <div className="flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
-        <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
-        <span className="text-[12px] font-medium text-[var(--os-ink-muted)]">Petal drafted</span>
-        {skill && <span className="text-[11px] text-[var(--os-ink-subtle)]">· {skill.name}</span>}
+    <div>
+      <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+        <div className="flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
+          <PetalMark className="size-3.5 shrink-0 text-[var(--os-ink-muted)]" />
+          <span className="text-[12px] font-medium text-[var(--os-ink-muted)]">Petal drafted</span>
+          {skill && <span className="text-[11px] text-[var(--os-ink-subtle)]">· {skill.name}</span>}
+          {!editing && (
+            <button onClick={startEdit} className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]">
+              <Icon icon={I.edit} size={12} /> Edit
+            </button>
+          )}
+        </div>
+        {editing ? (
+          <div className="p-2.5">
+            <textarea
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              rows={6}
+              autoFocus
+              aria-label="Edit draft"
+              className="w-full resize-y rounded-md border border-[var(--os-border-strong)] bg-white p-2.5 text-[13.5px] leading-relaxed text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+            />
+            <div className="mt-2 flex items-center gap-1.5">
+              <button onClick={save} className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]">
+                <Icon icon={I.check} size={14} /> Save edit
+              </button>
+              <button onClick={cancel} className="flex h-7 items-center rounded-md px-2.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={startEdit}
+            onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startEdit(); } }}
+            title="Click to edit"
+            className="group/draft relative cursor-text px-4 py-3.5 transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
+          >
+            <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-[var(--os-ink)]">{value}</p>
+            <Icon icon={I.edit} size={13} className="pointer-events-none absolute right-3 top-3 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover/draft:opacity-100" />
+          </div>
+        )}
       </div>
-      <p className="whitespace-pre-wrap px-4 py-3.5 text-[13.5px] leading-relaxed text-[var(--os-ink)]">{task.draftText}</p>
+      {editLogged && !editing && (
+        <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Edit logged — Petal will learn from this edit.</p>
+      )}
     </div>
   );
 }
@@ -171,7 +222,7 @@ function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen
         </p>
       )}
 
-      {(task.draftText || redrafted) && <DraftCard task={{ ...task, draftText: draft }} />}
+      {(task.draftText || redrafted) && <DraftCard task={task} value={draft} onChange={setDraft} />}
 
       {!hasDecision && !task.draftText && !redrafted && (
         <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4 text-[13px] leading-relaxed text-[var(--os-ink)]">{task.why}</div>
