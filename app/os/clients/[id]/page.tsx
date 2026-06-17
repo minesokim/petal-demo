@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/petal-logo";
 import { ClientMemory } from "@/components/os/client-memory";
+import { memoryStore, useMemory } from "@/lib/memory-store";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
@@ -47,7 +48,7 @@ const TABS = ["Overview", "Memory", "Activity", "Returns", "Documents", "Tasks",
 type Tab = (typeof TABS)[number];
 // 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
 // Notes is NOT a content tab - it lives in the right rail next to Ask Petal / Details.
-const PRIMARY_TABS: Tab[] = ["Overview", "Returns", "Documents", "Tasks", "Messages"];
+const PRIMARY_TABS: Tab[] = ["Overview", "Memory", "Returns", "Documents", "Tasks", "Messages"];
 const MORE_TABS: Tab[] = ["Activity", "Billing", "Positions", "Compliance"];
 const tabFromParam = (p: string | null): Tab =>
   TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Overview";
@@ -263,6 +264,8 @@ function ClientRecordInner() {
     return p === "Notes" || p === "Details" ? p : "Ask Petal";
   });
   useAssignVersion(); // reflect reassignments in the returns list avatars
+  useMemory(); // re-render Catch me up / memory affordances as memories change
+  const [savedMem, setSavedMem] = useState<Set<number>>(() => new Set());
   const router = useRouter();
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -627,13 +630,34 @@ function ClientRecordInner() {
                   const returnsPct = engs.length ? Math.round((filed / engs.length) * 100) : 0;
                   return (
                   <div className="mx-auto max-w-[760px] space-y-4">
-                    {/* Catch me up */}
+                    {/* Catch me up — prose + the memories Petal is drawing on */}
+                    {(() => {
+                      const mem = memoryStore.ofHousehold(h.id);
+                      return (
                     <Card>
                       <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]">
                         <PetalMark className="size-3" /> Catch me up
                       </div>
                       <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{h.catchUp}</p>
+                      {mem.length > 0 && (
+                        <div className="mt-3 border-t border-[var(--os-border)] pt-2.5">
+                          <div className="os-label mb-1.5">Petal remembers</div>
+                          <ul className="space-y-1">
+                            {mem.slice(0, 3).map(x => (
+                              <li key={x.id} className="flex items-start gap-2 text-[12.5px] leading-snug">
+                                <span className="mt-[7px] size-1 shrink-0 rounded-full bg-[var(--os-ink-subtle)]" />
+                                <span className="text-[var(--os-ink)]">{x.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <button onClick={() => setTab("Memory")} className={cn("mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
+                            View all {mem.length} memories <Icon icon={I.chevronRight} size={11} />
+                          </button>
+                        </div>
+                      )}
                     </Card>
+                      );
+                    })()}
 
                     {/* Progress - segmented bar + legend stat rows */}
                     <Card title="Progress">
@@ -1236,7 +1260,7 @@ function ClientRecordInner() {
                   </div>
 
                   {/* conversation */}
-                  {chat.messages.map(m =>
+                  {chat.messages.map((m, mi) =>
                     m.role === "user" ? (
                       <div key={m.id} className="flex flex-col items-end gap-1.5">
                         {m.attachments && m.attachments.length > 0 && (
@@ -1264,6 +1288,23 @@ function ClientRecordInner() {
                           stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
                           onSuggest={q => sendChat(q)}
                         />
+                        {!m.thinking && (() => {
+                          const prev = chat.messages[mi - 1];
+                          const q = prev && prev.role === "user" ? prev.text : "";
+                          const saved = savedMem.has(m.id);
+                          if (!q) return null;
+                          return (
+                            <button
+                              onClick={() => { if (saved) return; memoryStore.add(h.id, q, "flag", "From Ask Petal · just now"); setSavedMem(s => new Set(s).add(m.id)); }}
+                              disabled={saved}
+                              className={cn("mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium transition-colors", saved ? "text-[var(--os-ink-muted)]" : "text-[var(--os-ink-subtle)] hover:text-[var(--os-ink)]", FOCUS)}
+                            >
+                              {saved
+                                ? <><Icon icon={I.check} size={12} className="text-[var(--os-primary)]" /> Saved to {first(h.name)}&apos;s memory</>
+                                : <><PetalMark className="size-3" /> Save to memory</>}
+                            </button>
+                          );
+                        })()}
                       </div>
                     ),
                   )}

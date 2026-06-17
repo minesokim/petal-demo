@@ -88,10 +88,10 @@ export const memoryStore = {
       .sort((a, b) => a.name.localeCompare(b.name));
   },
 
-  add(householdId: string, text: string, kind: MemoryKind = "fact") {
+  add(householdId: string, text: string, kind: MemoryKind = "fact", source = "Added by you · just now") {
     const t = text.trim();
     if (!t) return;
-    memories.unshift({ id: `mem-new-${++seq}`, householdId, text: t, source: "Added by you · just now", kind, pinned: false, at: "" });
+    memories.unshift({ id: `mem-new-${++seq}`, householdId, text: t, source, kind, pinned: false, at: "" });
     emit();
   },
   remove(id: string) { const i = memories.findIndex(x => x.id === id); if (i >= 0) { memories.splice(i, 1); emit(); } },
