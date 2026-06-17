@@ -43,7 +43,7 @@ function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark
     <div className="mb-3 flex items-center gap-2">
       {mark && <PetalMark className="size-4 text-[var(--os-ink-muted)]" />}
       <h3 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{title}</h3>
-      {badge != null && <span className="rounded bg-emerald-50 px-1.5 text-[11px] font-medium tabular-nums text-emerald-600">{badge}</span>}
+      {badge != null && <span className="rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{badge}</span>}
       {href && (
         <Link href={href} className={cn("ml-auto rounded text-[12px] text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>
           {hrefLabel ?? "View all"}

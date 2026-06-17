@@ -94,7 +94,7 @@ function ToggleRow({
 
 /* ── one task row: SkillPetal · title · client · StatusPill · DeadlineChip · fee · flag · ONE verb ── */
 function Row({
-  t, narrow, active, showStatus, onOpen, onVerb, onHand,
+  t, narrow, active, showStatus, onOpen, onVerb, onHand, picked, anyPicked, onPick,
 }: {
   t: Task;
   narrow: boolean;
@@ -103,12 +103,15 @@ function Row({
   onOpen: () => void;
   onVerb: (t: Task, verb: string) => void;
   onHand?: (t: Task) => void;
+  picked?: boolean;
+  anyPicked?: boolean;
+  onPick?: (id: string) => void;
 }) {
   const skill = skillById(t.skillId);
   const verb = verbOf(t);
   const isHumanTodo = t.origin === "human" && t.status === "todo";
   return (
-    <div className={cn("relative flex h-14 items-center px-8 transition-colors", active ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}>
+    <div className={cn("group/row relative flex h-14 items-center px-8 transition-colors", active ? "bg-[var(--os-selected)]" : picked ? "bg-[var(--os-accent-soft)]/50" : "hover:bg-[var(--os-hover)]")}>
       {/* full-row open target (keyboard-focusable) */}
       <button
         onClick={onOpen}
@@ -116,6 +119,20 @@ function Row({
         className="absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
       />
       <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
+        {/* bulk-select checkbox — reveals on hover, stays when anything is picked */}
+        {onPick && (
+          <button
+            onClick={e => { e.stopPropagation(); onPick(t.id); }}
+            aria-label={picked ? "Deselect" : "Select"}
+            className={cn(
+              "pointer-events-auto grid size-[18px] shrink-0 place-items-center rounded-[5px] border transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+              picked ? "border-[var(--os-primary)] bg-[var(--os-primary)] text-[var(--os-primary-fg)] opacity-100" : "border-[var(--os-border-strong)] text-transparent hover:border-[var(--os-ink-subtle)]",
+              !picked && (anyPicked ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"),
+            )}
+          >
+            <Icon icon={I.check} size={12} />
+          </button>
+        )}
         {/* origin glyph: your to-do (pencil) · handed to Petal (mark) · Petal-native (skill) */}
         {t.origin === "human"
           ? t.status === "todo"
@@ -344,6 +361,7 @@ function TasksPageInner() {
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const filtersRef = useRef<HTMLDivElement>(null);
   const { msg, show } = useToast();
 
@@ -422,6 +440,16 @@ function TasksPageInner() {
     demoStore.handToPetal(t.id, `Drafted per your request: "${t.title}". Review below and approve when ready.`);
     show("Handed to Petal - drafting…");
   }
+
+  // ── bulk selection ──
+  const togglePick = (id: string) => setPicked(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const clearPick = () => setPicked(new Set());
+  const pickedTasks = liveTasks.filter(t => picked.has(t.id));
+  const approvable = pickedTasks.filter(t => t.status === "needs_decision" || t.status === "ready_to_approve");
+  const nudgeable = pickedTasks.filter(t => t.status === "waiting_client");
+  const bulkApprove = () => { approvable.forEach(t => demoStore.resolve(t.id)); show(`Approved ${approvable.length}`); clearPick(); };
+  const bulkNudge = () => { show(`Nudged ${nudgeable.length} client${nudgeable.length === 1 ? "" : "s"}`); clearPick(); };
+  const bulkDone = () => { pickedTasks.forEach(t => demoStore.setStatus(t.id, "done")); show(`Marked ${pickedTasks.length} done`); clearPick(); };
 
   return (
     <div className="flex h-full flex-col">
@@ -565,6 +593,9 @@ function TasksPageInner() {
                     onOpen={() => setSelected(t.id)}
                     onVerb={onVerb}
                     onHand={onHand}
+                    picked={picked.has(t.id)}
+                    anyPicked={picked.size > 0}
+                    onPick={togglePick}
                   />
                 ))}
               </div>
@@ -613,6 +644,37 @@ function TasksPageInner() {
       {/* New task modal */}
       <AnimatePresence>
         {newTaskOpen && <NewTaskModal onClose={() => setNewTaskOpen(false)} onToast={show} />}
+      </AnimatePresence>
+
+      {/* bulk selection toolbar */}
+      <AnimatePresence>
+        {picked.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: 10, x: "-50%" }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed bottom-5 left-1/2 z-40 flex items-center gap-1 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 pl-2.5 shadow-[0_12px_40px_-8px_rgba(17,17,26,0.28)]"
+          >
+            <span className="pr-1 text-[12.5px] font-medium text-[var(--os-ink)] tabular-nums">{picked.size} selected</span>
+            <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
+            {approvable.length > 0 && (
+              <button onClick={bulkApprove} className="flex h-7 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]">
+                <Icon icon={I.check} size={13} /> Approve {approvable.length}
+              </button>
+            )}
+            {nudgeable.length > 0 && (
+              <button onClick={bulkNudge} className="flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+                <Icon icon={I.mail} size={13} /> Nudge {nudgeable.length}
+              </button>
+            )}
+            <button onClick={bulkDone} className="flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+              <Icon icon={I.check} size={13} /> Mark done
+            </button>
+            <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
+            <button onClick={clearPick} aria-label="Clear selection" className="grid size-7 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">
+              <Icon icon={I.close} size={15} />
+            </button>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <Toast msg={msg} />
