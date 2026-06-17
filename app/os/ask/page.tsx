@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
 import { Mic } from "lucide-react";
 import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/petal-chat";
@@ -96,9 +97,11 @@ function UserBubble({ text }: { text: string }) {
 function PetalBubble({ msg, isLatest, onSuggest }: { msg: Extract<ChatMsg, { role: "petal" }>; isLatest: boolean; onSuggest: (q: string) => void }) {
   return (
     <div className="flex gap-3">
-      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-bg-subtle)] ring-1 ring-[var(--os-border)]">
-        <PetalMark className="size-4" />
-      </span>
+      <PetalLogo
+        key={msg.thinking ? "load" : "done"}
+        loading={msg.thinking}
+        className="mt-0.5 size-6 shrink-0 text-[var(--os-primary)]"
+      />
       <div className="min-w-0 flex-1 pt-1">
         <PetalAnswerView answer={msg.answer} thinking={msg.thinking} stream={isLatest} onSuggest={onSuggest} />
       </div>
@@ -171,7 +174,7 @@ function AskPetalInner() {
               // Empty state - chat-first starter
               <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-6 pb-6">
                 <div className="flex-1" />
-                <PetalMark className="mb-3 size-6" />
+                <PetalLogo className="mb-3 size-7 text-[var(--os-primary)]" />
                 <h2 className="text-[26px] font-semibold leading-tight os-display text-[var(--os-ink)]">What can I help you with, Antonio?</h2>
 
                 <div className="mt-5 space-y-0.5">

@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -36,9 +37,10 @@ export function usePetalChat(scopeHouseholdId?: string) {
       { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true },
     ]);
     const answer = matchQuestion(q || (attachments?.join(", ") ?? ""), scopeHouseholdId);
+    // hold the premium loading state for a beat (Petal "working"), then answer
     window.setTimeout(() => {
       setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
-    }, 1400);
+    }, 2400);
   }, [scopeHouseholdId]);
 
   const reset = useCallback(() => setMessages([]), []);
@@ -94,15 +96,32 @@ function StreamedParagraph({ text, active, onDone }: { text: string; active: boo
   );
 }
 
+const THINKING_PHRASES = [
+  "Reading the firm's records…",
+  "Checking deadlines and balances…",
+  "Pulling the latest from your tools…",
+  "Drafting your response…",
+];
+
 function Thinking() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setI(x => Math.min(x + 1, THINKING_PHRASES.length - 1)), 780);
+    return () => window.clearInterval(t);
+  }, []);
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
-      <span className="flex gap-0.5">
-        {[0, 1, 2].map(i => (
-          <span key={i} className="size-1 animate-pulse rounded-full bg-[var(--os-ink-subtle)]" style={{ animationDelay: `${i * 160}ms` }} />
-        ))}
-      </span>
-      Reading the firm's records…
+    <span className="relative inline-flex h-[18px] items-center overflow-hidden text-[12px] text-[var(--os-ink-subtle)]">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.28, ease: "easeOut" }}
+        >
+          {THINKING_PHRASES[i]}
+        </motion.span>
+      </AnimatePresence>
     </span>
   );
 }

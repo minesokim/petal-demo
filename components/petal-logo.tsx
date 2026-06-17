@@ -10,6 +10,7 @@ import { motion, useReducedMotion } from "motion/react";
  * <PetalLogo className="size-6" />                 // blooms on mount, spins on hover
  * <PetalLogo className="size-5" bloom={false} />   // static (e.g. inline in text)
  * <PetalLogo className="size-8" spinOnHover={false} />
+ * <PetalLogo className="size-7" loading />         // continuous premium "thinking" loop
  *
  * Honors prefers-reduced-motion automatically (renders static).
  */
@@ -25,16 +26,19 @@ export function PetalLogo({
   className,
   bloom = true,
   spinOnHover = true,
+  loading = false,
   title,
 }: {
   className?: string;
   bloom?: boolean;
   spinOnHover?: boolean;
+  loading?: boolean;
   title?: string;
 }) {
   const reduce = useReducedMotion();
   const animateIn = bloom && !reduce;
   const spin = spinOnHover && !reduce;
+  const loop = loading && !reduce;
 
   return (
     <motion.svg
@@ -45,10 +49,15 @@ export function PetalLogo({
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
       style={{ transformOrigin: "50% 50%" }}
-      initial={animateIn ? "hidden" : false}
-      animate="show"
-      whileHover={spin ? { rotate: 72 } : undefined}
-      transition={{ rotate: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }}
+      // loading → slow continuous turn; otherwise bloom in (and flip on hover)
+      initial={animateIn && !loop ? "hidden" : false}
+      animate={loop ? { rotate: 360 } : "show"}
+      whileHover={spin && !loop ? { rotate: 72 } : undefined}
+      transition={
+        loop
+          ? { rotate: { duration: 6, repeat: Infinity, ease: "linear" } }
+          : { rotate: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+      }
       variants={{ show: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } } }}
     >
       {title ? <title>{title}</title> : null}
@@ -57,11 +66,19 @@ export function PetalLogo({
           key={i}
           d={d}
           style={{ transformBox: "fill-box", transformOrigin: "50% 50%" }}
-          variants={{
-            hidden: { scale: 0, opacity: 0, rotate: -45 },
-            show: { scale: 1, opacity: 1, rotate: 0 },
-          }}
-          transition={{ type: "spring", stiffness: 520, damping: 18 }}
+          {...(loop
+            ? {
+                // premium "breathing bloom" — petals pulse in a staggered wave
+                animate: { scale: [1, 0.4, 1], opacity: [1, 0.3, 1] },
+                transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.14 },
+              }
+            : {
+                variants: {
+                  hidden: { scale: 0, opacity: 0, rotate: -45 },
+                  show: { scale: 1, opacity: 1, rotate: 0 },
+                },
+                transition: { type: "spring", stiffness: 520, damping: 18 },
+              })}
         />
       ))}
     </motion.svg>
