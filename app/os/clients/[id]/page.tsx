@@ -16,6 +16,7 @@ import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { Tip } from "@/components/os/tooltip";
+import { RequestDocsButton } from "@/components/os/request-docs";
 import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
@@ -877,7 +878,7 @@ function ClientRecordInner() {
                   <div className="mx-auto max-w-[760px] space-y-8">
                     {/* upload zone */}
                     <section>
-                      <SectionHead title="Upload documents" />
+                      <SectionHead title="Upload documents" action={<RequestDocsButton householdId={h.id} onToast={show} />} />
                       <FileUploader
                         hint="PDF, PNG, JPG, XLSX or DOCX, up to 50 MB"
                         onDragFileStart={(e, name) => e.dataTransfer.setData("text/petal-doc", name)}

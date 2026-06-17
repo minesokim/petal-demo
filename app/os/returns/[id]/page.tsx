@@ -16,6 +16,7 @@ import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
+import { RequestDocsButton } from "@/components/os/request-docs";
 import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import { AssigneePicker } from "@/components/os/assignee-picker";
 import {
@@ -409,7 +410,7 @@ function ReturnRecordInner() {
             {tab === "Documents" && (
               <div className="mx-auto max-w-[760px] space-y-8">
                 <section>
-                  <SectionHead title="Upload documents" />
+                  <SectionHead title="Upload documents" action={<RequestDocsButton householdId={e.householdId} engagementId={e.id} onToast={show} />} />
                   <FileUploader
                     hint="PDF, PNG, JPG, XLSX or DOCX, up to 50 MB"
                     onDragFileStart={(ev, name) => ev.dataTransfer.setData("text/petal-doc", name)}
