@@ -15,6 +15,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StatusHeading, DeadlineChip, SkillIcon, MemberAvatar, ScopeToggle, Segmented, BookmarkFlag, type Scope } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
+import { RecurringButton } from "@/components/os/recurring";
 import { tasks, households, householdById, skillById, engagementById, engagementsOf, entityById, taskById, firmMembers, isCurrentUser, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
 import { demoStore, useLiveNeedsYou, useAllTasks } from "@/lib/demo-store";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
@@ -458,6 +459,7 @@ function TasksPageInner() {
         <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Tasks</h1>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          <RecurringButton onToast={show} />
           <button
             onClick={() => setNewTaskOpen(true)}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[12.5px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
