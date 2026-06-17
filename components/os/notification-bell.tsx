@@ -1,8 +1,9 @@
 "use client";
 
-// Notification center — the bell in the sidebar. Unread badge, a popover inbox of
-// @mentions / approvals / assignments / syncs; clicking one marks it read and deep-
-// links to the record. Session-only (notifications-store).
+// Notification center — a full-width row at the top of the sidebar shell (its own
+// band, above the nav). Unread badge; clicking flips open a popover inbox of
+// @mentions / approvals / assignments / syncs. The popover is `fixed` (positioned
+// off the row's rect) so the sidebar's overflow doesn't clip it. Session-only.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,20 +24,32 @@ const KIND_GLYPH: Record<NotifKind, typeof I.check> = {
   assignment: I.clients,
 };
 
-export function NotificationBell() {
+export function NotificationRow() {
   const router = useRouter();
   const notifs = useNotifications();
   const unread = notifs.filter(n => !n.read).length;
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  const place = () => {
+    const r = rowRef.current?.getBoundingClientRect();
+    if (r) setCoords({ top: r.top, left: r.right + 6 });
+  };
+  const toggle = () => { if (!open) place(); setOpen(o => !o); };
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onDown = (e: MouseEvent) => {
+      if (rowRef.current?.contains(e.target as Node) || popRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", place);
+    return () => { window.removeEventListener("mousedown", onDown); window.removeEventListener("keydown", onKey); window.removeEventListener("resize", place); };
   }, [open]);
 
   const onClick = (id: string, href?: string) => {
@@ -46,26 +59,33 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={rowRef}
+        onClick={toggle}
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
-        className={cn("relative grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]", FOCUS)}
+        aria-expanded={open}
+        className={cn(
+          "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal transition-colors",
+          open ? "bg-black/[0.07] text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--os-ink)]",
+          FOCUS,
+        )}
       >
-        <Bell className="size-[17px]" strokeWidth={1.6} />
+        <Bell className="size-3.5 shrink-0" strokeWidth={1.6} />
+        <span className="truncate">Notifications</span>
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[var(--os-accent)] px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[var(--os-shell)]">
-            {unread}
-          </span>
+          <span className="ml-auto rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{unread}</span>
         )}
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && coords && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            ref={popRef}
+            initial={{ opacity: 0, x: -4, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -4, scale: 0.98 }}
             transition={{ duration: 0.14, ease: "easeOut" }}
-            className="absolute right-0 top-[calc(100%+6px)] z-40 w-[330px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_12px_40px_-8px_rgba(17,17,26,0.28)]"
+            style={{ top: coords.top, left: coords.left }}
+            className="fixed z-50 w-[330px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_12px_40px_-8px_rgba(17,17,26,0.28)]"
           >
             <div className="flex items-center justify-between border-b border-[var(--os-border)] px-3 py-2.5">
               <span className="text-[13px] font-semibold text-[var(--os-ink)]">Notifications</span>
@@ -76,7 +96,7 @@ export function NotificationBell() {
               )}
             </div>
 
-            <div className="max-h-[400px] overflow-y-auto py-1">
+            <div className="max-h-[420px] overflow-y-auto py-1">
               {notifs.length === 0 ? (
                 <p className="px-3 py-8 text-center text-[12.5px] text-[var(--os-ink-muted)]">You're all caught up.</p>
               ) : (
@@ -86,7 +106,6 @@ export function NotificationBell() {
                     onClick={() => onClick(n.id, n.href)}
                     className={cn("flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
                   >
-                    {/* actor avatar, or a kind glyph for system/Petal items */}
                     {n.actorId ? (
                       <MemberAvatar memberId={n.actorId} size={28} className="mt-0.5 shrink-0" />
                     ) : (
@@ -109,6 +128,6 @@ export function NotificationBell() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

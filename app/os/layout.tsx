@@ -10,7 +10,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
 import { CommandSearch } from "@/components/os/command-search";
-import { NotificationBell } from "@/components/os/notification-bell";
+import { NotificationRow } from "@/components/os/notification-bell";
 import { TipProvider, Tip } from "@/components/os/tooltip";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
@@ -203,6 +203,9 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
+          {/* notification center — its own band atop the nav */}
+          <NotificationRow />
+          <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
           </div>
@@ -225,12 +228,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
-
-      {/* notification center — fixed in the top-right corner, above page chrome.
-          A surface chip keeps the bell legible over dark headers (e.g. Home's hero). */}
-      <div className="fixed right-3 top-[26px] z-30 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)]/90 shadow-[0_1px_2px_rgba(17,17,26,0.06)] backdrop-blur-sm">
-        <NotificationBell />
-      </div>
 
       <AnimatePresence>
         {searchOpen && <CommandSearch onClose={() => setSearchOpen(false)} />}
