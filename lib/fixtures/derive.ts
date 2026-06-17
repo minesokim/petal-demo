@@ -64,6 +64,7 @@ export function activeEngagements(): Engagement[] {
 /** Representative household stage: the least-progressed active engagement. */
 export function householdStage(hid: string): Stage {
   const list = engagementsOf(hid);
+  if (list.length === 0) return STAGE_ORDER[0]; // brand-new client, no returns yet
   const active = list.filter(e => (ACTIVE_STAGES as Stage[]).includes(e.stage));
   const pool = active.length ? active : list;
   return pool.reduce<Stage>(

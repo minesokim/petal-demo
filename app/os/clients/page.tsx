@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import {
   households, people, engagements, entitiesOf, householdById, entityById,
   CURRENT_USER_ID,
@@ -12,6 +14,7 @@ import {
   householdStage, householdDeadline, docsOfHousehold, docsOf, invoiceOf, engagementDeadline,
 } from "@/lib/fixtures/derive";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
+import { clientStore, useClientsVersion } from "@/lib/client-store";
 import { StageTag, DeadlineChip, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { AssigneePicker } from "@/components/os/assignee-picker";
 import { cn } from "@/lib/utils";
@@ -96,7 +99,10 @@ function ClientsTable({ rows }: { rows: Household[] }) {
             <div className="gap-2.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
               <div className="min-w-0">
-                <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{h.name}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-[13px] font-medium text-[var(--os-ink)]">{h.name}</span>
+                  {clientStore.isCreated(h.id) && <span className="shrink-0 rounded bg-[var(--os-accent-soft)] px-1.5 text-[10px] font-medium text-[var(--os-accent)]">New</span>}
+                </div>
                 <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{kindLabel[h.kind]}</div>
               </div>
             </div>
@@ -235,12 +241,98 @@ function StageBoard({ items }: { items: BoardItem[] }) {
   );
 }
 
+/* ── New client — create a household (+ primary contact) and open their record ── */
+const cFieldCls = "w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors focus:border-[var(--os-border-strong)] focus:outline-none";
+const cPill = (on: boolean) =>
+  cn("inline-flex h-7 items-center rounded-full border px-3 text-[12px] font-medium transition-colors",
+    on ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]" : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]");
+
+function NewClientModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [kind, setKind] = useState<HouseholdKind>("individual");
+  const [tier, setTier] = useState<Household["serviceTier"]>("Standard");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+
+  const create = () => {
+    const n = name.trim();
+    if (!n) return;
+    const id = clientStore.newHouseholdId();
+    clientStore.createClient(
+      {
+        id, name: n, kind, serviceTier: tier, since: 2026, has8821: false, hasBooks: false,
+        catchUp: `New client — just added. No returns started yet. Start a return or request documents to get ${n.split(" ")[0]} moving.`,
+      },
+      { name: contactName, email: contactEmail },
+    );
+    onToast("Client created");
+    onClose();
+    router.push(`/os/clients/${id}`);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-[460px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_16px_48px_rgba(17,17,26,0.2)]"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--os-border)] px-4 py-3">
+          <h2 className="text-[14px] font-semibold text-[var(--os-ink)]">New client</h2>
+          <button onClick={onClose} aria-label="Close" className="grid size-7 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.close} size={16} /></button>
+        </div>
+
+        <div className="space-y-3 px-4 py-3.5">
+          <div>
+            <label className="os-label mb-1 block">Client name</label>
+            <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") create(); }} placeholder="e.g. Nguyen Household / Golden Dragon LLC" className={cFieldCls} />
+          </div>
+          <div>
+            <label className="os-label mb-1.5 block">Type</label>
+            <div className="flex flex-wrap gap-1.5">
+              {(["individual", "business", "mixed"] as HouseholdKind[]).map(k => (
+                <button key={k} onClick={() => setKind(k)} className={cPill(kind === k)}>{kindLabel[k]}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="os-label mb-1 block">Service tier</label>
+            <select value={tier} onChange={e => setTier(e.target.value as Household["serviceTier"])} className={cFieldCls}>
+              {(["Basic", "Standard", "Premium"] as const).map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="border-t border-[var(--os-border)] pt-3">
+            <label className="os-label mb-1.5 block">Primary contact <span className="font-normal normal-case text-[var(--os-ink-subtle)]">· optional</span></label>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Full name" className={cFieldCls} />
+              <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="email@…" className={cFieldCls} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-1.5 border-t border-[var(--os-border)] px-4 py-3">
+          <button onClick={onClose} className="h-8 rounded-md px-3 text-[12.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">Cancel</button>
+          <button onClick={create} disabled={!name.trim()} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-40">
+            Create client
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function ClientsPage() {
   const [view, setView] = useState<View>("clients");
   const [layout, setLayout] = useState<Layout>("list");
   const [scope, setScope] = useState<Scope>("firm");
   const [query, setQuery] = useState("");
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   useAssignVersion(); // re-filter when a client is reassigned from the table
+  useClientsVersion(); // re-render when a client is created this session
 
   const mine = scope === "mine";
   const q = query.trim().toLowerCase();
@@ -280,7 +372,7 @@ export default function ClientsPage() {
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.download} size={15} className="text-[var(--os-ink-muted)]" /> Export</button>
-            <button className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>Create <Icon icon={I.chevronDown} size={14} /></button>
+            <button onClick={() => setNewClientOpen(true)} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={14} /> New client</button>
           </div>
         </div>
       </div>
@@ -340,6 +432,17 @@ export default function ClientsPage() {
           <ReturnsTable rows={engRows} />
         )}
       </div>
+
+      <AnimatePresence>
+        {newClientOpen && <NewClientModal onClose={() => setNewClientOpen(false)} onToast={showToast} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {toast && (
+          <motion.div initial={{ opacity: 0, y: 6, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: 6, x: "-50%" }} transition={{ duration: 0.16 }} className="fixed bottom-5 left-1/2 z-50 rounded-md bg-[var(--os-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--os-primary-fg)] shadow-sm">
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
