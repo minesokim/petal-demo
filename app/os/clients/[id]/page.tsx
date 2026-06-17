@@ -13,6 +13,7 @@ import { Archive, Trash2, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/petal-logo";
+import { ClientMemory } from "@/components/os/client-memory";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
@@ -42,7 +43,7 @@ import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, healthMeta, expectedDocMe
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
 // Notices are a firm-wide deadline queue - they live in the sidebar, not as a per-client tab.
-const TABS = ["Overview", "Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance"] as const;
+const TABS = ["Overview", "Memory", "Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance"] as const;
 type Tab = (typeof TABS)[number];
 // 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
 // Notes is NOT a content tab - it lives in the right rail next to Ask Petal / Details.
@@ -954,6 +955,9 @@ function ClientRecordInner() {
                     })}
                   </div>
                 )}
+
+                {/* ── Memory ── durable facts Petal knows about this client ── */}
+                {tab === "Memory" && <ClientMemory householdId={h.id} />}
 
                 {/* ── Tasks ── grouped by status, breathing-room cards ── */}
                 {tab === "Tasks" && (

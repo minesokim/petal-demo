@@ -82,7 +82,7 @@ const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
 // connections store). Each row links somewhere real; nothing is decorative.
 const GROUNDING: { label: string; href: string; icon?: keyof typeof I; petal?: boolean; logo?: string; connectId?: string }[] = [
   { label: "Firm Constitution", href: "/os/knowledge", icon: "knowledge" },
-  { label: "Client Memory", href: "/os/knowledge", petal: true },
+  { label: "Client Memory", href: "/os/memory", petal: true },
   { label: "Prior-year returns", href: "/os/documents", icon: "file" },
   { label: "QuickBooks Online", href: "/os/connections", logo: "/logos/quickbooks.svg", connectId: "qbo" },
   { label: "Gmail", href: "/os/connections", logo: "/logos/gmail.svg", connectId: "gmail" },
