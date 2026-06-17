@@ -564,15 +564,29 @@ function TasksPageInner() {
             <Board columns={columns} selected={selected} onOpen={setSelected} onVerb={onVerb} />
           ) : groups.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 py-16 text-center">
-              <div>
-                <p className="text-[13px] text-[var(--os-ink-muted)]">Nothing matches these filters.</p>
-                <button
-                  onClick={() => { setFlaggedOnly(false); setBlockedOnly(false); }}
-                  className="mt-2 inline-flex h-7 items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
-                >
-                  Clear filters - show all {tasks.length} tasks
-                </button>
-              </div>
+              {flaggedOnly || blockedOnly ? (
+                <div>
+                  <p className="text-[13px] text-[var(--os-ink-muted)]">Nothing matches these filters.</p>
+                  <button
+                    onClick={() => { setFlaggedOnly(false); setBlockedOnly(false); }}
+                    className="mt-2 inline-flex h-7 items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                  >
+                    Clear filters - show all {liveTasks.length} tasks
+                  </button>
+                </div>
+              ) : (
+                <div className="max-w-[300px]">
+                  <div className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-[var(--os-bg-subtle)] ring-1 ring-[var(--os-border)]"><PetalMark className="size-5" /></div>
+                  <p className="text-[14px] font-medium text-[var(--os-ink)]">You&apos;re all caught up</p>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">No open work in {scope === "mine" ? "your" : "the firm’s"} queue. New tasks and Petal approvals land here as they come in.</p>
+                  <button
+                    onClick={() => setNewTaskOpen(true)}
+                    className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                  >
+                    <Icon icon={I.plus} size={14} /> New task
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             groups.map(g => (
