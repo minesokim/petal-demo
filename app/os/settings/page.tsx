@@ -13,6 +13,7 @@ import {
   FIRM_PROFILE, type FirmRole,
 } from "@/lib/fixtures/firm";
 import { skillCategoryMeta, trustTierMeta, type TrustTier } from "@/lib/fixtures/vocab";
+import { BANNERS, bannerStore, useBanner } from "@/lib/banner-store";
 
 const ROLE_ORDER: FirmRole[] = ["owner", "reviewer", "preparer", "admin"];
 
@@ -20,7 +21,7 @@ const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outl
 
 const connectedCount = integrations.filter(i => i.status === "connected").length;
 
-type SectionId = "general" | "members" | "trust" | "integrations" | "developer";
+type SectionId = "general" | "appearance" | "members" | "trust" | "integrations" | "developer";
 
 const fieldCls = "w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors focus:border-[var(--os-border-strong)] focus:outline-none";
 
@@ -126,6 +127,7 @@ export default function SettingsPage() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const banner = useBanner();
   const shown = tab === "connected" ? integrations.filter(i => i.status === "connected") : integrations;
 
   const navBtn = (id: SectionId, label: string, icon: IconSvgElement) => (
@@ -151,6 +153,7 @@ export default function SettingsPage() {
           <div className="os-label mb-1 px-2">Workspace</div>
           <div className="mb-3 space-y-0.5">
             {navBtn("general", "General", I.settings)}
+            {navBtn("appearance", "Appearance", I.eye)}
             {navBtn("members", "Members", I.clients)}
             {navBtn("trust", "Trust & autonomy", I.shield)}
           </div>
@@ -239,6 +242,38 @@ export default function SettingsPage() {
                   <div className="mt-0.5 text-[12px] text-[var(--os-ink-muted)]">Permanently remove this firm, its records, and all connections.</div>
                 </div>
                 <button className={cn("shrink-0 rounded-md border border-red-300 bg-white px-3 py-1.5 text-[12px] font-medium text-[var(--os-danger)] transition-colors hover:bg-red-50", FOCUS)}>Delete</button>
+              </div>
+            </div>
+
+            {/* ── Appearance ── */}
+            <div id="appearance" className="mb-4 scroll-mt-4 border-t border-[var(--os-border)] pt-6">
+              <h2 className="text-[15px] font-semibold os-display">Appearance</h2>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--os-ink-muted)]">Personalize how your workspace looks.</p>
+            </div>
+            <div className="mb-10 rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4">
+              <div className="text-[13px] font-medium text-[var(--os-ink)]">Home banner</div>
+              <div className="mt-0.5 text-[11px] text-[var(--os-ink-subtle)]">The hero image across the top of your Home page.</div>
+              <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {BANNERS.map((src, i) => {
+                  const selected = banner === src;
+                  return (
+                    <button
+                      key={src}
+                      onClick={() => bannerStore.set(src)}
+                      aria-label={`Banner ${i + 1}`}
+                      aria-pressed={selected}
+                      className={cn("group relative aspect-[2.4/1] overflow-hidden rounded-lg border-2 transition-all", FOCUS, selected ? "border-[var(--os-primary)]" : "border-transparent ring-1 ring-[var(--os-border)] hover:ring-[var(--os-border-strong)]")}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      {selected && (
+                        <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-sm">
+                          <Icon icon={I.check} size={11} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

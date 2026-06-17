@@ -27,6 +27,7 @@ import {
 } from "@/lib/fixtures/firm";
 import { healthCounts, roiWeek } from "@/lib/fixtures/derive";
 import { useLiveNeedsYou } from "@/lib/demo-store";
+import { useBanner } from "@/lib/banner-store";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
@@ -68,6 +69,7 @@ function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
 export default function TodayPage() {
   const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
   const queue = useLiveNeedsYou();
+  const banner = useBanner();
   const needsYou = queue.length;
   const atRiskCount = healthCounts().at_risk;
   const roi = roiWeek();
@@ -91,7 +93,7 @@ export default function TodayPage() {
           {/* ── hero banner ── */}
           <div className="relative overflow-hidden rounded-xl border border-[var(--os-border)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/today-banner.jpg" alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
+            <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
             <div className="relative px-7 py-8">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
