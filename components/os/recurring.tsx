@@ -111,7 +111,7 @@ function RecurringModal({ onClose, onToast }: { onClose: () => void; onToast?: (
                       disabled={!t.active || count === 0}
                       className={cn("inline-flex h-6 items-center gap-1 rounded-md bg-[var(--os-primary)] px-2 text-[11px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-40", FOCUS)}
                     >
-                      <Icon icon={I.sparkle} size={11} /> Run now
+                      <PetalMark className="size-3" /> Run now
                     </button>
                     <span className="text-[11px] text-[var(--os-ink-subtle)]">
                       {t.lastRun ? `Last run ${t.lastRun} · ${t.runCount} created` : `Next ${t.nextRun}`}
