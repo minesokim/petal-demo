@@ -38,7 +38,7 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
       {item.logo ? <PetalLogo size={14} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={14} className="shrink-0" /> : item.glyph ? <PetalMark className="size-3.5 shrink-0" /> : IconC ? <IconC className="size-3.5 shrink-0" /> : null}
       <span className="truncate">{item.label}</span>
       {item.badge ? (
-        <span className="ml-auto text-[11px] font-semibold tabular-nums text-[var(--os-mint)]">
+        <span className="ml-auto rounded bg-[var(--os-selected)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">
           {item.badge}
         </span>
       ) : null}

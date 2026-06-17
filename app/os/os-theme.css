@@ -18,16 +18,18 @@
   --os-border-strong: #e0e0e0;
   --os-border-hover: #cfc7c3;
 
-  --os-primary: #1c1c1e;
+  /* TRIAL: green as the main color (was near-black). Primary = a confident
+     emerald deep enough for white text; pastel mint is the soft layer; accent
+     green carries links / focus rings / dots. Counts stay neutral (boxed). */
+  --os-primary: #0a8a5c;
+  --os-primary-hover: #097a50;
   --os-primary-fg: #ffffff;
-  /* interactive accent - used for unread dots + focus rings. Counts use the
-     neutral chip; inline links use --os-link. */
-  --os-accent: #2f6bff;
-  --os-accent-soft: #eef0fe;
-  /* mint — trialing as a count/accent hue (borderless count numbers) */
-  --os-mint: #00BD7D;
-  /* inline text links / actions - the one blue */
-  --os-link: #2563eb;
+  /* interactive accent - unread dots + focus rings + soft fills */
+  --os-accent: #0a9d68;
+  --os-accent-soft: #e4f7ef;
+  --os-mint: #00bd7d;
+  /* inline text links / actions */
+  --os-link: #0a7d52;
 
   --os-success: #16794c;
   --os-warning: #b45309;

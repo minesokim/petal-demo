@@ -135,7 +135,7 @@ function Btn({
       className={cn(
         "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]",
         size === "sm" ? "h-7 px-2.5 text-[12px]" : "h-8 px-3 text-[13px]",
-        variant === "primary" && "bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] hover:bg-black",
+        variant === "primary" && "bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] hover:bg-[var(--os-primary-hover)]",
         variant === "secondary" && "border border-[var(--os-border-strong)] bg-[var(--os-surface)] text-[var(--os-ink)] shadow-[0_1px_1px_rgba(0,0,0,0.03)] hover:bg-[var(--os-hover)] hover:border-[var(--os-border-hover)]",
         variant === "ghost" && "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
         variant === "danger" && "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",

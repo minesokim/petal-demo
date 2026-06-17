@@ -467,7 +467,7 @@ function TasksPageInner() {
           </button>
           <Link
             href="/os/review"
-            className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-black active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
+            className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-[var(--os-primary-hover)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
           >
             <PetalMark className="size-3.5 transition-transform duration-500 ease-out group-hover:rotate-180" />
             Review mode

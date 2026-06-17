@@ -22,7 +22,7 @@ import { NEEDS_YOU_STATUSES, TASK_STATUS_ORDER, MINUTES_RETURNED, taskStatusMeta
 
 const BTN =
   "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
-const BTN_PRIMARY = cn(BTN, "bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] hover:bg-black");
+const BTN_PRIMARY = cn(BTN, "bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] hover:bg-[var(--os-primary-hover)]");
 const BTN_SECONDARY = cn(BTN, "border border-[var(--os-border-strong)] bg-[var(--os-surface)] text-[var(--os-ink)] shadow-[0_1px_1px_rgba(0,0,0,0.03)] hover:bg-[var(--os-hover)]");
 const BTN_GHOST = cn(BTN, "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]");
 const LINK_BTN = "inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
