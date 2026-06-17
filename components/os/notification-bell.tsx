@@ -1,9 +1,9 @@
 "use client";
 
-// Notification center — a full-width row at the top of the sidebar shell (its own
-// band, above the nav). Unread badge; clicking flips open a popover inbox of
-// @mentions / approvals / assignments / syncs. The popover is `fixed` (positioned
-// off the row's rect) so the sidebar's overflow doesn't clip it. Session-only.
+// Notification center — an icon button in the sidebar's top cluster. Unread badge;
+// clicking flips open a popover inbox of @mentions / approvals / assignments /
+// syncs. The popover is `fixed` (positioned off the button's rect) so nothing
+// clips it. Session-only.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,7 @@ const KIND_GLYPH: Record<NotifKind, typeof I.check> = {
   assignment: I.clients,
 };
 
-export function NotificationRow() {
+export function NotificationBell() {
   const router = useRouter();
   const notifs = useNotifications();
   const unread = notifs.filter(n => !n.read).length;
@@ -35,7 +35,7 @@ export function NotificationRow() {
 
   const place = () => {
     const r = rowRef.current?.getBoundingClientRect();
-    if (r) setCoords({ top: r.top, left: r.right + 6 });
+    if (r) setCoords({ top: r.bottom + 6, left: r.left });
   };
   const toggle = () => { if (!open) place(); setOpen(o => !o); };
 
@@ -66,15 +66,16 @@ export function NotificationRow() {
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
         className={cn(
-          "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal transition-colors",
+          "relative grid size-7 shrink-0 place-items-center rounded-md transition-colors",
           open ? "bg-black/[0.07] text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--os-ink)]",
           FOCUS,
         )}
       >
-        <Bell className="size-3.5 shrink-0" strokeWidth={1.6} />
-        <span className="truncate">Notifications</span>
+        <Bell className="size-[17px]" strokeWidth={1.6} />
         {unread > 0 && (
-          <span className="ml-auto rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{unread}</span>
+          <span className="absolute -right-0.5 -top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[var(--os-accent)] px-1 text-[9px] font-semibold leading-none text-white ring-2 ring-[var(--os-shell)]">
+            {unread}
+          </span>
         )}
       </button>
 

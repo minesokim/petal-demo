@@ -10,7 +10,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
 import { CommandSearch } from "@/components/os/command-search";
-import { NotificationRow } from "@/components/os/notification-bell";
+import { NotificationBell } from "@/components/os/notification-bell";
 import { TipProvider, Tip } from "@/components/os/tooltip";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
@@ -191,20 +191,19 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             <PanelLeftClose className="size-[17px]" strokeWidth={1.5} />
           </button>
           </Tip>
-          <Tip label="Search · ⌘K" side="bottom">
-          <button
-            aria-label="Search"
-            onClick={() => setSearchOpen(true)}
-            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]"
-          >
-            <Icon icon={I.search} size={16} />
-          </button>
-          </Tip>
+          <NotificationBell />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
-          {/* notification center — its own band atop the nav */}
-          <NotificationRow />
+          {/* search — its own row atop the nav (opens the command palette) */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+          >
+            <Icon icon={I.search} size={14} className="shrink-0" />
+            <span className="truncate">Search</span>
+            <span className="ml-auto text-[11px] tabular-nums text-[var(--os-ink-subtle)]">⌘K</span>
+          </button>
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
