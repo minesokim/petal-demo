@@ -206,7 +206,7 @@ function EventModal({ event, onClose }: { event: CalEvent | null; onClose: () =>
       {e && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/20 p-4 backdrop-blur-[6px]"
           onClick={onClose}
         >
           <motion.div

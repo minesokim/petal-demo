@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/petal-logo";
 import { ClientMemory } from "@/components/os/client-memory";
+import { IntakeRecord } from "@/components/os/intake-record";
 import { memoryStore, useMemory } from "@/lib/memory-store";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
@@ -25,10 +26,10 @@ import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { ThreadConversation } from "@/components/os/thread-conversation";
-import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
+import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import {
   householdById, entitiesOf, engagementsOf, peopleOf, tasksOf, threadsOf, noticesOf,
-  positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById, FIRM_PROFILE,
+  positionsOf, docsOfEngagement, workpaperOf, engagementById, entityById, skills, skillById,
   type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
 } from "@/lib/fixtures/firm";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
@@ -44,12 +45,13 @@ import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, healthMeta, expectedDocMe
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
 // Notices are a firm-wide deadline queue - they live in the sidebar, not as a per-client tab.
-const TABS = ["Overview", "Memory", "Activity", "Returns", "Documents", "Tasks", "Messages", "Billing", "Positions", "Compliance"] as const;
+const TABS = ["Overview", "Memory", "Activity", "Intake", "Documents", "Tasks", "Messages", "Billing", "Positions"] as const;
 type Tab = (typeof TABS)[number];
 // 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
 // Notes is NOT a content tab - it lives in the right rail next to Ask Petal / Details.
-const PRIMARY_TABS: Tab[] = ["Overview", "Returns", "Documents", "Tasks", "Messages"];
-const MORE_TABS: Tab[] = ["Memory", "Activity", "Billing", "Positions", "Compliance"];
+// Intake = readiness; the returns table + relationships + workpapers live on Overview.
+const PRIMARY_TABS: Tab[] = ["Overview", "Intake", "Documents", "Tasks", "Messages"];
+const MORE_TABS: Tab[] = ["Billing", "Memory", "Positions", "Activity"];
 const tabFromParam = (p: string | null): Tab =>
   TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Overview";
 
@@ -136,7 +138,7 @@ function FormChip({ form }: { form: string }) {
    edges with dividers; otherwise the body is padded. Used in the rail and every tab. ── */
 function LCard({ title, action, flush, children }: { title: string; action?: React.ReactNode; flush?: boolean; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-card)]">
       <div className="flex items-center justify-between gap-2 px-3.5 pb-2 pt-2.5">
         <span className="text-[12.5px] font-semibold text-[var(--os-ink)]">{title}</span>
         {action}
@@ -179,7 +181,7 @@ function ARow({ onClick, href, children }: { onClick?: () => void; href?: string
 /* ── Linear project-panel card - title + chevron, optional right action, padded body ── */
 function Card({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4", className)}>
+    <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4", className)}>
       {title && (
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-1 text-[13px] font-semibold text-[var(--os-ink)]">
@@ -299,6 +301,9 @@ function ClientRecordInner() {
 
   // interactive @Petal rail - scoped to this household (scripted demo bank)
   const chat = usePetalChat(h?.id);
+  // Petal's opening read types out; suggestion chips fade in once it finishes.
+  const [openingReady, setOpeningReady] = useState(false);
+  useEffect(() => { setOpeningReady(false); }, [h?.id]);
   const [chatInput, setChatInput] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -659,6 +664,39 @@ function ClientRecordInner() {
                       );
                     })()}
 
+                    {/* Returns - full table (second under Catch me up; Intake tab holds readiness) */}
+                    <Card title="Returns" action={<span className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{money(householdFee(h.id))} total</span>}>
+                      <div className="-mt-1">
+                        <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 border-b border-[var(--os-border)] px-2 pb-2 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                          <div>Return</div>
+                          <div>Stage</div>
+                          <div>Deadline</div>
+                          <div className="text-right">Docs</div>
+                          <div className="text-right">Fee</div>
+                        </div>
+                        {engs.map(e => {
+                          const d = engagementDeadline(e);
+                          const dc = docsOf(e.id);
+                          const complete = dc.inHand >= dc.denom;
+                          return (
+                            <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] items-center gap-x-3 border-b border-[var(--os-border)] px-2 py-3 transition-colors last:border-0 hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                              <div className="flex min-w-0 items-center gap-2">
+                                <FormChip form={e.form} />
+                                <div className="min-w-0">
+                                  <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</div>
+                                  {e.blockedBy && <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[var(--os-warning)]"><Icon icon={I.alert} size={11} className="shrink-0" /> Blocked</div>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--os-ink-muted)]"><span className={cn("size-1.5 shrink-0 rounded-full", stageMeta[e.stage].dot)} /><span className="truncate">{stageMeta[e.stage].label}</span></div>
+                              <div className="text-[12.5px] tabular-nums text-[var(--os-ink-muted)]">{d.extended ? "Ext · " : ""}{fmtDate(d.iso)}</div>
+                              <div className={cn("text-right text-[12.5px] tabular-nums", complete ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{dc.label}</div>
+                              <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </Card>
+
                     {/* Progress - segmented bar + legend stat rows */}
                     <Card title="Progress">
                       <Segmented
@@ -693,40 +731,67 @@ function ClientRecordInner() {
                       </div>
                     </Card>
 
-                    {/* Needs you · Returns */}
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <Card title="Needs you" action={openTasks.length > 0 ? <ViewAll onClick={() => setTab("Tasks")} /> : undefined}>
-                        {openTasks.length === 0 ? (
-                          <p className="text-[12.5px] text-[var(--os-ink-subtle)]">All clear - nothing waiting on you.</p>
-                        ) : (
-                          <div className="-mx-2 -mb-1">
-                            {openTasks.slice(0, 4).map(t => {
-                              const sk = skillById(t.skillId);
-                              return (
-                                <button key={t.id} onClick={() => setTaskOpen(t.id)} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
-                                  {sk && <SkillPetal category={sk.category} size={15} />}
-                                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
-                                  <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </Card>
-
-                      <Card title="Returns" action={<ViewAll onClick={() => setTab("Returns")} />}>
+                    {/* Needs you */}
+                    <Card title="Needs you" action={openTasks.length > 0 ? <ViewAll onClick={() => setTab("Tasks")} /> : undefined}>
+                      {openTasks.length === 0 ? (
+                        <p className="text-[12.5px] text-[var(--os-ink-subtle)]">All clear - nothing waiting on you.</p>
+                      ) : (
                         <div className="-mx-2 -mb-1">
-                          {engs.map(e => (
-                            <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
-                              <FormChip form={e.form} />
-                              <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{entityById(e.entityId)?.name}</span>
-                              <StageTag stage={e.stage} className="hidden shrink-0 sm:inline-flex" />
-                              <Icon icon={I.chevronRight} size={13} className="shrink-0 text-[var(--os-ink-subtle)] opacity-0 transition-opacity group-hover:opacity-100" />
-                            </Link>
+                          {openTasks.slice(0, 4).map(t => {
+                            const sk = skillById(t.skillId);
+                            return (
+                              <button key={t.id} onClick={() => setTaskOpen(t.id)} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
+                                {sk && <SkillPetal category={sk.category} size={15} />}
+                                <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
+                                <StatusPill status={t.status} className="hidden shrink-0 sm:inline-flex" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Card>
+
+                    {/* relationships */}
+                    {k1Links.length > 0 && (
+                      <Card title="Relationships">
+                        <div className="-mx-2 -mb-1">
+                          {k1Links.map(l => (
+                            <div key={l.key} className="flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] text-[var(--os-ink)]">
+                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" /> {l.line}
+                            </div>
                           ))}
                         </div>
                       </Card>
-                    </div>
+                    )}
+
+                    {/* workpapers */}
+                    {workpapers.map(({ eng, wp }) => (
+                      <Card key={wp.id} title={`Workpaper · ${entityById(eng.entityId)?.name} ${eng.form}`}>
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[520px]">
+                            <div className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] pb-1.5">
+                              {["Line", "Amount", "Source document", "Run"].map(c => <div key={c} className="os-label">{c}</div>)}
+                            </div>
+                            {wp.rows.map((row, i) => (
+                              <div key={i} className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] py-2 text-[13px] last:border-0">
+                                <span className="truncate text-[var(--os-ink)]">{row.line}</span>
+                                <span className="font-medium tabular-nums text-[var(--os-ink)]">{row.amount}</span>
+                                <span className="truncate text-[var(--os-ink-muted)]">{row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}</span>
+                                {row.runId ? (
+                                  <button onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))} aria-expanded={wpRun === `${wp.id}-${i}`} className={cn("text-left text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
+                                    {wpRun === `${wp.id}-${i}` ? "Hide run" : "View run"}
+                                  </button>
+                                ) : <span className="text-[12px] text-[var(--os-ink-subtle)]">-</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {wp.rows.map((row, i) => row.runId && wpRun === `${wp.id}-${i}` ? <ProvenancePanel key={i} runId={row.runId} defaultOpen className="mt-2" /> : null)}
+                        <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
+                          <PetalMark className="size-3 shrink-0" /> Trace any line back to the run, the workpaper, and the source document.
+                        </p>
+                      </Card>
+                    ))}
 
                     {/* Recent activity */}
                     {feed.length > 0 && (
@@ -802,104 +867,10 @@ function ClientRecordInner() {
                   </div>
                 )}
 
-                {/* ── Returns ── Linear cards ── */}
-                {tab === "Returns" && (
-                  <div className="mx-auto max-w-[760px] space-y-8">
-                    {/* summary - boxed stat band (Overview idiom) */}
-                    <Card>
-                      <div className="grid grid-cols-2 gap-y-5 sm:grid-cols-4 sm:gap-y-0 sm:divide-x sm:divide-[var(--os-border)]">
-                        {([
-                          ["Returns", String(engs.length), false],
-                          ["Next deadline", deadline ? fmtDate(deadline.iso) : "-", false],
-                          ["Fees", money(householdFee(h.id)), false],
-                          ["Blocked", money(engs.filter(e => e.blockedBy).reduce((s, e) => s + e.fee, 0)), true],
-                        ] as const).map(([label, value, warn], i) => (
-                          <div key={label} className={cn(i > 0 && "sm:pl-5", i < 3 && "sm:pr-5")}>
-                            <div className="text-[12px] text-[var(--os-ink-muted)]">{label}</div>
-                            <div className={cn("os-display mt-1 text-[16px] font-semibold tabular-nums", warn && value !== "$0" ? "text-[var(--os-warning)]" : "text-[var(--os-ink)]")}>{value}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-
-                    {/* returns - clean table */}
-                    <section>
-                      <SectionHead title="Returns" count={engs.length} />
-                      <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 border-b border-[var(--os-border)] px-2 pb-2 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
-                        <div>Return</div>
-                        <div>Stage</div>
-                        <div>Deadline</div>
-                        <div className="text-right">Docs</div>
-                        <div className="text-right">Fee</div>
-                      </div>
-                      {engs.map(e => {
-                        const d = engagementDeadline(e);
-                        const dc = docsOf(e.id);
-                        const complete = dc.inHand >= dc.denom;
-                        return (
-                          <Link key={e.id} href={`/os/returns/${e.id}`} className={cn("group grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] items-center gap-x-3 border-b border-[var(--os-border)] px-2 py-3 transition-colors hover:bg-[var(--os-hover)]", FOCUS_G)}>
-                            <div className="flex min-w-0 items-center gap-2">
-                              <FormChip form={e.form} />
-                              <div className="min-w-0">
-                                <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{entityById(e.entityId)?.name} · {e.taxYear}</div>
-                                {e.blockedBy && <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[var(--os-warning)]"><Icon icon={I.alert} size={11} className="shrink-0" /> Blocked</div>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--os-ink-muted)]"><span className={cn("size-1.5 shrink-0 rounded-full", stageMeta[e.stage].dot)} /><span className="truncate">{stageMeta[e.stage].label}</span></div>
-                            <div className="text-[12.5px] tabular-nums text-[var(--os-ink-muted)]">{d.extended ? "Ext · " : ""}{fmtDate(d.iso)}</div>
-                            <div className={cn("text-right text-[12.5px] tabular-nums", complete ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-warning)]")}>{dc.label}</div>
-                            <div className="text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(e.fee)}</div>
-                          </Link>
-                        );
-                      })}
-                      {/* totals footer */}
-                      <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 px-2 pt-2.5 text-[12px]">
-                        <div className="col-span-4 text-[var(--os-ink-muted)]">Total fees</div>
-                        <div className="text-right font-semibold tabular-nums text-[var(--os-ink)]">{money(householdFee(h.id))}</div>
-                      </div>
-                    </section>
-
-                    {/* relationships */}
-                    {k1Links.length > 0 && (
-                      <Card title="Relationships">
-                        <div className="-mx-2 -mb-1">
-                          {k1Links.map(l => (
-                            <div key={l.key} className="flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] text-[var(--os-ink)]">
-                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" /> {l.line}
-                            </div>
-                          ))}
-                        </div>
-                      </Card>
-                    )}
-
-                    {/* workpapers */}
-                    {workpapers.map(({ eng, wp }) => (
-                      <Card key={wp.id} title={`Workpaper · ${entityById(eng.entityId)?.name} ${eng.form}`}>
-                        <div className="overflow-x-auto">
-                          <div className="min-w-[520px]">
-                            <div className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] pb-1.5">
-                              {["Line", "Amount", "Source document", "Run"].map(c => <div key={c} className="os-label">{c}</div>)}
-                            </div>
-                            {wp.rows.map((row, i) => (
-                              <div key={i} className="grid grid-cols-[minmax(0,1.2fr)_100px_minmax(0,1.4fr)_84px] items-center gap-x-4 border-b border-[var(--os-border)] py-2 text-[13px] last:border-0">
-                                <span className="truncate text-[var(--os-ink)]">{row.line}</span>
-                                <span className="font-medium tabular-nums text-[var(--os-ink)]">{row.amount}</span>
-                                <span className="truncate text-[var(--os-ink-muted)]">{row.sourceDoc}{row.page ? <span className="text-[var(--os-ink-subtle)]"> · {row.page}</span> : null}</span>
-                                {row.runId ? (
-                                  <button onClick={() => setWpRun(r => (r === `${wp.id}-${i}` ? null : `${wp.id}-${i}`))} aria-expanded={wpRun === `${wp.id}-${i}`} className={cn("text-left text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
-                                    {wpRun === `${wp.id}-${i}` ? "Hide run" : "View run"}
-                                  </button>
-                                ) : <span className="text-[12px] text-[var(--os-ink-subtle)]">-</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        {wp.rows.map((row, i) => row.runId && wpRun === `${wp.id}-${i}` ? <ProvenancePanel key={i} runId={row.runId} defaultOpen className="mt-2" /> : null)}
-                        <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
-                          <PetalMark className="size-3 shrink-0" /> Trace any line back to the run, the workpaper, and the source document.
-                        </p>
-                      </Card>
-                    ))}
+                {/* ── Intake ── readiness card (returns/relationships/workpapers live on Overview) ── */}
+                {tab === "Intake" && (
+                  <div className="mx-auto max-w-[760px]">
+                    <IntakeRecord householdId={h.id} />
                   </div>
                 )}
 
@@ -1014,12 +985,12 @@ function ClientRecordInner() {
                                     tabIndex={0}
                                     onClick={() => setTaskOpen(t.id)}
                                     onKeyDown={ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setTaskOpen(t.id); } }}
-                                    className={cn("group cursor-pointer rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-3.5 transition-all hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(17,17,26,0.05)]", FOCUS)}
+                                    className={cn("group cursor-pointer rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] p-3.5 transition-all hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(17,17,26,0.05)]", FOCUS)}
                                   >
                                     <div className="flex items-start gap-3">
                                       {skill && (
                                         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--os-bg-subtle)]">
-                                          <SkillPetal category={skill.category} size={16} />
+                                          <SkillPetal category={skill.category} size={26} />
                                         </span>
                                       )}
                                       <div className="min-w-0 flex-1">
@@ -1149,76 +1120,6 @@ function ClientRecordInner() {
                   )
                 )}
 
-                {/* ── Compliance ── */}
-                {tab === "Compliance" && (() => {
-                  // e-file authorization + transmission status, derived per engagement from stage
-                  const efileStatus = (s: Stage): { label: string; dot: string } =>
-                    s === "accepted" ? { label: "Accepted", dot: "bg-emerald-500" }
-                    : s === "e_filed" ? { label: "Transmitted", dot: "bg-blue-500" }
-                    : s === "pay_and_sign" ? { label: "Awaiting signature", dot: "bg-amber-500" }
-                    : { label: "Not started", dot: "bg-[var(--os-border-strong)]" };
-                  const authStatus = (s: Stage): { label: string; dot: string } =>
-                    s === "accepted" || s === "e_filed" ? { label: "Signed", dot: "bg-emerald-500" }
-                    : s === "pay_and_sign" ? { label: "Out for signature", dot: "bg-amber-500" }
-                    : { label: "Not yet generated", dot: "bg-[var(--os-border-strong)]" };
-                  return (
-                    <div className="mx-auto max-w-[760px] space-y-8">
-                      {/* firm-level credentials - borderless rows */}
-                      <section>
-                        <SectionHead title="Preparer & authorizations" />
-                        <div className="divide-y divide-[var(--os-border)]">
-                          {([
-                            ["ERO / signing preparer", `${FIRM_PROFILE.owner.name}, ${FIRM_PROFILE.owner.credential}`, true],
-                            ["PTIN & EFIN", "On file", true],
-                            ["Engagement letter", `Signed · ${h.since} season`, true],
-                            ["§7216 consent to disclose", "On file", true],
-                            ["Form 8821 (transcript access)", h.has8821 ? "On file - transcripts monitored" : "Not on file", h.has8821],
-                            ["WISP (data security plan)", "On file", true],
-                          ] as const).map(([label, value, ok]) => (
-                            <div key={label} className="flex items-center gap-3 py-2.5 text-[13px]">
-                              <span className="min-w-0 flex-1 text-[var(--os-ink-muted)]">{label}</span>
-                              <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-[var(--os-ink)]">
-                                <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} />
-                                {value}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-
-                      {/* per-engagement e-file compliance - airy rows */}
-                      <section>
-                        <SectionHead title="E-file authorization by return" />
-                        <div className="space-y-0.5">
-                          {engs.map(e => {
-                            const auth = authStatus(e.stage);
-                            const ef = efileStatus(e.stage);
-                            const ent = entityById(e.entityId);
-                            return (
-                              <div key={e.id} className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg px-2 py-2.5">
-                                <div className="flex min-w-0 flex-[2] items-center gap-2">
-                                  <FormChip form={e.form} />
-                                  <span className="min-w-0 truncate text-[13px] text-[var(--os-ink)]">{ent?.name}</span>
-                                  <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
-                                </div>
-                                <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                                  <span className={cn("size-1.5 shrink-0 rounded-full", auth.dot)} /> <span className="truncate">8879 · {auth.label}</span>
-                                </div>
-                                <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                                  <span className={cn("size-1.5 shrink-0 rounded-full", ef.dot)} /> <span className="truncate">E-file · {ef.label}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 flex items-start gap-1.5 px-0.5 text-[12px] text-[var(--os-ink-subtle)]">
-                          <PetalMark className="mt-0.5 size-3 shrink-0" /> Petal never transmits a return until its 8879 is signed and you&apos;ve approved it.
-                        </p>
-                      </section>
-                    </div>
-                  );
-                })()}
-
                 {/* ── Notes ── */}
               </div>
             )}
@@ -1226,7 +1127,11 @@ function ClientRecordInner() {
 
           {/* Right rail: Ask Petal (assistant) · Details (properties) · Notes.
               Also a drop target - drag a document here and Petal reviews it. */}
-          <aside
+          <motion.aside
+            key={h.id}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             onDragOver={e => { if (e.dataTransfer.types.includes("text/petal-doc")) { e.preventDefault(); setPetalDropOver(true); } }}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setPetalDropOver(false); }}
             onDrop={e => { e.preventDefault(); const name = e.dataTransfer.getData("text/petal-doc"); setPetalDropOver(false); if (name) attachDoc(name); }}
@@ -1251,11 +1156,11 @@ function ClientRecordInner() {
                   {/* Petal's opening read - plain assistant prose */}
                   <div>
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
-                    <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
-                    {openTasks.length > 0 && (
-                      <button onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
+                    <StreamedText key={h.id} text={petalAnswer} className="text-[13.5px] leading-relaxed text-[var(--os-ink)]" onDone={() => setOpeningReady(true)} />
+                    {openTasks.length > 0 && openingReady && (
+                      <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
                         Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
-                      </button>
+                      </motion.button>
                     )}
                   </div>
 
@@ -1309,15 +1214,15 @@ function ClientRecordInner() {
                     ),
                   )}
 
-                  {/* suggested prompts - pill chips before any conversation */}
-                  {chat.messages.length === 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {/* suggested prompts - pill chips fade in once the opening read finishes typing */}
+                  {chat.messages.length === 0 && openingReady && (
+                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="flex flex-wrap gap-1.5 pt-0.5">
                       {[`What's blocking ${first(h.name)}?`, "What's next?", "Summarize open items"].map(s => (
                         <button key={s} onClick={() => sendChat(s)} className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-1.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
                           <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" /> {s}
                         </button>
                       ))}
-                    </div>
+                    </motion.div>
                   )}
                   <div ref={chatBottomRef} />
                 </div>
@@ -1365,7 +1270,7 @@ function ClientRecordInner() {
             )}
 
             {panel === "Details" && (
-              <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--os-bg-subtle)] p-3">
+              <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--os-surface)] p-3">
                 {/* Properties */}
                 <LCard title="Properties">
                   <div className="space-y-0.5">
@@ -1461,7 +1366,7 @@ function ClientRecordInner() {
                 </div>
               </div>
             )}
-          </aside>
+          </motion.aside>
         </div>
       )}
 
@@ -1471,7 +1376,7 @@ function ClientRecordInner() {
       {/* task detail modal (shared with /os/tasks) */}
       <AnimatePresence>
         {taskItem && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 sm:p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 backdrop-blur-[6px] sm:p-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
               transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()}

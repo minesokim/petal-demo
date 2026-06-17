@@ -178,7 +178,7 @@ function BoardCard({ t, active, onOpen, onVerb }: { t: Task; active: boolean; on
   return (
     <div
       className={cn(
-        "group/card relative rounded-xl border bg-[var(--os-surface)] p-3 transition-all",
+        "group/card relative rounded-xl border bg-[var(--os-card)] p-3 transition-all",
         active
           ? "border-[var(--os-border-strong)] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           : "border-[var(--os-border)] hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)]",
@@ -278,7 +278,7 @@ function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: 
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-[6px]">
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
         transition={{ duration: 0.16, ease: "easeOut" }}
@@ -643,7 +643,7 @@ function TasksPageInner() {
         {view === "board" && item && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 grid place-items-center bg-black/30 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-40 grid place-items-center bg-black/30 p-4 backdrop-blur-[6px]"
             onClick={close}
           >
             <motion.div

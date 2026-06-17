@@ -186,7 +186,7 @@ export function ReviewModal({ doc, onClose }: { doc: ExpectedDoc; onClose: () =>
   const secondaryBtn = "flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] text-[var(--os-ink)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 sm:p-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 backdrop-blur-[6px] sm:p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
         transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()}

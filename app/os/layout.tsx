@@ -72,6 +72,9 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // stays true through the overlay's exit animation so `main` keeps its raised
+  // z-index until the glass has fully faded (otherwise the canvas flashes behind it)
+  const [historyMounted, setHistoryMounted] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const wsRef = useRef<HTMLDivElement>(null);
@@ -130,9 +133,9 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     <div className="petal-os relative flex h-screen w-full overflow-hidden text-[13px]">
       {/* full-shell frost — frosts the tinted gradient behind the whole chrome so
           the entire shell (sidebar + the gutter framing the content) reads as one
-          continuous pane of glass, not just the sidebar. Sits below the z-10
-          sidebar + main, above the gradient background. */}
-      <div aria-hidden className="os-glass-pane pointer-events-none absolute inset-0 z-0" />
+          continuous pane of glass, not just the sidebar. Sits behind all content
+          (negative z) so it never traps page modals in a stacking context. */}
+      <div aria-hidden className="os-glass-pane pointer-events-none absolute inset-0 -z-10" />
 
       {/* expand control - only when collapsed */}
       {collapsed && (
@@ -226,18 +229,18 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* bottom - Ask Petal chat zone (Recent · history · New chat); history takes over the whole shell */}
-        <SidebarChat onOpenHistory={() => setHistoryOpen(true)} />
+        <SidebarChat onOpenHistory={() => { setHistoryMounted(true); setHistoryOpen(true); }} />
       </aside>
 
       {/* ── MAIN ── (lifts above the history glass so the canvas stays framed by it) */}
-      <main className={cn("relative min-w-0 flex-1 overflow-hidden p-2.5 pt-3 transition-[padding] duration-200 ease-out", historyOpen ? "z-40" : "z-10", collapsed && "pl-11")}>
+      <main className={cn("relative min-w-0 flex-1 overflow-hidden p-2.5 pt-3 transition-[padding] duration-200 ease-out", historyMounted && "z-40", collapsed && "pl-11")}>
         <div className="h-full overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-canvas)] shadow-[0_1px_2px_rgba(17,17,26,0.04),0_4px_14px_-6px_rgba(17,17,26,0.07)]">
           {children}
         </div>
       </main>
 
       {/* chat history — full-shell glass takeover, framing the canvas */}
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={() => setHistoryMounted(false)}>
         {historyOpen && <ChatHistoryOverlay onClose={() => setHistoryOpen(false)} />}
       </AnimatePresence>
 

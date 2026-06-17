@@ -9,6 +9,7 @@ import { Hourglass } from "lucide-react";
 import { Icon, I } from "@/components/os/icon";
 import { Badge, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { ThreadConversation } from "@/components/os/thread-conversation";
+import { ComposeModal } from "@/components/os/compose-modal";
 import { threads, CURRENT_USER_ID, type Thread, type Channel } from "@/lib/fixtures/firm";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { DEMO_DATE } from "@/lib/fixtures/vocab";
@@ -85,7 +86,7 @@ function ThreadPane({ thread }: { thread: Thread }) {
       </div>
 
       {/* Properties rail (Linear) */}
-      <aside className="hidden w-[240px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-4 xl:block">
+      <aside className="hidden w-[220px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-4 xl:block">
         <div className="os-label mb-3">Properties</div>
         <div className="space-y-3">
           <div>
@@ -127,6 +128,7 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<string>("open");
   const [channel, setChannel] = useState<"all" | Channel>("all");
   const [scope, setScope] = useState<Scope>("firm");
+  const [composeOpen, setComposeOpen] = useState(false);
   useAssignVersion(); // re-filter when a client is reassigned
   const f = inboxFilters.find(x => x.key === filter)!;
   const scopeOk = (t: Thread) => scope === "firm" || assigneeOf(t.householdId) === CURRENT_USER_ID;
@@ -145,7 +147,7 @@ export default function InboxPage() {
           <ScopeToggle scope={scope} onChange={setScope} />
           <span className="mx-0.5 h-5 w-px bg-[var(--os-border)]" />
           <button title="Search" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.search} size={15} /></button>
-          <button title="Compose" aria-label="Compose" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.edit} size={15} /></button>
+          <button onClick={() => setComposeOpen(true)} title="Compose" aria-label="Compose" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.edit} size={15} /></button>
         </div>
       </div>
 
@@ -176,8 +178,8 @@ export default function InboxPage() {
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-x-auto">
-        {/* Conversation list (Linear) */}
-        <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[340px]">
+        {/* Conversation list (Linear) — tighter so the thread breathes */}
+        <div className="flex w-[256px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[292px]">
           {list.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">Nothing in this view - switch filters, or compose to start a thread.</div>
           ) : list.map(t => {
@@ -230,6 +232,10 @@ export default function InboxPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

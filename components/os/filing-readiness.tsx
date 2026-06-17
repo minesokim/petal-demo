@@ -122,7 +122,7 @@ export function FilingReadiness() {
         {open && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-[6px]"
             onClick={() => setOpen(false)}
           >
             <motion.div
@@ -130,7 +130,7 @@ export function FilingReadiness() {
               transition={{ duration: 0.18, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
               role="dialog" aria-modal="true" aria-label="Filing readiness"
-              className="flex max-h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+              className="flex max-h-[88vh] w-full max-w-[760px] select-none flex-col overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
             >
               {/* header */}
               <div className="flex items-start justify-between gap-3 border-b border-[var(--os-border)] px-6 py-4">

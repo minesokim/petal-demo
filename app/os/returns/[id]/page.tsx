@@ -19,16 +19,16 @@ import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { RequestDocsButton } from "@/components/os/request-docs";
 import { NotesThread } from "@/components/os/notes-thread";
-import { SignatureCard } from "@/components/os/signature-card";
-import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
+import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import { AssigneePicker } from "@/components/os/assignee-picker";
+import { IntakeRecord } from "@/components/os/intake-record";
 import {
   engagementById, householdById, entityById, docsOfEngagement, tasks, skillRuns, skillById,
-  workpaperOf, skills, FIRM_PROFILE, type Task, type ExpectedDoc,
+  workpaperOf, skills, type Task, type ExpectedDoc,
 } from "@/lib/fixtures/firm";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { docsOf, engagementDeadline } from "@/lib/fixtures/derive";
-import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, expectedDocMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
+import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, expectedDocMeta, fmtDate, money } from "@/lib/fixtures/vocab";
 
 const docKind = (source: string) => {
   const m = source.toLowerCase().match(/\.(pdf|png|jpe?g|xlsx|docx)\b/);
@@ -38,7 +38,7 @@ const docKind = (source: string) => {
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 const DOC_STATUS_ORDER: Record<ExpectedDoc["status"], number> = { needs_review: 0, requested: 1, have: 2, na: 3 };
 
-const TABS = ["Overview", "Documents", "Tasks", "Workpaper", "Compliance"] as const;
+const TABS = ["Overview", "Documents", "Tasks", "Workpaper"] as const;
 type Tab = (typeof TABS)[number];
 const tabFromParam = (p: string | null): Tab => TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Overview";
 
@@ -58,7 +58,7 @@ const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice
 /* ── Linear project-panel card - title + chevron, optional right action, padded body ── */
 function Card({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-4", className)}>
+    <div className={cn("rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4", className)}>
       {title && (
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-1 text-[13px] font-semibold text-[var(--os-ink)]">
@@ -74,7 +74,7 @@ function Card({ title, action, children, className }: { title?: string; action?:
 /* ── Linear-style card - small header + padded/flush body. Used in the Details rail. ── */
 function LCard({ title, action, flush, children }: { title: string; action?: React.ReactNode; flush?: boolean; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)]">
+    <div className="overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-card)]">
       <div className="flex items-center justify-between gap-2 px-3.5 pb-2 pt-2.5">
         <span className="text-[12.5px] font-semibold text-[var(--os-ink)]">{title}</span>
         {action}
@@ -184,6 +184,9 @@ function ReturnRecordInner() {
   useAssignVersion();
 
   const chat = usePetalChat(e?.householdId);
+  // Petal's opening read types out; suggestion chips fade in once it finishes.
+  const [openingReady, setOpeningReady] = useState(false);
+  useEffect(() => { setOpeningReady(false); }, [e?.id]);
   const [chatInput, setChatInput] = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [chat.messages]);
@@ -301,11 +304,16 @@ function ReturnRecordInner() {
             {tab === "Overview" && (
               <div className="mx-auto max-w-[760px] space-y-4">
                 {e.blockedBy && (
-                  <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3">
-                    <Icon icon={I.alert} size={15} className="mt-px shrink-0 text-amber-700" />
-                    <div className="min-w-0">
-                      <div className="text-[12px] font-medium text-amber-800">Blocked</div>
-                      <p className="text-[13px] leading-relaxed text-amber-900">{e.blockedBy}</p>
+                  <div className="flex items-center gap-3 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] px-4 py-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-200/70">
+                      <Icon icon={I.alert} size={17} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-amber-500" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Blocked</span>
+                      </div>
+                      <p className="mt-0.5 text-[13px] leading-snug text-[var(--os-ink)]">{e.blockedBy}</p>
                     </div>
                   </div>
                 )}
@@ -396,6 +404,9 @@ function ReturnRecordInner() {
                     <ProvenancePanel runId={run.id} defaultOpen />
                   </section>
                 )}
+
+                {/* Organizer — intake folded into the return flow */}
+                <IntakeRecord householdId={e.householdId} engagementId={e.id} />
               </div>
             )}
 
@@ -499,12 +510,12 @@ function ReturnRecordInner() {
                                 tabIndex={0}
                                 onClick={() => setTaskOpen(t.id)}
                                 onKeyDown={ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setTaskOpen(t.id); } }}
-                                className={cn("group cursor-pointer rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-3.5 transition-all hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(17,17,26,0.05)]", FOCUS)}
+                                className={cn("group cursor-pointer rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] p-3.5 transition-all hover:border-[var(--os-border-strong)] hover:shadow-[0_1px_3px_rgba(17,17,26,0.05)]", FOCUS)}
                               >
                                 <div className="flex items-start gap-3">
                                   {skill && (
                                     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--os-bg-subtle)]">
-                                      <SkillPetal category={skill.category} size={16} />
+                                      <SkillPetal category={skill.category} size={26} />
                                     </span>
                                   )}
                                   <div className="min-w-0 flex-1">
@@ -574,48 +585,17 @@ function ReturnRecordInner() {
               )
             )}
 
-            {/* ── Compliance ── airy sections (twin of the client record) ── */}
-            {tab === "Compliance" && (
-              <div className="mx-auto max-w-[760px] space-y-8">
-                <section>
-                  <SectionHead title="Preparer & authorizations" />
-                  <div className="divide-y divide-[var(--os-border)]">
-                    {([
-                      ["ERO / signing preparer", `${FIRM_PROFILE.owner.name}, ${FIRM_PROFILE.owner.credential}`, true],
-                      ["PTIN & EFIN", "On file", true],
-                      ["Engagement letter", `Signed · ${hh.since} season`, true],
-                      ["§7216 consent to disclose", "On file", true],
-                      ["Form 8821 (transcript access)", hh.has8821 ? "On file - transcripts monitored" : "Not on file", hh.has8821],
-                      ["WISP (data security plan)", "On file", true],
-                    ] as const).map(([label, value, ok]) => (
-                      <div key={label} className="flex items-center gap-3 py-2.5 text-[13px]">
-                        <span className="min-w-0 flex-1 text-[var(--os-ink-muted)]">{label}</span>
-                        <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-[var(--os-ink)]">
-                          <span className={cn("size-1.5 rounded-full", ok ? "bg-emerald-500" : "bg-[var(--os-border-strong)]")} /> {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <SectionHead title="E-file authorization" />
-                  <SignatureCard
-                    engagementId={e.id}
-                    form={e.form}
-                    entityName={entity?.name ?? hh.name}
-                    signerName={entity?.name ?? hh.name}
-                    stage={e.stage}
-                    onToast={show}
-                  />
-                </section>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Right rail: Ask Petal (assistant) · Details (properties) · Notes - twin of the client record */}
-        <aside className="hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex">
+        <motion.aside
+          key={e.id}
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="hidden w-[360px] shrink-0 flex-col border-l border-[var(--os-border)] lg:flex"
+        >
           <div className="flex items-center gap-1 border-b border-[var(--os-border)] px-3">
             {(["Ask Petal", "Details", "Notes"] as const).map(p => (
               <button key={p} onClick={() => setPanel(p)} className={cn("relative px-2.5 py-2.5 text-[13px] transition-colors", panel === p ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]", FOCUS)}>
@@ -631,11 +611,11 @@ function ReturnRecordInner() {
                 {/* Petal's opening read - plain assistant prose */}
                 <div>
                   <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
-                  <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{petalAnswer}</p>
-                  {openTasks.length > 0 && (
-                    <button onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
+                  <StreamedText key={e.id} text={petalAnswer} className="text-[13.5px] leading-relaxed text-[var(--os-ink)]" onDone={() => setOpeningReady(true)} />
+                  {openTasks.length > 0 && openingReady && (
+                    <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} onClick={() => setTab("Tasks")} className={cn("mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--os-link)] hover:underline", FOCUS)}>
                       Open the {openTasks.length === 1 ? "task" : "tasks"} <Icon icon={I.chevronRight} size={11} />
-                    </button>
+                    </motion.button>
                   )}
                 </div>
 
@@ -653,15 +633,15 @@ function ReturnRecordInner() {
                   ),
                 )}
 
-                {/* suggested prompts - pill chips before any conversation */}
-                {chat.messages.length === 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {/* suggested prompts - fade in once the opening read finishes typing */}
+                {chat.messages.length === 0 && openingReady && (
+                  <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="flex flex-wrap gap-1.5 pt-0.5">
                     {[`What's blocking ${first(title)}?`, "What's next?", "Summarize open items"].map(s => (
                       <button key={s} onClick={() => sendChat(s)} className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-1.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
                         <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" /> {s}
                       </button>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
                 <div ref={chatBottomRef} />
               </div>
@@ -688,7 +668,7 @@ function ReturnRecordInner() {
           )}
 
           {panel === "Details" && (
-            <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--os-bg-subtle)] p-3">
+            <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--os-surface)] p-3">
               {/* Properties */}
               <LCard title="Properties">
                 <div className="space-y-0.5">
@@ -731,7 +711,7 @@ function ReturnRecordInner() {
           )}
 
           {panel === "Notes" && <NotesThread scopeId={e.id} scopeLabel={`${title} · ${e.form}`} onToast={show} />}
-        </aside>
+        </motion.aside>
       </div>
 
       {/* document review modal (shared with /os/documents) */}
@@ -740,7 +720,7 @@ function ReturnRecordInner() {
       {/* task detail modal (shared with /os/tasks) */}
       <AnimatePresence>
         {taskItem && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 sm:p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={() => setTaskOpen(null)} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 backdrop-blur-[6px] sm:p-6">
             <motion.div initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }} transition={{ duration: 0.16, ease: "easeOut" }} onClick={ev => ev.stopPropagation()} className="flex h-[82vh] w-full max-w-[920px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl">
               <TaskDetail task={taskItem} onClose={() => setTaskOpen(null)} />
             </motion.div>

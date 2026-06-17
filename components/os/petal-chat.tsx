@@ -96,6 +96,26 @@ function StreamedParagraph({ text, active, onDone }: { text: string; active: boo
   );
 }
 
+/** Types a string out word-by-word (Petal's opening read); fires onDone at the end. */
+export function StreamedText({ text, className, onDone }: { text: string; className?: string; onDone?: () => void }) {
+  const reduced = prefersReduced();
+  const words = text.split(" ");
+  const [count, setCount] = useState(reduced ? words.length : 0);
+  const fired = useRef(false);
+  useEffect(() => {
+    fired.current = false;
+    if (reduced) { setCount(words.length); return; }
+    setCount(0);
+    let i = 0;
+    const t = window.setInterval(() => { i += 1; setCount(i); if (i >= words.length) window.clearInterval(t); }, 26);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+  const done = count >= words.length;
+  useEffect(() => { if (done && !fired.current) { fired.current = true; onDone?.(); } }, [done, onDone]);
+  return <p className={className}><Rich text={words.slice(0, count).join(" ")} /></p>;
+}
+
 const THINKING_PHRASES = [
   "Reading the firm's records…",
   "Checking deadlines and balances…",

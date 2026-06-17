@@ -207,17 +207,20 @@ export function SkillIcon({ category, size = 15, className }: { category: SkillC
   return <IconC size={size} className={cn("shrink-0 text-[var(--os-ink-subtle)]", className)} />;
 }
 
-/** The AI layer's identity: a petal colored by skill category (see the legend). */
+/** The AI layer's identity: a monochrome category glyph in a soft petal-leaf tile.
+ *  Meaningful (the glyph maps to what the skill does) + calm at scale (one ink,
+ *  uniform tiles) + on-theme (the leaf silhouette echoes the Petal mark). */
 export function SkillPetal({ category, size = 16, className }: { category: SkillCategory; size?: number; className?: string }) {
-  // eslint-disable-next-line @next/next/no-img-element
+  const IconC = SKILL_ICON[category];
+  // bare monochrome glyph — no tile/circle; glyph ~15% larger than the tiled version
   return (
-    <img
-      src={skillCategoryMeta[category].petal}
-      alt={skillCategoryMeta[category].label}
+    <span
       title={skillCategoryMeta[category].label}
-      className={cn("shrink-0 object-contain mix-blend-multiply", className)}
+      className={cn("grid shrink-0 place-items-center text-[var(--os-ink-muted)]", className)}
       style={{ width: size, height: size }}
-    />
+    >
+      <IconC size={Math.round(size * 0.64)} className="text-current" />
+    </span>
   );
 }
 

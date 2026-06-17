@@ -46,7 +46,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
         {open && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-[6px]"
             onClick={() => setOpen(false)}
           >
             <motion.div
@@ -82,13 +82,13 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
                   </div>
                 </div>
 
-                {/* key-numbers table */}
+                {/* key numbers — soft stat tiles, number-forward */}
                 <div className="os-label mb-2 mt-5">This week</div>
-                <div className="divide-y divide-[var(--os-border)] rounded-lg border border-[var(--os-border)]">
+                <div className="grid grid-cols-2 gap-2">
                   {rows.map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between px-3.5 py-2">
-                      <span className="text-[13px] text-[var(--os-ink)]">{label}</span>
-                      <span className="text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{value}</span>
+                    <div key={label} className="rounded-xl bg-[var(--os-bg-subtle)] px-4 py-3.5 transition-colors hover:bg-[var(--os-hover)]">
+                      <div className="os-display text-[24px] font-semibold leading-none tabular-nums text-[var(--os-ink)]">{value}</div>
+                      <div className="mt-2 text-[12px] leading-snug text-[var(--os-ink-muted)]">{label}</div>
                     </div>
                   ))}
                 </div>

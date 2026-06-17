@@ -168,20 +168,24 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           </button>
         </div>
 
-        <h2 className="os-display text-[15px] font-semibold text-[var(--os-ink)]">{task.title}</h2>
+        <div className="flex items-start gap-2">
+          <h2 className="os-display min-w-0 flex-1 text-[16px] font-semibold leading-snug text-[var(--os-ink)]">{task.title}</h2>
+          {task.flagged && <BookmarkFlag size={15} className="mt-0.5 shrink-0" />}
+        </div>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] text-[var(--os-ink-subtle)]">
-          <span>{task.kind}</span>
-          {task.estimatedMin > 0 && <span>~{task.estimatedMin} min</span>}
+        {/* state pill leads; the quiet facts stay muted + dot-separated */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12px] text-[var(--os-ink-muted)]">
           <StatusPill status={task.status} />
           {task.deadline && <DeadlineChip iso={task.deadline} />}
-          {task.flagged && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--os-ink-muted)]">
-              <BookmarkFlag size={12} /> Flagged
-            </span>
-          )}
-          {task.feeContext && <span className="text-[11px]">{task.feeContext}</span>}
+          <span className="text-[var(--os-ink-subtle)]">
+            {task.kind}{task.estimatedMin > 0 ? ` · ~${task.estimatedMin} min` : ""}
+          </span>
         </div>
+
+        {/* fee / blocked context — its own quiet line, not crammed into the meta */}
+        {task.feeContext && (
+          <p className="mt-1.5 text-[12px] text-[var(--os-ink-subtle)]">{task.feeContext}</p>
+        )}
 
         {/* actions - the ONE primary verb + ghost Edit + ghost Skip */}
         <div className="mt-3.5 flex flex-wrap items-center gap-1.5">

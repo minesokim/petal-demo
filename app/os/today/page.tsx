@@ -16,8 +16,8 @@ import { PetalMark } from "@/components/petal-mark";
 import { AskComposer } from "@/components/os/ask-composer";
 import { WeeklyDigestLink } from "@/components/os/roi-strip";
 import { FeatureCallout } from "@/components/os/callout";
-import { ProvenancePanel } from "@/components/os/provenance";
 import { SkillPetal } from "@/components/os/primitives";
+import { TodaysCall } from "@/components/os/todays-call";
 import { TodayBrief } from "@/components/os/today-brief";
 import { FilingReadiness } from "@/components/os/filing-readiness";
 import { DEMO_DATE_LABEL } from "@/lib/fixtures/vocab";
@@ -28,8 +28,6 @@ import {
 import { healthCounts, roiWeek } from "@/lib/fixtures/derive";
 import { useLiveNeedsYou } from "@/lib/demo-store";
 import { useBanner } from "@/lib/banner-store";
-
-const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -51,18 +49,6 @@ function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark
         </Link>
       )}
     </div>
-  );
-}
-
-// flat people avatar - records stay monochrome; color lives only on the AI layer (DESIGN.md §2a)
-function PersonAvatar({ name, size = 28 }: { name: string; size?: number }) {
-  return (
-    <span
-      className="grid shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-semibold text-[var(--os-ink-muted)]"
-      style={{ width: size, height: size }}
-    >
-      {initials(name)}
-    </span>
   );
 }
 
@@ -101,7 +87,7 @@ export default function TodayPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/25 to-black/10" />
             <div className="relative px-7 py-8">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
-                <PetalMark className="size-3.5 text-white/85" /> Daily brief · {DEMO_DATE_LABEL}
+                {DEMO_DATE_LABEL}
                 <WeeklyDigestLink tone="light" className="-my-1 ml-auto" />
               </div>
               <h2 className="os-display text-[22px] font-semibold leading-tight text-white">Good morning, {firstName}</h2>
@@ -170,20 +156,13 @@ export default function TodayPage() {
           {/* ── Today's calls ── */}
           <Card>
             <CardHead title="Today's calls" />
-            <div className="flex items-center gap-3 py-1">
-              <span className="w-14 shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">3:00 PM</span>
-              <PersonAvatar name={callHousehold.name} size={24} />
-              <div className="min-w-0 flex-1">
-                <Link href={`/os/clients/${callHousehold.id}`} className={cn("truncate rounded text-[13px] text-[var(--os-link)] hover:underline", focusRing)}>
-                  {callHousehold.name}
-                </Link>
-                <div className="truncate text-[12px] text-[var(--os-ink-muted)]">{callForm ? `${callForm} review` : "Review call"}</div>
-              </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                <SkillPetal category={callSkill.category} size={13} /> Brief generating
-              </span>
-            </div>
-            {callTask.runId && <ProvenancePanel runId={callTask.runId} className="mt-2 pl-[68px]" />}
+            <TodaysCall
+              householdId={callHousehold.id}
+              engagementId={callRun?.engagementId}
+              time="3:00 PM"
+              runId={callTask.runId}
+              skillCategory={callSkill.category}
+            />
           </Card>
 
         </div>

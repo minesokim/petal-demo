@@ -363,7 +363,7 @@ function SourceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (title: s
   const TYPES = [{ key: "Upload" as const, icon: I.attach, label: "Upload" }, { key: "Link" as const, icon: I.globe, label: "Link" }, { key: "Text" as const, icon: I.file, label: "Paste text" }];
   const CONNECTORS = ["QuickBooks", "Gmail", "Google Drive", "Dropbox"];
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4" onClick={onClose}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} className="fixed inset-0 z-30 grid place-items-center bg-black/20 p-4 backdrop-blur-[6px]" onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={{ duration: 0.16, ease: "easeOut" }} onClick={e => e.stopPropagation()} className="w-full max-w-[460px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl">
         <div className="flex items-center justify-between border-b border-[var(--os-border)] px-4 py-3"><h3 className="text-[15px] font-semibold os-display">Add a source</h3><button onClick={onClose} className="grid size-6 place-items-center rounded-md text-[var(--os-ink-subtle)] hover:bg-[var(--os-hover)]"><Icon icon={I.close} size={15} /></button></div>
         <div className="px-4 py-4">

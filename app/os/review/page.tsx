@@ -15,6 +15,7 @@ import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, DeadlineChip, SkillPetal, BookmarkFlag, ScopeToggle, Segmented, type Scope } from "@/components/os/primitives";
 import { AssigneePicker } from "@/components/os/assignee-picker";
+import { StreamedText } from "@/components/os/petal-chat";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { demoStore } from "@/lib/demo-store";
 import { tasks, householdById, skillById, engagementById, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
@@ -251,8 +252,9 @@ function PetalPanel({ task, household }: { task: Task; household?: { name: strin
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [openingReady, setOpeningReady] = useState(false);
   useEffect(() => {
-    setMessages([]); setInput(""); setThinking(false);
+    setMessages([]); setInput(""); setThinking(false); setOpeningReady(false);
     if (timer.current) clearTimeout(timer.current);
   }, [task.id]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -284,7 +286,7 @@ function PetalPanel({ task, household }: { task: Task; household?: { name: strin
         {/* Petal's opening read - plain assistant prose */}
         <div>
           <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
-          <p className="text-[13.5px] leading-relaxed text-[var(--os-ink)]">{task.recommendation ?? task.why}</p>
+          <StreamedText key={task.id} text={task.recommendation ?? task.why} className="text-[13.5px] leading-relaxed text-[var(--os-ink)]" onDone={() => setOpeningReady(true)} />
         </div>
 
         {/* the conversation */}
@@ -306,15 +308,15 @@ function PetalPanel({ task, household }: { task: Task; household?: { name: strin
           </div>
         )}
 
-        {/* suggested prompts - pill chips before any conversation */}
-        {messages.length === 0 && !thinking && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
+        {/* suggested prompts - fade in once the opening read finishes typing */}
+        {messages.length === 0 && !thinking && openingReady && (
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="flex flex-wrap gap-1.5 pt-0.5">
             {suggestions.map(s => (
               <button key={s} onClick={() => send(s)} className={cn("inline-flex items-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-1.5 text-[12px] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
                 <PetalMark className="size-3 shrink-0 text-[var(--os-ink-subtle)]" /> {s}
               </button>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -587,9 +589,15 @@ export default function ReviewPage() {
 
         {/* right: Petal copilot */}
         {task && (
-          <aside className="hidden w-[400px] shrink-0 border-l border-[var(--os-border)] bg-[var(--os-surface)] xl:block">
-            <PetalPanel key={task.id} task={task} household={household} />
-          </aside>
+          <motion.aside
+            key={task.id}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="hidden w-[400px] shrink-0 border-l border-[var(--os-border)] bg-[var(--os-surface)] xl:block"
+          >
+            <PetalPanel task={task} household={household} />
+          </motion.aside>
         )}
       </div>
     </div>

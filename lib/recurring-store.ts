@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
 import { households, CURRENT_USER_ID, type Household } from "@/lib/fixtures/firm";
 import { demoStore } from "@/lib/demo-store";
 
-export type Cadence = "monthly" | "quarterly" | "annually";
+export type Cadence = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannually" | "annually";
 /** which clients a template fans out to */
 export type ScopeKey = "all" | "books" | "premium" | string; // string = a single household id
 
@@ -30,8 +30,12 @@ export interface Template {
 }
 
 export const CADENCE_LABEL: Record<Cadence, string> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  biweekly: "Every 2 weeks",
   monthly: "Monthly",
   quarterly: "Quarterly",
+  semiannually: "Twice a year",
   annually: "Annually",
 };
 

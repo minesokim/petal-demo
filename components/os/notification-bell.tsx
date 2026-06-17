@@ -120,7 +120,7 @@ export function NotificationBell() {
                       <div className="flex items-center gap-1.5">
                         <span className={cn("min-w-0 flex-1 truncate text-[12.5px]", n.read ? "font-medium text-[var(--os-ink-muted)]" : "font-semibold text-[var(--os-ink)]")}>{n.title}</span>
                         <span className="shrink-0 text-[10.5px] text-[var(--os-ink-subtle)]">{n.at}</span>
-                        {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-[var(--os-accent)]" />}
+                        {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-[var(--os-info)]" />}
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-[var(--os-ink-muted)]">{n.body}</p>
                     </div>

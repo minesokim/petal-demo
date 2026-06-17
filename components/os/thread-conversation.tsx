@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { Phone, Video } from "lucide-react";
+import { Phone, Video, Paperclip, FileText, LayoutTemplate, FileSignature, ListChecks, Clock } from "lucide-react";
+import { TEMPLATES } from "@/components/os/compose-modal";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -66,6 +67,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
   const [petalDrafted, setPetalDrafted] = useState(false);
   const [sent, setSent] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [extraMessages, setExtraMessages] = useState<Message[]>([]);
   const { msg, show } = useToast();
 
@@ -76,6 +78,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
     setPetalDrafted(false);
     setSent(false);
     setTranscriptOpen(false);
+    setTemplatesOpen(false);
     setExtraMessages([]);
   }, [thread.id, thread.petalDraft?.text]);
 
@@ -121,8 +124,8 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
   return (
     <>
       {/* Conversation - rendered per channel */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
-        <div className={cn("mx-auto max-w-[640px]", thread.channel === "sms" ? "space-y-2.5" : thread.channel === "email" ? "space-y-0" : "space-y-5")}>
+      <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-8">
+        <div className={cn("mx-auto max-w-[660px]", thread.channel === "sms" ? "space-y-3" : thread.channel === "email" ? "space-y-0" : "space-y-6")}>
           {/* ── Call: Petal summary first, full transcript on demand, follow-ups ── */}
           {thread.channel === "call" && thread.transcript && (
             <div className="space-y-4">
@@ -205,17 +208,15 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
             // ── Email: full-width message blocks ──
             if (thread.channel === "email") {
               return (
-                <div key={i} className="border-b border-[var(--os-border)] py-4 first:pt-0 last:border-0 last:pb-0">
+                <div key={i} className="border-b border-[var(--os-border)] py-6 first:pt-0 last:border-0 last:pb-0">
                   <div className="flex items-start gap-3">
                     <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full text-[10px] font-medium", msg.from === "firm" ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "bg-[var(--os-selected)] text-[var(--os-ink-muted)]")}>{initials(msg.author)}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2">
                         <span className="text-[13px] font-medium text-[var(--os-ink)]">{msg.author}</span>
-                        <span className="truncate font-mono text-[11px] text-[var(--os-ink-subtle)]">&lt;{emailFor(msg.author, msg.from)}&gt;</span>
                         <span className="ml-auto shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{msg.time}</span>
                       </div>
-                      <div className="text-[12px] text-[var(--os-ink-subtle)]">{msg.from === "firm" ? `to ${thread.clientName}` : "to me"}</div>
-                      <p className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-[var(--os-ink)]">{msg.text}</p>
+                      <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-[var(--os-ink)]">{msg.text}</p>
                     </div>
                   </div>
                 </div>
@@ -318,8 +319,40 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
               rows={thread.channel === "sms" ? 1 : 2}
               className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none"
             />
-            <div className="mt-1 flex items-center gap-1.5">
-              <button title="Attach" className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]", focusRing)}><Icon icon={I.attach} size={15} /></button>
+            <div className="mt-1 flex items-center gap-0.5">
+              {/* the same tax-firm toolkit as the compose modal */}
+              {([
+                { icon: Paperclip, label: "Attach file", run: () => show("File attached") },
+                { icon: FileText, label: "Insert client document", run: () => show("Document attached") },
+                { icon: FileSignature, label: "Request signature (8879)", run: () => show("8879 attached for e-signature") },
+                { icon: ListChecks, label: "Request documents", run: () => show("Document request attached") },
+                { icon: Clock, label: "Schedule send", run: () => show("Scheduled for tomorrow 8:00 AM") },
+              ] as const).map(({ icon: IconC, label, run }) => (
+                <button key={label} type="button" title={label} aria-label={label} onClick={run} className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}>
+                  <IconC className="size-[15px]" />
+                </button>
+              ))}
+              {/* templates - inserts a saved message into the composer */}
+              <div className="relative">
+                <button type="button" title="Templates" aria-label="Templates" onClick={() => setTemplatesOpen(o => !o)} className={cn("grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", templatesOpen && "bg-[var(--os-selected)] text-[var(--os-ink)]", focusRing)}>
+                  <LayoutTemplate className="size-[15px]" />
+                </button>
+                <AnimatePresence>
+                  {templatesOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setTemplatesOpen(false)} />
+                      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.14 }} className="absolute bottom-[calc(100%+6px)] left-0 z-20 w-[244px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_12px_34px_-8px_rgba(17,17,26,0.22)]">
+                        <div className="px-2 py-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">Saved templates</div>
+                        {TEMPLATES.map(t => (
+                          <button key={t.name} onClick={() => { setReply(t.body.replaceAll("{name}", first(thread.clientName))); setTemplatesOpen(false); }} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+                            <LayoutTemplate className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" /> {t.name}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
               {/* plain send is the quiet secondary; the primary is Petal-first */}
               <button
                 onClick={send}
