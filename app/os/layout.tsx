@@ -200,7 +200,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             <Icon icon={I.search} size={16} />
           </button>
           </Tip>
-          <NotificationBell />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
@@ -226,6 +225,12 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+
+      {/* notification center — fixed in the top-right corner, above page chrome.
+          A surface chip keeps the bell legible over dark headers (e.g. Home's hero). */}
+      <div className="fixed right-3 top-[26px] z-30 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)]/90 shadow-[0_1px_2px_rgba(17,17,26,0.06)] backdrop-blur-sm">
+        <NotificationBell />
+      </div>
 
       <AnimatePresence>
         {searchOpen && <CommandSearch onClose={() => setSearchOpen(false)} />}

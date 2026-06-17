@@ -65,7 +65,7 @@ export function NotificationBell() {
           <motion.div
             initial={{ opacity: 0, y: -4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.14, ease: "easeOut" }}
-            className="absolute left-0 top-[calc(100%+6px)] z-40 w-[330px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_12px_40px_-8px_rgba(17,17,26,0.28)]"
+            className="absolute right-0 top-[calc(100%+6px)] z-40 w-[330px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_12px_40px_-8px_rgba(17,17,26,0.28)]"
           >
             <div className="flex items-center justify-between border-b border-[var(--os-border)] px-3 py-2.5">
               <span className="text-[13px] font-semibold text-[var(--os-ink)]">Notifications</span>
