@@ -12,9 +12,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
-import { DEMO_DATE, daysUntil, fmtDateYear } from "@/lib/fixtures/vocab";
+import { fmtDateYear } from "@/lib/fixtures/vocab";
 import { householdById } from "@/lib/fixtures/firm";
-import { calendarEvents, calEventMeta, eventsOn, upcomingEvents, type CalEvent } from "@/lib/fixtures/calendar";
+import { calendarEvents, calEventMeta, eventsOn, upcomingEvents, type CalEvent, type CalEventType } from "@/lib/fixtures/calendar";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -23,7 +23,9 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 const iso = (y: number, m: number, d: number) =>
   `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-const TODAY_ISO = iso(DEMO_DATE.getFullYear(), DEMO_DATE.getMonth(), DEMO_DATE.getDate());
+/** whole-day difference between two ISO dates (base is "today") */
+const dayDiff = (dateIso: string, baseIso: string) =>
+  Math.round((Date.parse(dateIso) - Date.parse(baseIso)) / 86_400_000);
 
 /** the week grid of ISO dates covering `month` of `year` (Sun-started weeks) */
 function monthGrid(year: number, month: number): string[] {
@@ -39,22 +41,33 @@ function monthGrid(year: number, month: number): string[] {
   return cells;
 }
 
-function whenLabel(dateIso: string): string {
-  const dleft = daysUntil(dateIso);
+function whenLabel(dateIso: string, todayIso: string): string {
+  const dleft = dayDiff(dateIso, todayIso);
   return dleft === 0 ? "Today" : dleft === 1 ? "Tomorrow" : dleft > 0 ? `in ${dleft} days` : fmtDateYear(dateIso);
 }
 
+/** Soft tinted chip per event type — the month-grid event look (colored fill + dot + title). */
+const EVENT_TONE: Record<CalEventType, { chip: string; dot: string; text: string }> = {
+  meeting: { chip: "bg-amber-100/70 hover:bg-amber-100", dot: "bg-amber-500", text: "text-amber-900" },
+  block: { chip: "bg-violet-100/70 hover:bg-violet-100", dot: "bg-violet-500", text: "text-violet-900" },
+  office: { chip: "bg-[var(--os-selected)] hover:bg-[var(--os-border)]", dot: "bg-[var(--os-ink-subtle)]", text: "text-[var(--os-ink-muted)]" },
+};
+
 export default function CalendarPage() {
-  const [view, setView] = useState({ year: DEMO_DATE.getFullYear(), month: DEMO_DATE.getMonth() });
+  // real current date — the calendar tracks today, not the demo's frozen date
+  const now = new Date();
+  const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [open, setOpen] = useState<CalEvent | null>(null);
   const cells = monthGrid(view.year, view.month);
-  const upcoming = upcomingEvents(TODAY_ISO, 8);
+  const upcoming = upcomingEvents(todayIso, 8);
 
   const go = (delta: number) => {
     const m = view.month + delta;
     setView({ year: view.year + Math.floor(m / 12), month: ((m % 12) + 12) % 12 });
   };
-  const today = () => setView({ year: DEMO_DATE.getFullYear(), month: DEMO_DATE.getMonth() });
+  const today = () => setView({ year: now.getFullYear(), month: now.getMonth() });
 
   return (
     <div className="flex h-full flex-col">
@@ -87,7 +100,7 @@ export default function CalendarPage() {
             {cells.map((d, i) => {
               const day = Number(d.slice(8, 10));
               const inMonth = Number(d.slice(5, 7)) === view.month + 1;
-              const isToday = d === TODAY_ISO;
+              const isToday = d === todayIso;
               const evts = eventsOn(d);
               return (
                 <div
@@ -109,19 +122,19 @@ export default function CalendarPage() {
                     </span>
                   </div>
                   <div className="space-y-0.5">
-                    {evts.slice(0, 3).map(e => (
-                      <button
-                        key={e.id}
-                        onClick={() => setOpen(e)}
-                        className={cn("flex w-full items-start gap-1.5 rounded px-1 py-0.5 text-left text-[11px] leading-tight transition-colors hover:bg-[var(--os-selected)]", FOCUS)}
-                      >
-                        <span className={cn("mt-[5px] size-1.5 shrink-0 rounded-full", calEventMeta[e.type].dot, e.done && "opacity-40")} />
-                        <span className="min-w-0 flex-1 truncate">
-                          {e.time && <span className="mr-1 tabular-nums text-[var(--os-ink-subtle)]">{e.time}</span>}
-                          <span className={cn(e.done ? "text-[var(--os-ink-subtle)] line-through decoration-[var(--os-border-strong)]" : "text-[var(--os-ink)]")}>{e.title}</span>
-                        </span>
-                      </button>
-                    ))}
+                    {evts.slice(0, 3).map(e => {
+                      const t = EVENT_TONE[e.type];
+                      return (
+                        <button
+                          key={e.id}
+                          onClick={() => setOpen(e)}
+                          className={cn("flex w-full items-center gap-1.5 rounded-[5px] px-1.5 py-[3px] text-left text-[11px] font-medium leading-tight transition-colors", t.chip, FOCUS, e.done && "opacity-55")}
+                        >
+                          <span className={cn("size-1.5 shrink-0 rounded-full", t.dot, e.done && "opacity-50")} />
+                          <span className={cn("min-w-0 flex-1 truncate", t.text, e.done && "line-through decoration-current/40")}>{e.title}</span>
+                        </button>
+                      );
+                    })}
                     {evts.length > 3 && (
                       <div className="px-1 text-[10.5px] font-medium text-[var(--os-ink-muted)]">+{evts.length - 3} more</div>
                     )}
@@ -151,7 +164,7 @@ export default function CalendarPage() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{e.title}</div>
                     <div className="truncate text-[11px] text-[var(--os-ink-muted)]">
-                      {e.time ? `${e.time} · ` : ""}{whenLabel(e.date)}{hh ? ` · ${hh.name}` : ""}
+                      {e.time ? `${e.time} · ` : ""}{whenLabel(e.date, todayIso)}{hh ? ` · ${hh.name}` : ""}
                     </div>
                   </div>
                 </button>
