@@ -27,9 +27,9 @@ export function RequestDocsButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className={cn("inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12.5px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS, className)}
+        className={cn("inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS, className)}
       >
-        <Icon icon={I.mail} size={14} className="text-[var(--os-ink-muted)]" /> Request documents
+        <Icon icon={I.mail} size={14} className="text-[var(--os-ink-subtle)]" /> Request documents
       </button>
       {open && <RequestDocsModal householdId={householdId} engagementId={engagementId} onClose={() => setOpen(false)} onToast={onToast} />}
     </>

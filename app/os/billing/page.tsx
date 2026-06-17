@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -8,13 +8,10 @@ import { Icon, I } from "@/components/os/icon";
 import { SkillPetal } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { taskById } from "@/lib/fixtures/firm";
-import { invoiceStatusMeta, type Invoice, type InvoiceStatus } from "@/lib/fixtures/derive";
-import { billingStore, useBillingInvoices } from "@/lib/billing-store";
-import { timeStore, useTime } from "@/lib/time-store";
+import { invoices, billingKpis, invoiceStatusMeta, type Invoice, type InvoiceStatus } from "@/lib/fixtures/derive";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 const money = (n: number) => `$${n.toLocaleString()}`;
-const fmtHrs = (min: number) => `${Math.round((min / 60) * 10) / 10}h`;
 
 const COLS = "grid-cols-[minmax(200px,1.7fr)_148px_104px_104px_108px_120px]";
 // Ramp-style grid cells: stretch full row height (continuous vertical dividers), center
@@ -159,55 +156,22 @@ function Drawer({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
   );
 }
 
-type PayMethod = "manual" | "stripe" | "square";
-const PAY_METHODS: { key: PayMethod; label: string; logo?: string; desc: string; action: string }[] = [
-  { key: "manual", label: "Manual invoicing", desc: "Send invoices; clients pay by check or bank transfer. You mark them paid.", action: "Send invoice" },
-  { key: "stripe", label: "Stripe", logo: "/logos/stripe.svg", desc: "Clients pay online by card. Deposits and payments auto-reconcile.", action: "Send payment link" },
-  { key: "square", label: "Square", logo: "/logos/square.png", desc: "Card and POS payments sync from Square and reconcile automatically.", action: "Send payment link" },
+type PayMethod = "stripe" | "manual";
+const PAY_METHODS: { key: PayMethod; label: string; desc: string; action: string }[] = [
+  { key: "stripe", label: "Stripe", desc: "Clients pay online by card. Deposits and payments auto-reconcile.", action: "Send payment link" },
+  { key: "manual", label: "Manual", desc: "Send invoices; clients pay by check or bank transfer. You mark them paid.", action: "Send invoice" },
 ];
-
-/* quiet toast */
-function useToast() {
-  const [msg, setMsg] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  return {
-    msg,
-    show: (m: string) => { setMsg(m); if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => setMsg(null), 2400); },
-  };
-}
 
 export default function BillingPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [statusOpen, setStatusOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [payVia, setPayVia] = useState<PayMethod>("manual");
+  const [payVia, setPayVia] = useState<PayMethod>("stripe");
   const [payOpen, setPayOpen] = useState(false);
   const pay = PAY_METHODS.find(m => m.key === payVia)!;
-  const { msg, show } = useToast();
 
-  // live invoices (canonical + session drafts) and live WIP
-  const allInvoices = useBillingInvoices();
-  useTime();
-  const wip = timeStore.unbilled();
-  const wipTotal = timeStore.unbilledTotal();
-  const wipMinutes = timeStore.unbilledMinutes();
-
-  const owed = allInvoices.filter(i => i.status === "balance_due" || i.status === "overdue");
-  const overdue = allInvoices.filter(i => i.status === "overdue");
-  const kpis = {
-    outstandingTotal: owed.reduce((s, i) => s + i.balance, 0),
-    outstandingCount: owed.length,
-    overdueTotal: overdue.reduce((s, i) => s + i.balance, 0),
-    overdueCount: overdue.length,
-    collectedTotal: allInvoices.reduce((s, i) => s + i.collected, 0),
-    billedTotal: allInvoices.reduce((s, i) => s + i.invoiced, 0),
-  };
-
-  const billWip = (householdId: string, name: string) => {
-    const { amount } = timeStore.bill(householdId);
-    if (amount > 0) show(`Billed ${money(amount)} to ${name}`);
-  };
+  const allInvoices = invoices();
+  const kpis = billingKpis();
 
   const activeTab = TABS.find(t => t.key === tab)!;
   const rows = allInvoices.filter(activeTab.filter);
@@ -221,28 +185,25 @@ export default function BillingPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Billing</h1>
-            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Invoices, payments, and what each client owes. <span className="text-[var(--os-ink-subtle)]">· {pay.desc}</span></p>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Invoices, payments, and what each client owes.</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {/* how the firm collects: manual invoicing vs an online processor */}
+          <div className="flex shrink-0 items-center gap-1">
+            {/* how the firm collects — a quiet setting, not a mode toggle */}
             <div className="relative">
-              <button onClick={() => setPayOpen(o => !o)} aria-expanded={payOpen} className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
-                {pay.logo ? <img src={pay.logo} alt="" className="size-4 shrink-0 object-contain" /> : <Icon icon={I.billing} size={15} className="text-[var(--os-ink-muted)]" />}
-                {pay.label}
-                <Icon icon={I.chevronDown} size={13} className={cn("text-[var(--os-ink-subtle)] transition-transform", payOpen && "rotate-180")} />
+              <button onClick={() => setPayOpen(o => !o)} aria-expanded={payOpen} className={cn("flex h-8 items-center gap-1 rounded-md px-2 text-[12.5px] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>
+                Collecting via <span className="font-medium text-[var(--os-ink)]">{pay.label}</span>
+                <Icon icon={I.chevronDown} size={12} className={cn("text-[var(--os-ink-subtle)] transition-transform", payOpen && "rotate-180")} />
               </button>
               {payOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setPayOpen(false)} />
-                  <div className="absolute right-0 top-9 z-20 w-[280px] rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                  <div className="absolute right-0 top-9 z-20 w-[260px] rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
                     <div className="os-label px-2.5 pb-1 pt-1.5">Collect payments via</div>
                     {PAY_METHODS.map(m => (
                       <button key={m.key} onClick={() => { setPayVia(m.key); setPayOpen(false); }} className={cn("flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
-                        <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded border border-[var(--os-border)] bg-white">
-                          {m.logo ? <img src={m.logo} alt="" className="size-4 object-contain" /> : <Icon icon={I.billing} size={13} className="text-[var(--os-ink-muted)]" />}
-                        </span>
+                        <span className={cn("mt-1 size-1.5 shrink-0 rounded-full", payVia === m.key ? "bg-[var(--os-accent)]" : "border border-[var(--os-border-strong)]")} />
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--os-ink)]">{m.label}{payVia === m.key && <Icon icon={I.check} size={13} className="text-[var(--os-accent)]" />}</span>
+                          <span className="block text-[13px] font-medium text-[var(--os-ink)]">{m.label}</span>
                           <span className="mt-0.5 block text-[11.5px] leading-snug text-[var(--os-ink-subtle)]">{m.desc}</span>
                         </span>
                       </button>
@@ -288,39 +249,7 @@ export default function BillingPage() {
               <Stat label="Outstanding" value={money(kpis.outstandingTotal)} sub={`${kpis.outstandingCount} invoices awaiting payment`} />
               <Stat label="Overdue" value={money(kpis.overdueTotal)} sub={`${kpis.overdueCount} past due · Petal can chase`} valueClass="text-[var(--os-danger)]" dot="bg-red-500" />
               <Stat label="Collected this season" value={money(kpis.collectedTotal)} sub={`of ${money(kpis.billedTotal)} billed`} />
-              <Stat label="Unbilled time" value={money(wipTotal)} sub={wipTotal > 0 ? `${fmtHrs(wipMinutes)} logged · not yet billed` : "All time billed"} valueClass={wipTotal > 0 ? "text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]"} />
             </div>
-
-            {/* work in progress — unbilled time, billable in one click into a draft invoice */}
-            {wip.length > 0 && (
-              <div className="mt-6 overflow-hidden rounded-xl border border-[var(--os-border)]">
-                <div className="flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3.5 py-2">
-                  <Icon icon={I.history} size={14} className="text-[var(--os-ink-muted)]" />
-                  <span className="text-[12.5px] font-medium text-[var(--os-ink)]">Work in progress</span>
-                  <span className="rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{wip.length}</span>
-                  <span className="ml-auto text-[12px] tabular-nums text-[var(--os-ink-muted)]">{money(wipTotal)} billable</span>
-                </div>
-                <div className="divide-y divide-[var(--os-border)]">
-                  {wip.map(w => (
-                    <div key={w.householdId} className="flex items-center gap-3 px-3.5 py-2.5">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(w.clientName)}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{w.clientName}</div>
-                        <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{w.notes.join(" · ")}</div>
-                      </div>
-                      <span className="shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">{fmtHrs(w.minutes)}</span>
-                      <span className="w-16 shrink-0 text-right text-[13px] font-medium tabular-nums text-[var(--os-ink)]">{money(w.amount)}</span>
-                      <button
-                        onClick={() => billWip(w.householdId, w.clientName)}
-                        className={cn("flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
-                      >
-                        <Icon icon={I.billing} size={13} /> Bill
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* table */}
             <div className="mt-6 overflow-x-auto">
@@ -342,10 +271,7 @@ export default function BillingPage() {
                     <div className="gap-2.5">
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(inv.clientName)}</span>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate text-[13px] font-medium text-[var(--os-ink)]">{inv.clientName}</span>
-                          {billingStore.isDraft(inv.id) && <span className="shrink-0 rounded bg-[var(--os-accent-soft)] px-1.5 text-[10px] font-medium text-[var(--os-accent)]">New</span>}
-                        </div>
+                        <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{inv.clientName}</div>
                         <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{inv.number} · {inv.serviceTier}</div>
                         {inv.blockedByDocs && (
                           <Link href={`/os/documents?client=${inv.householdId}`} onClick={e => e.stopPropagation()} className={cn("mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-[var(--os-border)] px-1.5 py-px text-[10px] text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
@@ -377,18 +303,6 @@ export default function BillingPage() {
 
         <AnimatePresence>{selectedInv && <Drawer inv={selectedInv} onClose={() => setSelected(null)} />}</AnimatePresence>
       </div>
-
-      <AnimatePresence>
-        {msg && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: 6, x: "-50%" }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-            className="fixed bottom-5 left-1/2 z-50 rounded-md bg-[var(--os-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--os-primary-fg)] shadow-sm"
-          >
-            {msg}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
