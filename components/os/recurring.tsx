@@ -98,6 +98,7 @@ function RecurringModal({ onClose, onToast }: { onClose: () => void; onToast?: (
                       <span className={cn("size-[13px] rounded-full bg-white shadow-sm transition-transform duration-200", t.active ? "translate-x-[13px]" : "translate-x-0")} />
                     </button>
                   </div>
+                  <p className="mt-1 pl-[30px] text-[11.5px] leading-snug text-[var(--os-ink-muted)]">{t.description}</p>
                   <div className="mt-1.5 flex items-center gap-2.5 pl-[30px] text-[11.5px] text-[var(--os-ink-subtle)]">
                     <span className="inline-flex items-center gap-1"><Icon icon={I.calendar} size={12} /> {CADENCE_LABEL[t.cadence]}</span>
                     <span className="text-[var(--os-border-strong)]">·</span>
@@ -147,6 +148,7 @@ function RecurringModal({ onClose, onToast }: { onClose: () => void; onToast?: (
 
 function NewTemplateForm({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [cadence, setCadence] = useState<Cadence>("monthly");
   const [scope, setScope] = useState<ScopeKey>("all");
   const [assignee, setAssignee] = useState("petal");
@@ -154,7 +156,7 @@ function NewTemplateForm({ onDone }: { onDone: () => void }) {
   const save = () => {
     const n = name.trim();
     if (!n) return;
-    recurringStore.create({ name: n, cadence, scope, assignee, nextRun: "Next cycle", active: true });
+    recurringStore.create({ name: n, description: description.trim(), cadence, scope, assignee, nextRun: "Next cycle", active: true });
     onDone();
   };
 
@@ -162,7 +164,11 @@ function NewTemplateForm({ onDone }: { onDone: () => void }) {
     <div className="mt-2 space-y-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] p-3">
       <div>
         <label className="os-label mb-1 block">Name</label>
-        <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); }} placeholder="e.g. Quarterly payroll filing" className={fieldCls} />
+        <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Quarterly payroll filing" className={fieldCls} />
+      </div>
+      <div>
+        <label className="os-label mb-1 block">Instructions</label>
+        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="What should happen each run? Petal follows this when it runs the job." className={cn(fieldCls, "resize-none")} />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>

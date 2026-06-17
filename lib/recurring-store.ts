@@ -16,6 +16,8 @@ export type ScopeKey = "all" | "books" | "premium" | string; // string = a singl
 export interface Template {
   id: string;
   name: string;
+  /** the actual instructions — what gets done each run (so Petal/teammates know the work) */
+  description: string;
   cadence: Cadence;
   /** "petal" hands each generated task to Petal; otherwise a firm member id */
   assignee: string;
@@ -56,9 +58,9 @@ export function scopeLabel(scope: ScopeKey): string {
 }
 
 const templates: Template[] = [
-  { id: "rt-est", name: "Quarterly estimated payment reminder", cadence: "quarterly", assignee: "petal", scope: "all", nextRun: "Jun 15", active: true, runCount: 0 },
-  { id: "rt-books", name: "Monthly bookkeeping close", cadence: "monthly", assignee: CURRENT_USER_ID, scope: "books", nextRun: "Jul 1", active: true, runCount: 0 },
-  { id: "rt-engagement", name: "Engagement letter renewal", cadence: "annually", assignee: "petal", scope: "premium", nextRun: "Dec 1", active: false, runCount: 0 },
+  { id: "rt-est", name: "Quarterly estimated payment reminder", description: "Email each client their upcoming 1040-ES voucher amount and due date; flag anyone who underpaid last quarter so Antonio can review before it sends.", cadence: "quarterly", assignee: "petal", scope: "all", nextRun: "Jun 15", active: true, runCount: 0 },
+  { id: "rt-books", name: "Monthly bookkeeping close", description: "Reconcile bank and card feeds, categorize transactions, and post the month-end journal entries for review.", cadence: "monthly", assignee: CURRENT_USER_ID, scope: "books", nextRun: "Jul 1", active: true, runCount: 0 },
+  { id: "rt-engagement", name: "Engagement letter renewal", description: "Generate this year's engagement letter from the firm template and send it for e-signature; chase anyone unsigned after 7 days.", cadence: "annually", assignee: "petal", scope: "premium", nextRun: "Dec 1", active: false, runCount: 0 },
 ];
 
 let seq = 0;
@@ -78,10 +80,10 @@ export const recurringStore = {
       const taskId = demoStore.newId();
       demoStore.createTask({
         id: taskId, householdId: h.id, status: "todo", kind: "Task",
-        title: tpl.name, why: `Recurring · ${tpl.name}`, skillId: "",
+        title: tpl.name, why: tpl.description || `Recurring · ${tpl.name}`, skillId: "",
         origin: "human", assigneeId: toPetal ? undefined : tpl.assignee,
       });
-      if (toPetal) demoStore.handToPetal(taskId, `Recurring job "${tpl.name}" — drafted for ${h.name}. Review and approve.`);
+      if (toPetal) demoStore.handToPetal(taskId, `Recurring job "${tpl.name}" for ${h.name}.\n\n${tpl.description}\n\nDrafted per these instructions — review and approve.`);
     });
     tpl.lastRun = "Just now";
     tpl.runCount += matches.length;

@@ -24,6 +24,8 @@
      neutral chip; inline links use --os-link. */
   --os-accent: #2f6bff;
   --os-accent-soft: #eef0fe;
+  /* mint — trialing as a count/accent hue (borderless count numbers) */
+  --os-mint: #00BD7D;
   /* inline text links / actions - the one blue */
   --os-link: #2563eb;
 

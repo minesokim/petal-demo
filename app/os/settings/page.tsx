@@ -425,7 +425,7 @@ export default function SettingsPage() {
                   className={cn("relative flex items-center gap-1.5 px-2.5 py-2 text-[13px] transition-colors", tab === k ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]", FOCUS)}
                 >
                   {label}
-                  <span className="rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{k === "connected" ? connectedCount : integrations.length}</span>
+                  <span className="text-[11px] font-semibold tabular-nums text-[var(--os-mint)]">{k === "connected" ? connectedCount : integrations.length}</span>
                   {tab === k && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
                 </button>
               ))}

@@ -79,12 +79,14 @@ function Drawer({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
       <div className="px-5">
         <div className="text-[12px] text-[var(--os-ink-muted)]">{heroLabel}</div>
         <div className={cn("mt-1 text-[30px] font-semibold leading-none tabular-nums os-display", inv.status === "overdue" && "text-[var(--os-danger)]")}>{money(inv.status === "paid" ? inv.invoiced : inv.balance)}</div>
-        <StatusTag status={inv.status} className="mt-2.5" />
-        {inv.blockedByDocs && (
-          <Link href={`/os/documents?client=${inv.householdId}`} className={cn("mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--os-border)] px-2 py-0.5 text-[11px] text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
-            <Icon icon={I.alert} size={12} /> Fee blocked by missing docs
-          </Link>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <StatusTag status={inv.status} />
+          {inv.blockedByDocs && (
+            <Link href={`/os/documents?client=${inv.householdId}`} className={cn("inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] px-2 py-1 text-[11px] font-medium text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+              <Icon icon={I.alert} size={12} /> Can’t bill until docs arrive
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* issued → due timeline */}
@@ -146,11 +148,6 @@ function Drawer({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
           <div className="text-[12px] text-[var(--os-ink-muted)]">Drag a receipt or click to upload</div>
         </div>
         <div className="mt-2 text-[11px] text-[var(--os-ink-subtle)]">or email invoices to <span className="text-[var(--os-ink)]">billing@vazant.tax</span></div>
-      </div>
-
-      {/* comment */}
-      <div className="mt-auto border-t border-[var(--os-border)] px-5 py-3">
-        <input placeholder="Add a comment" className="h-8 w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]" />
       </div>
     </motion.aside>
   );
@@ -274,8 +271,8 @@ export default function BillingPage() {
                         <div className="truncate text-[13px] font-medium text-[var(--os-ink)]">{inv.clientName}</div>
                         <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{inv.number} · {inv.serviceTier}</div>
                         {inv.blockedByDocs && (
-                          <Link href={`/os/documents?client=${inv.householdId}`} onClick={e => e.stopPropagation()} className={cn("mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-[var(--os-border)] px-1.5 py-px text-[10px] text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
-                            <Icon icon={I.alert} size={10} /> Fee blocked by missing docs
+                          <Link href={`/os/documents?client=${inv.householdId}`} onClick={e => e.stopPropagation()} className={cn("mt-1 inline-flex w-fit items-center gap-1 rounded-md border border-[var(--os-border)] px-1.5 py-0.5 text-[10px] text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                            <Icon icon={I.alert} size={10} /> Can’t bill until docs arrive
                           </Link>
                         )}
                       </div>

@@ -38,7 +38,7 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
       {item.logo ? <PetalLogo size={14} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={14} className="shrink-0" /> : item.glyph ? <PetalMark className="size-3.5 shrink-0" /> : IconC ? <IconC className="size-3.5 shrink-0" /> : null}
       <span className="truncate">{item.label}</span>
       {item.badge ? (
-        <span className="ml-auto rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">
+        <span className="ml-auto text-[11px] font-semibold tabular-nums text-[var(--os-mint)]">
           {item.badge}
         </span>
       ) : null}
@@ -198,7 +198,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           {/* search — a little search bar atop the nav (opens the command palette) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="mb-2 flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+            className="mb-2 flex h-8 w-full items-center gap-2 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
           >
             <Icon icon={I.search} size={14} className="shrink-0" />
             <span className="truncate">Search…</span>
