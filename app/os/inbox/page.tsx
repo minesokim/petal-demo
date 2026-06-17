@@ -207,7 +207,7 @@ export default function InboxPage() {
                       <Badge tone="amber" icon={Hourglass} size="sm" className="tabular-nums">{waitDays}d</Badge>
                     )}
                     <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{t.time}</span>
-                    {t.unread && <span className="size-2 rounded-full bg-[var(--os-accent)]" />}
+                    {t.unread && <span className="size-2 rounded-full bg-[var(--os-info)]" />}
                   </div>
                 </div>
                 <div className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{t.subject}</div>

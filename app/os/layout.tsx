@@ -94,7 +94,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   // Review mode and debug surfaces render full-screen, outside the shell chrome.
   if (pathname.startsWith("/os/review") || pathname.startsWith("/os/debug")) {
     return (
-      <div className="petal-os h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
+      <div className="petal-os h-screen w-full overflow-hidden text-[13px]">
         {children}
       </div>
     );
@@ -125,7 +125,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <TipProvider>
-    <div className="petal-os relative flex h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
+    <div className="petal-os relative flex h-screen w-full overflow-hidden text-[13px]">
       {/* expand control - only when collapsed */}
       {collapsed && (
         <Tip label="Expand sidebar" side="right">
@@ -140,7 +140,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── SIDEBAR ── */}
-      <aside className={cn("group/sidebar relative flex shrink-0 flex-col transition-[width] duration-200 ease-out", collapsed ? "w-0 overflow-hidden" : "w-[208px]")}>
+      <aside className={cn("group/sidebar relative flex shrink-0 flex-col border-r border-white/40 bg-[var(--os-glass)] backdrop-blur-xl transition-[width] duration-200 ease-out", collapsed ? "w-0 overflow-hidden" : "w-[208px]")}>
         {/* workspace switcher + search / compose (Linear) */}
         <div className="flex items-center gap-1.5 px-3 py-2.5">
           <div className="relative min-w-0 flex-1" ref={wsRef}>
