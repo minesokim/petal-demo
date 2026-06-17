@@ -10,6 +10,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
 import { StageTag, StatusPill, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
@@ -646,7 +647,7 @@ function ReturnRecordInner() {
                     </div>
                   ) : (
                     <div key={m.id}>
-                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalMark className="size-3" /> Petal</div>
+                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalLogo key={m.thinking ? "load" : "done"} loading={m.thinking} className="size-3.5 shrink-0 text-[var(--os-primary)]" /> Petal</div>
                       <PetalAnswerView answer={m.answer} thinking={m.thinking} compact stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id} onSuggest={q => sendChat(q)} />
                     </div>
                   ),

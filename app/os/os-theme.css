@@ -18,18 +18,18 @@
   --os-border-strong: #e0e0e0;
   --os-border-hover: #cfc7c3;
 
-  /* TRIAL: brighter teal (#3f9d8d) — a more vivid take on #6f8f8b. Dark enough
-     to carry WHITE button text; links / focus rings / dots use a deeper teal so
-     they read on white; pale teal is the soft layer. Counts stay neutral. */
-  --os-primary: #3f9d8d;
-  --os-primary-hover: #358a7c;
+  /* TRIAL: soft charcoal as the main color — a lighter, less-harsh black.
+     Primary buttons + accents are charcoal; soft fills are a light neutral.
+     Counts stay neutral; bell badge stays red. */
+  --os-primary: #33333a;
+  --os-primary-hover: #26262c;
   --os-primary-fg: #ffffff;
   /* interactive accent - unread dots + focus rings + soft fills */
-  --os-accent: #2f7d6f;
-  --os-accent-soft: #e6f5f1;
-  --os-mint: #3f9d8d;
+  --os-accent: #33333a;
+  --os-accent-soft: #ededf0;
+  --os-mint: #33333a;
   /* inline text links / actions */
-  --os-link: #2c776a;
+  --os-link: #33333a;
 
   --os-success: #16794c;
   --os-warning: #b45309;
