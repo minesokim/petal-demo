@@ -167,11 +167,28 @@ export default function BillingPage() {
   const [payOpen, setPayOpen] = useState(false);
   const pay = PAY_METHODS.find(m => m.key === payVia)!;
 
+  // sort + filter (Date sorts most-overdue-first; Amount sorts by balance)
+  const [sortKey, setSortKey] = useState<"default" | "amount" | "overdue">("default");
+  const [amountDir, setAmountDir] = useState<"desc" | "asc">("desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [onlyBalance, setOnlyBalance] = useState(false);
+  const [onlyBlocked, setOnlyBlocked] = useState(false);
+  const activeFilterCount = (onlyBalance ? 1 : 0) + (onlyBlocked ? 1 : 0);
+  const amountClick = () => {
+    if (sortKey !== "amount") { setSortKey("amount"); setAmountDir("desc"); }
+    else if (amountDir === "desc") setAmountDir("asc");
+    else setSortKey("default");
+  };
+
   const allInvoices = invoices();
   const kpis = billingKpis();
 
   const activeTab = TABS.find(t => t.key === tab)!;
-  const rows = allInvoices.filter(activeTab.filter);
+  let rows = allInvoices.filter(activeTab.filter);
+  if (onlyBalance) rows = rows.filter(i => i.balance > 0);
+  if (onlyBlocked) rows = rows.filter(i => i.blockedByDocs);
+  if (sortKey === "amount") rows = [...rows].sort((a, b) => amountDir === "desc" ? b.balance - a.balance : a.balance - b.balance);
+  else if (sortKey === "overdue") rows = [...rows].sort((a, b) => (b.ageDays ?? -1) - (a.ageDays ?? -1));
   const counts = TABS.reduce<Record<string, number>>((a, t) => { a[t.key] = allInvoices.filter(t.filter).length; return a; }, {});
   const selectedInv = selected ? allInvoices.find(i => i.id === selected) ?? null : null;
 
@@ -217,10 +234,39 @@ export default function BillingPage() {
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1 overflow-y-auto">
           <div className="px-8 py-6">
-            {/* toolbar - Mercury pills */}
+            {/* toolbar - Mercury pills (all functional) */}
             <div className="flex flex-wrap items-center gap-2">
-              <ToolbarPill label="Filters" icon={I.filter} />
-              <ToolbarPill label="Date" chevron />
+              {/* Filters - balance / blocked toggles */}
+              <div className="relative">
+                <ToolbarPill label={activeFilterCount ? `Filters · ${activeFilterCount}` : "Filters"} icon={I.filter} active={activeFilterCount > 0 || filtersOpen} onClick={() => setFiltersOpen(o => !o)} />
+                {filtersOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setFiltersOpen(false)} />
+                    <div className="absolute left-0 top-9 z-20 w-56 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-lg">
+                      {[
+                        { on: onlyBalance, set: () => setOnlyBalance(v => !v), label: "Has a balance" },
+                        { on: onlyBlocked, set: () => setOnlyBlocked(v => !v), label: "Blocked by missing docs" },
+                      ].map(f => (
+                        <button key={f.label} role="menuitemcheckbox" aria-checked={f.on} onClick={f.set} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[12.5px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                          <span className="flex-1">{f.label}</span>
+                          <span className={cn("grid size-4 shrink-0 place-items-center rounded-[4px] border transition-colors", f.on ? "border-[var(--os-primary)] bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "border-[var(--os-border-strong)]")}>
+                            {f.on && <Icon icon={I.check} size={11} />}
+                          </span>
+                        </button>
+                      ))}
+                      {activeFilterCount > 0 && (
+                        <>
+                          <div className="my-1 h-px bg-[var(--os-border)]" />
+                          <button onClick={() => { setOnlyBalance(false); setOnlyBlocked(false); }} className="flex w-full items-center justify-center rounded-md px-2 py-1.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">Clear filters</button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* Date - sort most overdue first */}
+              <ToolbarPill label={sortKey === "overdue" ? "Most overdue first" : "Date"} icon={I.calendar} chevron active={sortKey === "overdue"} onClick={() => setSortKey(k => k === "overdue" ? "default" : "overdue")} />
+              {/* Status */}
               <div className="relative">
                 <ToolbarPill label={tab === "all" ? "Status" : `Status: ${activeTab.label}`} icon={I.sort} chevron active={tab !== "all"} onClick={() => setStatusOpen(o => !o)} />
                 {statusOpen && (
@@ -238,7 +284,8 @@ export default function BillingPage() {
                   </>
                 )}
               </div>
-              <ToolbarPill label="Amount" chevron />
+              {/* Amount - sort by balance (click cycles high→low, low→high, off) */}
+              <ToolbarPill label={sortKey === "amount" ? (amountDir === "desc" ? "Amount: high to low" : "Amount: low to high") : "Amount"} icon={I.sort} chevron active={sortKey === "amount"} onClick={amountClick} />
             </div>
 
             {/* inline summary stats - no boxes */}

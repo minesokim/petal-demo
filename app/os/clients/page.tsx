@@ -29,6 +29,28 @@ const VIEWS: { key: View; label: string }[] = [
   { key: "people", label: "People" },
 ];
 
+// ── sort options, per view ──
+type SortKey = "name" | "stage" | "tier" | "balance" | "deadline" | "fee" | "role";
+const SORTS: Record<View, { key: SortKey; label: string }[]> = {
+  clients: [
+    { key: "name", label: "Name (A–Z)" },
+    { key: "stage", label: "Stage" },
+    { key: "tier", label: "Service tier" },
+    { key: "balance", label: "Balance owed" },
+  ],
+  returns: [
+    { key: "name", label: "Name (A–Z)" },
+    { key: "stage", label: "Stage" },
+    { key: "deadline", label: "Deadline" },
+    { key: "fee", label: "Fee" },
+  ],
+  people: [
+    { key: "name", label: "Name (A–Z)" },
+    { key: "role", label: "Role" },
+  ],
+};
+const TIER_ORDER: Record<Household["serviceTier"], number> = { Premium: 0, Standard: 1, Basic: 2 };
+
 const kindLabel: Record<HouseholdKind, string> = {
   individual: "Individual",
   business: "Business",
@@ -330,19 +352,36 @@ export default function ClientsPage() {
   const [query, setQuery] = useState("");
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [hdrMenuOpen, setHdrMenuOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortOpen, setSortOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   useAssignVersion(); // re-filter when a client is reassigned from the table
   useClientsVersion(); // re-render when a client is created this session
 
+  const sortOptions = SORTS[view];
+  const activeSort = sortOptions.find(s => s.key === sortKey) ?? sortOptions[0];
+  const engName = (e: Engagement) => entityById(e.entityId)?.name ?? householdById(e.householdId)?.name ?? "";
+
   const mine = scope === "mine";
   const q = query.trim().toLowerCase();
   const hhRows = (mine ? households.filter(h => assigneeOf(h.id) === CURRENT_USER_ID) : households)
-    .filter(h => !q || h.name.toLowerCase().includes(q));
+    .filter(h => !q || h.name.toLowerCase().includes(q))
+    .sort((a, b) =>
+      activeSort.key === "stage" ? STAGE_ORDER.indexOf(householdStage(a.id)) - STAGE_ORDER.indexOf(householdStage(b.id))
+      : activeSort.key === "tier" ? TIER_ORDER[a.serviceTier] - TIER_ORDER[b.serviceTier]
+      : activeSort.key === "balance" ? invoiceOf(b.id).balance - invoiceOf(a.id).balance
+      : a.name.localeCompare(b.name));
   const engRows = (mine ? engagements.filter(e => assigneeOf(e.householdId) === CURRENT_USER_ID) : engagements)
-    .filter(e => !q || `${entityById(e.entityId)?.name ?? ""} ${householdById(e.householdId)?.name ?? ""} ${e.form}`.toLowerCase().includes(q));
+    .filter(e => !q || `${entityById(e.entityId)?.name ?? ""} ${householdById(e.householdId)?.name ?? ""} ${e.form}`.toLowerCase().includes(q))
+    .sort((a, b) =>
+      activeSort.key === "stage" ? STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage)
+      : activeSort.key === "deadline" ? (a.statutoryDeadline ?? "9999").localeCompare(b.statutoryDeadline ?? "9999")
+      : activeSort.key === "fee" ? b.fee - a.fee
+      : engName(a).localeCompare(engName(b)));
   const peopleRows = (mine ? people.filter(p => assigneeOf(p.householdId) === CURRENT_USER_ID) : people)
-    .filter(p => !q || `${p.name} ${p.email}`.toLowerCase().includes(q));
+    .filter(p => !q || `${p.name} ${p.email}`.toLowerCase().includes(q))
+    .sort((a, b) => activeSort.key === "role" ? a.role.localeCompare(b.role) : a.name.localeCompare(b.name));
 
   const counts: Record<View, number> = {
     clients: hhRows.length,
@@ -421,6 +460,32 @@ export default function ClientsPage() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {/* sort - adapts to the active view */}
+          <div className="relative">
+            <button
+              onClick={() => setSortOpen(o => !o)}
+              aria-expanded={sortOpen}
+              className={cn("flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[13px] transition-colors", FOCUS, sortKey !== "name" || sortOpen ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]" : "border-[var(--os-border)] bg-[var(--os-surface)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]")}
+            >
+              <Icon icon={I.sort} size={14} className="text-[var(--os-ink-subtle)]" />
+              {sortKey === "name" ? "Sort" : activeSort.label}
+              <Icon icon={I.chevronDown} size={12} className={cn("text-[var(--os-ink-subtle)] transition-transform", sortOpen && "rotate-180")} />
+            </button>
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                <div className="absolute right-0 top-9 z-20 w-44 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                  <div className="os-label px-2 pb-1 pt-0.5">Sort by</div>
+                  {sortOptions.map(s => (
+                    <button key={s.key} onClick={() => { setSortKey(s.key); setSortOpen(false); }} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors hover:bg-[var(--os-hover)]", FOCUS, activeSort.key === s.key ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                      {s.label}
+                      {activeSort.key === s.key && <Icon icon={I.check} size={13} className="ml-auto text-[var(--os-ink)]" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <ScopeToggle scope={scope} onChange={setScope} />
           {view !== "people" && (
             <div className="flex items-center gap-0.5 rounded-md border border-[var(--os-border)] p-0.5">

@@ -513,13 +513,13 @@ function TasksPageInner() {
                       ]}
                     />
                   </div>
-                  <ToggleRow on={groupByClient} onClick={() => setGroupByClient(v => !v)} icon={I.clients}>Group by client</ToggleRow>
+                  <ToggleRow on={groupByClient} onClick={() => setGroupByClient(v => !v)}>Group by client</ToggleRow>
                   <div className="my-1.5 h-px bg-[var(--os-border)]" />
                 </>
               )}
               <div className="os-label px-2 pb-1 pt-0.5">Filter</div>
-              <ToggleRow on={flaggedOnly} onClick={() => setFlaggedOnly(v => !v)} icon={I.flag}>Flagged</ToggleRow>
-              <ToggleRow on={blockedOnly} onClick={() => setBlockedOnly(v => !v)} icon={I.alert}>Blocked</ToggleRow>
+              <ToggleRow on={flaggedOnly} onClick={() => setFlaggedOnly(v => !v)}>Flagged</ToggleRow>
+              <ToggleRow on={blockedOnly} onClick={() => setBlockedOnly(v => !v)}>Blocked</ToggleRow>
               {activeFilters > 0 && (
                 <>
                   <div className="my-1.5 h-px bg-[var(--os-border)]" />
