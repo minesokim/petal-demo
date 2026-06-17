@@ -162,10 +162,20 @@ function Drawer({ inv, onClose }: { inv: Invoice; onClose: () => void }) {
   );
 }
 
+type PayMethod = "manual" | "stripe" | "square";
+const PAY_METHODS: { key: PayMethod; label: string; logo?: string; desc: string; action: string }[] = [
+  { key: "manual", label: "Manual invoicing", desc: "Send invoices; clients pay by check or bank transfer. You mark them paid.", action: "Send invoice" },
+  { key: "stripe", label: "Stripe", logo: "/logos/stripe.svg", desc: "Clients pay online by card. Deposits and payments auto-reconcile.", action: "Send payment link" },
+  { key: "square", label: "Square", logo: "/logos/square.png", desc: "Card and POS payments sync from Square and reconcile automatically.", action: "Send payment link" },
+];
+
 export default function BillingPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [statusOpen, setStatusOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [payVia, setPayVia] = useState<PayMethod>("manual");
+  const [payOpen, setPayOpen] = useState(false);
+  const pay = PAY_METHODS.find(m => m.key === payVia)!;
 
   const activeTab = TABS.find(t => t.key === tab)!;
   const rows = allInvoices.filter(activeTab.filter);
@@ -179,9 +189,38 @@ export default function BillingPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-[24px] font-semibold text-[var(--os-ink)] os-display">Billing</h1>
-            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Invoices, payments, and what each client owes.</p>
+            <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Invoices, payments, and what each client owes. <span className="text-[var(--os-ink-subtle)]">· {pay.desc}</span></p>
           </div>
-          <button className={cn("flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={15} /> New invoice</button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* how the firm collects: manual invoicing vs an online processor */}
+            <div className="relative">
+              <button onClick={() => setPayOpen(o => !o)} aria-expanded={payOpen} className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                {pay.logo ? <img src={pay.logo} alt="" className="size-4 shrink-0 object-contain" /> : <Icon icon={I.billing} size={15} className="text-[var(--os-ink-muted)]" />}
+                {pay.label}
+                <Icon icon={I.chevronDown} size={13} className={cn("text-[var(--os-ink-subtle)] transition-transform", payOpen && "rotate-180")} />
+              </button>
+              {payOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setPayOpen(false)} />
+                  <div className="absolute right-0 top-9 z-20 w-[280px] rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                    <div className="os-label px-2.5 pb-1 pt-1.5">Collect payments via</div>
+                    {PAY_METHODS.map(m => (
+                      <button key={m.key} onClick={() => { setPayVia(m.key); setPayOpen(false); }} className={cn("flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                        <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded border border-[var(--os-border)] bg-white">
+                          {m.logo ? <img src={m.logo} alt="" className="size-4 object-contain" /> : <Icon icon={I.billing} size={13} className="text-[var(--os-ink-muted)]" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--os-ink)]">{m.label}{payVia === m.key && <Icon icon={I.check} size={13} className="text-[var(--os-accent)]" />}</span>
+                          <span className="mt-0.5 block text-[11.5px] leading-snug text-[var(--os-ink-subtle)]">{m.desc}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button className={cn("flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={15} /> New invoice</button>
+          </div>
         </div>
       </div>
 
