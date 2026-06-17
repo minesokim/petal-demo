@@ -7,6 +7,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
@@ -15,7 +16,8 @@ import { Icon, I } from "@/components/os/icon";
 import { Mic } from "lucide-react";
 import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/petal-chat";
 import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
-import { skills } from "@/lib/fixtures/firm";
+import { skills, households, householdById } from "@/lib/fixtures/firm";
+import { connectionStore, useConnections } from "@/lib/connection-store";
 import { SkillPetal } from "@/components/os/primitives";
 import { Tip } from "@/components/os/tooltip";
 
@@ -76,12 +78,14 @@ const STARTERS: { icon: typeof I.returns; label: string; prompt: string }[] = [
   { icon: I.tasks, label: "What needs me today?", prompt: "What needs me today?" },
 ];
 
-const GROUNDING: { icon: keyof typeof I; label: string }[] = [
-  { icon: "knowledge", label: "Firm Constitution" },
-  { icon: "sparkle", label: "Client Memory" },
-  { icon: "file", label: "Prior-year returns" },
-  { icon: "clients", label: "QuickBooks Online" },
-  { icon: "mail", label: "Gmail" },
+// Petal-native knowledge (always on) + connected integrations (status from the
+// connections store). Each row links somewhere real; nothing is decorative.
+const GROUNDING: { label: string; href: string; icon?: keyof typeof I; petal?: boolean; logo?: string; connectId?: string }[] = [
+  { label: "Firm Constitution", href: "/os/knowledge", icon: "knowledge" },
+  { label: "Client Memory", href: "/os/knowledge", petal: true },
+  { label: "Prior-year returns", href: "/os/documents", icon: "file" },
+  { label: "QuickBooks Online", href: "/os/connections", logo: "/logos/quickbooks.svg", connectId: "qbo" },
+  { label: "Gmail", href: "/os/connections", logo: "/logos/gmail.svg", connectId: "gmail" },
 ];
 
 function UserBubble({ text }: { text: string }) {
@@ -111,7 +115,11 @@ function PetalBubble({ msg, isLatest, onSuggest }: { msg: Extract<ChatMsg, { rol
 
 function AskPetalInner() {
   const params = useSearchParams();
-  const { messages, send, reset } = usePetalChat();
+  const [scopeId, setScopeId] = useState<string | undefined>(undefined);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const { messages, send, reset } = usePetalChat(scopeId);
+  useConnections(); // re-render the grounding rail when a source is (dis)connected
+  const scopeLabel = scopeId ? householdById(scopeId)?.name ?? "All clients" : "All clients";
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const ranParam = useRef(false);
@@ -142,16 +150,42 @@ function AskPetalInner() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
+      {/* Header — scope (what Petal is allowed to look at) + new chat */}
       <div className="flex items-center gap-2 border-b border-[var(--os-border)] px-8 py-3">
-        <button className="ml-1 flex h-6 items-center gap-1.5 rounded-md px-1.5 text-[12px] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]">
-          <Icon icon={I.clients} size={13} /> All clients <Icon icon={I.chevronDown} size={12} className="text-[var(--os-ink-subtle)]" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setScopeOpen(o => !o)}
+            aria-expanded={scopeOpen}
+            className={cn("flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] transition-colors", scopeOpen ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]" : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]")}
+          >
+            <Icon icon={I.clients} size={13} className="text-[var(--os-ink-subtle)]" />
+            <span className="text-[var(--os-ink)]">{scopeLabel}</span>
+            <Icon icon={I.chevronDown} size={12} className={cn("text-[var(--os-ink-subtle)] transition-transform", scopeOpen && "rotate-180")} />
+          </button>
+          {scopeOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setScopeOpen(false)} />
+              <div className="absolute left-0 top-9 z-20 max-h-[320px] w-[240px] overflow-y-auto rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                <div className="os-label px-2 pb-1 pt-0.5">Scope this chat to</div>
+                <button onClick={() => { setScopeId(undefined); setScopeOpen(false); }} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-[var(--os-hover)]", !scopeId ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                  <Icon icon={I.clients} size={14} className="text-[var(--os-ink-subtle)]" /> All clients {!scopeId && <Icon icon={I.check} size={13} className="ml-auto text-[var(--os-ink)]" />}
+                </button>
+                <div className="my-1 h-px bg-[var(--os-border)]" />
+                {households.map(h => (
+                  <button key={h.id} onClick={() => { setScopeId(h.id); setScopeOpen(false); }} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-[var(--os-hover)]", scopeId === h.id ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                    <span className="truncate">{h.name}</span>
+                    {scopeId === h.id && <Icon icon={I.check} size={13} className="ml-auto shrink-0 text-[var(--os-ink)]" />}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
         <button
           onClick={() => { reset(); setInput(""); }}
-          className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12px] transition-colors hover:bg-[var(--os-hover)]"
+          className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[12.5px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]"
         >
-          <Icon icon={I.newChat} size={14} /> New chat
+          <Icon icon={I.edit} size={13} className="text-[var(--os-ink-muted)]" /> New chat
         </button>
       </div>
 
@@ -205,28 +239,45 @@ function AskPetalInner() {
           )}
         </div>
 
-        {/* Context rail */}
+        {/* Context rail — what Petal grounds its answers in */}
         {hasConvo && (
-        <aside className="hidden w-[280px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-5 xl:block">
-          <div className="os-label mb-2">Scope</div>
-          <button className="mb-5 flex w-full items-center gap-2 rounded-lg border border-[var(--os-border)] px-3 py-2 text-left text-[13px] transition-colors hover:bg-[var(--os-hover)]">
-            <Icon icon={I.clients} size={15} className="text-[var(--os-ink-muted)]" />
-            <span className="flex-1 text-[var(--os-ink)]">All clients</span>
-            <Icon icon={I.chevronDown} size={13} className="text-[var(--os-ink-subtle)]" />
-          </button>
-
-          <div className="os-label mb-2">Grounded in</div>
-          <div className="space-y-0.5">
-            {GROUNDING.map(g => (
-              <div key={g.label} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px]">
-                <Icon icon={I[g.icon]} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                <span className="flex-1 truncate text-[var(--os-ink)]">{g.label}</span>
-                <span className="size-1.5 shrink-0 rounded-full bg-[var(--os-brand)]" />
-              </div>
-            ))}
+        <aside className="hidden w-[288px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-5 xl:block">
+          <div className="flex items-center gap-1.5">
+            <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />
+            <span className="os-label">Grounded in</span>
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-[var(--os-ink-subtle)]">
-            Petal grounds every answer in these sources and cites them. Connect more in Settings → Integrations.
+          <div className="mt-2.5 space-y-0.5">
+            {GROUNDING.map(g => {
+              const connected = g.connectId ? connectionStore.isConnected(g.connectId) : true;
+              return (
+                <Link
+                  key={g.label}
+                  href={g.href}
+                  className="group -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                >
+                  <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-md border border-[var(--os-border)] bg-white">
+                    {g.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={g.logo} alt="" className="size-4 object-contain" />
+                    ) : g.petal ? (
+                      <PetalMark className="size-3.5 text-[var(--os-ink-muted)]" />
+                    ) : (
+                      <Icon icon={I[g.icon!]} size={13} className="text-[var(--os-ink-muted)]" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{g.label}</span>
+                  {connected ? (
+                    <Icon icon={I.check} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                  ) : (
+                    <span className="shrink-0 text-[11px] font-medium text-[var(--os-link)] opacity-0 transition-opacity group-hover:opacity-100">Connect</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+          <p className="mt-3 px-0.5 text-[11.5px] leading-relaxed text-[var(--os-ink-subtle)]">
+            Every answer is grounded in these sources and cited.{" "}
+            <Link href="/os/connections" className="font-medium text-[var(--os-link)] hover:underline">Manage connections →</Link>
           </p>
         </aside>
         )}
