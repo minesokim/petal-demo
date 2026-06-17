@@ -18,19 +18,18 @@
   --os-border-strong: #e0e0e0;
   --os-border-hover: #cfc7c3;
 
-  /* TRIAL: muted teal (#6f8f8b) as the main color. Dark enough to carry WHITE
-     button text (reads like a real colored button); links / focus rings / dots
-     use a slightly deeper teal so they read on white; pale teal is the soft
-     layer. Counts stay neutral (boxed). */
-  --os-primary: #6f8f8b;
-  --os-primary-hover: #5f7d79;
+  /* TRIAL: brighter teal (#3f9d8d) — a more vivid take on #6f8f8b. Dark enough
+     to carry WHITE button text; links / focus rings / dots use a deeper teal so
+     they read on white; pale teal is the soft layer. Counts stay neutral. */
+  --os-primary: #3f9d8d;
+  --os-primary-hover: #358a7c;
   --os-primary-fg: #ffffff;
   /* interactive accent - unread dots + focus rings + soft fills */
-  --os-accent: #547370;
-  --os-accent-soft: #eef3f2;
-  --os-mint: #6f8f8b;
+  --os-accent: #2f7d6f;
+  --os-accent-soft: #e6f5f1;
+  --os-mint: #3f9d8d;
   /* inline text links / actions */
-  --os-link: #4f716e;
+  --os-link: #2c776a;
 
   --os-success: #16794c;
   --os-warning: #b45309;
