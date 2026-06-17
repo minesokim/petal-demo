@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { SlidersHorizontal, CornerDownRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, DeadlineChip, SkillPetal, BookmarkFlag, ScopeToggle, Segmented, type Scope } from "@/components/os/primitives";
 import { AssigneePicker } from "@/components/os/assignee-picker";
@@ -210,7 +211,7 @@ function ReviewArtifact({ task, chosen, onChosen }: { task: Task; chosen: Chosen
                 <div className="mt-1.5 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-[var(--os-ink-subtle)]">Petal will redraft to your direction.</span>
                   <button onClick={askPetalRedraft} disabled={!otherText.trim() || redrafting} className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.98] disabled:opacity-50">
-                    <PetalMark className="size-3" /> {redrafting ? "Redrafting…" : "Ask Petal"}
+                    <PetalLogo loading={redrafting} bloom={false} className="size-3" /> {redrafting ? "Redrafting…" : "Ask Petal"}
                   </button>
                 </div>
               </div>
@@ -301,7 +302,7 @@ function PetalPanel({ task, household }: { task: Task; household?: { name: strin
         ))}
         {thinking && (
           <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--os-ink-muted)]">
-            <PetalMark className="size-3 animate-pulse" /> Petal is thinking…
+            <PetalLogo loading className="size-3.5 shrink-0 text-[var(--os-primary)]" /> Petal is thinking…
           </div>
         )}
 
@@ -545,7 +546,7 @@ export default function ReviewPage() {
                   </motion.div>
                 ) : (
                   <motion.div key="end" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.17, ease: "easeOut" }} className="mx-auto max-w-[420px] pt-16 text-center">
-                    <PetalMark className="mx-auto size-6 text-[var(--os-ink-muted)]" />
+                    <PetalLogo className="mx-auto size-7 text-[var(--os-primary)]" />
                     <h2 className="os-display mt-4 text-[20px] font-semibold leading-[26px] text-[var(--os-ink)]">{n === 0 ? "No tasks match" : "Queue clear"}</h2>
                     <p className="mt-2 tabular-nums text-[13px] text-[var(--os-ink-muted)]">{approved} approved · ~{hrs} hrs returned</p>
                     <button onClick={() => router.push("/os/today")} className={cn(BTN_PRIMARY, "mt-5")}>Back to Today</button>
