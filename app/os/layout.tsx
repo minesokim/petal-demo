@@ -16,7 +16,7 @@ import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
   Settings, Home, FileText, Folder, MailWarning, CreditCard, BookOpen, LogOut,
-  PanelLeftClose, PanelLeftOpen, Activity,
+  PanelLeftClose, PanelLeftOpen, Activity, Blocks,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
 
@@ -117,6 +117,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Activity", href: "/os/activity", icon: Activity },
   ];
   const system: Item[] = [
+    { label: "Connections", href: "/os/connections", icon: Blocks },
     { label: "Settings", href: "/os/settings", icon: Settings },
   ];
 

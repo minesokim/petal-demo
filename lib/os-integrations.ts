@@ -42,8 +42,11 @@ export const integrations: Integration[] = [
   // Banking & payroll
   { id: "gusto", name: "Gusto", category: "Banking & payroll", desc: "Pull payroll runs and contractor payments.", status: "connected", gradient: "from-orange-500 to-amber-600", glyph: UserMultipleIcon, logo: "/logos/gusto.svg", account: "Park Dental +2", lastSync: "Yesterday" },
 
+  { id: "plaid", name: "Plaid", category: "Banking & payroll", desc: "Connect client bank feeds for reconciliation and Schedule C.", status: "available", gradient: "from-slate-600 to-slate-800", glyph: Exchange01Icon, logo: "/integrations/plaid.png" },
+
   // Tax & e-file
   { id: "irs", name: "IRS e-Services", category: "Tax & e-file", desc: "Pull transcripts and CAF authorizations.", status: "connected", gradient: "from-blue-600 to-indigo-700", glyph: SecurityCheckIcon, logo: "/integrations/irs.png", account: "Transcripts + CAF · 8821 on file for 9 clients", lastSync: "Today 6:05 AM" },
+  { id: "drake", name: "Drake Tax", category: "Tax & e-file", desc: "Sync returns and e-file status with your tax software.", status: "available", gradient: "from-green-600 to-emerald-700", glyph: TaxesIcon, logo: "/integrations/drake.png" },
 
   // Documents & e-sign
   { id: "docusign", name: "DocuSign", category: "Documents & e-sign", desc: "Send 8879s for signature and track envelopes.", status: "connected", gradient: "from-amber-500 to-yellow-600", glyph: PencilEdit01Icon, logo: "/integrations/docusign.png", account: "antonio@vazant.tax", lastSync: "Live" },
@@ -52,12 +55,14 @@ export const integrations: Integration[] = [
   // Email & calendar
   { id: "gmail", name: "Gmail", category: "Email & calendar", desc: "Draft and send client emails from your address.", status: "connected", gradient: "from-rose-500 to-red-600", glyph: Mail01Icon, logo: "/logos/gmail.svg", account: "antonio@vazant.tax", lastSync: "Live" },
   { id: "gcal", name: "Google Calendar", category: "Email & calendar", desc: "Read events so pre-call briefs arrive before each call.", status: "connected", gradient: "from-blue-500 to-indigo-600", glyph: Calendar03Icon, logo: "/logos/google-calendar.svg", account: "antonio@vazant.tax", lastSync: "Live" },
+  { id: "zoom", name: "Zoom", category: "Email & calendar", desc: "Auto-create meeting links for client review calls.", status: "available", gradient: "from-sky-500 to-blue-600", glyph: Calendar03Icon, logo: "/logos/zoom.svg" },
 
   // Payments
   { id: "stripe", name: "Stripe", category: "Payments", desc: "Collect prep fees and deposits online.", status: "available", gradient: "from-violet-500 to-purple-600", glyph: InvoiceIcon, logo: "/logos/stripe.svg" },
 
   // Client data sources
   { id: "square", name: "Square", category: "Client data sources", desc: "Card payments and POS exports for Schedule C.", status: "connected", gradient: "from-slate-700 to-slate-900", glyph: InvoiceIcon, logo: "/logos/square.png", account: "Vazant EA", lastSync: "Today" },
+  { id: "taxdome", name: "TaxDome", category: "Client data sources", desc: "Import client intake forms and organizers.", status: "available", gradient: "from-indigo-500 to-violet-600", glyph: File02Icon, logo: "/integrations/taxdome.png" },
 
   // Communication
   { id: "slack", name: "Slack", category: "Communication", desc: "Push e-file receipts and alerts to a channel.", status: "available", gradient: "from-fuchsia-500 to-pink-600", glyph: MessageAdd01Icon, logo: "/logos/slack.svg" },

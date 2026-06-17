@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Home, ListChecks, Inbox, CalendarDays, Users, FileText, MailWarning, CreditCard,
-  BookOpen, Settings, Search, type LucideIcon,
+  BookOpen, Settings, Search, Blocks, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
@@ -27,6 +27,7 @@ const PAGES: Result[] = [
   { id: "p-notices", label: "Notices", href: "/os/notices", icon: MailWarning, group: "Pages" },
   { id: "p-billing", label: "Billing", href: "/os/billing", icon: CreditCard, group: "Pages" },
   { id: "p-knowledge", label: "Knowledge", href: "/os/knowledge", icon: BookOpen, group: "Pages" },
+  { id: "p-connections", label: "Connections", href: "/os/connections", icon: Blocks, group: "Pages" },
   { id: "p-settings", label: "Settings", href: "/os/settings", icon: Settings, group: "Pages" },
 ];
 
