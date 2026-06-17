@@ -17,6 +17,7 @@ import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAva
 import { ProvenancePanel } from "@/components/os/provenance";
 import { Tip } from "@/components/os/tooltip";
 import { RequestDocsButton } from "@/components/os/request-docs";
+import { NotesThread } from "@/components/os/notes-thread";
 import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
@@ -255,7 +256,10 @@ function ClientRecordInner() {
   const h = householdById(id);
 
   const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
-  const [panel, setPanel] = useState<"Ask Petal" | "Details" | "Notes">("Ask Petal");
+  const [panel, setPanel] = useState<"Ask Petal" | "Details" | "Notes">(() => {
+    const p = searchParams.get("panel");
+    return p === "Notes" || p === "Details" ? p : "Ask Petal";
+  });
   useAssignVersion(); // reflect reassignments in the returns list avatars
   const router = useRouter();
   const [runMenuOpen, setRunMenuOpen] = useState(false);
@@ -1401,15 +1405,7 @@ function ClientRecordInner() {
               </div>
             )}
 
-            {panel === "Notes" && (
-              <div className="flex min-h-0 flex-1 flex-col p-3">
-                <textarea
-                  placeholder={`Private notes about ${h.name}…`}
-                  aria-label={`Private notes about ${h.name}`}
-                  className={cn("min-h-0 flex-1 w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]", FOCUS)}
-                />
-              </div>
-            )}
+            {panel === "Notes" && <NotesThread scopeId={h.id} scopeLabel={h.name} onToast={show} />}
 
             {/* drop overlay */}
             {petalDropOver && (

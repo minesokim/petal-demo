@@ -17,6 +17,7 @@ import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { RequestDocsButton } from "@/components/os/request-docs";
+import { NotesThread } from "@/components/os/notes-thread";
 import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import { AssigneePicker } from "@/components/os/assignee-picker";
 import {
@@ -179,7 +180,10 @@ function ReturnRecordInner() {
   const e = engagementById(id);
 
   const [tab, setTab] = useState<Tab>(() => tabFromParam(tabParam));
-  const [panel, setPanel] = useState<"Ask Petal" | "Details" | "Notes">("Ask Petal");
+  const [panel, setPanel] = useState<"Ask Petal" | "Details" | "Notes">(() => {
+    const p = searchParams.get("panel");
+    return p === "Notes" || p === "Details" ? p : "Ask Petal";
+  });
   const [runMenuOpen, setRunMenuOpen] = useState(false);
   const [queuedSkills, setQueuedSkills] = useState<Set<string>>(new Set());
   const [openDoc, setOpenDoc] = useState<ExpectedDoc | null>(null);
@@ -745,15 +749,7 @@ function ReturnRecordInner() {
             </div>
           )}
 
-          {panel === "Notes" && (
-            <div className="flex min-h-0 flex-1 flex-col p-3">
-              <textarea
-                placeholder={`Private notes about ${title} · ${e.form}…`}
-                aria-label={`Private notes about ${title}`}
-                className={cn("min-h-0 flex-1 w-full resize-none rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-3 text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)] focus:border-[var(--os-border-strong)]", FOCUS)}
-              />
-            </div>
-          )}
+          {panel === "Notes" && <NotesThread scopeId={e.id} scopeLabel={`${title} · ${e.form}`} onToast={show} />}
         </aside>
       </div>
 

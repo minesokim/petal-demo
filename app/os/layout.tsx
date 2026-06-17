@@ -10,6 +10,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
 import { CommandSearch } from "@/components/os/command-search";
+import { NotificationBell } from "@/components/os/notification-bell";
 import { TipProvider, Tip } from "@/components/os/tooltip";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
@@ -199,6 +200,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             <Icon icon={I.search} size={16} />
           </button>
           </Tip>
+          <NotificationBell />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
