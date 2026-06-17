@@ -18,19 +18,19 @@
   --os-border-strong: #e0e0e0;
   --os-border-hover: #cfc7c3;
 
-  /* TRIAL: sage-green (#98b7a2) as the main color. Light hue, so the primary
-     button carries DARK ink text (white would be illegible); links / focus
-     rings / dots use a deeper sage so they read on white; pale sage is the
-     soft layer. Counts stay neutral (boxed). */
-  --os-primary: #98b7a2;
-  --os-primary-hover: #89a893;
-  --os-primary-fg: #1a1a1a;
+  /* TRIAL: muted teal (#6f8f8b) as the main color. Dark enough to carry WHITE
+     button text (reads like a real colored button); links / focus rings / dots
+     use a slightly deeper teal so they read on white; pale teal is the soft
+     layer. Counts stay neutral (boxed). */
+  --os-primary: #6f8f8b;
+  --os-primary-hover: #5f7d79;
+  --os-primary-fg: #ffffff;
   /* interactive accent - unread dots + focus rings + soft fills */
-  --os-accent: #557a63;
-  --os-accent-soft: #eef4f0;
-  --os-mint: #98b7a2;
+  --os-accent: #547370;
+  --os-accent-soft: #eef3f2;
+  --os-mint: #6f8f8b;
   /* inline text links / actions */
-  --os-link: #527760;
+  --os-link: #4f716e;
 
   --os-success: #16794c;
   --os-warning: #b45309;
