@@ -18,6 +18,7 @@ import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { RequestDocsButton } from "@/components/os/request-docs";
 import { NotesThread } from "@/components/os/notes-thread";
+import { SignatureCard } from "@/components/os/signature-card";
 import { usePetalChat, PetalAnswerView } from "@/components/os/petal-chat";
 import { AssigneePicker } from "@/components/os/assignee-picker";
 import {
@@ -160,17 +161,6 @@ function Toast({ msg }: { msg: string | null }) {
   );
 }
 
-/* ── e-file / 8879 status grammar (return-scoped) ── */
-const efileStatus = (s: Stage): { label: string; dot: string } =>
-  s === "accepted" ? { label: "Accepted", dot: "bg-emerald-500" }
-  : s === "e_filed" ? { label: "Transmitted", dot: "bg-blue-500" }
-  : s === "pay_and_sign" ? { label: "Awaiting signature", dot: "bg-amber-500" }
-  : { label: "Not started", dot: "bg-[var(--os-border-strong)]" };
-const authStatus = (s: Stage): { label: string; dot: string } =>
-  s === "accepted" || s === "e_filed" ? { label: "Signed", dot: "bg-emerald-500" }
-  : s === "pay_and_sign" ? { label: "Out for signature", dot: "bg-amber-500" }
-  : { label: "Not yet generated", dot: "bg-[var(--os-border-strong)]" };
-
 function ReturnRecordInner() {
   const params = useParams();
   const id = String(params.id);
@@ -228,8 +218,6 @@ function ReturnRecordInner() {
   const k1Target = e.k1FlowsTo ? engagementById(e.k1FlowsTo) : undefined;
   const pct = docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 0;
   const openTasks = related.filter(t => t.status !== "done");
-  const ef = efileStatus(e.stage);
-  const auth = authStatus(e.stage);
   const title = entity?.name ?? hh.name;
 
   const petalAnswer =
@@ -611,22 +599,14 @@ function ReturnRecordInner() {
 
                 <section>
                   <SectionHead title="E-file authorization" />
-                  <div className="-mx-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg px-2 py-2.5">
-                    <div className="flex min-w-0 flex-[2] items-center gap-2">
-                      <FormChip form={e.form} />
-                      <span className="min-w-0 truncate text-[13px] text-[var(--os-ink)]">{entity?.name ?? hh.name}</span>
-                      <span className="shrink-0 text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{e.taxYear}</span>
-                    </div>
-                    <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                      <span className={cn("size-1.5 shrink-0 rounded-full", auth.dot)} /> <span className="truncate">8879 · {auth.label}</span>
-                    </div>
-                    <div className="flex flex-1 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]">
-                      <span className={cn("size-1.5 shrink-0 rounded-full", ef.dot)} /> <span className="truncate">E-file · {ef.label}</span>
-                    </div>
-                  </div>
-                  <p className="mt-2 flex items-start gap-1.5 px-0.5 text-[12px] text-[var(--os-ink-subtle)]">
-                    <PetalMark className="mt-0.5 size-3 shrink-0" /> Petal never transmits this return until its 8879 is signed and you&apos;ve approved it.
-                  </p>
+                  <SignatureCard
+                    engagementId={e.id}
+                    form={e.form}
+                    entityName={entity?.name ?? hh.name}
+                    signerName={entity?.name ?? hh.name}
+                    stage={e.stage}
+                    onToast={show}
+                  />
                 </section>
               </div>
             )}
