@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
+import { Tip } from "@/components/os/tooltip";
 import { recentChats, type RecentChat } from "@/lib/fixtures/firm";
 
 /** Sidebar bottom - the Ask Petal chat zone: Recent convos, history, New chat (Solve pattern).
@@ -84,9 +85,11 @@ export function SidebarChat() {
         </div>
 
         <div className="mt-2.5 flex items-center gap-1.5">
+          <Tip label="Chat history" side="top">
           <button onClick={() => setHistoryOpen(true)} onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setExpanded(true); }} aria-label="Chat history" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]">
             <Icon icon={I.history} size={17} />
           </button>
+          </Tip>
           <button onClick={() => open()} className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.05)] transition-colors hover:bg-[var(--os-hover)]">
             <PetalMark className="size-4" /> New chat
           </button>

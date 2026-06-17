@@ -10,6 +10,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
 import { CommandSearch } from "@/components/os/command-search";
+import { TipProvider, Tip } from "@/components/os/tooltip";
 import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
@@ -120,9 +121,11 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
+    <TipProvider>
     <div className="petal-os relative flex h-screen w-full overflow-hidden bg-[var(--os-shell)] text-[13px]">
       {/* expand control - only when collapsed */}
       {collapsed && (
+        <Tip label="Expand sidebar" side="right">
         <button
           onClick={() => setCollapsed(false)}
           aria-label="Expand sidebar"
@@ -130,6 +133,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
         >
           <PanelLeftOpen className="size-[18px]" strokeWidth={1.5} />
         </button>
+        </Tip>
       )}
 
       {/* ── SIDEBAR ── */}
@@ -176,6 +180,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
+          <Tip label="Collapse sidebar" side="bottom">
           <button
             aria-label="Collapse sidebar"
             onClick={() => setCollapsed(true)}
@@ -183,6 +188,8 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           >
             <PanelLeftClose className="size-[17px]" strokeWidth={1.5} />
           </button>
+          </Tip>
+          <Tip label="Search · ⌘K" side="bottom">
           <button
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
@@ -190,6 +197,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           >
             <Icon icon={I.search} size={16} />
           </button>
+          </Tip>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
@@ -197,7 +205,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
           </div>
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
-          <NavGroup label="Records" icon={<Folder className="size-3.5 shrink-0" />} items={records} isActive={isActive} defaultOpen />
+          <NavGroup label="Records" icon={<Folder className="size-3.5 shrink-0" />} items={records} isActive={isActive} defaultOpen={false} />
           <NavGroup label="Petal AI" icon={<PetalMark className="size-3.5 shrink-0" />} items={petalAi} isActive={isActive} defaultOpen={false} />
           <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">
@@ -220,5 +228,6 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
         {searchOpen && <CommandSearch onClose={() => setSearchOpen(false)} />}
       </AnimatePresence>
     </div>
+    </TipProvider>
   );
 }

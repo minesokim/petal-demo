@@ -16,6 +16,7 @@ import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/pet
 import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
 import { skills } from "@/lib/fixtures/firm";
 import { SkillPetal } from "@/components/os/primitives";
+import { Tip } from "@/components/os/tooltip";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
 function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean }) {
@@ -32,7 +33,7 @@ function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string
         className={cn("max-h-40 w-full resize-none bg-transparent leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none", big ? "text-[15px]" : "text-[14px]")}
       />
       <div className="mt-2.5 flex items-center gap-1.5">
-        <button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button>
+        <Tip label="Attach files" side="top"><button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button></Tip>
         {/* Skills picker */}
         <div className="relative">
           <button
@@ -59,8 +60,8 @@ function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string
           )}
         </div>
         <div className="ml-auto flex items-center gap-1.5">
-          <button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button>
-          <button onClick={onSubmit} disabled={!value.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button>
+          <Tip label="Voice input" side="top"><button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button></Tip>
+          <Tip label="Send" side="top"><button onClick={onSubmit} disabled={!value.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button></Tip>
         </div>
       </div>
     </div>

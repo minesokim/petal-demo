@@ -15,6 +15,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
+import { Tip } from "@/components/os/tooltip";
 import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
@@ -425,6 +426,7 @@ function ClientRecordInner() {
 
           {/* record-level overflow menu */}
           <div ref={hdrMenuRef} className="relative">
+            <Tip label="More actions" side="bottom">
             <button
               onClick={() => setHdrMenuOpen(o => !o)}
               aria-label="More actions"
@@ -433,6 +435,7 @@ function ClientRecordInner() {
             >
               <Icon icon={I.more} size={16} />
             </button>
+            </Tip>
             {hdrMenuOpen && (
               <div className="absolute right-0 top-full z-30 mt-1 min-w-[184px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_8px_28px_-8px_rgba(17,17,26,0.18)]">
                 <button onClick={() => { setViewAsClient(true); setHdrMenuOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
