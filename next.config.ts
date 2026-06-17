@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
     ]
   },
   turbopack: {},
+  async redirects() {
+    // The old scaffolded dashboard was removed — the app lives at /os.
+    return [
+      { source: "/dashboard", destination: "/os", permanent: true },
+      { source: "/dashboard/:path*", destination: "/os", permanent: true },
+    ];
+  },
   webpack: (config) => {
     // react-pdf requires canvas to be false for SSR
     config.resolve.alias.canvas = false;

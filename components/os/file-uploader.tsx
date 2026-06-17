@@ -92,7 +92,7 @@ export function FileUploader({
           onClick={() => inputRef.current?.click()}
           className={cn("flex h-9 shrink-0 items-center gap-2 rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 text-[13px] font-medium text-[var(--os-ink)] shadow-[0_1px_1px_rgba(17,17,26,0.04)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
         >
-          <Upload className="size-4 text-[var(--os-brand)]" /> Choose a file
+          <Upload className="size-4 text-[var(--os-accent)]" /> Choose a file
         </button>
         <input ref={inputRef} type="file" multiple className="hidden" onChange={e => { if (e.target.files) add(e.target.files); e.target.value = ""; }} />
       </div>
