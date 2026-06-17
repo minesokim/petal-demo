@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
-  CheckCircle2, Clock3, AlertCircle, CircleDot, CalendarClock, Hourglass, Bookmark,
+  CheckCircle2, Clock3, AlertCircle, CircleDot, Circle, CalendarClock, Hourglass, Bookmark,
   FileText, Send, BookOpen, Phone, Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -143,6 +143,7 @@ export function Pill({
 const STATUS_BADGE: Record<TaskStatus, { tone: Tone; icon: React.ComponentType<{ className?: string }> }> = {
   needs_decision:      { tone: "red",     icon: AlertCircle },
   ready_to_approve:    { tone: "amber",   icon: Clock3 },
+  todo:                { tone: "neutral", icon: Circle },
   running:             { tone: "blue",    icon: CircleDot },
   scheduled:           { tone: "neutral", icon: CalendarClock },
   waiting_client:      { tone: "slate",   icon: Hourglass },

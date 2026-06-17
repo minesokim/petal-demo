@@ -15,8 +15,8 @@ import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, StatusHeading, DeadlineChip, SkillIcon, MemberAvatar, ScopeToggle, Segmented, BookmarkFlag, type Scope } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
-import { tasks, householdById, skillById, engagementById, taskById, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
-import { demoStore, useDemoVersion, useLiveNeedsYou } from "@/lib/demo-store";
+import { tasks, households, householdById, skillById, engagementById, engagementsOf, entityById, taskById, firmMembers, isCurrentUser, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
+import { demoStore, useLiveNeedsYou, useAllTasks } from "@/lib/demo-store";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { TASK_STATUS_ORDER, taskStatusMeta, type TaskStatus } from "@/lib/fixtures/vocab";
 
@@ -94,7 +94,7 @@ function ToggleRow({
 
 /* ── one task row: SkillPetal · title · client · StatusPill · DeadlineChip · fee · flag · ONE verb ── */
 function Row({
-  t, narrow, active, showStatus, onOpen, onVerb,
+  t, narrow, active, showStatus, onOpen, onVerb, onHand,
 }: {
   t: Task;
   narrow: boolean;
@@ -102,9 +102,11 @@ function Row({
   showStatus?: boolean;
   onOpen: () => void;
   onVerb: (t: Task, verb: string) => void;
+  onHand?: (t: Task) => void;
 }) {
   const skill = skillById(t.skillId);
   const verb = verbOf(t);
+  const isHumanTodo = t.origin === "human" && t.status === "todo";
   return (
     <div className={cn("relative flex h-14 items-center px-8 transition-colors", active ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}>
       {/* full-row open target (keyboard-focusable) */}
@@ -114,7 +116,12 @@ function Row({
         className="absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]"
       />
       <div className="pointer-events-none relative flex w-full min-w-0 items-center gap-2.5">
-        {skill && <SkillIcon category={skill.category} size={15} />}
+        {/* origin glyph: your to-do (pencil) · handed to Petal (mark) · Petal-native (skill) */}
+        {t.origin === "human"
+          ? t.status === "todo"
+            ? <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-[var(--os-selected)]"><Icon icon={I.edit} size={11} className="text-[var(--os-ink-muted)]" /></span>
+            : <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-[var(--os-bg-subtle)] ring-1 ring-[var(--os-border)]"><PetalMark className="size-3" /></span>
+          : skill && <SkillIcon category={skill.category} size={15} />}
         <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{t.title}</span>
         {t.flagged && <BookmarkFlag size={13} />}
         {!narrow && (
@@ -122,8 +129,16 @@ function Row({
             <span className="hidden max-w-[150px] shrink-0 truncate text-[12px] text-[var(--os-ink-muted)] md:inline">{clientName(t)}</span>
             {showStatus && <StatusPill status={t.status} className="hidden shrink-0 lg:inline-flex" />}
             {t.deadline && <DeadlineChip iso={t.deadline} className="hidden shrink-0 sm:inline-flex" />}
-            <MemberAvatar memberId={assigneeOf(t.householdId)} size={20} className="hidden shrink-0 sm:grid" />
+            <MemberAvatar memberId={t.assigneeId ?? assigneeOf(t.householdId)} size={20} className="hidden shrink-0 sm:grid" />
           </>
+        )}
+        {isHumanTodo && onHand && (
+          <button
+            onClick={() => onHand(t)}
+            className="pointer-events-auto inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+          >
+            <PetalMark className="size-3" /> Hand to Petal
+          </button>
         )}
         {verb && (
           <button
@@ -209,6 +224,112 @@ interface Group {
   items: Task[];
 }
 
+const firstName = (n: string) => n.split(" ")[0];
+const pillCls = (on: boolean) =>
+  cn(
+    "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] font-medium transition-colors",
+    on
+      ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]"
+      : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+  );
+
+/* ── New task — capture human-originated work; optionally hand it to Petal ── */
+function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
+  const [title, setTitle] = useState("");
+  const [householdId, setHouseholdId] = useState("");
+  const [engagementId, setEngagementId] = useState("");
+  const [assignee, setAssignee] = useState("petal");
+  const [due, setDue] = useState("");
+  const [notes, setNotes] = useState("");
+  const engs = householdId ? engagementsOf(householdId) : [];
+  const toPetal = assignee === "petal";
+  const fieldCls = "w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors focus:border-[var(--os-border-strong)] focus:outline-none";
+
+  const create = () => {
+    const t = title.trim();
+    if (!t) return;
+    const id = demoStore.newId();
+    demoStore.createTask({
+      id, householdId, engagementId: engagementId || undefined, status: "todo",
+      kind: "Task", title: t, why: notes.trim(), skillId: "",
+      deadline: due || undefined, origin: "human", assigneeId: toPetal ? undefined : assignee,
+    });
+    if (toPetal) demoStore.handToPetal(id, `Drafted per your request: "${t}". Review below and approve when ready.`);
+    onToast(toPetal ? "Handed to Petal - drafting…" : "Task created");
+    onClose();
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-[460px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_16px_48px_rgba(17,17,26,0.2)]"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--os-border)] px-4 py-3">
+          <h2 className="text-[14px] font-semibold text-[var(--os-ink)]">New task</h2>
+          <button onClick={onClose} aria-label="Close" className="grid size-7 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.close} size={16} /></button>
+        </div>
+
+        <div className="space-y-3 px-4 py-3.5">
+          <div>
+            <label className="os-label mb-1 block">Title</label>
+            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") create(); }} placeholder="e.g. Call Maria about the missing 1099" className={fieldCls} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="os-label mb-1 block">Client</label>
+              <select value={householdId} onChange={e => { setHouseholdId(e.target.value); setEngagementId(""); }} className={fieldCls}>
+                <option value="">None</option>
+                {households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="os-label mb-1 block">Return</label>
+              <select value={engagementId} onChange={e => setEngagementId(e.target.value)} disabled={!engs.length} className={cn(fieldCls, !engs.length && "opacity-50")}>
+                <option value="">{engs.length ? "None" : "—"}</option>
+                {engs.map(en => <option key={en.id} value={en.id}>{(entityById(en.entityId)?.name ?? en.form)} · {en.taxYear}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="os-label mb-1.5 block">Assignee</label>
+            <div className="flex flex-wrap gap-1.5">
+              {firmMembers.map(m => (
+                <button key={m.id} onClick={() => setAssignee(m.id)} className={pillCls(assignee === m.id)}>
+                  <MemberAvatar memberId={m.id} size={16} /> {isCurrentUser(m.id) ? "You" : firstName(m.name)}
+                </button>
+              ))}
+              <button onClick={() => setAssignee("petal")} className={pillCls(assignee === "petal")}>
+                <PetalMark className="size-3.5" /> Petal
+              </button>
+            </div>
+            {toPetal && <p className="mt-1.5 text-[11px] text-[var(--os-ink-subtle)]">Petal drafts it, then it returns to your queue to approve.</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="os-label mb-1 block">Due date</label>
+              <input type="date" value={due} onChange={e => setDue(e.target.value)} className={fieldCls} />
+            </div>
+          </div>
+          <div>
+            <label className="os-label mb-1 block">Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Context Petal or your teammate should know…" className={cn(fieldCls, "resize-none")} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-1.5 border-t border-[var(--os-border)] px-4 py-3">
+          <button onClick={onClose} className="h-8 rounded-md px-3 text-[12.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">Cancel</button>
+          <button onClick={create} disabled={!title.trim()} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-40">
+            {toPetal ? <><PetalMark className="size-3.5" /> Hand to Petal</> : "Create task"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function TasksPageInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -222,6 +343,7 @@ function TasksPageInner() {
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
   const { msg, show } = useToast();
 
@@ -252,14 +374,9 @@ function TasksPageInner() {
     if (params.get("task")) router.replace("/os/tasks", { scroll: false });
   };
 
-  // tasks resolved this demo session read as Done everywhere on this page
-  const demoVersion = useDemoVersion();
+  // the live queue — canonical + created this session, with approvals / done / hand-to-Petal applied
   const assignVersion = useAssignVersion(); // re-filter when a client is reassigned
-  const liveTasks: Task[] = useMemo(
-    () => tasks.map(t => (demoStore.isResolved(t.id) ? { ...t, status: "done" as TaskStatus } : t)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [demoVersion],
-  );
+  const liveTasks: Task[] = useAllTasks();
   const needsYou = useLiveNeedsYou().length;
 
   const groups: Group[] = useMemo(() => {
@@ -290,13 +407,20 @@ function TasksPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveTasks, flaggedOnly, blockedOnly, scope, assignVersion]);
 
-  const item = selected ? taskById(selected) ?? null : null;
+  const item = selected ? demoStore.byId(selected) : null;
 
   function onVerb(t: Task, verb: string) {
     if (verb === "Decide" || verb === "View run") setSelected(t.id);
     else if (verb === "Approve & send") { demoStore.resolve(t.id); show("Approved & sent"); }
     else if (verb === "Approve") { demoStore.resolve(t.id); show("Approved"); }
+    else if (verb === "Mark done") { demoStore.setStatus(t.id, "done"); show("Marked done"); }
     else if (verb === "Nudge") show("Nudge sent");
+  }
+
+  // hand a human to-do to Petal: it drafts, then returns to the queue as an approval
+  function onHand(t: Task) {
+    demoStore.handToPetal(t.id, `Drafted per your request: "${t.title}". Review below and approve when ready.`);
+    show("Handed to Petal - drafting…");
   }
 
   return (
@@ -306,6 +430,12 @@ function TasksPageInner() {
         <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Tasks</h1>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={() => setNewTaskOpen(true)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[12.5px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
+          >
+            <Icon icon={I.plus} size={14} /> New task
+          </button>
           <Link
             href="/os/review"
             className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-black active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
@@ -434,6 +564,7 @@ function TasksPageInner() {
                     showStatus={groupByClient}
                     onOpen={() => setSelected(t.id)}
                     onVerb={onVerb}
+                    onHand={onHand}
                   />
                 ))}
               </div>
@@ -477,6 +608,11 @@ function TasksPageInner() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* New task modal */}
+      <AnimatePresence>
+        {newTaskOpen && <NewTaskModal onClose={() => setNewTaskOpen(false)} onToast={show} />}
       </AnimatePresence>
 
       <Toast msg={msg} />

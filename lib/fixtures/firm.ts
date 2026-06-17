@@ -705,6 +705,10 @@ export interface Task {
   flagged?: boolean;
   estimatedMin: number;
   noticeId?: string;
+  /** who originated the task — Petal (the agentic default) or a human who created it */
+  origin?: "petal" | "human";
+  /** task-level owner (human tasks); falls back to the household assignee when absent */
+  assigneeId?: string;
 }
 
 export const tasks: Task[] = [

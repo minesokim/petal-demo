@@ -123,9 +123,19 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
     } else if (verbLabel === "Approve") {
       show("Approved");
       resolveAndClose();
+    } else if (verbLabel === "Mark done") {
+      demoStore.setStatus(task.id, "done");
+      show("Marked done");
+      window.setTimeout(onClose, 650);
     } else if (verbLabel === "Nudge") {
       show("Nudge sent");
     }
+  }
+
+  function handToPetal() {
+    demoStore.handToPetal(task.id, `Drafted per your request: "${task.title}". Review below and approve when ready.`);
+    show("Handed to Petal - drafting…");
+    window.setTimeout(onClose, 650);
   }
 
   const primaryIcon =
@@ -184,6 +194,11 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
               <Icon icon={primaryIcon} size={14} /> {verbLabel}
             </button>
           ) : null}
+          {task.origin === "human" && task.status === "todo" && (
+            <button onClick={handToPetal} className={LINK_BTN}>
+              <PetalMark className="size-3.5" /> Hand to Petal
+            </button>
+          )}
           <button onClick={onClose} className={GHOST_BTN}>
             Skip
           </button>

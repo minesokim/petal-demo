@@ -18,15 +18,16 @@ export function fmtDateYear(iso: string): string {
 
 // ── Task status (THE vocabulary) ───────────────────────────
 export type TaskStatus =
-  | "needs_decision" | "ready_to_approve" | "running" | "scheduled"
+  | "needs_decision" | "ready_to_approve" | "todo" | "running" | "scheduled"
   | "waiting_client" | "waiting_third_party" | "done";
 export const TASK_STATUS_ORDER: TaskStatus[] = [
-  "needs_decision", "ready_to_approve", "running", "scheduled",
+  "needs_decision", "ready_to_approve", "todo", "running", "scheduled",
   "waiting_client", "waiting_third_party", "done",
 ];
 export const taskStatusMeta: Record<TaskStatus, { label: string; dot: string; verb: string | null }> = {
   needs_decision:      { label: "Needs decision",         dot: "bg-red-500",                verb: "Decide" },
   ready_to_approve:    { label: "Ready to approve",       dot: "bg-amber-500",              verb: "Approve" },
+  todo:                { label: "To do",                  dot: "bg-[var(--os-ink-muted)]",  verb: "Mark done" },
   running:             { label: "Running",                dot: "bg-blue-500",               verb: "View run" },
   scheduled:           { label: "Scheduled",              dot: "bg-[var(--os-ink-subtle)]", verb: null },
   waiting_client:      { label: "Waiting on client",      dot: "bg-slate-400",              verb: "Nudge" },
