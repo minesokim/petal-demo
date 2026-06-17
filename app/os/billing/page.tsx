@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { SkillPetal } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
-import { taskById, households } from "@/lib/fixtures/firm";
+import { taskById } from "@/lib/fixtures/firm";
 import { invoiceStatusMeta, type Invoice, type InvoiceStatus } from "@/lib/fixtures/derive";
 import { billingStore, useBillingInvoices } from "@/lib/billing-store";
-import { timeStore, useTime, HOURLY_RATE } from "@/lib/time-store";
+import { timeStore, useTime } from "@/lib/time-store";
 
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 const money = (n: number) => `$${n.toLocaleString()}`;
@@ -177,69 +177,12 @@ function useToast() {
   };
 }
 
-const tFieldCls = "w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors focus:border-[var(--os-border-strong)] focus:outline-none";
-
-/* Log time — capture WIP that later bills (the time → billing front door) */
-function LogTimeModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
-  const [householdId, setHouseholdId] = useState("");
-  const [hours, setHours] = useState("");
-  const [note, setNote] = useState("");
-  const minutes = Math.round(parseFloat(hours || "0") * 60);
-  const valid = !!householdId && minutes > 0;
-
-  const save = () => {
-    if (!valid) return;
-    timeStore.log(householdId, minutes, note);
-    onToast(`Logged ${fmtHrs(minutes)} · ${money(Math.round((minutes / 60) * HOURLY_RATE))} WIP`);
-    onClose();
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} onClick={onClose} className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-md">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 8 }}
-        transition={{ duration: 0.16, ease: "easeOut" }}
-        onClick={e => e.stopPropagation()}
-        className="w-full max-w-[420px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-[0_16px_48px_rgba(17,17,26,0.2)]"
-      >
-        <div className="flex items-center justify-between border-b border-[var(--os-border)] px-4 py-3">
-          <h2 className="text-[14px] font-semibold text-[var(--os-ink)]">Log time</h2>
-          <button onClick={onClose} aria-label="Close" className="grid size-7 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Icon icon={I.close} size={16} /></button>
-        </div>
-        <div className="space-y-3 px-4 py-3.5">
-          <div>
-            <label className="os-label mb-1 block">Client</label>
-            <select autoFocus value={householdId} onChange={e => setHouseholdId(e.target.value)} className={tFieldCls}>
-              <option value="">Select a client…</option>
-              {households.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="os-label mb-1 block">Hours</label>
-            <input value={hours} onChange={e => setHours(e.target.value.replace(/[^0-9.]/g, ""))} onKeyDown={e => { if (e.key === "Enter") save(); }} inputMode="decimal" placeholder="e.g. 1.5" className={tFieldCls} />
-            {minutes > 0 && <p className="mt-1 text-[11px] text-[var(--os-ink-subtle)]">{money(Math.round((minutes / 60) * HOURLY_RATE))} at {money(HOURLY_RATE)}/hr</p>}
-          </div>
-          <div>
-            <label className="os-label mb-1 block">Note</label>
-            <input value={note} onChange={e => setNote(e.target.value)} placeholder="What did you work on?" className={tFieldCls} />
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-1.5 border-t border-[var(--os-border)] px-4 py-3">
-          <button onClick={onClose} className="h-8 rounded-md px-3 text-[12.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]">Cancel</button>
-          <button onClick={save} disabled={!valid} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-40">Log time</button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 export default function BillingPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [statusOpen, setStatusOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [payVia, setPayVia] = useState<PayMethod>("manual");
   const [payOpen, setPayOpen] = useState(false);
-  const [logOpen, setLogOpen] = useState(false);
   const pay = PAY_METHODS.find(m => m.key === payVia)!;
   const { msg, show } = useToast();
 
@@ -308,7 +251,6 @@ export default function BillingPage() {
                 </>
               )}
             </div>
-            <button onClick={() => setLogOpen(true)} className={cn("flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.history} size={14} className="text-[var(--os-ink-muted)]" /> Log time</button>
             <button className={cn("flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={15} /> New invoice</button>
           </div>
         </div>
@@ -435,8 +377,6 @@ export default function BillingPage() {
 
         <AnimatePresence>{selectedInv && <Drawer inv={selectedInv} onClose={() => setSelected(null)} />}</AnimatePresence>
       </div>
-
-      <AnimatePresence>{logOpen && <LogTimeModal onClose={() => setLogOpen(false)} onToast={show} />}</AnimatePresence>
 
       <AnimatePresence>
         {msg && (

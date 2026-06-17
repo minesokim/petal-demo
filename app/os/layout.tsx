@@ -115,10 +115,10 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const petalAi: Item[] = [
     { label: "Skills", href: "/os/skills", hugeicon: I.skills },
     { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
+    { label: "Connections", href: "/os/connections", icon: Blocks },
     { label: "Activity", href: "/os/activity", icon: Activity },
   ];
   const system: Item[] = [
-    { label: "Connections", href: "/os/connections", icon: Blocks },
     { label: "Settings", href: "/os/settings", icon: Settings },
   ];
 
@@ -195,16 +195,15 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-1">
-          {/* search — its own row atop the nav (opens the command palette) */}
+          {/* search — a little search bar atop the nav (opens the command palette) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+            className="mb-2 flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
           >
             <Icon icon={I.search} size={14} className="shrink-0" />
-            <span className="truncate">Search</span>
-            <span className="ml-auto text-[11px] tabular-nums text-[var(--os-ink-subtle)]">⌘K</span>
+            <span className="truncate">Search…</span>
+            <span className="ml-auto rounded border border-[var(--os-border)] px-1 text-[10px] font-medium tabular-nums text-[var(--os-ink-subtle)]">⌘K</span>
           </button>
-          <div className="mx-1 my-2 h-px bg-[var(--os-border)]" />
           <div className="space-y-0.5">
             {primary.map(i => <NavRow key={i.href} item={i} active={isActive(i.href)} />)}
           </div>

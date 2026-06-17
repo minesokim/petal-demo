@@ -459,7 +459,6 @@ function TasksPageInner() {
         <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Tasks</h1>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <RecurringButton onToast={show} />
           <button
             onClick={() => setNewTaskOpen(true)}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[12.5px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
@@ -535,6 +534,9 @@ function TasksPageInner() {
             </div>
           )}
         </div>
+
+        {/* recurring work — lives in the toolbar, not the header */}
+        <RecurringButton onToast={show} />
 
         {/* far right: list / board view toggle */}
         <Segmented

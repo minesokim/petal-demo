@@ -82,7 +82,7 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 grid place-items-start justify-center bg-black/30 p-4 pt-[12vh] backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 pt-[12vh] backdrop-blur-md"
       onClick={onClose}
     >
       <motion.div
@@ -90,7 +90,7 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
         transition={{ duration: 0.16, ease: "easeOut" }}
         onClick={e => e.stopPropagation()}
         role="dialog" aria-modal="true" aria-label="Search"
-        className="w-full max-w-[1100px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+        className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
       >
         {/* input */}
         <div className="flex items-center gap-2.5 border-b border-[var(--os-border)] px-4">

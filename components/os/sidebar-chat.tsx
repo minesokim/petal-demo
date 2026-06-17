@@ -38,7 +38,7 @@ export function SidebarChat() {
         onMouseLeave={() => { closeTimer.current = setTimeout(() => { setExpanded(false); setHoverList(false); setMenuFor(null); }, 500); }}
       >
         <div className="os-label mb-1.5 px-2">Recent</div>
-        <div className="overflow-hidden transition-[max-height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]" style={{ maxHeight: expanded ? 340 : 156 }}>
+        <div className="overflow-hidden transition-[max-height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]" style={{ maxHeight: (expanded || hoverList) ? 340 : 110 }}>
         <div
           className="space-y-1.5 transition-transform duration-200 ease-out"
           style={{ transform: hoverList && !expanded ? "translateY(-2px)" : "none" }}

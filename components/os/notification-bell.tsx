@@ -66,8 +66,10 @@ export function NotificationBell() {
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
         className={cn(
-          "relative grid size-7 shrink-0 place-items-center rounded-md transition-colors",
+          "relative grid size-7 shrink-0 place-items-center rounded-md transition-all",
           open ? "bg-black/[0.07] text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--os-ink)]",
+          // when nothing's unread, stay hidden until the sidebar is hovered (like the collapse control)
+          unread === 0 && !open && "opacity-0 group-hover/sidebar:opacity-100 focus-visible:opacity-100",
           FOCUS,
         )}
       >

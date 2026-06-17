@@ -41,9 +41,9 @@ export function RecurringButton({ onToast, className }: { onToast?: (m: string) 
     <>
       <button
         onClick={() => setOpen(true)}
-        className={cn("inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[12.5px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS, className)}
+        className={cn("flex h-7 items-center gap-1.5 rounded-lg border border-[var(--os-border)] px-2.5 text-[12px] font-medium text-[var(--os-ink-muted)] transition-all active:scale-[0.98] hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS, className)}
       >
-        <Icon icon={I.history} size={14} className="text-[var(--os-ink-muted)]" /> Recurring
+        <Icon icon={I.history} size={13} className="text-[var(--os-ink-subtle)]" /> Recurring
       </button>
       <AnimatePresence>{open && <RecurringModal onClose={() => setOpen(false)} onToast={onToast} />}</AnimatePresence>
     </>
@@ -93,9 +93,9 @@ function RecurringModal({ onClose, onToast }: { onClose: () => void; onToast?: (
                       role="switch"
                       aria-checked={t.active}
                       aria-label={t.active ? "Pause" : "Activate"}
-                      className={cn("relative h-[18px] w-[30px] shrink-0 rounded-full transition-colors", FOCUS, t.active ? "bg-[var(--os-primary)]" : "bg-[var(--os-border-strong)]")}
+                      className={cn("inline-flex h-[18px] w-[31px] shrink-0 items-center rounded-full px-[2.5px] transition-colors", FOCUS, t.active ? "bg-[var(--os-primary)]" : "bg-[var(--os-border-strong)]")}
                     >
-                      <span className={cn("absolute top-[2px] size-[14px] rounded-full bg-white shadow-sm transition-transform", t.active ? "translate-x-[14px]" : "translate-x-[2px]")} />
+                      <span className={cn("size-[13px] rounded-full bg-white shadow-sm transition-transform duration-200", t.active ? "translate-x-[13px]" : "translate-x-0")} />
                     </button>
                   </div>
                   <div className="mt-1.5 flex items-center gap-2.5 pl-[30px] text-[11.5px] text-[var(--os-ink-subtle)]">

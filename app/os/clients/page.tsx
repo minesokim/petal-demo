@@ -372,8 +372,9 @@ export default function ClientsPage() {
             <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Every household, return, and contact across your book.</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <button onClick={() => setNewClientOpen(true)} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={14} /> New client</button>
             <div className="relative">
-              <button onClick={() => setHdrMenuOpen(o => !o)} aria-label="More actions" aria-expanded={hdrMenuOpen} className={cn("grid size-8 place-items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}><Icon icon={I.more} size={16} /></button>
+              <button onClick={() => setHdrMenuOpen(o => !o)} aria-label="More actions" aria-expanded={hdrMenuOpen} className={cn("grid size-8 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}><Icon icon={I.more} size={16} /></button>
               {hdrMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setHdrMenuOpen(false)} />
@@ -383,7 +384,6 @@ export default function ClientsPage() {
                 </>
               )}
             </div>
-            <button onClick={() => setNewClientOpen(true)} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={14} /> New client</button>
           </div>
         </div>
       </div>
