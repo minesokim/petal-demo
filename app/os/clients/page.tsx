@@ -101,7 +101,7 @@ function ClientsTable({ rows }: { rows: Household[] }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-[13px] font-medium text-[var(--os-ink)]">{h.name}</span>
-                  {clientStore.isCreated(h.id) && <span className="shrink-0 rounded bg-[var(--os-accent-soft)] px-1.5 text-[10px] font-medium text-[var(--os-accent)]">New</span>}
+                  {clientStore.isCreated(h.id) && <span className="shrink-0 rounded bg-emerald-50 px-1.5 text-[10px] font-medium text-emerald-600">New</span>}
                 </div>
                 <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{kindLabel[h.kind]}</div>
               </div>
@@ -329,6 +329,7 @@ export default function ClientsPage() {
   const [scope, setScope] = useState<Scope>("firm");
   const [query, setQuery] = useState("");
   const [newClientOpen, setNewClientOpen] = useState(false);
+  const [hdrMenuOpen, setHdrMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => { setToast(m); window.setTimeout(() => setToast(null), 2200); };
   useAssignVersion(); // re-filter when a client is reassigned from the table
@@ -371,7 +372,17 @@ export default function ClientsPage() {
             <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Every household, return, and contact across your book.</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.download} size={15} className="text-[var(--os-ink-muted)]" /> Export</button>
+            <div className="relative">
+              <button onClick={() => setHdrMenuOpen(o => !o)} aria-label="More actions" aria-expanded={hdrMenuOpen} className={cn("grid size-8 place-items-center rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}><Icon icon={I.more} size={16} /></button>
+              {hdrMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setHdrMenuOpen(false)} />
+                  <div className="absolute right-0 top-9 z-20 w-[160px] rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_10px_34px_rgba(17,17,26,0.13)]">
+                    <button onClick={() => { setHdrMenuOpen(false); showToast("Exporting…"); }} className={cn("flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}><Icon icon={I.download} size={14} className="text-[var(--os-ink-muted)]" /> Export {view}</button>
+                  </div>
+                </>
+              )}
+            </div>
             <button onClick={() => setNewClientOpen(true)} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}><Icon icon={I.plus} size={14} /> New client</button>
           </div>
         </div>
@@ -386,7 +397,7 @@ export default function ClientsPage() {
             className={cn("relative flex items-center gap-1.5 px-2.5 py-2 text-[13px] transition-colors", FOCUS, view === v.key ? "font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:text-[var(--os-ink)]")}
           >
             {v.label}
-            <span className="rounded bg-[var(--os-accent-soft)] px-1.5 text-[11px] font-medium tabular-nums text-[var(--os-accent)]">{counts[v.key]}</span>
+            <span className="rounded bg-emerald-50 px-1.5 text-[11px] font-medium tabular-nums text-emerald-600">{counts[v.key]}</span>
             {view === v.key && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--os-ink)]" />}
           </button>
         ))}
