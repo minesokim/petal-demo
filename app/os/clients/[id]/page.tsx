@@ -48,8 +48,8 @@ const TABS = ["Overview", "Memory", "Activity", "Returns", "Documents", "Tasks",
 type Tab = (typeof TABS)[number];
 // 6 primary tabs shown inline; the rest live behind a "More" dropdown (Attio pattern).
 // Notes is NOT a content tab - it lives in the right rail next to Ask Petal / Details.
-const PRIMARY_TABS: Tab[] = ["Overview", "Memory", "Returns", "Documents", "Tasks", "Messages"];
-const MORE_TABS: Tab[] = ["Activity", "Billing", "Positions", "Compliance"];
+const PRIMARY_TABS: Tab[] = ["Overview", "Returns", "Documents", "Tasks", "Messages"];
+const MORE_TABS: Tab[] = ["Memory", "Activity", "Billing", "Positions", "Compliance"];
 const tabFromParam = (p: string | null): Tab =>
   TABS.find(t => t.toLowerCase() === (p ?? "").toLowerCase()) ?? "Overview";
 
