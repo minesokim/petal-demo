@@ -92,8 +92,12 @@ export default function TodayPage() {
 
           {/* ── hero banner ── */}
           <div className="relative overflow-hidden rounded-xl border border-[var(--os-border)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
+            {banner === "aurora" ? (
+              <div className="os-banner-aurora absolute inset-0 h-full w-full" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={banner} alt="" className="absolute inset-0 h-full w-full object-cover object-[center_42%]" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/25 to-black/10" />
             <div className="relative px-7 py-8">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">

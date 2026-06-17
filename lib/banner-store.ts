@@ -6,9 +6,11 @@
 
 import { useSyncExternalStore } from "react";
 
-export const BANNERS: string[] = Array.from({ length: 10 }, (_, i) => `/images/banners/banner-${i + 1}.jpg`);
+// "aurora" is a CSS-gradient banner (no asset) and the default; the rest are images.
+export const AURORA = "aurora";
+export const BANNERS: string[] = [AURORA, ...Array.from({ length: 10 }, (_, i) => `/images/banners/banner-${i + 1}.jpg`)];
 
-let selected = BANNERS[0];
+let selected = AURORA;
 let version = 0;
 const listeners = new Set<() => void>();
 function emit() { version++; listeners.forEach(l => l()); }
@@ -22,6 +24,6 @@ export function useBanner(): string {
   return useSyncExternalStore(
     cb => { listeners.add(cb); return () => listeners.delete(cb); },
     () => selected,
-    () => BANNERS[0],
+    () => AURORA,
   );
 }

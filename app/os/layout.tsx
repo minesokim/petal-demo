@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/os/primitives";
 import { SidebarChat } from "@/components/os/sidebar-chat";
+import { ChatHistoryOverlay } from "@/components/os/chat-history-overlay";
 import { CommandSearch } from "@/components/os/command-search";
 import { NotificationBell } from "@/components/os/notification-bell";
 import { TipProvider, Tip } from "@/components/os/tooltip";
@@ -31,8 +32,8 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
       className={cn(
         "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal transition-colors",
         active
-          ? "bg-black/[0.07] text-[var(--os-ink)]"
-          : "text-[var(--os-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--os-ink)]",
+          ? "bg-[var(--os-selected)] text-[var(--os-ink)]"
+          : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
       )}
     >
       {item.logo ? <PetalLogo size={14} className="shrink-0" /> : item.hugeicon ? <Icon icon={item.hugeicon} size={14} className="shrink-0" /> : item.glyph ? <PetalMark className="size-3.5 shrink-0" /> : IconC ? <IconC className="size-3.5 shrink-0" /> : null}
@@ -50,10 +51,10 @@ function NavRow({ item, active }: { item: Item; active: boolean }) {
 function NavGroup({ label, icon, items, isActive, defaultOpen = true }: { label: string; icon: React.ReactNode; items: Item[]; isActive: (h: string) => boolean; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={cn("mt-1 rounded-lg transition-colors", open && "bg-black/[0.05]")}>
+    <div className={cn("mt-1 rounded-lg transition-colors", open && "bg-[var(--os-hover)]")}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal text-[var(--os-ink-muted)] transition-colors hover:bg-black/[0.05] hover:text-[var(--os-ink)]"
+        className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] font-normal text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
       >
         {icon}
         <span className="flex-1 truncate text-left">{label}</span>
@@ -70,6 +71,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const needsYou = useLiveNeedsYou().length;
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const wsRef = useRef<HTMLDivElement>(null);
@@ -126,13 +128,19 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   return (
     <TipProvider>
     <div className="petal-os relative flex h-screen w-full overflow-hidden text-[13px]">
+      {/* full-shell frost — frosts the tinted gradient behind the whole chrome so
+          the entire shell (sidebar + the gutter framing the content) reads as one
+          continuous pane of glass, not just the sidebar. Sits below the z-10
+          sidebar + main, above the gradient background. */}
+      <div aria-hidden className="os-glass-pane pointer-events-none absolute inset-0 z-0" />
+
       {/* expand control - only when collapsed */}
       {collapsed && (
         <Tip label="Expand sidebar" side="right">
         <button
           onClick={() => setCollapsed(false)}
           aria-label="Expand sidebar"
-          className="absolute left-2 top-3 z-30 grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+          className="os-chrome absolute left-2 top-3 z-30 grid size-7 place-items-center rounded-md text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
         >
           <PanelLeftOpen className="size-[18px]" strokeWidth={1.5} />
         </button>
@@ -140,14 +148,14 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── SIDEBAR ── */}
-      <aside className={cn("group/sidebar relative flex shrink-0 flex-col border-r border-white/40 bg-[var(--os-glass)] backdrop-blur-xl transition-[width] duration-200 ease-out", collapsed ? "w-0 overflow-hidden" : "w-[208px]")}>
+      <aside className={cn("os-chrome group/sidebar relative z-20 flex shrink-0 flex-col transition-[width] duration-200 ease-out", collapsed ? "w-0 overflow-hidden" : "w-[208px]")}>
         {/* workspace switcher + search / compose (Linear) */}
         <div className="flex items-center gap-1.5 px-3 py-2.5">
           <div className="relative min-w-0 flex-1" ref={wsRef}>
             <button
               onClick={() => setWsOpen(o => !o)}
               aria-expanded={wsOpen}
-              className="-mx-1 flex min-w-0 w-full items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:bg-black/[0.05]"
+              className="-mx-1 flex min-w-0 w-full items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:bg-[var(--os-hover)]"
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]">
                 <PetalMark className="size-3.5" />
@@ -187,7 +195,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           <button
             aria-label="Collapse sidebar"
             onClick={() => setCollapsed(true)}
-            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] opacity-0 transition-all hover:bg-black/[0.05] hover:text-[var(--os-ink)] focus-visible:opacity-100 group-hover/sidebar:opacity-100"
+            className="grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] opacity-0 transition-all hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] focus-visible:opacity-100 group-hover/sidebar:opacity-100"
           >
             <PanelLeftClose className="size-[17px]" strokeWidth={1.5} />
           </button>
@@ -217,16 +225,21 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* bottom - Ask Petal chat zone (Recent · history · New chat); history slides up over the sidebar */}
-        <SidebarChat />
+        {/* bottom - Ask Petal chat zone (Recent · history · New chat); history takes over the whole shell */}
+        <SidebarChat onOpenHistory={() => setHistoryOpen(true)} />
       </aside>
 
-      {/* ── MAIN ── */}
-      <main className={cn("min-w-0 flex-1 overflow-hidden p-2.5 pt-3 transition-[padding] duration-200 ease-out", collapsed && "pl-11")}>
+      {/* ── MAIN ── (lifts above the history glass so the canvas stays framed by it) */}
+      <main className={cn("relative min-w-0 flex-1 overflow-hidden p-2.5 pt-3 transition-[padding] duration-200 ease-out", historyOpen ? "z-40" : "z-10", collapsed && "pl-11")}>
         <div className="h-full overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-canvas)] shadow-[0_1px_2px_rgba(17,17,26,0.04),0_4px_14px_-6px_rgba(17,17,26,0.07)]">
           {children}
         </div>
       </main>
+
+      {/* chat history — full-shell glass takeover, framing the canvas */}
+      <AnimatePresence>
+        {historyOpen && <ChatHistoryOverlay onClose={() => setHistoryOpen(false)} />}
+      </AnimatePresence>
 
       <AnimatePresence>
         {searchOpen && <CommandSearch onClose={() => setSearchOpen(false)} />}

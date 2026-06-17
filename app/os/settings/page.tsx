@@ -260,12 +260,16 @@ export default function SettingsPage() {
                     <button
                       key={src}
                       onClick={() => bannerStore.set(src)}
-                      aria-label={`Banner ${i + 1}`}
+                      aria-label={src === "aurora" ? "Aurora (default)" : `Banner ${i}`}
                       aria-pressed={selected}
                       className={cn("group relative aspect-[2.4/1] overflow-hidden rounded-lg border-2 transition-all", FOCUS, selected ? "border-[var(--os-primary)]" : "border-transparent ring-1 ring-[var(--os-border)] hover:ring-[var(--os-border-strong)]")}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      {src === "aurora" ? (
+                        <div className="os-banner-aurora h-full w-full" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                      )}
                       {selected && (
                         <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] shadow-sm">
                           <Icon icon={I.check} size={11} />

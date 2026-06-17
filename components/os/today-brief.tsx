@@ -65,7 +65,7 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
                   <Link href={item.action.href}><Button variant="secondary" size="sm">{item.action.label}</Button></Link>
                 )}
                 <Link href="/os/ask" className="group/ask ml-auto inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11.5px] text-[var(--os-ink-subtle)] transition-colors hover:text-[var(--os-ink-muted)]">
-                  <PetalMark className="size-3 transition-transform duration-500 ease-out group-hover/ask:rotate-180" /> Ask Petal
+                  <PetalMark className="size-3 transition-transform duration-500 ease-out group-hover/ask:rotate-[72deg]" /> Ask Petal
                 </Link>
               </div>
             </div>

@@ -469,7 +469,7 @@ function TasksPageInner() {
             href="/os/review"
             className="group inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--os-primary)] px-3 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-all hover:bg-[var(--os-primary-hover)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--os-accent)]"
           >
-            <PetalMark className="size-3.5 transition-transform duration-500 ease-out group-hover:rotate-180" />
+            <PetalMark className="size-3.5 transition-transform duration-500 ease-out group-hover:rotate-[72deg]" />
             Review mode
             {needsYou ? <span className="grid h-4 min-w-4 place-items-center rounded bg-white/20 px-1 text-[11px] tabular-nums">{needsYou}</span> : null}
           </Link>

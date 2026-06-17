@@ -8,7 +8,7 @@
   --os-card: #fbfaf9;
   --os-selected: #f0f0ef;
   --os-hover: #f6f6f5;
-  --os-shell: #f4f1ec;
+  --os-shell: #eceae6;
 
   --os-ink: #1a1a1a;
   --os-ink-muted: #6b6b70;
@@ -41,17 +41,91 @@
   --os-brand: #16794c;
   --os-brand-soft: #16794c47;
 
-  /* liquid-glass shell: translucent fill for the sidebar/gutter chrome */
-  --os-glass: color-mix(in srgb, var(--os-shell) 60%, transparent);
+  /* liquid-glass: ONE frosted-white pane (GlassCard texture: translucent white
+     fill + backdrop-blur + hairline edge) spanning the whole shell. Kept light
+     so the aurora mesh below bleeds through as soft color = the glass reads. */
+  --os-glass: rgba(255, 255, 255, 0.14);
+  --os-glass-edge: rgba(255, 255, 255, 0.5);
 
   color: var(--os-ink);
-  /* a whisper of the brand color washed across the shell, under the glass chrome */
+  /* aurora mesh — a quiet cool tint warmed with a faint taupe, over a lighter
+     base. Cool still leads (slate/periwinkle) but a couple of warm-neutral orbs
+     take the chill off; a touch more presence so the gradient just reads. */
   background:
-    radial-gradient(150% 130% at 100% 0%, color-mix(in srgb, var(--os-primary) 9%, var(--os-shell)) 0%, var(--os-shell) 52%),
-    var(--os-shell);
+    radial-gradient(56% 54% at 10% 14%, rgba(140, 148, 176, 0.26) 0%, transparent 62%),
+    radial-gradient(52% 50% at 90% 88%, rgba(150, 150, 172, 0.22) 0%, transparent 62%),
+    radial-gradient(50% 48% at 88% 12%, rgba(178, 168, 166, 0.17) 0%, transparent 60%),
+    radial-gradient(46% 46% at 28% 96%, rgba(170, 161, 156, 0.13) 0%, transparent 60%),
+    #efeeeb;
   background-attachment: fixed;
   font-feature-settings: "tnum" on, "cv01" on, "ss01" on;
   -webkit-font-smoothing: antialiased;
+}
+
+/* shell chrome — applied to the glass surfaces (sidebar + framing). Keeps ink
+   dark for legibility on the light frost, and softens fills/borders to
+   translucent so the frosted glass beneath shows through. */
+.os-chrome {
+  --os-ink: #1f1f22;
+  --os-ink-muted: #5c5b59;
+  --os-ink-subtle: #8d8b87;
+  --os-border: rgba(40, 38, 34, 0.08);
+  --os-border-strong: rgba(40, 38, 34, 0.14);
+  --os-border-hover: rgba(40, 38, 34, 0.22);
+  --os-hover: rgba(40, 38, 34, 0.055);
+  --os-selected: rgba(40, 38, 34, 0.09);
+  /* floating surfaces (dropdowns, the notification popover, inputs) must be
+     opaque — they sit over the nav and a translucent fill let it bleed through. */
+  --os-surface: #fbfaf9;
+  --os-card: rgba(255, 255, 255, 0.6);
+  --os-bg-subtle: rgba(255, 255, 255, 0.42);
+  --os-accent: #33333a;
+  color: var(--os-ink);
+}
+
+/* full-shell glass pane — the user's glass recipe: very-transparent white +
+   blur, rich inset highlights (top/bottom edge + a soft inner glow), and a
+   specular gradient line down the top + left edges via ::before/::after. */
+.os-glass-pane {
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 12px 6px rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+.os-glass-pane::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+.os-glass-pane::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
+}
+
+/* default Home banner — a soft macOS-style aurora (taupe left → warm peach
+   center → cool periwinkle right). Rendered as a gradient so it needs no asset. */
+.os-banner-aurora {
+  background-color: #d9d2cb;
+  background-image:
+    radial-gradient(120% 130% at 82% 26%, rgba(125, 154, 214, 0.92) 0%, rgba(125, 154, 214, 0) 46%),
+    radial-gradient(112% 122% at 46% 64%, rgba(233, 150, 95, 0.95) 0%, rgba(233, 150, 95, 0) 50%),
+    radial-gradient(92% 130% at 14% 86%, rgba(224, 170, 120, 0.7) 0%, rgba(224, 170, 120, 0) 55%),
+    linear-gradient(108deg, #cfc8c1 0%, #ead0ad 32%, #e89a62 54%, #c4a9cf 74%, #8ea6d8 100%);
 }
 
 /* sentence-case section label */

@@ -39,7 +39,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
           className,
         )}
       >
-        <PetalMark className="size-3.5 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-180" /> Weekly digest
+        <PetalMark className="size-3.5 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-[72deg]" /> Weekly digest
       </button>
 
       <AnimatePresence>
