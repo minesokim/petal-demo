@@ -751,19 +751,6 @@ function ClientRecordInner() {
                       )}
                     </Card>
 
-                    {/* relationships */}
-                    {k1Links.length > 0 && (
-                      <Card title="Relationships">
-                        <div className="-mx-2 -mb-1">
-                          {k1Links.map(l => (
-                            <div key={l.key} className="flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] text-[var(--os-ink)]">
-                              <Icon icon={I.link} size={13} className="shrink-0 text-[var(--os-ink-subtle)]" /> {l.line}
-                            </div>
-                          ))}
-                        </div>
-                      </Card>
-                    )}
-
                     {/* workpapers */}
                     {workpapers.map(({ eng, wp }) => (
                       <Card key={wp.id} title={`Workpaper · ${entityById(eng.entityId)?.name} ${eng.form}`}>
@@ -1060,8 +1047,8 @@ function ClientRecordInner() {
                           </Link>
                         )}
                         {invoice.blockedByDocs && (
-                          <button onClick={() => setTab("Documents")} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-100", FOCUS)}>
-                            Fee blocked by missing docs <Icon icon={I.chevronRight} size={11} />
+                          <button onClick={() => setTab("Documents")} className={cn("inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] px-3 text-[12.5px] font-medium text-[var(--os-warning)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+                            <Icon icon={I.alert} size={12} /> Can’t bill until docs arrive
                           </button>
                         )}
                       </div>
@@ -1353,6 +1340,20 @@ function ClientRecordInner() {
                     ))}
                   </div>
                 </LCard>
+
+                {/* Relationships - K-1 flows between entities */}
+                {k1Links.length > 0 && (
+                  <LCard title="Relationships" action={<span className="text-[11px] tabular-nums text-[var(--os-ink)]">{k1Links.length}</span>}>
+                    <div className="space-y-0.5">
+                      {k1Links.map(l => (
+                        <div key={l.key} className="flex items-start gap-2.5 px-0.5 py-1.5 text-[13px] text-[var(--os-ink)]">
+                          <Icon icon={I.link} size={13} className="mt-0.5 shrink-0 text-[var(--os-ink-subtle)]" />
+                          <span className="min-w-0 flex-1 leading-snug">{l.line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </LCard>
+                )}
               </div>
             )}
 

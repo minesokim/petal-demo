@@ -17,7 +17,7 @@ import { Icon, I } from "@/components/os/icon";
 import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
-  Settings, Home, FileText, Folder, MailWarning, CreditCard, BookOpen, LogOut,
+  Settings, Home, FileText, Folder, MailWarning, Wallet, BookOpen, LogOut,
   PanelLeftClose, PanelLeftOpen, Activity, Blocks, Brain,
 } from "lucide-react";
 import { useLiveNeedsYou } from "@/lib/demo-store";
@@ -115,7 +115,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   const records: Item[] = [
     { label: "Documents", href: "/os/documents", icon: FileText },
     { label: "Notices", href: "/os/notices", icon: MailWarning },
-    { label: "Billing", href: "/os/billing", icon: CreditCard },
+    { label: "Billing", href: "/os/billing", icon: Wallet },
   ];
   const petalAi: Item[] = [
     { label: "Skills", href: "/os/skills", hugeicon: I.skills },
