@@ -210,7 +210,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
           {/* search — a little search bar atop the nav (opens the command palette) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="mb-2 flex h-8 w-full items-center gap-2 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+            className="mb-2 flex h-8 w-full items-center gap-2 rounded bg-[var(--os-hover)] px-2.5 text-[13px] text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-selected)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
           >
             <Icon icon={I.search} size={14} className="shrink-0" />
             <span className="truncate">Search…</span>

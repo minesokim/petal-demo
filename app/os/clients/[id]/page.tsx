@@ -667,7 +667,7 @@ function ClientRecordInner() {
                     {/* Returns - full table (second under Catch me up; Intake tab holds readiness) */}
                     <Card title="Returns" action={<span className="text-[12px] tabular-nums text-[var(--os-ink-muted)]">{money(householdFee(h.id))} total</span>}>
                       <div className="-mt-1">
-                        <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 border-b border-[var(--os-border)] px-2 pb-2 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                        <div className="grid grid-cols-[minmax(0,1fr)_128px_100px_64px_72px] gap-x-3 border-b border-[var(--os-border)] px-2 pb-2 text-[10.5px] font-medium tracking-wide text-[var(--os-ink-subtle)]">
                           <div>Return</div>
                           <div>Stage</div>
                           <div>Deadline</div>

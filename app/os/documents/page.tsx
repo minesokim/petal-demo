@@ -46,7 +46,7 @@ function FileRow({ f, showFolder }: { f: FirmFile & { folderName?: string }; sho
 
 function FileCard({ f }: { f: FirmFile }) {
   return (
-    <div className="group/file flex cursor-default flex-col rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] p-3 transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
+    <div className="group/file flex cursor-default flex-col rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-3 transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
       <div className="flex items-start justify-between">
         <KindTile kind={f.kind} size={40} />
         {f.starred && <Icon icon={I.star} size={13} className="text-amber-500" />}

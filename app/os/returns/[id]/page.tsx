@@ -304,17 +304,12 @@ function ReturnRecordInner() {
             {tab === "Overview" && (
               <div className="mx-auto max-w-[760px] space-y-4">
                 {e.blockedBy && (
-                  <div className="flex items-center gap-3 rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] px-4 py-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-200/70">
-                      <Icon icon={I.alert} size={17} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-amber-500" />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Blocked</span>
-                      </div>
-                      <p className="mt-0.5 text-[13px] leading-snug text-[var(--os-ink)]">{e.blockedBy}</p>
-                    </div>
+                  <div className="flex items-center gap-2.5 rounded-lg border border-[var(--os-border)] border-l-[3px] border-l-amber-400 bg-[var(--os-card)] px-4 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)]">
+                    <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+                    <p className="min-w-0 text-[13px] leading-snug text-[var(--os-ink)]">
+                      <span className="font-medium text-amber-700">Blocked</span>
+                      <span className="text-[var(--os-ink-muted)]"> · {e.blockedBy}</span>
+                    </p>
                   </div>
                 )}
 

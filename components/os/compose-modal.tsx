@@ -239,7 +239,7 @@ export function ComposeModal({ onClose }: { onClose: () => void }) {
                     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.14 }}
                     className="absolute bottom-[calc(100%+6px)] left-0 z-20 w-[244px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_12px_34px_-8px_rgba(17,17,26,0.22)]"
                   >
-                    <div className="px-2 py-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">Saved templates</div>
+                    <div className="px-2 py-1.5 text-[10.5px] font-medium tracking-wide text-[var(--os-ink-subtle)]">Saved templates</div>
                     {TEMPLATES.map(t => (
                       <button key={t.name} onClick={() => applyTemplate(t)} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
                         <LayoutTemplate className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" /> {t.name}

@@ -82,7 +82,7 @@ export function DocThumb({ doc }: { doc: ExpectedDoc }) {
       <div className="h-full overflow-hidden rounded border border-[var(--os-border)] bg-white px-2.5 pt-2 shadow-sm">
         <div className="flex items-center gap-1 border-b border-[var(--os-border)] pb-1.5">
           <Icon icon={I.file} size={10} className="text-[var(--os-ink-subtle)]" />
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-[var(--os-ink-muted)]">{doc.type}</span>
+          <span className="text-[8px] font-semibold tracking-wide text-[var(--os-ink-muted)]">{doc.type}</span>
         </div>
         <div className="mt-2 space-y-1.5">
           {(doc.fields ?? [0, 1, 2, 3]).slice(0, 4).map((_, i) => (

@@ -73,7 +73,7 @@ export default function NoticeDetailPage() {
       <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
         <div className="mx-auto max-w-[760px] space-y-6">
           {/* facts grid */}
-          <section className="rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-4">
+          <section className="rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] p-4">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
               <Fact label="Type">{n.type}</Fact>
               <Fact label="Tax year"><span className="tabular-nums">{n.taxYear}</span></Fact>
@@ -96,7 +96,7 @@ export default function NoticeDetailPage() {
 
           {/* drafted response letter */}
           {n.draftedResponse && (
-            <section className="overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)]">
+            <section className="overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-card)]">
               <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] px-4 py-2.5 text-[12px] font-medium text-[var(--os-ink-muted)]">
                 <PetalMark className="size-3.5 shrink-0" /> Petal drafted
               </div>

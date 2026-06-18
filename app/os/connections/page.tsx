@@ -49,7 +49,7 @@ function ConnectionCard({ i, onToast }: { i: Integration; onToast: (m: string) =
   const disconnect = () => { connectionStore.disconnect(i.id); setMenuOpen(false); onToast(`Disconnected ${i.name}`); };
 
   return (
-    <div className={cn("flex flex-col rounded-xl border bg-[var(--os-surface)] p-3.5 transition-colors", connected ? "border-[var(--os-border-strong)]" : "border-[var(--os-border)] hover:border-[var(--os-border-strong)]")}>
+    <div className={cn("flex flex-col rounded-xl border bg-[var(--os-card)] p-3.5 transition-colors", connected ? "border-[var(--os-border-strong)]" : "border-[var(--os-border)] hover:border-[var(--os-border-strong)]")}>
       <div className="flex items-start gap-3">
         <LogoTile i={i} />
         <div className="min-w-0 flex-1">

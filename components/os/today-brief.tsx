@@ -53,7 +53,7 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
 
               {item.whyItMatters && (
                 <div className="mt-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] p-3">
-                  <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                  <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-medium tracking-wide text-[var(--os-ink-subtle)]">
                     <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> Why it matters to you
                   </div>
                   <p className="text-[12.5px] leading-relaxed text-[var(--os-ink)]">{item.whyItMatters}</p>

@@ -142,7 +142,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
 
               {/* Petal call summary - the primary read; transcript folds underneath */}
               <div className="rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-4">
-                <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium tracking-wide text-[var(--os-ink-subtle)]">
                   <PetalMark className="size-3 text-[var(--os-ink-muted)]" /> Call summary
                 </div>
                 <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">{thread.transcript.summary}</p>
@@ -342,7 +342,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setTemplatesOpen(false)} />
                       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.14 }} className="absolute bottom-[calc(100%+6px)] left-0 z-20 w-[244px] overflow-hidden rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_12px_34px_-8px_rgba(17,17,26,0.22)]">
-                        <div className="px-2 py-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[var(--os-ink-subtle)]">Saved templates</div>
+                        <div className="px-2 py-1.5 text-[10.5px] font-medium tracking-wide text-[var(--os-ink-subtle)]">Saved templates</div>
                         {TEMPLATES.map(t => (
                           <button key={t.name} onClick={() => { setReply(t.body.replaceAll("{name}", first(thread.clientName))); setTemplatesOpen(false); }} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
                             <LayoutTemplate className="size-3.5 shrink-0 text-[var(--os-ink-subtle)]" /> {t.name}
