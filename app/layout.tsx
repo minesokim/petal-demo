@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "next-themes";
@@ -13,6 +14,13 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { AgentationDev } from "@/components/agentation-dev";
+
+export const metadata: Metadata = {
+  title: { default: "Petal — AI-native tax practice", template: "%s · Petal" },
+  description:
+    "Petal is an AI-native tax practice management platform — it prepares, reviews, and files returns alongside your firm, with every number traceable to its source.",
+  applicationName: "Petal",
+};
 
 export default async function RootLayout({
   children
