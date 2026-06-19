@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { LiquidGlass } from "@/components/os/liquid-glass";
 import { households } from "@/lib/fixtures/firm";
 
 type Result = { id: string; label: string; sub?: string; href: string; icon: LucideIcon | "petal"; group: "Pages" | "Clients" };
@@ -83,7 +84,7 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 pt-[12vh] backdrop-blur-[6px]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/38 p-4 pt-[12vh] backdrop-blur-[8px]"
       onClick={onClose}
     >
       <motion.div
@@ -91,10 +92,26 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
         transition={{ duration: 0.16, ease: "easeOut" }}
         onClick={e => e.stopPropagation()}
         role="dialog" aria-modal="true" aria-label="Search"
-        className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
+        className="w-full max-w-[680px]"
+      >
+      {/* restrained liquid glass: subtle blur + faint rim refraction, mostly-opaque
+          surface so the input and results stay crisp ("not too glassy") */}
+      <LiquidGlass
+        type="rounded"
+        radius={12}
+        blur={4}
+        saturate={1.12}
+        tintOpacity={0.13}
+        displacementScale={40}
+        highlight={false}
+        style={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "stretch" }}
+      >
+      <div
+        className="relative w-full overflow-hidden rounded-[12px] border border-[var(--os-border)]"
+        style={{ background: "color-mix(in oklab, var(--os-surface) 88%, transparent)" }}
       >
         {/* input */}
-        <div className="flex items-center gap-2.5 border-b border-[var(--os-border)] px-4">
+        <div className="flex items-center gap-2.5 px-4">
           <Search className="size-4 shrink-0 text-[var(--os-ink-subtle)]" />
           <input
             autoFocus
@@ -104,7 +121,6 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
             placeholder="Search pages and clients…"
             className="h-12 flex-1 bg-transparent text-[14px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
           />
-          <kbd className="hidden shrink-0 rounded border border-[var(--os-border-strong)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--os-ink-subtle)] sm:inline">esc</kbd>
         </div>
 
         {/* results */}
@@ -129,8 +145,8 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
                       isActive ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]",
                     )}
                   >
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-[var(--os-bg-subtle)] text-[var(--os-ink-muted)]">
-                      {IconC === "petal" ? <PetalMark className="size-3.5" /> : <IconC className="size-3.5" />}
+                    <span className="grid size-6 shrink-0 place-items-center text-[var(--os-ink-muted)]">
+                      {IconC === "petal" ? <PetalMark className="size-4" /> : <IconC className="size-4" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium text-[var(--os-ink)]">{r.label}</span>
@@ -143,13 +159,8 @@ export function CommandSearch({ onClose }: { onClose: () => void }) {
             })
           )}
         </div>
-
-        {/* footer hint */}
-        <div className="flex items-center gap-3 border-t border-[var(--os-border)] px-4 py-2 text-[10.5px] text-[var(--os-ink-subtle)]">
-          <span className="inline-flex items-center gap-1"><kbd className="rounded border border-[var(--os-border-strong)] px-1">↑</kbd><kbd className="rounded border border-[var(--os-border-strong)] px-1">↓</kbd> navigate</span>
-          <span className="inline-flex items-center gap-1"><kbd className="rounded border border-[var(--os-border-strong)] px-1">↵</kbd> open</span>
-          <span className="ml-auto tabular-nums">{empty ? "Type to search clients & pages" : `${results.length} result${results.length === 1 ? "" : "s"}`}</span>
-        </div>
+      </div>
+      </LiquidGlass>
       </motion.div>
     </motion.div>
   );
