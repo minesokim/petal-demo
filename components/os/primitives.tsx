@@ -239,7 +239,7 @@ export function PetalLegend({ className }: { className?: string }) {
 /** Trust tier as a 4-step dial (T0 Suggest → T3 Act & report). Read-only without onChange. */
 export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onChange?: (t: TrustTier) => void; className?: string }) {
   return (
-    <div className={cn("inline-flex flex-wrap items-center gap-0.5 rounded-lg border border-[var(--os-border)] p-0.5", className)} role="radiogroup" aria-label="Autonomy">
+    <div className={cn("inline-flex flex-wrap items-center gap-0.5 rounded-[10px] bg-[var(--os-selected)] p-1", className)} role="radiogroup" aria-label="Autonomy">
       {TRUST_TIER_ORDER.map(t => {
         const m = trustTierMeta[t];
         const active = t === tier;
@@ -252,11 +252,12 @@ export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onCh
             onClick={() => onChange?.(t)}
             title={`${m.label} - ${m.blurb}`}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
-              active ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "text-[var(--os-ink-muted)]",
-              onChange && !active && "hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
+              "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+              active ? "bg-[var(--os-card)] text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.10),0_2px_5px_rgba(17,17,26,0.05)]" : "text-[var(--os-ink-muted)]",
+              onChange && !active && "hover:text-[var(--os-ink)]",
             )}
           >
+            <span className={cn("size-1.5 shrink-0 rounded-full", m.dot)} aria-hidden />
             {m.label}
           </button>
         );
@@ -270,7 +271,9 @@ export function TrustTierTag({ tier, className }: { tier: TrustTier; className?:
   const m = trustTierMeta[tier];
   return (
     <span title={m.blurb}>
-      <Badge tone="neutral" size="sm" className={className}>{m.label}</Badge>
+      <Badge tone="neutral" size="sm" className={className}>
+        <span className={cn("size-1.5 shrink-0 rounded-full", m.dot)} aria-hidden />{m.label}
+      </Badge>
     </span>
   );
 }

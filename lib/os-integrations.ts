@@ -21,7 +21,19 @@ export interface Integration {
   /** when connected: the linked account + last sync */
   account?: string;
   lastSync?: string;
+  /** "api" = token/OAuth live sync (default). "browser" = Petal operates it in your
+   *  signed-in browser session (session handoff) — no password stored, present-ish. */
+  kind?: "api" | "browser";
+  /** browser connectors fail in ways tokens don't — surface it loudly, never silently */
+  health?: "ok" | "needs_relogin" | "sync_failed" | "maintenance";
 }
+
+export const browserHealthMeta: Record<NonNullable<Integration["health"]>, { label: string; dot: string; text: string }> = {
+  ok:           { label: "Session active",    dot: "bg-emerald-500", text: "text-[var(--os-success)]" },
+  needs_relogin:{ label: "Needs re-login",    dot: "bg-amber-500",   text: "text-amber-600" },
+  sync_failed:  { label: "Last sync failed",  dot: "bg-red-500",     text: "text-[var(--os-danger)]" },
+  maintenance:  { label: "Under maintenance", dot: "bg-blue-500",    text: "text-blue-600" },
+};
 
 export const integrationCategories = [
   "Accounting",
@@ -46,7 +58,8 @@ export const integrations: Integration[] = [
 
   // Tax & e-file
   { id: "irs", name: "IRS e-Services", category: "Tax & e-file", desc: "Pull transcripts and CAF authorizations.", status: "connected", gradient: "from-blue-600 to-indigo-700", glyph: SecurityCheckIcon, logo: "/integrations/irs.png", account: "Transcripts + CAF · 8821 on file for 9 clients", lastSync: "Today 6:05 AM" },
-  { id: "drake", name: "Drake Tax", category: "Tax & e-file", desc: "Sync returns and e-file status with your tax software.", status: "available", gradient: "from-green-600 to-emerald-700", glyph: TaxesIcon, logo: "/integrations/drake.png" },
+  { id: "olt", name: "OLT (OnLine Taxes)", category: "Tax & e-file", desc: "Petal operates OLT in your signed-in browser to pull return data and reconcile it against source documents.", status: "available", gradient: "from-blue-600 to-indigo-700", glyph: TaxesIcon, kind: "browser" },
+  { id: "drake", name: "Drake Tax", category: "Tax & e-file", desc: "Desktop tax software. Petal operates it as you; writes stay gated for your review.", status: "connected", gradient: "from-green-600 to-emerald-700", glyph: TaxesIcon, logo: "/integrations/drake.png", kind: "browser", health: "maintenance", account: "Operated in your session", lastSync: "Updating connector" },
 
   // Documents & e-sign
   { id: "docusign", name: "DocuSign", category: "Documents & e-sign", desc: "Send 8879s for signature and track envelopes.", status: "connected", gradient: "from-amber-500 to-yellow-600", glyph: PencilEdit01Icon, logo: "/integrations/docusign.png", account: "antonio@vazant.tax", lastSync: "Live" },

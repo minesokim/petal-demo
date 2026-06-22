@@ -434,7 +434,7 @@ export interface Skill {
 
 export const skills: Skill[] = [
   {
-    id: "sk-doc-chase", name: "Doc Chase", category: "signatures_chase", trust: 1,
+    id: "sk-doc-chase", name: "Chase missing docs", category: "signatures_chase", trust: 1,
     description: "Watches each engagement's expected-document checklist and follows up on what's missing, in your voice, on the client's preferred channel.",
     trigger: "5 days of checklist inactivity, or on demand from a record.",
     steps: ["Check the expected-docs checklist against what's arrived", "Draft a reminder naming exactly what's missing", "Queue for your approval", "Log the send and set the next follow-up"],
@@ -485,6 +485,15 @@ export const skills: Skill[] = [
     steps: ["Compare each figure to the 2024 return", "Flag moves beyond ±25%", "Attach the comparison to the engagement", "Queue flags for your decision"],
     channels: ["In-app"], tone: "Numbers first.",
     escalation: "Flags never clear themselves - a human resolves every one.",
+  },
+  {
+    id: "sk-olt-pull", name: "Pull data from OLT", category: "prep_filing", trust: 0,
+    description: "Operates OLT in your signed-in browser to pull a client's return data, then reconciles every value against the source document before it touches a record. Works because OLT has no API.",
+    trigger: "On demand from a return, or a pre-prep sync once OLT is connected on the Apps page.",
+    steps: ["Drive OLT in your browser via the Petal extension, using your signed-in session", "Navigate to the client's return", "Extract each field against a schema", "Read every value back and reconcile it against the source document", "Flag any mismatch for your review - never overwrite a field on its own"],
+    channels: ["OLT (browser)"], tone: "Reads and reconciles; drafts nothing on its own.",
+    escalation: "Any field that fails read-back, or any OLT layout change, pauses and flags for you - no silent writes, ever.",
+    graduation: { approvedNoEditStreak: 20, prompt: "You've accepted 20 OLT pulls with no correction - let the pull run on a pre-prep schedule?", promoteTo: 1 },
   },
   {
     id: "sk-books", name: "Books-to-Tax Close", category: "books", trust: 1,

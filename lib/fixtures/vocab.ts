@@ -73,11 +73,11 @@ export const SKILL_CATEGORY_ORDER: SkillCategory[] = [
 
 // ── Trust tiers (per skill, 4-step dial) ──────────────────
 export type TrustTier = 0 | 1 | 2 | 3;
-export const trustTierMeta: Record<TrustTier, { code: string; label: string; blurb: string }> = {
-  0: { code: "T0", label: "Suggest",          blurb: "Petal proposes only." },
-  1: { code: "T1", label: "Draft",            blurb: "Petal prepares everything; you approve each send." },
-  2: { code: "T2", label: "Act after window", blurb: "Petal acts after 24h unless you stop it." },
-  3: { code: "T3", label: "Act & report",     blurb: "Petal acts and logs." },
+export const trustTierMeta: Record<TrustTier, { code: string; label: string; blurb: string; dot: string }> = {
+  0: { code: "T0", label: "Suggest",          blurb: "Petal proposes only.",                              dot: "bg-slate-400" },
+  1: { code: "T1", label: "Draft",            blurb: "Petal prepares everything; you approve each send.", dot: "bg-amber-500" },
+  2: { code: "T2", label: "Act after window", blurb: "Petal acts after 24h unless you stop it.",          dot: "bg-blue-500" },
+  3: { code: "T3", label: "Act & report",     blurb: "Petal acts and logs.",                              dot: "bg-emerald-500" },
 };
 export const TRUST_TIER_ORDER: TrustTier[] = [0, 1, 2, 3];
 

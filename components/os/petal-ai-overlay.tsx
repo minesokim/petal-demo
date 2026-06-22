@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { label: "Agents", href: "/os/agents", icon: Users },
   { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
   { label: "Memory", href: "/os/memory", icon: Brain },
-  { label: "Connections", href: "/os/connections", icon: Blocks },
+  { label: "Apps", href: "/os/connections", icon: Blocks },
   { label: "Activity", href: "/os/activity", icon: Activity },
 ];
 

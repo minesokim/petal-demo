@@ -121,7 +121,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
     { label: "Agents", href: "/os/agents", icon: Bot },
     { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
     { label: "Memory", href: "/os/memory", icon: Brain },
-    { label: "Connections", href: "/os/connections", icon: Blocks },
+    { label: "Apps", href: "/os/connections", icon: Blocks },
     { label: "Activity", href: "/os/activity", icon: Activity },
   ];
   const system: Item[] = [

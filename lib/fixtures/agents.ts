@@ -120,6 +120,7 @@ const SKILL_AGENT: Record<string, string> = {
   "sk-doc-chase": "doc-chase",
   "sk-variance": "prep-review",
   "sk-1099": "prep-review",
+  "sk-olt-pull": "prep-review",
   "sk-notice": "irs-desk",
   "sk-transcript": "irs-desk",
   "sk-estimates": "deadlines",
