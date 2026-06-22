@@ -111,8 +111,8 @@ function LField({ label, children }: { label: string; children: React.ReactNode 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
     <button onClick={onChange} role="switch" aria-checked={on}
-      className={cn("relative h-[22px] w-9 shrink-0 rounded-full transition-colors", on ? "bg-[var(--os-brand)]" : "bg-[var(--os-border-strong)]", FOCUS)}>
-      <span className={cn("absolute top-0.5 size-[18px] rounded-full bg-white shadow-sm transition-all", on ? "left-[18px]" : "left-0.5")} />
+      className={cn("relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors", on ? "bg-[var(--os-primary)]" : "bg-[var(--os-border-strong)]", FOCUS)}>
+      <span className={cn("absolute top-0.5 size-4 rounded-full bg-white shadow-[0_1px_2px_rgba(17,17,26,0.2)] transition-all", on ? "left-[16px]" : "left-0.5")} />
     </button>
   );
 }
