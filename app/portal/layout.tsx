@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
 
+// The client portal now shares the /os design language: same tokens (Inter,
+// near-monochrome, PetalMark green, hairline borders, low radius), scoped via
+// .petal-os. Mobile-first — a phone-width column on desktop, full-bleed on a phone.
+import "../os/os-theme.css";
+
 export const metadata: Metadata = {
-  title: "Vazant Consulting — Client Portal",
-  description:
-    "Securely manage your tax documents, track your return, and message Antonio."
+  title: "Vazant Tax — Client Portal",
+  description: "Upload last year's return and Petal fills in most of it. You just check the work.",
 };
 
-/**
- * The v4 portal inherits fonts (Fraunces, DM Sans, Geist Mono) from
- * app/layout.tsx via next/font — no Google Fonts <link> needed. The
- * old Plus Jakarta Sans override from the v3 prototype has been
- * removed so the portal shares type with the preparer side.
- */
-export default function PortalLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
-  return <div className="portal-root">{children}</div>;
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  return <div className="petal-os min-h-[100dvh] w-full">{children}</div>;
 }

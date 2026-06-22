@@ -211,14 +211,18 @@ function BoardCard({ t, active, onOpen, onVerb }: { t: Task; active: boolean; on
   );
 }
 
-function Board({ columns, selected, onOpen, onVerb }: { columns: { status: TaskStatus; items: Task[] }[]; selected: string | null; onOpen: (id: string) => void; onVerb: (t: Task, verb: string) => void }) {
+function Board({ columns, selected, onOpen, onVerb, onAdd }: { columns: { status: TaskStatus; items: Task[] }[]; selected: string | null; onOpen: (id: string) => void; onVerb: (t: Task, verb: string) => void; onAdd?: () => void }) {
   return (
     <div className="flex gap-3 px-8 py-4">
       {columns.map(col => (
-        <div key={col.status} className="flex w-[262px] shrink-0 flex-col">
-          <div className="mb-2.5 flex items-center gap-2 px-0.5">
+        <div key={col.status} className="flex w-[272px] shrink-0 flex-col rounded-2xl border border-[var(--os-border)] bg-[var(--os-bg-subtle)] p-2">
+          <div className="group/col mb-2 flex items-center gap-2 px-1.5 pt-1">
             <StatusHeading status={col.status} />
-            <span className="tabular-nums text-[12px] text-[var(--os-ink-subtle)]">{col.items.length}</span>
+            <span className="tabular-nums text-[12.5px] text-[var(--os-ink-subtle)]">{col.items.length}</span>
+            <Icon icon={I.chevronDown} size={13} className="text-[var(--os-ink-subtle)]" />
+            <button onClick={onAdd} aria-label="Add task" className="ml-auto grid size-6 place-items-center rounded-md text-[var(--os-ink-subtle)] opacity-0 transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] group-hover/col:opacity-100">
+              <Icon icon={I.plus} size={15} />
+            </button>
           </div>
           <div className="flex flex-col gap-2">
             {col.items.length === 0 ? (
@@ -362,6 +366,8 @@ function TasksPageInner() {
   const [blockedOnly, setBlockedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) => setCollapsed(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const filtersRef = useRef<HTMLDivElement>(null);
   const { msg, show } = useToast();
@@ -563,7 +569,7 @@ function TasksPageInner() {
           )}
         >
           {view === "board" ? (
-            <Board columns={columns} selected={selected} onOpen={setSelected} onVerb={onVerb} />
+            <Board columns={columns} selected={selected} onOpen={setSelected} onVerb={onVerb} onAdd={() => setNewTaskOpen(true)} />
           ) : groups.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 py-16 text-center">
               {flaggedOnly || blockedOnly ? (
@@ -593,15 +599,31 @@ function TasksPageInner() {
           ) : (
             groups.map(g => (
               <div key={g.key}>
-                <div className="sticky top-0 z-[1] flex items-center gap-2 border-b border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-8 py-1.5">
-                  {g.status ? (
-                    <StatusHeading status={g.status} />
-                  ) : (
-                    <span className="text-[12px] font-medium text-[var(--os-ink)]">{g.client}</span>
-                  )}
-                  <span className="tabular-nums text-[12px] text-[var(--os-ink-subtle)]">{g.items.length}</span>
+                <div className="sticky top-0 z-[1] bg-[var(--os-canvas)] px-5 pb-1 pt-2">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleGroup(g.key)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGroup(g.key); } }}
+                    className="group/grp flex w-full cursor-pointer items-center gap-2 rounded-xl bg-[var(--os-selected)] px-3.5 py-2.5 transition-colors hover:bg-[var(--os-border)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+                  >
+                    {g.status ? (
+                      <StatusHeading status={g.status} />
+                    ) : (
+                      <span className="inline-flex items-center gap-2 text-[13px] font-medium text-[var(--os-ink)]">{g.client}</span>
+                    )}
+                    <span className="tabular-nums text-[12.5px] text-[var(--os-ink-subtle)]">{g.items.length}</span>
+                    <Icon icon={I.chevronDown} size={13} className={cn("text-[var(--os-ink-subtle)] transition-transform", collapsed.has(g.key) && "-rotate-90")} />
+                    <button
+                      onClick={e => { e.stopPropagation(); setNewTaskOpen(true); }}
+                      aria-label="Add task"
+                      className="ml-auto grid size-6 place-items-center rounded-md text-[var(--os-ink-subtle)] opacity-0 transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)] group-hover/grp:opacity-100 focus-visible:opacity-100"
+                    >
+                      <Icon icon={I.plus} size={15} />
+                    </button>
+                  </div>
                 </div>
-                {g.items.map(t => (
+                {!collapsed.has(g.key) && g.items.map(t => (
                   <Row
                     key={t.id}
                     t={t}

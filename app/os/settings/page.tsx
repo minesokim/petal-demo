@@ -412,7 +412,7 @@ export default function SettingsPage() {
                     }}
                     className={cn("flex h-7 items-center rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
                   >
-                    Promote to {trustTierMeta[grad.promoteTo].code}
+                    Promote to {trustTierMeta[grad.promoteTo].label}
                   </button>
                   <button
                     onClick={() => setGradChoice("kept")}
@@ -426,13 +426,13 @@ export default function SettingsPage() {
             {docChase && grad && gradChoice === "promoted" && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink)]">
                 <Icon icon={I.check} size={14} className="shrink-0 text-emerald-600" />
-                {docChase.name} promoted to {trustTierMeta[grad.promoteTo].code} - acts after 24h unless you stop it
+                {docChase.name} promoted to {trustTierMeta[grad.promoteTo].label} - acts after 24h unless you stop it
               </div>
             )}
             {docChase && gradChoice === "kept" && (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-[var(--os-border)] bg-[var(--os-card)] px-3 py-2 text-[12px] text-[var(--os-ink-muted)]">
                 <Icon icon={I.check} size={14} className="shrink-0" />
-                Keeping approval on every send - {docChase.name} stays at {trustTierMeta[tiers[docChase.id]].code}.
+                Keeping approval on every send - {docChase.name} stays at {trustTierMeta[tiers[docChase.id]].label}.
               </div>
             )}
 

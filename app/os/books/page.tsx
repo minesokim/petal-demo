@@ -48,7 +48,7 @@ function Row({ item }: { item: BooksItem }) {
 
   const skill = skillById("sk-books");
   const skillTip = skill
-    ? `${skill.name} · ${trustTierMeta[skill.trust].code} ${trustTierMeta[skill.trust].label}`
+    ? `${skill.name} · ${trustTierMeta[skill.trust].label}`
     : undefined;
 
   const titleBlock = (
@@ -156,7 +156,7 @@ export default function BooksPage() {
           <div className="px-8 pt-5">
             <FeatureCallout
               className="mb-5"
-              eyebrow={<><SkillPetal category="books" size={13} /> Books-to-Tax Close · {trustTierMeta[skillById("sk-books")!.trust].code} {trustTierMeta[skillById("sk-books")!.trust].label}</>}
+              eyebrow={<><SkillPetal category="books" size={13} /> Books-to-Tax Close · {trustTierMeta[skillById("sk-books")!.trust].label}</>}
               title={`Petal can run ${runnable.length} of the open items`}
               body="Reconciliations and categorization queue as drafts for your approval - owner sign-off stays yours. Every run logs its sources."
               action={{ label: "Run with Petal", href: "/os/tasks?task=t-park-books" }}

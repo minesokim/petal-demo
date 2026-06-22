@@ -157,15 +157,14 @@ export function StatusPill({ status, size = "md", className }: { status: TaskSta
   return <Badge tone={b.tone} icon={b.icon} size={size} className={className}>{taskStatusMeta[status].label}</Badge>;
 }
 
-/** Status as a section heading - colored icon + label, no fill. For group/list headers. */
+/** Status as a section heading - a colored dot + neutral label. For group / list /
+ * board-column headers. Calm: the dot carries the color, the label stays ink. */
 export function StatusHeading({ status, className }: { status: TaskStatus; className?: string }) {
-  const b = STATUS_BADGE[status];
-  const t = TONE[b.tone];
-  const IconC = b.icon;
+  const m = taskStatusMeta[status];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-[12px] font-semibold", t.text, className)}>
-      <IconC className={cn("size-3.5", t.icon)} />
-      {taskStatusMeta[status].label}
+    <span className={cn("inline-flex items-center gap-2 text-[13px] font-medium text-[var(--os-ink)]", className)}>
+      <span className={cn("size-2 shrink-0 rounded-full", m.dot)} />
+      {m.label}
     </span>
   );
 }
@@ -240,7 +239,7 @@ export function PetalLegend({ className }: { className?: string }) {
 /** Trust tier as a 4-step dial (T0 Suggest → T3 Act & report). Read-only without onChange. */
 export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onChange?: (t: TrustTier) => void; className?: string }) {
   return (
-    <div className={cn("inline-flex items-center rounded-md border border-[var(--os-border)] p-0.5", className)} role="radiogroup" aria-label="Trust tier">
+    <div className={cn("inline-flex flex-wrap items-center gap-0.5 rounded-lg border border-[var(--os-border)] p-0.5", className)} role="radiogroup" aria-label="Autonomy">
       {TRUST_TIER_ORDER.map(t => {
         const m = trustTierMeta[t];
         const active = t === tier;
@@ -251,14 +250,14 @@ export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onCh
             aria-checked={active}
             disabled={!onChange}
             onClick={() => onChange?.(t)}
-            title={`${m.code} ${m.label} - ${m.blurb}`}
+            title={`${m.label} - ${m.blurb}`}
             className={cn(
-              "rounded px-2 py-1 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+              "rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
               active ? "bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "text-[var(--os-ink-muted)]",
               onChange && !active && "hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
             )}
           >
-            {m.code}
+            {m.label}
           </button>
         );
       })}
@@ -271,7 +270,7 @@ export function TrustTierTag({ tier, className }: { tier: TrustTier; className?:
   const m = trustTierMeta[tier];
   return (
     <span title={m.blurb}>
-      <Badge tone="neutral" size="sm" className={className}>{m.code} · {m.label}</Badge>
+      <Badge tone="neutral" size="sm" className={className}>{m.label}</Badge>
     </span>
   );
 }

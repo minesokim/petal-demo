@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { StatusPill, DeadlineChip, SkillPetal, BookmarkFlag } from "@/components/os/primitives";
-import { AssigneePicker } from "@/components/os/assignee-picker";
+import { TaskAssigneePicker } from "@/components/os/task-assignee-picker";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { householdById, skillById, type Task } from "@/lib/fixtures/firm";
 import { taskStatusMeta } from "@/lib/fixtures/vocab";
@@ -208,7 +208,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           </button>
           <div className="ml-auto flex items-center gap-1.5">
             <span className="text-[11px] text-[var(--os-ink-subtle)]">Assignee</span>
-            <AssigneePicker householdId={task.householdId} align="right" />
+            <TaskAssigneePicker skillId={task.skillId} householdId={task.householdId} defaultAI={task.origin !== "human"} align="right" placement="up" />
           </div>
         </div>
       </div>

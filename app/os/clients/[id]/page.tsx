@@ -40,6 +40,7 @@ import {
   noticeCountdown,
 } from "@/lib/fixtures/derive";
 import { stageMeta, taskStatusMeta, TASK_STATUS_ORDER, healthMeta, expectedDocMeta, fmtDate, money, type Stage } from "@/lib/fixtures/vocab";
+import { StageTracker } from "@/components/os/stage-tracker";
 
 /* ── constants / small helpers (presentation only - no data) ── */
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -1269,6 +1270,22 @@ function ClientRecordInner() {
                     <LRow label="8821">{h.has8821 ? "On file" : "Not on file"}</LRow>
                   </div>
                 </LCard>
+
+                {/* Return status - Amazon-style stage tracker for the primary return */}
+                {engs.length > 0 && (() => {
+                  const primary = engs.find(e => e.form === "1040") ?? engs[0];
+                  const pname = entityById(primary.entityId)?.name ?? primary.form;
+                  return (
+                    <LCard title="Return status" action={<span className="text-[11px] font-medium text-[var(--os-ink-muted)]">{stageMeta[primary.stage].label}</span>}>
+                      <StageTracker stage={primary.stage} />
+                      {engs.length > 1 && (
+                        <div className="mt-3 border-t border-[var(--os-border)] pt-2 text-[11px] text-[var(--os-ink-subtle)]">
+                          {pname} {primary.form} · {engs.length} returns in total
+                        </div>
+                      )}
+                    </LCard>
+                  );
+                })()}
 
                 {/* Progress - segmented Documents / Returns with stat rows (Linear) */}
                 <LCard title="Progress">
