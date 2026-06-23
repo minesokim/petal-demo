@@ -10,5 +10,7 @@ export default defineConfig({
     pool: "forks",
     fileParallelism: false,
     testTimeout: 30000,
+    // makeTestDb applies all migrations per file; give beforeAll headroom under load.
+    hookTimeout: 60000,
   },
 });

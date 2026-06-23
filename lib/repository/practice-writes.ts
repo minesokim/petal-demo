@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { households, engagements, expectedDocs, tasks } from "../db/schema";
+import { households, people, engagements, expectedDocs, tasks } from "../db/schema";
 import { writeAudit } from "./audit";
 import type { Db, Ctx } from "./types";
 
@@ -22,6 +22,19 @@ export async function createHousehold(db: Db, ctx: Ctx, input: HouseholdInput) {
     since: input.since, has8821: input.has8821 ?? false, hasBooks: input.hasBooks ?? false, catchUp: input.catchUp,
   });
   await writeAudit(db, ctx, { action: "household.create", resourceType: "household", resourceId: id });
+  return id;
+}
+
+export type PersonInput = {
+  id?: string; householdId: string; name: string; email?: string; phone?: string; role: string;
+};
+export async function createPerson(db: Db, ctx: Ctx, input: PersonInput) {
+  const id = input.id ?? newId("p");
+  await db.insert(people).values({
+    id, firmId: ctx.firmId, householdId: input.householdId, name: input.name,
+    email: input.email, phone: input.phone, role: input.role,
+  });
+  await writeAudit(db, ctx, { action: "person.create", resourceType: "person", resourceId: id });
   return id;
 }
 

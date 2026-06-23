@@ -3,7 +3,8 @@ import { drizzle } from "drizzle-orm/pglite";
 import type { PGlite } from "@electric-sql/pglite";
 import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
-import { createEngagement, setEngagementStage, createTask, setTaskStatus } from "../../lib/repository/practice-writes";
+import { createEngagement, setEngagementStage, createTask, setTaskStatus, createHousehold, createPerson } from "../../lib/repository/practice-writes";
+import { listHouseholds, peopleOf } from "../../lib/repository/practice";
 
 const A = "11111111-1111-1111-1111-111111111111";
 const B = "22222222-2222-2222-2222-222222222222";
@@ -48,6 +49,19 @@ describe("practice write-path (audited, RLS-scoped)", () => {
     });
     expect(out.actions).toEqual(["engagement.create", "engagement.stage", "task.create", "task.status"]);
     expect(out.stage).toBe("in_preparation");
+  });
+
+  it("creates a client (household + contact) that reads back firm-scoped", async () => {
+    const out = await asTenant(claimsA, async (db) => {
+      const ctx = { firmId: A, actorId: "u1", actorType: "preparer" as const };
+      const hid = await createHousehold(db as never, ctx, { name: "Acme LLC", kind: "business", serviceTier: "Standard", since: 2026 });
+      await createPerson(db as never, ctx, { householdId: hid, name: "Dana Reed", email: "dana@acme.com", role: "Owner" });
+      const names = (await listHouseholds(db as never)).map((h) => h.name);
+      const contacts = (await peopleOf(db as never, hid)).map((p) => p.name);
+      return { hasAcme: names.includes("Acme LLC"), contacts };
+    });
+    expect(out.hasAcme).toBe(true);
+    expect(out.contacts).toEqual(["Dana Reed"]);
   });
 
   it("cannot write a row into another firm (RLS WITH CHECK)", async () => {
