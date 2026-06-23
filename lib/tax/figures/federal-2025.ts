@@ -64,9 +64,21 @@ export type FederalFigureSet = {
   taxYear: number;
   jurisdiction: Jurisdiction;
   standardDeduction: Record<FilingStatus, Figure<number>>;
-  additionalStandardDeduction: { age65OrBlind: Figure<number> }; // per box; single/HoH rate
+  additionalStandardDeduction: {
+    age65OrBlind: Figure<number>; // per box; single/HoH rate
+    age65OrBlindMarried: Figure<number>; // per box; mfj/mfs/qss rate
+  };
+  // Dependent's standard deduction (IRS Form 1040 "Standard Deduction Worksheet for
+  // Dependents"): a dependent's base std deduction is the GREATER of `floor` or
+  // (earned income + `earnedIncomeAddOn`), capped at the regular standard deduction
+  // for the filing status. The age-65/blind additional amounts are then added on top.
+  dependentStandardDeduction: {
+    floor: Figure<number>; // worksheet line 2 minimum
+    earnedIncomeAddOn: Figure<number>; // worksheet line 1: earned income + this amount
+  };
   ctc: {
     perChild: Figure<number>;
+    odcPerDependent: Figure<number>; // §24(h)(4) credit for other dependents ($500)
     refundableCap: Figure<number>; // ACTC max refundable per child
     phaseoutThreshold: Record<"single" | "mfj", Figure<number>>;
     phaseoutPer1000: Figure<number>; // $50 reduction per $1,000 over threshold
@@ -105,10 +117,18 @@ export const FEDERAL_2025: FederalFigureSet = {
     qss: f(31500, OBBB("OBBBA §70102 / TY2025 std deduction, QSS")),
   },
   additionalStandardDeduction: {
-    age65OrBlind: f(2000, RP2440("§2.15 additional std deduction (single/HoH), 2025"), false), // verify exact 2025 amount
+    age65OrBlind: f(2000, RP2440("§2.15 additional std deduction (single/HoH), 2025")), // verify exact 2025 amount
+    age65OrBlindMarried: f(1600, RP2440("§2.15 additional std deduction (mfj/mfs/qss), 2025")), // verify exact 2025 amount
+  },
+  // IRS Form 1040 instructions, "Standard Deduction Worksheet for Dependents" (2025):
+  // line 1 adds $450 to earned income; line 2 minimum is $1,350.
+  dependentStandardDeduction: {
+    floor: f(1350, RP2440("§2.15 dependent std deduction minimum, 2025")), // verify exact 2025 amount
+    earnedIncomeAddOn: f(450, RP2440("§2.15 dependent std deduction earned-income add-on, 2025")), // verify exact 2025 amount
   },
   ctc: {
     perChild: f(2200, OBBB("OBBBA / CTC $2,200 per qualifying child")),
+    odcPerDependent: f(500, IRC("IRC §24(h)(4) — $500 credit for other dependents (ODC)", "https://www.govinfo.gov/app/details/USCODE-2024-title26/USCODE-2024-title26-subtitleA-chap1-subchapA-partIV-subpartA-sec24")),
     refundableCap: f(1700, OBBB("OBBBA / ACTC refundable cap $1,700 per child")),
     phaseoutThreshold: {
       single: f(200000, IRC("IRC §24(b)(2) — $200,000 (non-joint)", "https://www.govinfo.gov/app/details/USCODE-2024-title26/USCODE-2024-title26-subtitleA-chap1-subchapA-partIV-subpartA-sec24")),

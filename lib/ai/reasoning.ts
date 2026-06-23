@@ -5,7 +5,7 @@ import { checkFaithfulness } from "./faithfulness";
 import { verifyStructural } from "./verify";
 import { deriveTier } from "./tier";
 import { assertCleared } from "./guard";
-import type { AuthorityChunk } from "./authority";
+import type { AuthorityChunk } from "../tax/authority/store";
 
 // ④ Reasoning layer. Retrieve-then-reason: the agent may cite ONLY the chunks passed in.
 // "No citation, no claim" is enforced HERE in code — any position that cites nothing, or
