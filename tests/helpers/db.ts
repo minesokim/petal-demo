@@ -14,7 +14,7 @@ export async function makeTestDb(): Promise<PGlite> {
   return db;
 }
 
-export type Claims = { firm_id?: string; role?: string; user_type?: string; client_id?: string };
+export type Claims = { firm_id?: string; role?: string; user_type?: string; client_id?: string; household_id?: string };
 
 // Run fn as a tenant: set the JWT claims + SET ROLE authenticated so RLS applies
 // (the session is otherwise superuser, which bypasses RLS). Rolls back after, so

@@ -33,6 +33,7 @@ export const clients = pgTable("clients", {
   id: uuid("id").primaryKey().defaultRandom(),
   firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
   supabaseUserId: uuid("supabase_user_id"),
+  householdId: text("household_id"), // links the portal login to its household (FK added in 0010)
   name: text("name"),
   email: text("email"),
   phone: text("phone"),
