@@ -239,7 +239,7 @@ export function PetalLegend({ className }: { className?: string }) {
 /** Trust tier as a 4-step dial (T0 Suggest → T3 Act & report). Read-only without onChange. */
 export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onChange?: (t: TrustTier) => void; className?: string }) {
   return (
-    <div className={cn("inline-flex flex-wrap items-center gap-0.5 rounded-full bg-[var(--os-selected)] p-0.5", className)} role="radiogroup" aria-label="Autonomy">
+    <div className={cn("inline-flex flex-wrap items-center gap-0.5 rounded-lg bg-[var(--os-selected)] p-0.5", className)} role="radiogroup" aria-label="Autonomy">
       {TRUST_TIER_ORDER.map(t => {
         const m = trustTierMeta[t];
         const active = t === tier;
@@ -251,9 +251,10 @@ export function TrustDial({ tier, onChange, className }: { tier: TrustTier; onCh
             disabled={!onChange}
             onClick={() => onChange?.(t)}
             title={`${m.label} - ${m.blurb}`}
+            style={{ height: 22 }}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
-              active ? "bg-[var(--os-card)] text-[var(--os-ink)] shadow-[0_1px_2px_rgba(17,17,26,0.10),0_2px_5px_rgba(17,17,26,0.05)]" : "text-[var(--os-ink-muted)]",
+              "inline-flex items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]",
+              active ? "bg-[var(--os-surface)] text-[var(--os-ink)] shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-[var(--os-ink-muted)]",
               onChange && !active && "hover:text-[var(--os-ink)]",
             )}
           >
