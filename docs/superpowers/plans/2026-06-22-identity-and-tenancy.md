@@ -19,6 +19,17 @@
 
 ---
 
+## Execution status (2026-06-22)
+
+Built credential-free, TDD, in worktree `docket-backend` on branch `backend`. Suite: **14 green** (`npm run test`).
+
+- **Adaptation — local DB:** Docker daemon unavailable, so dev/test runs against **PGlite** (in-process Postgres, real RLS/role/policy semantics) instead of the Supabase-CLI container. Production/runtime still targets cloud Supabase Postgres. RLS helper functions live in `public.*` (not Supabase's managed `auth` schema) so policies are identical across PGlite and Supabase. RLS enforcement uses `SET LOCAL ROLE authenticated` (a real role switch — superuser bypasses RLS), mirrored by `withTenant` at runtime.
+- **Done + tested:** Task 0 (worktree, deps, drizzle) · Task 1 (schema: firms/firm_members/clients/audit_log) · Task 2 (RLS + **cross-tenant isolation suite green**) · Task 3 (roles + requireRole gate) · Task 4 (repository + audit) · Task 7 (client OTP access-token hook) · Task 9 (CI).
+- **Code-complete, integration-verification gated on credentials:** Task 5 (Clerk→firm resolution + `withTenant` runtime bridge + `withFirm`) · Task 6 (`handleClerkEvent` sync logic unit-tested; svix-verified webhook route written).
+- **Blocked on credentials:** runtime against cloud Supabase (DATABASE_URL + service key); Clerk app (Organizations) keys + `supabase` JWT template + webhook secret; Task 8 UI wiring (needs both live to render real data — this is where the pre-backend Vercel baseline gets captured and screenshot-diffed for the 1:1 UI gate).
+
+---
+
 ## Prerequisites — YOU provision (blocks the Clerk/cloud tasks; local tasks proceed without these)
 
 Create these and put the keys in `.env.local` (Task 0 writes the template):
