@@ -17,6 +17,10 @@ export type FirmData = {
   skillRuns: typeof fx.skillRuns;
   activity: typeof fx.activity;
   threads: typeof fx.threads;
+  // The signed-in preparer + their firm (real identity, not the demo owner). Used for the
+  // greeting ("Good morning, {firstName}") and "this week at {firm.name}".
+  viewer: { firstName: string; fullName: string };
+  firm: { name: string };
 };
 
 export function fixtureFirmData(): FirmData {
@@ -33,6 +37,8 @@ export function fixtureFirmData(): FirmData {
     skillRuns: fx.skillRuns,
     activity: fx.activity,
     threads: fx.threads,
+    viewer: { firstName: "Antonio", fullName: "Antonio Vazquez" },
+    firm: { name: "Vazant EA" },
   };
 }
 
