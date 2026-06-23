@@ -16,6 +16,18 @@ export async function listConnections(db: Db) {
     .from(connections);
 }
 
+// Pending connections with their Composio id — for status polling/sync.
+export async function pendingConnections(db: Db) {
+  return db
+    .select({
+      id: connections.id,
+      toolkit: connections.toolkit,
+      composioConnectionId: connections.composioConnectionId,
+    })
+    .from(connections)
+    .where(eq(connections.status, "pending"));
+}
+
 export type ConnectionInput = {
   toolkit: string;
   status: string; // pending | connected | error
