@@ -42,7 +42,7 @@ export async function createEngagement(db: Db, ctx: Ctx, input: EngagementInput)
 
 export async function setEngagementStage(db: Db, ctx: Ctx, id: string, stage: string) {
   const rows = await db.update(engagements).set({ stage, updatedAt: new Date() })
-    .where(eq(engagements.id, id)).returning({ id: engagements.id });
+    .where(eq(engagements.id, id)).returning();
   if (rows.length) {
     await writeAudit(db, ctx, { action: "engagement.stage", resourceType: "engagement", resourceId: id, metadata: { stage } });
   }
@@ -66,7 +66,7 @@ export async function createTask(db: Db, ctx: Ctx, input: TaskInput) {
 
 export async function setTaskStatus(db: Db, ctx: Ctx, id: string, status: string) {
   const rows = await db.update(tasks).set({ status, updatedAt: new Date() })
-    .where(eq(tasks.id, id)).returning({ id: tasks.id });
+    .where(eq(tasks.id, id)).returning();
   if (rows.length) {
     await writeAudit(db, ctx, { action: "task.status", resourceType: "task", resourceId: id, metadata: { status } });
   }
@@ -75,7 +75,7 @@ export async function setTaskStatus(db: Db, ctx: Ctx, id: string, status: string
 
 export async function setDocStatus(db: Db, ctx: Ctx, id: string, status: string) {
   const rows = await db.update(expectedDocs).set({ status, updatedAt: new Date() })
-    .where(eq(expectedDocs.id, id)).returning({ id: expectedDocs.id });
+    .where(eq(expectedDocs.id, id)).returning();
   if (rows.length) {
     await writeAudit(db, ctx, { action: "doc.status", resourceType: "expected_doc", resourceId: id, metadata: { status } });
   }

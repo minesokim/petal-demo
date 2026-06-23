@@ -15,6 +15,13 @@
       "when": 1782181022316,
       "tag": "0001_practice_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782181849483,
+      "tag": "0002_ai_suggestions",
+      "breakpoints": true
     }
   ]
 }

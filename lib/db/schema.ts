@@ -199,3 +199,22 @@ export const tasks = pgTable("tasks", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ④ AI quarantine — every AI output lands here as pending_review and NEVER touches
+// a production table until a human promotes it. Non-negotiable safety boundary.
+export const aiSuggestions = pgTable("ai_suggestions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  targetType: text("target_type").notNull(), // task | expected_doc | notice | engagement | ...
+  targetId: text("target_id"), // existing row it proposes to change; null for net-new
+  kind: text("kind").notNull(), // doc_extraction | draft_reply | variance_flag | stage_suggestion | ...
+  payload: jsonb("payload").notNull(), // the proposed change/content
+  status: text("status").notNull().default("pending_review"), // pending_review | approved | rejected
+  model: text("model"),
+  confidence: integer("confidence"), // 0..100
+  rationale: text("rationale"),
+  createdBy: text("created_by"), // skill/run that produced it
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
