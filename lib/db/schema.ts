@@ -278,6 +278,21 @@ export const threads = pgTable("threads", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ⑤ Connectors — per-firm OAuth connection state (Composio-managed). One row per
+// firm+toolkit (gmail/quickbooks/calendar/…). Tokens live in Composio, never here;
+// we store the connection id + status + a display label only.
+export const connections = pgTable("connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  toolkit: text("toolkit").notNull(), // composio toolkit slug: gmail, quickbooks, googlecalendar
+  status: text("status").notNull().default("pending"), // pending | connected | error
+  composioConnectionId: text("composio_connection_id"),
+  accountLabel: text("account_label"), // e.g. the connected email
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("connections_firm_toolkit_uq").on(t.firmId, t.toolkit)]);
+
 // ④ AI quarantine — every AI output lands here as pending_review and NEVER touches
 // a production table until a human promotes it. Non-negotiable safety boundary.
 export const aiSuggestions = pgTable("ai_suggestions", {
