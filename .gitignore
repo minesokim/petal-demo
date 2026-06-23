@@ -45,3 +45,6 @@ next-env.d.ts
 .cursorrules
 .cursor.claude/settings.local.json
 .gstack/
+
+# clerk configuration (can include secrets)
+/.clerk/
