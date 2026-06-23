@@ -11,7 +11,7 @@ export const proxy = clerkMiddleware(async (auth, request: NextRequest) => {
   if (pathname === "/" || pathname === "/dashboard") {
     return NextResponse.redirect(new URL("/os", request.url));
   }
-  if (process.env.NODE_ENV === "production" && (pathname.startsWith("/os") || pathname.startsWith("/portal"))) {
+  if (process.env.NODE_ENV === "production" && (pathname.startsWith("/os") || pathname.startsWith("/portal") || pathname.startsWith("/onboarding"))) {
     const { userId } = await auth();
     if (!userId) return NextResponse.redirect(new URL("/sign-in", request.url));
   }
