@@ -1,7 +1,15 @@
-import { eq } from "drizzle-orm";
-import { firmFolders, firmFiles } from "../db/schema";
+import { and, eq } from "drizzle-orm";
+import { firmFolders, firmFiles, households } from "../db/schema";
 import { writeAudit } from "./audit";
 import type { Db, Ctx } from "./types";
+
+// RLS-scoped: true only if the household belongs to the caller's firm (the SELECT is
+// firm-filtered by RLS, so a foreign household id returns nothing). Used to reject a
+// client-supplied cross-tenant household id before tagging/reading files by it.
+export async function householdOwned(db: Db, householdId: string): Promise<boolean> {
+  const [r] = await db.select({ id: households.id }).from(households).where(eq(households.id, householdId));
+  return !!r;
+}
 
 // ③ Document library selectors mirroring lib/fixtures/firm-files.ts. Projects only
 // fixture fields (no firm_id / storage_path / timestamps) so shapes are identical.
@@ -128,11 +136,13 @@ export async function createFile(db: Db, ctx: Ctx, input: CreateFileInput): Prom
 
 // A client's uploaded files (newest first) — the persisted backing for the client
 // page's upload zone. RLS scopes to the firm; we further filter to the household.
-export async function filesOfHousehold(db: Db, householdId: string) {
+export async function filesOfHousehold(db: Db, firmId: string, householdId: string) {
+  // Defense-in-depth: filter by firm_id explicitly in addition to RLS, so a missing
+  // tenant context (e.g. a future service-role call) can never leak another firm's files.
   return db
     .select({ id: firmFiles.id, name: firmFiles.name, size: firmFiles.size, ts: firmFiles.ts })
     .from(firmFiles)
-    .where(eq(firmFiles.householdId, householdId));
+    .where(and(eq(firmFiles.firmId, firmId), eq(firmFiles.householdId, householdId)));
 }
 
 // RLS-scoped read of a single file's storage_path (for signed-download resolution).

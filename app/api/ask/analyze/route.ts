@@ -102,7 +102,8 @@ export async function POST(req: Request) {
     if (!text) return NextResponse.json({ error: "empty_reply" }, { status: 502 });
     return NextResponse.json({ summary: text, fileName: file.name, model }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
-    console.error("[/api/ask/analyze] failed", err);
+    // Never log the raw err — analyzeDocument can throw with document-derived content.
+    console.error("[/api/ask/analyze] failed:", err instanceof Error ? err.name : "unknown");
     return NextResponse.json({ error: "ai_error" }, { status: 502 });
   }
 }

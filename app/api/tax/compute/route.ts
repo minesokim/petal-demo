@@ -29,7 +29,11 @@ export async function POST(req: Request) {
   if (typeof question !== "string" || !question.trim()) {
     return NextResponse.json({ error: "question_required" }, { status: 400 });
   }
-  const taxYear = Number((body as { taxYear?: unknown }).taxYear) || 2025;
+  if (question.length > 8000) {
+    return NextResponse.json({ error: "question_too_long" }, { status: 413 });
+  }
+  const yearRaw = Number((body as { taxYear?: unknown }).taxYear) || 2025;
+  const taxYear = yearRaw >= 2020 && yearRaw <= 2030 ? yearRaw : 2025; // clamp to a sane range
 
   // Proposer = Sonnet (routine grounded generation); judge = Opus (hard reasoning). Both ZDR.
   let proposer: AnthropicProvider;
@@ -52,7 +56,8 @@ export async function POST(req: Request) {
     const msg = err instanceof Error ? err.message : "compute_failed";
     // assertCleared throws if the §7216 flag is off → surface a clean 403 the UI can explain.
     if (/§7216|7216 gate/.test(msg)) return NextResponse.json({ error: "gated_7216", detail: msg }, { status: 403 });
-    console.error("[/api/tax/compute] failed", err);
+    // Never log the raw err — on a real-data path it can embed echoed taxpayer figures.
+    console.error("[/api/tax/compute] failed:", err instanceof Error ? err.name : "unknown");
     return NextResponse.json({ error: "compute_failed" }, { status: 502 });
   }
 }

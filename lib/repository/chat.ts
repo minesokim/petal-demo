@@ -37,6 +37,11 @@ export type AppendMessageInput = { threadId: string; role: "user" | "assistant";
 // top of Recent. RLS-scoped (a firm can only write to its own threads). The thread
 // touch is firm-scoped too; both run under the caller's JWT.
 export async function appendMessage(db: Db, ctx: Ctx, input: AppendMessageInput): Promise<string> {
+  // Verify the thread belongs to the caller's firm before writing. thread_id is
+  // client-supplied and the FK alone accepts ANY firm's thread id; this RLS-scoped read
+  // returns nothing for a foreign thread, so we refuse to append to it (cross-tenant write).
+  const [owner] = await db.select({ id: chatThreads.id }).from(chatThreads).where(eq(chatThreads.id, input.threadId));
+  if (!owner) throw new Error("thread not found in firm");
   const id = globalThis.crypto.randomUUID();
   await db.insert(chatMessages).values({
     id,

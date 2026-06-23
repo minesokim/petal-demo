@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { AnthropicProvider } from "@/lib/ai/anthropic";
 import { PETAL_ASSISTANT_SYSTEM } from "@/lib/ai/prompts";
 import { redactText } from "@/lib/ai/redact";
+import { getFirmContext } from "@/lib/auth/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,11 @@ function sanitizeHistory(raw: unknown): Turn[] {
 }
 
 export async function POST(req: Request) {
+  // Auth: not a public endpoint. A signed-in firm only — stops anonymous abuse of the model
+  // and ties every call to a tenant. (The demo chat falls back to the scripted bank on 401.)
+  const ctx = await getFirmContext().catch(() => null);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
   let body: unknown;
   try {
     body = await req.json();
@@ -62,6 +68,9 @@ export async function POST(req: Request) {
   const message = (body as { message?: unknown }).message;
   if (typeof message !== "string" || !message.trim()) {
     return NextResponse.json({ error: "message_required" }, { status: 400 });
+  }
+  if (message.length > 8000) {
+    return NextResponse.json({ error: "message_too_long" }, { status: 413 });
   }
 
   const history = sanitizeHistory((body as { history?: unknown }).history);
@@ -93,7 +102,9 @@ export async function POST(req: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (err) {
-    console.error("[/api/ask] generateText failed", err);
+    // Never log the raw error: on a real-data path a ZodError/SDK error can embed the
+    // model's echoed taxpayer figures, and Vercel logs are a 30-day sink outside ZDR.
+    console.error("[/api/ask] generateText failed:", err instanceof Error ? err.name : "unknown");
     return NextResponse.json({ error: "ai_error" }, { status: 502 });
   }
 }

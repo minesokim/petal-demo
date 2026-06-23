@@ -9,9 +9,20 @@ import {
   ensureUploadsFolder,
   fileStoragePath,
   filesOfHousehold,
+  householdOwned,
   removeFile,
 } from "@/lib/repository/documents";
 import { uploadFirmFile, signedUrlForFirmFile, removeFirmFile } from "@/lib/storage/firm-files";
+
+// Server-side upload guards (the UI hint is cosmetic; enforce here). Cap BEFORE the blob is
+// read into memory, and allowlist the document/image types Petal handles.
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_UPLOAD_TYPES = new Set([
+  "application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+  "application/vnd.ms-excel", "application/msword", "text/csv", "text/plain",
+]);
 
 // Document write-path. requestDocumentsAction records a real, audited request for
 // each selected expected-doc: setDocStatus(id, "requested") runs RLS-scoped and
@@ -46,12 +57,17 @@ export async function uploadDocumentAction(
 ): Promise<{ id: string } | null> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return null;
+  if (file.size > MAX_UPLOAD_BYTES) return null; // H3: cap before reading the blob (OOM/DoS)
+  if (file.type && !ALLOWED_UPLOAD_TYPES.has(file.type)) return null; // type allowlist
   const folderIdRaw = formData.get("folderId");
   const folderId = typeof folderIdRaw === "string" && folderIdRaw ? folderIdRaw : undefined;
   const householdRaw = formData.get("householdId");
-  const householdId = typeof householdRaw === "string" && householdRaw ? householdRaw : undefined;
+  const householdIdRaw = typeof householdRaw === "string" && householdRaw ? householdRaw : undefined;
 
   const result = await withFirm(async (db, ctx) => {
+    // Only tag the file to the household if it belongs to THIS firm (reject a spoofed
+    // cross-tenant household id rather than persisting it).
+    const householdId = householdIdRaw && (await householdOwned(db, householdIdRaw)) ? householdIdRaw : undefined;
     const { storagePath, sizeBytes, mimeType } = await uploadFirmFile(ctx.firmId, file);
     const targetFolder = folderId ?? (await ensureUploadsFolder(db, ctx));
     const id = await createFile(db, ctx, {
@@ -66,7 +82,7 @@ export async function uploadDocumentAction(
   });
   if (result) {
     revalidatePath("/os/documents");
-    if (householdId) revalidatePath(`/os/clients/${householdId}`);
+    if (householdIdRaw) revalidatePath(`/os/clients/${householdIdRaw}`);
   }
   return result;
 }
@@ -89,7 +105,7 @@ export async function listClientFilesAction(
   householdId: string,
 ): Promise<{ id: string; name: string; mb: number }[]> {
   if (!householdId) return [];
-  const rows = await withFirm((db) => filesOfHousehold(db, householdId));
+  const rows = await withFirm((db, ctx) => filesOfHousehold(db, ctx.firmId, householdId));
   return (rows ?? [])
     .slice()
     .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
