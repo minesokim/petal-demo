@@ -26,7 +26,6 @@ import {
   skillById, runById,
 } from "@/lib/fixtures/firm";
 import { useDerive } from "@/lib/client/firm-context";
-import { useLiveNeedsYou } from "@/lib/demo-store";
 import { useBanner } from "@/lib/banner-store";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -53,9 +52,9 @@ function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark
 }
 
 export function TodayView() {
-  const { healthCounts, roiWeek, taskById, householdById, engagementById } = useDerive();
+  const { healthCounts, roiWeek, taskById, householdById, engagementById, needsYouTasks } = useDerive();
   const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
-  const queue = useLiveNeedsYou();
+  const queue = needsYouTasks();
   const banner = useBanner();
   const needsYou = queue.length;
   const atRiskCount = healthCounts().at_risk;
@@ -66,10 +65,10 @@ export function TodayView() {
   const previewTask = queue[0];
 
   // Today's call - the Fuentes 1120S review; the brief is a running Pre-call Brief run.
-  const callTask = taskById("t-brief-fuentes")!;
-  const callHousehold = householdById(callTask.householdId)!;
-  const callSkill = skillById(callTask.skillId)!;
-  const callRun = callTask.runId ? runById(callTask.runId) : undefined;
+  const callTask = taskById("t-brief-fuentes");
+  const callHousehold = callTask ? householdById(callTask.householdId) : undefined;
+  const callSkill = callTask ? skillById(callTask.skillId) : undefined;
+  const callRun = callTask?.runId ? runById(callTask.runId) : undefined;
   const callForm = callRun?.engagementId ? engagementById(callRun.engagementId)?.form : undefined;
 
   return (
@@ -154,7 +153,8 @@ export function TodayView() {
           {/* ── Today's brief (the newspaper - situational awareness, modal per item) ── */}
           <TodayBrief />
 
-          {/* ── Today's calls ── */}
+          {/* ── Today's calls (hidden when the firm has no scheduled call) ── */}
+          {callTask && callHousehold && callSkill && (
           <Card>
             <CardHead title="Today's calls" />
             <TodaysCall
@@ -165,6 +165,7 @@ export function TodayView() {
               skillCategory={callSkill.category}
             />
           </Card>
+          )}
 
         </div>
       </div>
