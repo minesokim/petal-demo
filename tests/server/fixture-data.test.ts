@@ -7,7 +7,7 @@ describe("fixtureFirmData (fallback dataset)", () => {
     const d = fixtureFirmData();
     expect(Object.keys(d).sort()).toEqual(
       ["activity", "engagements", "entities", "expectedDocs", "households", "notices", "people",
-       "positions", "skillRuns", "skills", "tasks", "threads"].sort(),
+       "positions", "skillRuns", "skills", "tasks", "threads", "firm", "viewer"].sort(),
     );
     expect(d.households).toBe(fx.households);
     expect(d.tasks).toBe(fx.tasks);

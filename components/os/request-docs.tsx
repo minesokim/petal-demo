@@ -6,11 +6,12 @@
 // the chase is tracked (and nudgeable). Demo-interactive (session task store).
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
-import { engagementsOf, householdById, entityById, docsOfEngagement } from "@/lib/fixtures/firm";
-import { demoStore } from "@/lib/demo-store";
+import { useDerive } from "@/lib/client/firm-context";
+import { requestDocumentsAction } from "@/app/os/documents/actions";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -44,6 +45,8 @@ function RequestDocsModal({
   onClose: () => void;
   onToast?: (m: string) => void;
 }) {
+  const router = useRouter();
+  const { householdById, engagementsOf, entityById, docsOfEngagement } = useDerive();
   const hh = householdById(householdId);
   const engs = (engagementId ? engagementsOf(householdId).filter(e => e.id === engagementId) : engagementsOf(householdId));
   const outstanding = engs.flatMap(e => docsOfEngagement(e.id).filter(d => d.status === "requested").map(d => ({ d, eng: e })));
@@ -54,21 +57,16 @@ function RequestDocsModal({
   const count = selected.size + (custom.trim() ? 1 : 0);
   const toggle = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  const send = () => {
+  const send = async () => {
     if (count === 0) return;
-    demoStore.createTask({
-      id: demoStore.newId(),
-      householdId,
-      engagementId: engagementId || undefined,
-      status: "waiting_client",
-      kind: "Document request",
-      title: `Requested ${count} document${count === 1 ? "" : "s"} from ${hh?.name ?? "client"}`,
-      why: note.trim() || `Sent a secure request for ${count} outstanding document${count === 1 ? "" : "s"}. Petal nudges automatically if there's no reply.`,
-      skillId: "",
-      origin: "human",
-    });
+    // Persist the request: mark each selected expected-doc as requested (audited).
+    // The custom free-text item + note are UI-only for now — a new expected_doc row
+    // from free text needs its own create path (see follow-ups). Toast/close keep
+    // their existing behavior; refresh re-reads the firm's docs from real data.
+    await requestDocumentsAction([...selected]);
     onToast?.(`Request sent to ${hh?.name ?? "client"}`);
     onClose();
+    router.refresh();
   };
 
   return (

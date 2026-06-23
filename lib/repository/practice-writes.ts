@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { households, people, engagements, expectedDocs, tasks } from "../db/schema";
+import { households, people, engagements, expectedDocs, tasks, notices } from "../db/schema";
 import { writeAudit } from "./audit";
 import type { Db, Ctx } from "./types";
 
@@ -91,6 +91,33 @@ export async function setDocStatus(db: Db, ctx: Ctx, id: string, status: string)
     .where(eq(expectedDocs.id, id)).returning();
   if (rows.length) {
     await writeAudit(db, ctx, { action: "doc.status", resourceType: "expected_doc", resourceId: id, metadata: { status } });
+  }
+  return rows.length > 0;
+}
+
+// Mark a notice resolved (the preparer approved & mailed the response, or closed it
+// out by hand). RLS scopes the UPDATE to the caller's firm; one audit row records it.
+export async function resolveNotice(
+  db: Db, ctx: Ctx, id: string,
+  input: { resolvedBy: string; resolvedOn: string; note?: string },
+) {
+  const rows = await db.update(notices)
+    .set({ status: "resolved", resolvedBy: input.resolvedBy, resolvedOn: input.resolvedOn, note: input.note, updatedAt: new Date() })
+    .where(eq(notices.id, id)).returning();
+  if (rows.length) {
+    await writeAudit(db, ctx, { action: "notice.resolve", resourceType: "notice", resourceId: id, metadata: { status: "resolved" } });
+  }
+  return rows.length > 0;
+}
+
+// Persist an edited draft response for a notice (the preparer tweaked Petal's letter
+// before approving). Status is unchanged — just the draft body. RLS-scoped + audited.
+export async function updateNoticeDraft(db: Db, ctx: Ctx, id: string, draftedResponse: string) {
+  const rows = await db.update(notices)
+    .set({ draftedResponse, updatedAt: new Date() })
+    .where(eq(notices.id, id)).returning();
+  if (rows.length) {
+    await writeAudit(db, ctx, { action: "notice.draft", resourceType: "notice", resourceId: id });
   }
   return rows.length > 0;
 }

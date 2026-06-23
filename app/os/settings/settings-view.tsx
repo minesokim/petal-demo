@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
 import { AgentAvatar, SkillPetal, TrustDial, MemberAvatar } from "@/components/os/primitives";
-import { integrations, integrationCategories, type Integration } from "@/lib/os-integrations";
+import { integrationCategories, type Integration } from "@/lib/os-integrations";
+import { connectionStore, useConnections } from "@/lib/connection-store";
+import { connectAppAction, getConnectedToolkitsAction, syncConnectionsAction } from "@/app/os/connections/actions";
 import { mcpServer, accessTokens } from "@/lib/os-api";
 import {
   firmMembers, roleMeta, ROLE_PERMISSIONS, PERMISSIONS, PERMISSION_LABEL, isCurrentUser,
@@ -20,7 +22,9 @@ const ROLE_ORDER: FirmRole[] = ["owner", "reviewer", "preparer", "admin"];
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--os-accent)]";
 
-const connectedCount = integrations.filter(i => i.status === "connected").length;
+// os-integrations id → toast verb. Only OAuth/Composio connectors can be wired to the
+// real connect flow here; everything else keeps the inert catalog button (no silent fail).
+const OAUTH_IDS = new Set(["gmail", "qbo", "gcal", "outlook", "xero", "dropbox", "onedrive"]);
 
 type SectionId = "general" | "appearance" | "members" | "trust" | "integrations" | "developer";
 
@@ -86,7 +90,9 @@ function IntegrationCard({ it }: { it: Integration }) {
         {connected ? (
           <button className={cn("shrink-0 rounded-md px-2 py-1 text-[12px] font-medium text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)}>Manage</button>
         ) : (
-          <button className={cn("shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1 text-[12px] font-medium text-[var(--os-ink)] hover:bg-[var(--os-hover)]", FOCUS)}>Connect</button>
+          <button
+            onClick={OAUTH_IDS.has(it.id) ? () => { void connectAppAction(it.id).then(r => { if ("redirectUrl" in r && r.redirectUrl) window.open(r.redirectUrl, "_blank", "noopener,noreferrer"); }); } : undefined}
+            className={cn("shrink-0 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1 text-[12px] font-medium text-[var(--os-ink)] hover:bg-[var(--os-hover)]", FOCUS)}>Connect</button>
         )}
       </div>
     </div>
@@ -95,9 +101,31 @@ function IntegrationCard({ it }: { it: Integration }) {
 
 export function SettingsView() {
   const { skills } = useFirmData();
+  // Live catalog with the firm's REAL connection status applied (same store the Apps page
+  // uses), so connecting from either surface reflects here. Falls back to catalog defaults.
+  const integrations = useConnections();
   const [tab, setTab] = useState<"connected" | "all">("all");
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<SectionId>("general");
+
+  // Seed the catalog with the firm's REAL connection status (null = not signed in → keep
+  // catalog defaults, 1:1 with the mockup). Mirrors /os/connections: poll Composio for any
+  // pending authorizations, then reflect connected state; re-check on window focus so the
+  // status flips when the preparer returns from the OAuth authorize tab.
+  useEffect(() => {
+    let cancelled = false;
+    const reconcile = (connected: string[] | null) => {
+      if (cancelled || connected === null) return;
+      const MANAGED = ["gmail", "qbo", "gcal", "outlook", "xero", "dropbox", "onedrive"];
+      const set = new Set(connected);
+      for (const id of MANAGED) { if (set.has(id)) connectionStore.connect(id); else connectionStore.disconnect(id); }
+    };
+    const refresh = () => { void syncConnectionsAction().catch(() => {}).then(() => getConnectedToolkitsAction()).then(reconcile).catch(() => {}); };
+    refresh();
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    return () => { cancelled = true; window.removeEventListener("focus", onFocus); };
+  }, []);
 
   // Editable role permissions - seeded from the fixture, owner stays full-access.
   const [perms, setPerms] = useState<Record<FirmRole, Set<string>>>(
@@ -130,6 +158,7 @@ export function SettingsView() {
   };
 
   const banner = useBanner();
+  const connectedCount = integrations.filter(i => i.status === "connected").length;
   const shown = tab === "connected" ? integrations.filter(i => i.status === "connected") : integrations;
 
   const navBtn = (id: SectionId, label: string, icon: IconSvgElement) => (

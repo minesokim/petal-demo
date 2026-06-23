@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -14,6 +15,7 @@ import { ProvenancePanel } from "@/components/os/provenance";
 import { useFirmData, useDerive } from "@/lib/client/firm-context";
 import { fmtDate } from "@/lib/fixtures/vocab";
 import { noticeCountdown } from "@/lib/fixtures/derive";
+import { resolveNoticeAction, updateNoticeDraftAction } from "@/app/os/notices/actions";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -30,9 +32,25 @@ export function NoticesDetailView({ id }: { id: string }) {
   const { notices, skillRuns } = useFirmData();
   const { householdById } = useDerive();
   const n = notices.find(x => x.id === id);
+  const router = useRouter();
   const [approved, setApproved] = useState(false);
   const [editing, setEditing] = useState(false);
   const [letter, setLetter] = useState(n?.draftedResponse ?? "");
+
+  // Approve & mail: persist the resolution, then refresh so the surface re-reads
+  // the now-resolved notice from real data. Optimistic UI state flips immediately.
+  const approveAndMail = async () => {
+    setEditing(false);
+    setApproved(true);
+    await resolveNoticeAction(id);
+    router.refresh();
+  };
+  // Save an edited draft response, then refresh to reflect the persisted letter.
+  const saveDraft = async () => {
+    setEditing(false);
+    await updateNoticeDraftAction(id, letter);
+    router.refresh();
+  };
 
   if (!n) {
     return (
@@ -146,7 +164,7 @@ export function NoticesDetailView({ id }: { id: string }) {
           ) : (
             <div className="flex flex-wrap items-center gap-2 pb-2">
               <button
-                onClick={() => { setEditing(false); setApproved(true); }}
+                onClick={approveAndMail}
                 className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}
               >
                 <Icon icon={I.mail} size={14} /> Approve &amp; mail
@@ -154,7 +172,7 @@ export function NoticesDetailView({ id }: { id: string }) {
               {editing ? (
                 <>
                   <button
-                    onClick={() => setEditing(false)}
+                    onClick={saveDraft}
                     className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-3 text-[13px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}
                   >
                     <Icon icon={I.check} size={14} className="text-[var(--os-ink-muted)]" /> Save

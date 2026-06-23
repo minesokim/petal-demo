@@ -25,7 +25,7 @@ import {
   FIRM_PROFILE,
   skillById, runById,
 } from "@/lib/fixtures/firm";
-import { useDerive } from "@/lib/client/firm-context";
+import { useDerive, useFirmData } from "@/lib/client/firm-context";
 import { useBanner } from "@/lib/banner-store";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -53,7 +53,7 @@ function CardHead({ title, mark, badge, href, hrefLabel }: { title: string; mark
 
 export function TodayView() {
   const { healthCounts, roiWeek, taskById, householdById, engagementById, needsYouTasks } = useDerive();
-  const firstName = FIRM_PROFILE.owner.name.split(" ")[0];
+  const firstName = useFirmData().viewer.firstName;
   const queue = needsYouTasks();
   const banner = useBanner();
   const needsYou = queue.length;

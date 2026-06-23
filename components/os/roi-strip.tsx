@@ -9,8 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { useDerive } from "@/lib/client/firm-context";
-import { FIRM_PROFILE } from "@/lib/fixtures/firm";
+import { useDerive, useFirmData } from "@/lib/client/firm-context";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 
@@ -18,6 +17,7 @@ const WEEK_LABEL = "Jun 22 – 25, 2026";
 
 export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" | "dark"; className?: string }) {
   const roi = useDerive().roiWeek();
+  const firmName = useFirmData().firm.name;
   const [open, setOpen] = useState(false);
 
   const rows: [string, string | number][] = [
@@ -78,7 +78,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
                     <PetalMark className="size-4" />
                   </span>
                   <div className="text-[12px] text-[var(--os-ink-muted)]">
-                    <span className="font-medium text-[var(--os-ink)]">Petal returned about {roi.hoursReturned} hours</span> this week at {FIRM_PROFILE.name} - every return pre-approved by you.
+                    <span className="font-medium text-[var(--os-ink)]">Petal returned about {roi.hoursReturned} hours</span> this week at {firmName} - every return pre-approved by you.
                   </div>
                 </div>
 

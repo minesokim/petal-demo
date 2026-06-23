@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { cn } from "@/lib/utils";
-import { setFirmName, patchFirmSettings } from "./actions";
+import { setFirmName, patchFirmSettings, seedGettingStartedTasksAction } from "./actions";
 import { createClientAction } from "@/app/os/clients/actions";
 
 const STEPS = ["Welcome", "Your firm", "Your team", "Connect", "First client", "Done"] as const;
@@ -32,6 +32,8 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
+  // The household created in step 4, so step 6 can seed getting-started tasks against it.
+  const [clientId, setClientId] = useState<string | null>(null);
 
   // step 2 — firm
   const [name, setName] = useState(defaultFirmName === "My Firm" ? "" : defaultFirmName);
@@ -63,13 +65,25 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
   async function addClient() {
     setBusy(true);
     if (cName.trim()) {
-      await createClientAction({ name: cName.trim(), kind: cKind, serviceTier: "Standard", contactEmail: cEmail });
+      // Pass the prospect's name as the contact so createPerson runs and the email
+      // actually persists (without contactName, createClientAction skips the contact).
+      const created = await createClientAction({
+        name: cName.trim(),
+        kind: cKind,
+        serviceTier: "Standard",
+        contactName: cName.trim(),
+        contactEmail: cEmail.trim() || undefined,
+      });
+      if (created) setClientId(created.id);
     }
     setBusy(false);
     next();
   }
   async function finish() {
     setBusy(true);
+    // Make step 5's promise true: seed the getting-started tasks (against the client
+    // just added, or the firm's first household when that step was skipped).
+    await seedGettingStartedTasksAction(clientId ?? undefined);
     await patchFirmSettings({ onboarded: true });
     router.push("/os");
   }

@@ -19,6 +19,7 @@ import { RecurringButton } from "@/components/os/recurring";
 import { skillById, firmMembers, isCurrentUser, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
 import { useFirmData, useDerive } from "@/lib/client/firm-context";
 import { demoStore } from "@/lib/demo-store";
+import { createTaskAction, approveTaskAction, markTaskDoneAction } from "./actions";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { TASK_STATUS_ORDER, taskStatusMeta, type TaskStatus } from "@/lib/fixtures/vocab";
 
@@ -266,6 +267,7 @@ const pillCls = (on: boolean) =>
 function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: string) => void }) {
   const { households } = useFirmData();
   const { engagementsOf, entityById } = useDerive();
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [householdId, setHouseholdId] = useState("");
   const [engagementId, setEngagementId] = useState("");
@@ -276,18 +278,29 @@ function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: 
   const toPetal = assignee === "petal";
   const fieldCls = "w-full rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 py-1.5 text-[13px] text-[var(--os-ink)] transition-colors focus:border-[var(--os-border-strong)] focus:outline-none";
 
-  const create = () => {
+  const create = async () => {
     const t = title.trim();
     if (!t) return;
-    const id = demoStore.newId();
-    demoStore.createTask({
-      id, householdId, engagementId: engagementId || undefined, status: "todo",
-      kind: "Task", title: t, why: notes.trim(), skillId: "",
-      deadline: due || undefined, origin: "human", assigneeId: toPetal ? undefined : assignee,
+    // Persist the task (audited + RLS-scoped). A task must belong to a household
+    // (FK), so a real create requires a selected client; when "None" is chosen the
+    // action returns null and we fall back to the in-session store so behavior is
+    // unchanged. Hand-to-Petal's AI drafting stays session-only (§7216-gated).
+    const res = await createTaskAction({
+      householdId, engagementId: engagementId || undefined, title: t,
+      why: notes.trim(), origin: "human", assigneeId: toPetal ? undefined : assignee,
     });
+    const id = res?.id ?? demoStore.newId();
+    if (!res) {
+      demoStore.createTask({
+        id, householdId, engagementId: engagementId || undefined, status: "todo",
+        kind: "Task", title: t, why: notes.trim(), skillId: "",
+        deadline: due || undefined, origin: "human", assigneeId: toPetal ? undefined : assignee,
+      });
+    }
     if (toPetal) demoStore.handToPetal(id, `Drafted per your request: "${t}". Review below and approve when ready.`);
     onToast(toPetal ? "Handed to Petal - drafting…" : "Task created");
     onClose();
+    if (res) router.refresh();
   };
 
   return (
@@ -445,14 +458,14 @@ function TasksPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveTasks, flaggedOnly, blockedOnly, scope, assignVersion]);
 
-  const item = selected ? demoStore.byId(selected) : null;
+  const item = selected ? (firmData.tasks.find(t => t.id === selected) ?? null) : null;
 
-  function onVerb(t: Task, verb: string) {
+  async function onVerb(t: Task, verb: string) {
     if (verb === "Decide" || verb === "View run") setSelected(t.id);
-    else if (verb === "Approve & send") { demoStore.resolve(t.id); show("Approved & sent"); }
-    else if (verb === "Approve") { demoStore.resolve(t.id); show("Approved"); }
-    else if (verb === "Mark done") { demoStore.setStatus(t.id, "done"); show("Marked done"); }
-    else if (verb === "Nudge") show("Nudge sent");
+    else if (verb === "Approve & send") { await approveTaskAction(t.id); show("Approved & sent"); router.refresh(); }
+    else if (verb === "Approve") { await approveTaskAction(t.id); show("Approved"); router.refresh(); }
+    else if (verb === "Mark done") { await markTaskDoneAction(t.id); show("Marked done"); router.refresh(); }
+    else if (verb === "Nudge") show("Nudge sent"); // client-comms send — not a task status change; follow-up
   }
 
   // hand a human to-do to Petal: it drafts, then returns to the queue as an approval
@@ -467,9 +480,9 @@ function TasksPageInner() {
   const pickedTasks = liveTasks.filter(t => picked.has(t.id));
   const approvable = pickedTasks.filter(t => t.status === "needs_decision" || t.status === "ready_to_approve");
   const nudgeable = pickedTasks.filter(t => t.status === "waiting_client");
-  const bulkApprove = () => { approvable.forEach(t => demoStore.resolve(t.id)); show(`Approved ${approvable.length}`); clearPick(); };
-  const bulkNudge = () => { show(`Nudged ${nudgeable.length} client${nudgeable.length === 1 ? "" : "s"}`); clearPick(); };
-  const bulkDone = () => { pickedTasks.forEach(t => demoStore.setStatus(t.id, "done")); show(`Marked ${pickedTasks.length} done`); clearPick(); };
+  const bulkApprove = async () => { await Promise.all(approvable.map(t => approveTaskAction(t.id))); show(`Approved ${approvable.length}`); clearPick(); router.refresh(); };
+  const bulkNudge = () => { show(`Nudged ${nudgeable.length} client${nudgeable.length === 1 ? "" : "s"}`); clearPick(); }; // client-comms send — follow-up
+  const bulkDone = async () => { await Promise.all(pickedTasks.map(t => markTaskDoneAction(t.id))); show(`Marked ${pickedTasks.length} done`); clearPick(); router.refresh(); };
 
   return (
     <div className="flex h-full flex-col">
