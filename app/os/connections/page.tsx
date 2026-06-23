@@ -159,9 +159,11 @@ export default function AppsPage() {
     let cancelled = false;
     const reconcile = (connected: string[] | null) => {
       if (cancelled || connected === null) return; // not signed in → keep catalog defaults (mockup 1:1)
-      const MANAGED = ["gmail", "qbo", "gcal", "outlook", "xero", "dropbox", "onedrive"];
-      const set = new Set(connected);
-      for (const id of MANAGED) { if (set.has(id)) connectionStore.connect(id); else connectionStore.disconnect(id); }
+      // A real firm starts with NOTHING connected — clear the mockup's populated
+      // defaults so only genuinely-connected tools show a checkmark (#37), then
+      // connect exactly the toolkits Composio reports authorized for this firm.
+      connectionStore.disconnectAll();
+      for (const id of new Set(connected)) connectionStore.connect(id);
     };
     // Poll Composio for any pending authorizations, then reflect real connected state.
     const refresh = () => { void syncConnectionsAction().catch(() => {}).then(() => getConnectedToolkitsAction()).then(reconcile).catch(() => {}); };

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
+import type { IconSvgElement } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { setFirmName, patchFirmSettings, seedGettingStartedTasksAction } from "./actions";
 import { createClientAction } from "@/app/os/clients/actions";
+import { integrations } from "@/lib/os-integrations";
+import { connectAppAction, getConnectedToolkitsAction, syncConnectionsAction } from "@/app/os/connections/actions";
 
 const STEPS = ["Welcome", "Your firm", "Your team", "Connect", "First client", "Done"] as const;
 type Kind = "individual" | "business" | "mixed";
@@ -22,11 +25,32 @@ const pill = (on: boolean) =>
   cn(
     "inline-flex h-8 items-center rounded-full border px-3.5 text-[12.5px] font-medium transition-colors",
     on
-      ? "border-[var(--os-border-strong)] bg-[var(--os-selected)] text-[var(--os-ink)]"
+      ? "border-[var(--os-ink)] bg-[var(--os-ink)] text-[var(--os-primary-fg)]"
       : "border-[var(--os-border)] text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]",
   );
 
 const label = "mb-1.5 block text-[12px] font-medium text-[var(--os-ink-muted)]";
+
+// Tools surfaced directly in the Connect step (the rest live behind "More in Apps").
+const CONNECT_IDS = ["qbo", "gmail", "gcal", "xero", "gdrive", "docusign"];
+
+// Brand logo on a white tile; falls back to the catalog gradient + glyph when missing.
+function ToolLogo({ logo, gradient, glyph }: { logo?: string; gradient: string; glyph: IconSvgElement }) {
+  const [err, setErr] = useState(false);
+  if (logo && !err) {
+    return (
+      <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg border border-[var(--os-border)] bg-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logo} alt="" className="size-5 object-contain" onError={() => setErr(true)} />
+      </span>
+    );
+  }
+  return (
+    <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br text-white", gradient)}>
+      <Icon icon={glyph} size={18} className="text-white" />
+    </span>
+  );
+}
 
 export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string }) {
   const router = useRouter();
@@ -41,10 +65,30 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
   const [size, setSize] = useState("Just me");
   // step 3 — team
   const [invites, setInvites] = useState("");
+  // step 4 — connect
+  const [connected, setConnected] = useState<Set<string>>(new Set());
+  const [connecting, setConnecting] = useState<string | null>(null);
   // step 5 — first client
   const [cName, setCName] = useState("");
   const [cKind, setCKind] = useState<Kind>("individual");
   const [cEmail, setCEmail] = useState("");
+
+  const solo = size === "Just me";
+
+  // Reflect REAL connection state — refresh when returning from the Composio authorize tab.
+  useEffect(() => {
+    const refresh = () => {
+      void syncConnectionsAction()
+        .catch(() => {})
+        .then(() => getConnectedToolkitsAction())
+        .then((ids) => { if (ids) setConnected(new Set(ids)); })
+        .catch(() => {});
+    };
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    refresh();
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -53,7 +97,7 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
     setBusy(true);
     await setFirmName(name, { credential, size });
     setBusy(false);
-    next();
+    setStep(size === "Just me" ? 3 : 2); // solo firms skip the team-invite step
   }
   async function saveInvites() {
     setBusy(true);
@@ -61,6 +105,15 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
     if (emails.length) await patchFirmSettings({ invitedEmails: emails });
     setBusy(false);
     next();
+  }
+  function connectTool(id: string) {
+    setConnecting(id);
+    void connectAppAction(id)
+      .then((r) => {
+        if ("redirectUrl" in r && r.redirectUrl) window.open(r.redirectUrl, "_blank", "noopener,noreferrer");
+      })
+      .catch(() => {})
+      .finally(() => setConnecting(null));
   }
   async function addClient() {
     setBusy(true);
@@ -140,7 +193,7 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
                     <label className={label}>Your credential</label>
                     <div className="flex flex-wrap gap-1.5">
                       {["EA", "CPA", "Attorney", "Other"].map((c) => (
-                        <button key={c} onClick={() => setCredential(c)} className={pill(credential === c)}>{c}</button>
+                        <button key={c} type="button" onClick={() => setCredential(c)} className={pill(credential === c)}>{c}</button>
                       ))}
                     </div>
                   </div>
@@ -172,21 +225,36 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
                 <h2 className="os-display text-[22px] font-semibold text-[var(--os-ink)]">Connect your tools</h2>
                 <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Pull clients and documents in automatically. Connect any time from Apps.</p>
                 <div className="mt-6 space-y-2">
-                  {[
-                    { name: "QuickBooks", sub: "Import clients & books" },
-                    { name: "Gmail", sub: "Client threads & documents" },
-                    { name: "Calendar", sub: "Deadlines & meetings" },
-                  ].map((t) => (
-                    <a key={t.name} href="/os/connections" className="flex items-center justify-between rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3.5 py-3 transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
-                      <div>
-                        <div className="text-[13.5px] font-medium text-[var(--os-ink)]">{t.name}</div>
-                        <div className="text-[12px] text-[var(--os-ink-subtle)]">{t.sub}</div>
+                  {CONNECT_IDS.map((id) => {
+                    const t = integrations.find((i) => i.id === id);
+                    if (!t) return null;
+                    const isOn = connected.has(id);
+                    return (
+                      <div key={id} className="flex items-center justify-between rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] px-3.5 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <ToolLogo logo={t.logo} gradient={t.gradient} glyph={t.glyph} />
+                          <div className="min-w-0">
+                            <div className="text-[13.5px] font-medium text-[var(--os-ink)]">{t.name}</div>
+                            <div className="truncate text-[12px] text-[var(--os-ink-subtle)]">{t.desc}</div>
+                          </div>
+                        </div>
+                        {isOn ? (
+                          <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-[var(--os-success)]">
+                            <Icon icon={I.check} size={14} /> Connected
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => connectTool(id)} className={cn(ghost, "shrink-0 text-[var(--os-ink)]")}>
+                            {connecting === id ? "Opening…" : "Connect"}
+                          </button>
+                        )}
                       </div>
-                      <span className="text-[12.5px] font-medium text-[var(--os-ink-muted)]">Connect</span>
-                    </a>
-                  ))}
+                    );
+                  })}
                 </div>
-                <Footer onBack={back} onNext={next} nextLabel="Continue" onSkip={next} />
+                <a href="/os/connections" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]">
+                  More in Apps <Icon icon={I.chevronRight} size={13} />
+                </a>
+                <Footer onBack={() => setStep(solo ? 1 : 2)} onNext={next} nextLabel="Continue" onSkip={next} />
               </div>
             )}
 
@@ -203,7 +271,7 @@ export function OnboardingFlow({ defaultFirmName }: { defaultFirmName: string })
                     <label className={label}>Type</label>
                     <div className="flex flex-wrap gap-1.5">
                       {(["individual", "business", "mixed"] as Kind[]).map((k) => (
-                        <button key={k} onClick={() => setCKind(k)} className={pill(cKind === k)}>
+                        <button key={k} type="button" onClick={() => setCKind(k)} className={pill(cKind === k)}>
                           {k === "mixed" ? "Individual + business" : k[0].toUpperCase() + k.slice(1)}
                         </button>
                       ))}

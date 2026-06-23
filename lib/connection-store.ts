@@ -43,6 +43,10 @@ export const connectionStore = {
     emit();
   },
   disconnect(id: string) { overrides.set(id, "available"); accountOverride.delete(id); emit(); },
+  // Force every catalog app to "available" (used when reflecting a REAL firm's
+  // connection state — a firm starts with nothing connected, so the mockup's
+  // populated defaults must not read as fake checkmarks).
+  disconnectAll() { for (const i of integrations) overrides.set(i.id, "available"); accountOverride.clear(); emit(); },
   connectedCount: () => integrations.filter(i => statusOf(i) === "connected").length,
 };
 
