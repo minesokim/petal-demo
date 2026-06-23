@@ -16,7 +16,7 @@
  * not how. Keyed remount per step plays the enter animation (no exit overlap).
  */
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeft, Check, ChevronDown, ChevronRight, Lock, Pencil, ShieldCheck, Upload,
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
+import { payDepositAction } from "@/app/portal/actions";
 
 /* ── the household we're prefilling from (Chen, our exemplar) ── */
 const D = {
@@ -75,6 +76,14 @@ export function IntakeFlow() {
   const [dir, setDir] = useState(1);
   const step = ORDER[idx];
 
+  // Real-invite wiring (client-only, no Suspense needed). No params = the demo flow, untouched.
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    setInviteToken(p.get("invite"));
+    if (p.get("deposit") === "paid") { setDir(1); setIdx(ORDER.indexOf("done")); } // returned from Stripe
+  }, []);
+
   const go = (to: Step) => { setDir(ORDER.indexOf(to) > idx ? 1 : -1); setIdx(ORDER.indexOf(to)); };
   const next = () => { setDir(1); setIdx(i => Math.min(i + 1, ORDER.length - 1)); };
   const back = () => { setDir(-1); setIdx(i => Math.max(i - 1, 0)); };
@@ -119,7 +128,7 @@ export function IntakeFlow() {
             {step === "life" && <LifeChanges onNext={next} />}
             {step === "deductions" && <Deductions onNext={next} />}
             {step === "review" && <Review onNext={next} />}
-            {step === "deposit" && <Deposit onNext={next} />}
+            {step === "deposit" && <Deposit onNext={next} token={inviteToken} />}
             {step === "done" && <Done onNext={next} />}
             {step === "case" && <CaseHome onRestart={() => go("welcome")} />}
           </motion.div>
@@ -577,9 +586,16 @@ function Review({ onNext }: { onNext: () => void }) {
   );
 }
 
-function Deposit({ onNext }: { onNext: () => void }) {
+function Deposit({ onNext, token }: { onNext: () => void; token: string | null }) {
+  // With a real invite token, "Pay" opens Stripe's hosted checkout (card data never touches
+  // us — PCI). Without a token (the demo), it advances as before. The card form below stays
+  // as the mockup's visual; the real entry happens on Stripe.
+  const onPay = () => {
+    if (!token) return onNext();
+    void payDepositAction(token).then((r) => { if ("url" in r && r.url) window.location.href = r.url; else onNext(); });
+  };
   return (
-    <Screen cta={`Pay $${D.deposit} deposit`} onCta={onNext} reassure={false}>
+    <Screen cta={`Pay $${D.deposit} deposit`} onCta={onPay} reassure={false}>
       <ScreenTitle sub={`A $${D.deposit} deposit reserves your spot with ${D.cpa} and goes straight toward your final bill.`}>Reserve your spot</ScreenTitle>
 
       <div className="mb-5 flex items-center justify-between rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] px-4 py-3.5">
