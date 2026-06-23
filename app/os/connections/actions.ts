@@ -2,7 +2,20 @@
 
 import { withFirm } from "@/lib/auth/tenant";
 import { initiateConnection, getConnectionStatus } from "@/lib/connectors/composio";
-import { upsertConnection, pendingConnections } from "@/lib/repository/connections";
+import { upsertConnection, pendingConnections, listConnections } from "@/lib/repository/connections";
+
+// Composio toolkit slug → os-integrations catalog id (reverse of TOOLKIT below).
+const TOOLKIT_TO_ID: Record<string, string> = {
+  gmail: "gmail", quickbooks: "qbo", googlecalendar: "gcal", outlook: "outlook", xero: "xero", dropbox: "dropbox", one_drive: "onedrive",
+};
+// Real connection status for the signed-in firm, as catalog ids. Returns null when not
+// signed in, so the connections page falls back to the mockup's catalog defaults (1:1).
+export async function getConnectedToolkitsAction(): Promise<string[] | null> {
+  return withFirm(async (db) => {
+    const conns = await listConnections(db);
+    return conns.filter((c) => c.status === "connected").map((c) => TOOLKIT_TO_ID[c.toolkit]).filter(Boolean);
+  });
+}
 
 // os-integrations id → Composio toolkit slug. Only API connectors map here; browser
 // connectors (OLT etc., kind === "browser") use the extension flow, not Composio.

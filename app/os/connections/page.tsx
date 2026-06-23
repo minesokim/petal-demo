@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Icon } from "@/components/os/icon";
 import { browserHealthMeta, type Integration } from "@/lib/os-integrations";
 import { connectionStore, useConnections } from "@/lib/connection-store";
+import { connectAppAction, getConnectedToolkitsAction } from "./actions";
 import { Search, Plus, Check, ChevronDown, ArrowDownUp, X, Puzzle } from "lucide-react";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -71,7 +72,7 @@ function AppCard({ i, onToast, onBrowserConnect }: { i: Integration; onToast: (m
       ) : connected ? (
         <span className="grid size-7 shrink-0 place-items-center text-[var(--os-success)]" title="Connected" aria-label="Connected"><Check className="size-4" /></span>
       ) : (
-        <button onClick={() => { if (browser) onBrowserConnect(i); else { connectionStore.connect(i.id); onToast(`Connected ${i.name}`); } }} aria-label={`Connect ${i.name}`}
+        <button onClick={() => { if (browser) onBrowserConnect(i); else { void connectAppAction(i.id).then(r => { if ("redirectUrl" in r && r.redirectUrl) window.location.href = r.redirectUrl; else onToast("error" in r ? r.error : `Connecting ${i.name}…`); }); } }} aria-label={`Connect ${i.name}`}
           className={cn("grid size-7 shrink-0 place-items-center rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:text-[var(--os-ink)]", FOCUS)}>
           <Plus className="size-3.5" />
         </button>
@@ -151,6 +152,19 @@ export default function AppsPage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const show = (m: string) => { setToast(m); if (toastTimer.current) clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2400); };
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  // Seed the catalog with the firm's REAL connection status. Null = not signed in, so the
+  // mockup's catalog defaults render untouched (signed-out stays 1:1). Only OAuth/Composio
+  // connectors are reconciled; browser connectors keep their catalog state.
+  useEffect(() => {
+    let cancelled = false;
+    void getConnectedToolkitsAction().then(connected => {
+      if (cancelled || connected === null) return;
+      const MANAGED = ["gmail", "qbo", "gcal", "outlook", "xero", "dropbox", "onedrive"];
+      const set = new Set(connected);
+      for (const id of MANAGED) { if (set.has(id)) connectionStore.connect(id); else connectionStore.disconnect(id); }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => {
     if (!sortOpen) return;
     const onDown = (e: MouseEvent) => { if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false); };
