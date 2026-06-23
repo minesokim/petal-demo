@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
-import { intakeLinks } from "../db/schema";
+import { intakeLinks, intakeSessions } from "../db/schema";
+import { encryptPII, decryptPII } from "../crypto/envelope";
 import { writeAudit } from "./audit";
 import type { Db, Ctx } from "./types";
 
@@ -51,4 +52,49 @@ export async function resolveLinkByToken(serviceDb: Db, token: string) {
     .where(eq(intakeLinks.token, token))
     .limit(1);
   return row ?? null;
+}
+
+// ── ⑧ intake_sessions (prospect-side via service db; PII envelope-encrypted) ─────────
+
+// Create-or-get the single session for an invite. Service db (prospect is unauthenticated;
+// the held invite token resolved it). No PII yet — just the shell.
+export async function startSession(serviceDb: Db, intakeLinkId: string, firmId: string) {
+  const [existing] = await serviceDb.select().from(intakeSessions).where(eq(intakeSessions.intakeLinkId, intakeLinkId)).limit(1);
+  if (existing) return existing;
+  const [row] = await serviceDb.insert(intakeSessions).values({ intakeLinkId, firmId }).returning();
+  return row;
+}
+
+export async function markEmailVerified(serviceDb: Db, sessionId: string) {
+  await serviceDb.update(intakeSessions).set({ emailVerified: true, updatedAt: new Date() }).where(eq(intakeSessions.id, sessionId));
+}
+
+// Persist intake answers — REFUSES until OTP-verified, and stores them envelope-encrypted
+// (the whole answers JSON is PII). Plaintext never lands in a column.
+export async function saveAnswers(serviceDb: Db, sessionId: string, answers: unknown) {
+  const [s] = await serviceDb.select({ verified: intakeSessions.emailVerified }).from(intakeSessions).where(eq(intakeSessions.id, sessionId)).limit(1);
+  if (!s) throw new Error("intake session not found");
+  if (!s.verified) throw new Error("email not verified — refusing to store intake PII");
+  await serviceDb.update(intakeSessions).set({ answersCiphertext: encryptPII(JSON.stringify(answers)), updatedAt: new Date() }).where(eq(intakeSessions.id, sessionId));
+}
+
+export async function getAnswers(db: Db, sessionId: string): Promise<unknown | null> {
+  const [s] = await db.select({ ct: intakeSessions.answersCiphertext }).from(intakeSessions).where(eq(intakeSessions.id, sessionId)).limit(1);
+  if (!s?.ct) return null;
+  return JSON.parse(decryptPII(s.ct));
+}
+
+export async function setSessionStep(serviceDb: Db, sessionId: string, step: string) {
+  await serviceDb.update(intakeSessions).set({ currentStep: step, updatedAt: new Date() }).where(eq(intakeSessions.id, sessionId));
+}
+
+export async function setDeposit(serviceDb: Db, sessionId: string, status: string, depositSessionId?: string) {
+  await serviceDb.update(intakeSessions).set({ depositStatus: status, depositSessionId, updatedAt: new Date() }).where(eq(intakeSessions.id, sessionId));
+}
+
+// Preparer side (firm-RLS) — session metadata only, never the decrypted answers.
+export async function listIntakeSessions(db: Db) {
+  return db
+    .select({ id: intakeSessions.id, intakeLinkId: intakeSessions.intakeLinkId, currentStep: intakeSessions.currentStep, emailVerified: intakeSessions.emailVerified, depositStatus: intakeSessions.depositStatus })
+    .from(intakeSessions);
 }

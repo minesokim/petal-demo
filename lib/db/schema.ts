@@ -309,6 +309,23 @@ export const intakeLinks = pgTable("intake_links", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ⑧ Portal — the prospect's intake progress + answers. One per invite. answersCiphertext
+// holds the full intake answers JSON envelope-ENCRYPTED (AES-256-GCM via lib/crypto) — it
+// is PII (names, income, dependents), so it never sits in plaintext. emailVerified gates
+// any write (set true only after OTP). deposit* tracks the ⑦ Stripe checkout.
+export const intakeSessions = pgTable("intake_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  intakeLinkId: uuid("intake_link_id").notNull().references(() => intakeLinks.id, { onDelete: "cascade" }),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  currentStep: text("current_step").notNull().default("welcome"),
+  answersCiphertext: text("answers_ciphertext"), // envelope-encrypted intake answers JSON
+  depositStatus: text("deposit_status").notNull().default("unpaid"), // unpaid | session_created | paid
+  depositSessionId: text("deposit_session_id"), // Stripe checkout session id
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("intake_sessions_link_uq").on(t.intakeLinkId)]);
+
 // ④ AI quarantine — every AI output lands here as pending_review and NEVER touches
 // a production table until a human promotes it. Non-negotiable safety boundary.
 export const aiSuggestions = pgTable("ai_suggestions", {
