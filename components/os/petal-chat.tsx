@@ -114,6 +114,45 @@ export function usePetalChat(scopeHouseholdId?: string) {
       });
   }, [scopeHouseholdId, persist]);
 
+  // Analyze a dropped/attached document. POSTs the file to /api/ask/analyze, which
+  // gates the model call on §7216 (assertCleared) — so this returns either the real
+  // analysis (summary) or the honest gated message. Persists the turn like send().
+  const analyze = useCallback((file: File) => {
+    const label = `Analyze ${file.name}`;
+    const userId = ++msgSeq;
+    const thinkingId = ++msgSeq;
+    setMessages(m => [
+      ...m,
+      { id: userId, role: "user", text: label, attachments: [file.name] },
+      { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true },
+    ]);
+    if (!threadRef.current) {
+      threadRef.current = createThreadAction(label.slice(0, 60)).then(r => r?.id ?? null);
+    }
+    persist("user", label);
+
+    const settle = (answer: ChatAnswer, replyForHistory?: string) => {
+      if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
+      setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
+    };
+
+    const fd = new FormData();
+    fd.set("file", file);
+    fetch("/api/ask/analyze", { method: "POST", body: fd })
+      .then(async res => {
+        const data = (await res.json().catch(() => ({}))) as { summary?: string; message?: string };
+        const reply = (data.summary ?? data.message ?? "").trim();
+        if (!reply) throw new Error("empty");
+        settle(answerFromReply(reply), reply);
+        persist("assistant", reply);
+      })
+      .catch(() => {
+        const msg = "I couldn't read that file just now. Please attach a PDF or image under 25 MB and try again.";
+        settle(answerFromReply(msg));
+        persist("assistant", msg);
+      });
+  }, [persist]);
+
   const reset = useCallback(() => {
     historyRef.current = [];
     threadRef.current = null;
@@ -137,7 +176,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     );
   }, []);
 
-  return { messages, send, reset, openThread };
+  return { messages, send, reset, openThread, analyze };
 }
 
 const prefersReduced = () =>

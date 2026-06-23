@@ -22,8 +22,9 @@ import { SkillPetal } from "@/components/os/primitives";
 import { Tip } from "@/components/os/tooltip";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
-function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean }) {
+function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void }) {
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <div className="rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
       <textarea
@@ -36,7 +37,8 @@ function Composer({ value, onChange, onSubmit, autoFocus, big }: { value: string
         className={cn("max-h-40 w-full resize-none bg-transparent leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none", big ? "text-[15px]" : "text-[14px]")}
       />
       <div className="mt-2.5 flex items-center gap-1.5">
-        <Tip label="Attach files" side="top"><button aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button></Tip>
+        <Tip label="Attach files" side="top"><button type="button" onClick={() => fileRef.current?.click()} aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button></Tip>
+        <input ref={fileRef} type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onAttach?.(f); e.target.value = ""; }} />
         {/* Skills picker */}
         <div className="relative">
           <button
@@ -117,8 +119,15 @@ function AskPetalInner() {
   const params = useSearchParams();
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
   const [scopeOpen, setScopeOpen] = useState(false);
-  const { messages, send, reset, openThread } = usePetalChat(scopeId);
+  const { messages, send, reset, openThread, analyze } = usePetalChat(scopeId);
   useConnections(); // re-render the grounding rail when a source is (dis)connected
+  const [dragOver, setDragOver] = useState(false);
+  const onDropFile = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) analyze(f);
+  };
   const scopeLabel = scopeId ? householdById(scopeId)?.name ?? "All clients" : "All clients";
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -197,7 +206,17 @@ function AskPetalInner() {
 
       <div className="flex min-h-0 flex-1">
         {/* Conversation column */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className="relative flex min-w-0 flex-1 flex-col"
+          onDragOver={e => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+          onDragLeave={e => { if (e.currentTarget === e.target) setDragOver(false); }}
+          onDrop={onDropFile}
+        >
+          {dragOver && (
+            <div className="pointer-events-none absolute inset-0 z-30 m-3 grid place-items-center rounded-xl border-2 border-dashed border-[var(--os-accent)] bg-[var(--os-accent)]/[0.05]">
+              <span className="rounded-full bg-[var(--os-primary)] px-3.5 py-1.5 text-[12.5px] font-medium text-[var(--os-primary-fg)] shadow-[0_10px_34px_rgba(17,17,26,0.25)]">Drop a document for Petal to analyze</span>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto">
             {hasConvo ? (
               <div className="mx-auto max-w-[720px] space-y-6 px-6 py-6">
@@ -228,7 +247,7 @@ function AskPetalInner() {
                 </div>
 
                 <div className="mt-7">
-                  <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus big />
+                  <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus big onAttach={analyze} />
                 </div>
               </div>
             )}
@@ -238,7 +257,7 @@ function AskPetalInner() {
           {hasConvo && (
           <div className="px-6 pb-5 pt-2">
             <div className="mx-auto max-w-[720px]">
-              <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus />
+              <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus onAttach={analyze} />
               <p className="mt-1.5 text-center text-[11px] text-[var(--os-ink-subtle)]">Petal answers only from sources it can cite. Output never touches a record until you approve it.</p>
             </div>
           </div>
