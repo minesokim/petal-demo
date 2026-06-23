@@ -13,8 +13,9 @@ import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { Button } from "@/components/os/primitives";
 import {
-  brief, briefToneDot, briefDeskMeta, BRIEF_DESK_ORDER, type BriefItem,
+  briefToneDot, briefDeskMeta, BRIEF_DESK_ORDER, type BriefItem,
 } from "@/lib/fixtures/firm";
+import { useBrief } from "@/lib/client/brief-context";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -77,6 +78,7 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
 }
 
 export function TodayBrief() {
+  const brief = useBrief();
   const [openId, setOpenId] = useState<string | null>(null);
   const desks = BRIEF_DESK_ORDER
     .map(d => ({ desk: d, items: brief.filter(b => b.desk === d) }))

@@ -4,13 +4,19 @@
 // browser over the firm's credentials, compliance docs, templates, tax reference,
 // admin records, and SOPs. Client tax documents live on each client's record.
 
-import { useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Folder, FolderPlus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { FileGlyph } from "@/components/os/primitives";
 import { type FileKind, type FirmFile, type FlatFile } from "@/lib/fixtures/firm-files";
 import { type FirmDocsData } from "@/lib/server/fixture-data";
+import { uploadDocumentAction, createFolderAction, downloadFileAction } from "@/app/os/documents/actions";
+
+// Behavior-only wiring: nested file rows/cards open a file via this handler
+// (resolves a signed URL server-side, then window.open). No JSX/style changes.
+const FileActionsContext = createContext<{ openFile: (id: string) => void }>({ openFile: () => {} });
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 type View = "all" | "starred" | string; // string = folderId
@@ -22,8 +28,9 @@ function KindTile({ kind, size = 32 }: { kind: FileKind; size?: number }) {
 }
 
 function FileRow({ f, showFolder }: { f: FirmFile & { folderName?: string }; showFolder?: boolean }) {
+  const { openFile } = useContext(FileActionsContext);
   return (
-    <div className={cn("group/file flex cursor-default items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--os-hover)]")}>
+    <div onClick={() => openFile(f.id)} className={cn("group/file flex cursor-default items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--os-hover)]")}>
       <KindTile kind={f.kind} size={30} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -35,7 +42,7 @@ function FileRow({ f, showFolder }: { f: FirmFile & { folderName?: string }; sho
         </div>
       </div>
       <span className="hidden w-16 shrink-0 text-right text-[11px] tabular-nums text-[var(--os-ink-subtle)] sm:block">{f.size}</span>
-      <button aria-label="More" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] opacity-0 transition-all hover:bg-[var(--os-selected)] hover:text-[var(--os-ink)] group-hover/file:opacity-100", FOCUS)}>
+      <button onClick={(e) => e.stopPropagation()} aria-label="More" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] opacity-0 transition-all hover:bg-[var(--os-selected)] hover:text-[var(--os-ink)] group-hover/file:opacity-100", FOCUS)}>
         <Icon icon={I.more} size={15} />
       </button>
     </div>
@@ -43,8 +50,9 @@ function FileRow({ f, showFolder }: { f: FirmFile & { folderName?: string }; sho
 }
 
 function FileCard({ f }: { f: FirmFile }) {
+  const { openFile } = useContext(FileActionsContext);
   return (
-    <div className="group/file flex cursor-default flex-col rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-3 transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
+    <div onClick={() => openFile(f.id)} className="group/file flex cursor-default flex-col rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] p-3 transition-colors hover:border-[var(--os-border-strong)] hover:bg-[var(--os-hover)]">
       <div className="flex items-start justify-between">
         <KindTile kind={f.kind} size={40} />
         {f.starred && <Icon icon={I.star} size={13} className="text-amber-500" />}
@@ -71,12 +79,40 @@ function FilesView({ files, layout, showFolder }: { files: (FirmFile & { folderN
 }
 
 export function DocumentsView({ firmFolders, recentFirmFiles, starredFirmFiles, allFirmFiles, firmFileCount }: FirmDocsData) {
+  const router = useRouter();
   const [view, setView] = useState<View>("all");
   const [layout, setLayout] = useState<Layout>("list");
   const [query, setQuery] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const folder = view !== "all" && view !== "starred" ? firmFolders.find(f => f.id === view) : undefined;
   const q = query.trim().toLowerCase();
+
+  // ── behavior wiring (no JSX/style changes) ──
+  // Upload: hidden <input type=file multiple>, ref-clicked by the existing button.
+  // Each file → FormData (with current folder, if any) → server action → refresh.
+  async function handleFilesPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same file
+    if (files.length === 0) return;
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      if (folder) fd.append("folderId", folder.id);
+      await uploadDocumentAction(fd);
+    }
+    router.refresh();
+  }
+  async function handleNewFolder() {
+    const name = window.prompt("New folder name");
+    if (!name || !name.trim()) return;
+    await createFolderAction(name.trim());
+    router.refresh();
+  }
+  async function openFile(id: string) {
+    const res = await downloadFileAction(id);
+    if (res?.url) window.open(res.url, "_blank", "noopener,noreferrer");
+  }
 
   const searchResults = useMemo(
     () => (q ? allFirmFiles.filter(f => f.name.toLowerCase().includes(q) || f.folderName.toLowerCase().includes(q)) : []),
@@ -91,7 +127,10 @@ export function DocumentsView({ firmFolders, recentFirmFiles, starredFirmFiles, 
   const crumb = q ? `Search · "${query}"` : folder ? folder.name : view === "starred" ? "Starred" : "All files";
 
   return (
+    <FileActionsContext.Provider value={{ openFile }}>
     <div className="flex h-full flex-col">
+      {/* hidden file input — ref-clicked by the Upload button */}
+      <input ref={fileInputRef} type="file" multiple onChange={handleFilesPicked} className="sr-only" aria-hidden="true" tabIndex={-1} />
       {/* header */}
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--os-border)] px-8 pb-5 pt-6">
         <div>
@@ -99,10 +138,10 @@ export function DocumentsView({ firmFolders, recentFirmFiles, starredFirmFiles, 
           <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">Your firm's files - credentials, templates, policies, and tax reference.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
+          <button onClick={handleNewFolder} className={cn("flex h-8 items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2.5 text-[13px] font-medium text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)]", FOCUS)}>
             <FolderPlus className="size-[15px] text-[var(--os-ink-muted)]" /> New folder
           </button>
-          <button className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>
+          <button onClick={() => fileInputRef.current?.click()} className={cn("flex h-8 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-3 text-[13px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97]", FOCUS)}>
             <Upload className="size-[15px]" /> Upload
           </button>
         </div>
@@ -237,5 +276,6 @@ export function DocumentsView({ firmFolders, recentFirmFiles, starredFirmFiles, 
         </div>
       </div>
     </div>
+    </FileActionsContext.Provider>
   );
 }

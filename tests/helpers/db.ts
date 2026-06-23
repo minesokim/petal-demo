@@ -9,7 +9,11 @@ export async function makeTestDb(): Promise<PGlite> {
   const dir = path.join(process.cwd(), "supabase/migrations");
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
   for (const f of files) {
-    await db.exec(readFileSync(path.join(dir, f), "utf8"));
+    const sql = readFileSync(path.join(dir, f), "utf8");
+    // Skip Supabase-managed `storage` schema migrations — PGlite has no storage schema
+    // (Storage is verified against the cloud, not in these app-RLS tests).
+    if (/\bstorage\.(buckets|objects)\b/.test(sql)) continue;
+    await db.exec(sql);
   }
   return db;
 }
