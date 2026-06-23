@@ -3,16 +3,18 @@
 -- at runtime or by our tenant connection. Kept in `public` so we never touch
 -- Supabase's managed `auth` schema.
 
-create or replace function public.current_firm_id() returns uuid language sql stable as $$
+-- search_path pinned to '' (only pg_catalog resolves) so a hostile schema can't
+-- shadow what these RLS helpers reference. They use only built-ins.
+create or replace function public.current_firm_id() returns uuid language sql stable set search_path = '' as $$
   select nullif((nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'firm_id'), '')::uuid
 $$;
-create or replace function public.current_role_claim() returns text language sql stable as $$
+create or replace function public.current_role_claim() returns text language sql stable set search_path = '' as $$
   select nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'
 $$;
-create or replace function public.current_user_type() returns text language sql stable as $$
+create or replace function public.current_user_type() returns text language sql stable set search_path = '' as $$
   select nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'user_type'
 $$;
-create or replace function public.current_client_id() returns uuid language sql stable as $$
+create or replace function public.current_client_id() returns uuid language sql stable set search_path = '' as $$
   select nullif((nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'client_id'), '')::uuid
 $$;
 
