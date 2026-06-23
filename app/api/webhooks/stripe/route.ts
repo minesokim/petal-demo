@@ -16,10 +16,16 @@ export async function POST(req: Request) {
 
   switch (event.type) {
     case "checkout.session.completed": {
-      // Payment captured. Invoice state is derived from engagement stages today, so
-      // recording a settled payment needs a dedicated payments table (follow-up
-      // migration) keyed by metadata.firmId/householdId — kept out of this slice to
-      // avoid guessing the reconciliation model. Acknowledge idempotently for now.
+      const session = event.data.object as { id: string; metadata?: Record<string, string> | null };
+      const meta = session.metadata ?? {};
+      // ⑧ portal deposit → mark the intake session paid (idempotent). Identity comes from
+      // the verified-signature event metadata, not a request the client controls.
+      if (meta.kind === "deposit" && meta.sessionId) {
+        const { getServiceDb } = await import("@/lib/db/client");
+        const { setDeposit } = await import("@/lib/repository/intake");
+        await setDeposit(getServiceDb() as never, meta.sessionId, "paid", session.id);
+      }
+      // (Engagement-balance invoices reconcile via a dedicated payments table — follow-up.)
       break;
     }
     default:
