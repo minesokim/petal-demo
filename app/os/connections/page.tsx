@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Icon } from "@/components/os/icon";
 import { browserHealthMeta, type Integration } from "@/lib/os-integrations";
 import { connectionStore, useConnections } from "@/lib/connection-store";
-import { connectAppAction, getConnectedToolkitsAction } from "./actions";
+import { connectAppAction, getConnectedToolkitsAction, syncConnectionsAction } from "./actions";
 import { Search, Plus, Check, ChevronDown, ArrowDownUp, X, Puzzle } from "lucide-react";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -72,7 +72,7 @@ function AppCard({ i, onToast, onBrowserConnect }: { i: Integration; onToast: (m
       ) : connected ? (
         <span className="grid size-7 shrink-0 place-items-center text-[var(--os-success)]" title="Connected" aria-label="Connected"><Check className="size-4" /></span>
       ) : (
-        <button onClick={() => { if (browser) onBrowserConnect(i); else { void connectAppAction(i.id).then(r => { if ("redirectUrl" in r && r.redirectUrl) window.location.href = r.redirectUrl; else onToast("error" in r ? r.error : `Connecting ${i.name}…`); }); } }} aria-label={`Connect ${i.name}`}
+        <button onClick={() => { if (browser) onBrowserConnect(i); else { onToast(`Opening ${i.name} authorization…`); void connectAppAction(i.id).then(r => { if ("redirectUrl" in r && r.redirectUrl) window.open(r.redirectUrl, "_blank", "noopener,noreferrer"); else onToast("error" in r ? r.error : `Couldn't start ${i.name} connection`); }); } }} aria-label={`Connect ${i.name}`}
           className={cn("grid size-7 shrink-0 place-items-center rounded-full border border-[var(--os-border)] bg-[var(--os-surface)] text-[var(--os-ink-muted)] transition-colors hover:border-[var(--os-border-strong)] hover:text-[var(--os-ink)]", FOCUS)}>
           <Plus className="size-3.5" />
         </button>
@@ -157,13 +157,19 @@ export default function AppsPage() {
   // connectors are reconciled; browser connectors keep their catalog state.
   useEffect(() => {
     let cancelled = false;
-    void getConnectedToolkitsAction().then(connected => {
-      if (cancelled || connected === null) return;
+    const reconcile = (connected: string[] | null) => {
+      if (cancelled || connected === null) return; // not signed in → keep catalog defaults (mockup 1:1)
       const MANAGED = ["gmail", "qbo", "gcal", "outlook", "xero", "dropbox", "onedrive"];
       const set = new Set(connected);
       for (const id of MANAGED) { if (set.has(id)) connectionStore.connect(id); else connectionStore.disconnect(id); }
-    }).catch(() => {});
-    return () => { cancelled = true; };
+    };
+    // Poll Composio for any pending authorizations, then reflect real connected state.
+    const refresh = () => { void syncConnectionsAction().catch(() => {}).then(() => getConnectedToolkitsAction()).then(reconcile).catch(() => {}); };
+    refresh();
+    // When you come back from the authorize tab, re-check so the checkmark appears.
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    return () => { cancelled = true; window.removeEventListener("focus", onFocus); };
   }, []);
   useEffect(() => {
     if (!sortOpen) return;

@@ -389,7 +389,7 @@ export function AgentsView() {
     agents.map((a, i) => ({ id: a.id, name: a.name, role: a.role, blurb: a.blurb, iconKey: iconKeyOf(a.icon), hue: AGENT_HUE_INIT[a.id] ?? HUE_KEYS[i % HUE_KEYS.length], on: a.on, drafted: a.drafted, approved: a.approved })),
   );
   const [capList, setCapList] = useState<LocalCap[]>(() => skills.map(s => ({ ...s, agentId: agentForSkill(s.id)?.id ?? null })));
-  const [selected, setSelected] = useState<string>(skills[0].id);
+  const [selected, setSelected] = useState<string>(skills[0]?.id ?? "");
   const [promoted, setPromoted] = useState<Record<string, boolean>>({});
   const [dismissed, setDismissed] = useState<Record<string, boolean>>({});
   const [draft, setDraft] = useState<LocalCap | null>(null);

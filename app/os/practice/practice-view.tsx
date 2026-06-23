@@ -84,7 +84,7 @@ function ReportCard({ title, source, foot, children }: { title: string; source: 
 export function PracticeView() {
   const { households, engagements } = useFirmData();
   const { activeEngagements, feesBooked, feesBlockedByDocs, stageCounts, healthCounts, invoiceOf, docsOf } = useDerive();
-  const TAX_YEAR = engagements[0].taxYear;
+  const TAX_YEAR = engagements[0]?.taxYear ?? 2025;
   const open = activeEngagements();
   const blockedCount = open.filter(e => docsOf(e.id).requested > 0).length;
 

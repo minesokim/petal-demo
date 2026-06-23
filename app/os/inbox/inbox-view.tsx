@@ -135,7 +135,7 @@ export function InboxView() {
   const f = inboxFilters.find(x => x.key === filter)!;
   const scopeOk = (t: Thread) => scope === "firm" || assigneeOf(t.householdId) === CURRENT_USER_ID;
   const list = threads.filter(t => f.test(t) && scopeOk(t) && (channel === "all" || t.channel === channel));
-  const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open")?.id ?? threads[0].id);
+  const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open")?.id ?? threads[0]?.id ?? "");
   const thread = list.find(t => t.id === selected) || list[0];
 
   const counts = inboxFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(t => x.test(t) && scopeOk(t)).length; return a; }, {});
