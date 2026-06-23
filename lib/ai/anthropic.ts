@@ -19,7 +19,7 @@ export class AnthropicProvider implements AIProvider {
     const res = await this.client.messages.create({
       model,
       max_tokens: args.maxTokens ?? 1024,
-      system: args.system,
+      system: redactText(args.system),
       messages: [{ role: "user", content: redactText(args.prompt) }],
       tools: [{ name: "emit", description: "Return the structured result.", input_schema: inputSchema as never }],
       tool_choice: { type: "tool", name: "emit" },

@@ -7,6 +7,13 @@ describe("redact — data minimization before the model", () => {
     expect(redactText("123456789")).toBe("[REDACTED-SSN]");
   });
 
+  it("masks EIN, credit-card, and long account numbers in free text", () => {
+    expect(redactText("EIN 12-3456789 filed")).toBe("EIN [REDACTED-NUM] filed");
+    expect(redactText("card 4111-1111-1111-1111")).toBe("card [REDACTED-NUM]");
+    expect(redactText("acct 4111111111111111 on file")).toBe("acct [REDACTED-NUM] on file");
+    expect(redactText("amount 58,000 this year")).toBe("amount 58,000 this year"); // no false positive
+  });
+
   it("redacts crown-jewel keys and recurses into nested objects/arrays", () => {
     const out = redactObject({
       name: "Mia",
