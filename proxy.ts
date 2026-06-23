@@ -9,7 +9,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export const proxy = clerkMiddleware(async (auth, request: NextRequest) => {
   const { pathname } = new URL(request.url);
   if (pathname === "/" || pathname === "/dashboard") {
-    return NextResponse.redirect(new URL("/dashboard/default", request.url));
+    return NextResponse.redirect(new URL("/os", request.url));
   }
   if (process.env.NODE_ENV === "production" && (pathname.startsWith("/os") || pathname.startsWith("/portal"))) {
     const { userId } = await auth();
