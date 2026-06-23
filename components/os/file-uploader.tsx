@@ -4,7 +4,7 @@
 // Demo-interactive: choosing or dropping files adds cards that animate a simulated
 // upload to 100%. Each finished file is draggable (e.g. onto the Ask Petal rail).
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload, X, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FileGlyph } from "@/components/os/primitives";
@@ -32,11 +32,21 @@ export function FileUploader({
   hint = "PDF, PNG, JPG or XLSX, up to 50 MB",
   onDragFileStart,
   seed = [],
+  onUpload,
+  loadInitial,
+  onRemove,
 }: {
   hint?: string;
   /** called when a finished file starts being dragged (e.g. to set drag data) */
   onDragFileStart?: (e: React.DragEvent, name: string) => void;
   seed?: { name: string; mb: number }[];
+  /** real persistence: resolve truthy when the blob is stored. If omitted, the
+   *  zone is demo-only (simulated progress, nothing persisted). */
+  onUpload?: (file: File) => Promise<{ id: string } | null>;
+  /** hydrate already-persisted files on mount so they survive a reload. */
+  loadInitial?: () => Promise<{ id: string; name: string; mb: number }[]>;
+  /** delete a persisted file (Storage + DB) when its card is removed. */
+  onRemove?: (id: string) => Promise<unknown>;
 }) {
   const [files, setFiles] = useState<UF[]>(() =>
     seed.map((s, i) => ({ id: `seed-${i}`, name: s.name, mb: s.mb, status: "done" as const, progress: 100 })),
@@ -44,7 +54,26 @@ export function FileUploader({
   const [over, setOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+  const pending = useRef<Record<string, File>>({}); // id → File, for real upload + retry
 
+  // Hydrate persisted files (newest first) so the zone reflects reality on load.
+  useEffect(() => {
+    if (!loadInitial) return;
+    let active = true;
+    loadInitial()
+      .then(list => {
+        if (!active || !list?.length) return;
+        setFiles(prev => [
+          ...list.map(x => ({ id: x.id, name: x.name, mb: x.mb, status: "done" as const, progress: 100 })),
+          ...prev,
+        ]);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Demo path: animate a fake upload to 100% (used when onUpload is not provided).
   function simulate(id: string) {
     if (timers.current[id]) clearInterval(timers.current[id]);
     timers.current[id] = setInterval(() => {
@@ -57,8 +86,32 @@ export function FileUploader({
     }, 280);
   }
 
+  // Real path: creep the ring upward (capped) while the upload is in flight; the
+  // server resolution flips the card to done (or error).
+  function creep(id: string) {
+    if (timers.current[id]) clearInterval(timers.current[id]);
+    timers.current[id] = setInterval(() => {
+      setFiles(prev => prev.map(f =>
+        f.id === id && f.status === "uploading" ? { ...f, progress: Math.min(90, f.progress + 9) } : f,
+      ));
+    }, 240);
+  }
+  function settle(id: string, ok: boolean, realId?: string) {
+    if (timers.current[id]) clearInterval(timers.current[id]);
+    setFiles(prev => prev.map(f =>
+      f.id === id ? { ...f, id: realId ?? f.id, progress: 100, status: ok ? "done" : "error" } : f,
+    ));
+  }
+  function startUpload(id: string, file: File) {
+    creep(id);
+    onUpload!(file)
+      .then(res => settle(id, !!res, res?.id)) // adopt the server id so a later delete hits the real row
+      .catch(() => settle(id, false));
+  }
+
   function add(list: FileList | File[]) {
-    const incoming: UF[] = Array.from(list).map((file, i) => ({
+    const arr = Array.from(list);
+    const incoming: UF[] = arr.map((file, i) => ({
       id: `f-${Date.now()}-${i}-${Math.round(Math.random() * 1e4)}`,
       name: file.name,
       mb: file.size / 1e6 || 1 + Math.random() * 12,
@@ -66,11 +119,25 @@ export function FileUploader({
       progress: 0,
     }));
     setFiles(prev => [...incoming, ...prev]);
-    incoming.forEach(f => simulate(f.id));
+    if (onUpload) {
+      incoming.forEach((f, i) => { pending.current[f.id] = arr[i]; startUpload(f.id, arr[i]); });
+    } else {
+      incoming.forEach(f => simulate(f.id));
+    }
   }
 
-  const remove = (id: string) => { if (timers.current[id]) clearInterval(timers.current[id]); setFiles(prev => prev.filter(f => f.id !== id)); };
-  const retry = (id: string) => { setFiles(prev => prev.map(f => (f.id === id ? { ...f, status: "uploading", progress: 0 } : f))); simulate(id); };
+  const remove = (id: string) => {
+    if (timers.current[id]) clearInterval(timers.current[id]);
+    if (onRemove) onRemove(id).catch(() => {});
+    delete pending.current[id];
+    setFiles(prev => prev.filter(f => f.id !== id));
+  };
+  const retry = (id: string) => {
+    setFiles(prev => prev.map(f => (f.id === id ? { ...f, status: "uploading", progress: 0 } : f)));
+    const file = pending.current[id];
+    if (onUpload && file) startUpload(id, file);
+    else simulate(id);
+  };
 
   return (
     <div className="space-y-2.5">

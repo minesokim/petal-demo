@@ -8,8 +8,10 @@ import {
   createFolder,
   ensureUploadsFolder,
   fileStoragePath,
+  filesOfHousehold,
+  removeFile,
 } from "@/lib/repository/documents";
-import { uploadFirmFile, signedUrlForFirmFile } from "@/lib/storage/firm-files";
+import { uploadFirmFile, signedUrlForFirmFile, removeFirmFile } from "@/lib/storage/firm-files";
 
 // Document write-path. requestDocumentsAction records a real, audited request for
 // each selected expected-doc: setDocStatus(id, "requested") runs RLS-scoped and
@@ -46,6 +48,8 @@ export async function uploadDocumentAction(
   if (!(file instanceof File) || file.size === 0) return null;
   const folderIdRaw = formData.get("folderId");
   const folderId = typeof folderIdRaw === "string" && folderIdRaw ? folderIdRaw : undefined;
+  const householdRaw = formData.get("householdId");
+  const householdId = typeof householdRaw === "string" && householdRaw ? householdRaw : undefined;
 
   const result = await withFirm(async (db, ctx) => {
     const { storagePath, sizeBytes, mimeType } = await uploadFirmFile(ctx.firmId, file);
@@ -53,14 +57,57 @@ export async function uploadDocumentAction(
     const id = await createFile(db, ctx, {
       name: file.name,
       folderId: targetFolder,
+      householdId,
       storagePath,
       sizeBytes,
       mimeType,
     });
     return { id };
   });
-  if (result) revalidatePath("/os/documents");
+  if (result) {
+    revalidatePath("/os/documents");
+    if (householdId) revalidatePath(`/os/clients/${householdId}`);
+  }
   return result;
+}
+
+// ── client-page document library: persisted upload zone backing the client tab ──
+
+// "1.2 MB" / "180 KB" / "512 B" → an MB number for the uploader's size display.
+function sizeToMb(size: string | null): number {
+  if (!size) return 0;
+  const m = size.match(/([\d.]+)\s*(KB|MB|GB|B)/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  const unit = m[2].toUpperCase();
+  return unit === "GB" ? n * 1024 : unit === "MB" ? n : unit === "KB" ? n / 1024 : n / 1e6;
+}
+
+// The client's already-uploaded files (so the upload zone re-hydrates on load
+// instead of looking empty / losing files). RLS-scoped to the firm + household.
+export async function listClientFilesAction(
+  householdId: string,
+): Promise<{ id: string; name: string; mb: number }[]> {
+  if (!householdId) return [];
+  const rows = await withFirm((db) => filesOfHousehold(db, householdId));
+  return (rows ?? [])
+    .slice()
+    .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
+    .map((r) => ({ id: r.id, name: r.name, mb: sizeToMb(r.size) }));
+}
+
+// Delete one of the client's files: remove the DB row (audited) AND the Storage
+// blob. RLS-scoped — a firm can only delete its own files.
+export async function deleteClientFileAction(
+  fileId: string,
+  householdId?: string,
+): Promise<{ ok: boolean }> {
+  if (!fileId) return { ok: false };
+  const path = await withFirm((db, ctx) => removeFile(db, ctx, fileId));
+  if (path) await removeFirmFile(path).catch(() => {});
+  revalidatePath("/os/documents");
+  if (householdId) revalidatePath(`/os/clients/${householdId}`);
+  return { ok: path !== null };
 }
 
 // Create a new (empty) firm folder. RLS-scoped + audited. Returns the new id.

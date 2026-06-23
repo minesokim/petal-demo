@@ -25,6 +25,7 @@ import { NotesThread } from "@/components/os/notes-thread";
 import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
+import { uploadDocumentAction, listClientFilesAction, deleteClientFileAction } from "@/app/os/documents/actions";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import {
@@ -495,7 +496,7 @@ function ClientRecordInner({ id }: { id: string }) {
                   {docs.requested > 0 ? ` - ${docs.requested} still to send` : " - all set"}
                 </p>
                 <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
-                  <div className="h-full rounded-full bg-[var(--os-ink)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
+                  <div className="h-full rounded-full bg-[var(--os-ink)]" style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 0}%` }} />
                 </div>
               </section>
 
@@ -630,7 +631,7 @@ function ClientRecordInner({ id }: { id: string }) {
               <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
                 {/* ── Overview ── Linear project-panel cards ── */}
                 {tab === "Overview" && (() => {
-                  const docsPct = docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100;
+                  const docsPct = docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 0;
                   const filed = engs.filter(e => e.stage === "e_filed" || e.stage === "accepted").length;
                   const inProg = engs.length - filed;
                   const blocked = engs.filter(e => e.blockedBy).length;
@@ -872,6 +873,14 @@ function ClientRecordInner({ id }: { id: string }) {
                       <FileUploader
                         hint="PDF, PNG, JPG, XLSX or DOCX, up to 50 MB"
                         onDragFileStart={(e, name) => e.dataTransfer.setData("text/petal-doc", name)}
+                        loadInitial={() => listClientFilesAction(h.id)}
+                        onUpload={(file) => {
+                          const fd = new FormData();
+                          fd.set("file", file);
+                          fd.set("householdId", h.id);
+                          return uploadDocumentAction(fd);
+                        }}
+                        onRemove={(id) => deleteClientFileAction(id, h.id)}
                       />
                       <p className="mt-2 flex items-center gap-1.5 px-0.5 text-[11.5px] text-[var(--os-ink-subtle)]">
                         <PetalMark className="size-3 shrink-0" /> Drag any file onto the Ask Petal panel to have Petal review it.
@@ -1300,7 +1309,7 @@ function ClientRecordInner({ id }: { id: string }) {
                     <>
                       <div className="mb-1 flex items-center gap-2 px-0.5">
                         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--os-selected)]">
-                          <div className={cn("h-full rounded-full", docs.inHand >= docs.denom ? "bg-emerald-500" : docs.denom > 0 && docs.inHand / docs.denom >= 0.5 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 100}%` }} />
+                          <div className={cn("h-full rounded-full", docs.inHand >= docs.denom ? "bg-emerald-500" : docs.denom > 0 && docs.inHand / docs.denom >= 0.5 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${docs.denom > 0 ? Math.round((docs.inHand / docs.denom) * 100) : 0}%` }} />
                         </div>
                         <span className="shrink-0 text-[12px] tabular-nums text-[var(--os-ink-muted)]">{docs.label}</span>
                       </div>

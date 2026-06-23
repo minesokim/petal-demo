@@ -96,6 +96,7 @@ export type CreateFileInput = {
   id?: string;
   name: string;
   folderId: string; // firm_files.folder_id is NOT NULL — every file lives in a folder
+  householdId?: string; // the client this file belongs to (null = firm library)
   storagePath: string;
   sizeBytes: number;
   mimeType: string;
@@ -111,6 +112,7 @@ export async function createFile(db: Db, ctx: Ctx, input: CreateFileInput): Prom
     id,
     firmId: ctx.firmId,
     folderId: input.folderId,
+    householdId: input.householdId ?? null,
     name: input.name,
     kind: kindFromFile(input.name, input.mimeType),
     size: humanSize(input.sizeBytes),
@@ -124,8 +126,27 @@ export async function createFile(db: Db, ctx: Ctx, input: CreateFileInput): Prom
   return id;
 }
 
+// A client's uploaded files (newest first) — the persisted backing for the client
+// page's upload zone. RLS scopes to the firm; we further filter to the household.
+export async function filesOfHousehold(db: Db, householdId: string) {
+  return db
+    .select({ id: firmFiles.id, name: firmFiles.name, size: firmFiles.size, ts: firmFiles.ts })
+    .from(firmFiles)
+    .where(eq(firmFiles.householdId, householdId));
+}
+
 // RLS-scoped read of a single file's storage_path (for signed-download resolution).
 export async function fileStoragePath(db: Db, id: string): Promise<string | null> {
   const [r] = await db.select({ storagePath: firmFiles.storagePath }).from(firmFiles).where(eq(firmFiles.id, id));
   return r?.storagePath ?? null;
+}
+
+// Delete a firm file's DB row (RLS-scoped + audited). Returns its storage_path so
+// the caller can remove the blob from Storage too. Null if not found / not ours.
+export async function removeFile(db: Db, ctx: Ctx, id: string): Promise<string | null> {
+  const [r] = await db.select({ storagePath: firmFiles.storagePath }).from(firmFiles).where(eq(firmFiles.id, id));
+  if (!r) return null;
+  await db.delete(firmFiles).where(eq(firmFiles.id, id));
+  await writeAudit(db, ctx, { action: "firm_file.delete", resourceType: "firm_file", resourceId: id });
+  return r.storagePath ?? null;
 }

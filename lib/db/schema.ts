@@ -362,6 +362,7 @@ export const firmFiles = pgTable("firm_files", {
   id: text("id").primaryKey(),
   firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
   folderId: text("folder_id").notNull().references(() => firmFolders.id, { onDelete: "cascade" }),
+  householdId: text("household_id").references(() => households.id, { onDelete: "set null" }), // client this file belongs to (null = firm library)
   name: text("name").notNull(),
   kind: text("kind").notNull(), // pdf | docx | xlsx
   size: text("size"),
