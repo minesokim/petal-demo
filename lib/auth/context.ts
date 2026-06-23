@@ -13,11 +13,10 @@ export async function getFirmContext(): Promise<FirmContext | null> {
     const { userId, orgId, orgRole } = await auth();
     if (!userId) return null;
     if (orgId) return { clerkOrgId: orgId, role: mapClerkRole(orgRole), userId };
-    // Dev/demo only (DEMO_CLERK_ORG unset in production): a signed-in user with no
-    // active org maps to the seeded demo firm, so real data shows without org setup.
-    // RLS isolation is unaffected — it's still keyed on the resolved firm_id.
-    if (process.env.DEMO_CLERK_ORG) return { clerkOrgId: process.env.DEMO_CLERK_ORG, role: "owner", userId };
-    return null;
+    // No active org: give this user their OWN firm (a stable per-user key). The
+    // data layer provisions it empty on first use — real data only, never the
+    // seed fixtures. Real production firms come from Clerk orgs (org path above).
+    return { clerkOrgId: `user_${userId}`, role: "owner", userId };
   } catch {
     return null;
   }

@@ -11,6 +11,23 @@ export async function resolveFirmIdByClerkOrg(db: Db, clerkOrgId: string): Promi
   return row?.id ?? null;
 }
 
+// Resolve the firm for this org, creating it EMPTY on first sign-in (real-data
+// onboarding — never the seed fixtures). The signed-in user becomes its owner.
+export async function ensureFirm(
+  db: Db,
+  clerkOrgId: string,
+  clerkUserId: string,
+  role: Role,
+  name = "My Firm",
+): Promise<string> {
+  const existing = await resolveFirmIdByClerkOrg(db, clerkOrgId);
+  const firmId = existing
+    ?? (await db.insert(firms).values({ clerkOrgId, name }).onConflictDoNothing({ target: firms.clerkOrgId }).returning())[0]?.id
+    ?? (await resolveFirmIdByClerkOrg(db, clerkOrgId))!; // lost an insert race — re-resolve
+  await upsertMemberFromClerk(db, { firmId, clerkUserId, role });
+  return firmId;
+}
+
 export async function upsertFirmFromClerk(db: Db, input: { clerkOrgId: string; name: string }) {
   const [row] = await db
     .insert(firms)
