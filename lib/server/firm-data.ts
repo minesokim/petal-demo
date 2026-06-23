@@ -17,6 +17,10 @@ export async function loadFirmData(): Promise<FirmData> {
     tasks: await repo.listTasks(db),
     notices: await repo.listNotices(db),
     skills: await repo.listSkills(db),
+    positions: await repo.listPositions(db),
+    skillRuns: await repo.listSkillRuns(db),
+    activity: await repo.listActivity(db),
+    threads: await repo.listThreads(db),
   }));
   return (real as FirmData | null) ?? fixtureFirmData();
 }

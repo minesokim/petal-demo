@@ -6,10 +6,13 @@ describe("fixtureFirmData (fallback dataset)", () => {
   it("exposes the full base dataset keyed for the dashboard", () => {
     const d = fixtureFirmData();
     expect(Object.keys(d).sort()).toEqual(
-      ["engagements", "entities", "expectedDocs", "households", "notices", "people", "skills", "tasks"],
+      ["activity", "engagements", "entities", "expectedDocs", "households", "notices", "people",
+       "positions", "skillRuns", "skills", "tasks", "threads"].sort(),
     );
     expect(d.households).toBe(fx.households);
     expect(d.tasks).toBe(fx.tasks);
     expect(d.skills.length).toBe(fx.skills.length);
+    expect(d.activity).toBe(fx.activity);
+    expect(d.threads).toBe(fx.threads);
   });
 });

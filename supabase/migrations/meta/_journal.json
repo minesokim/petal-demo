@@ -29,6 +29,13 @@
       "when": 1782183723173,
       "tag": "0003_documents_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782205861191,
+      "tag": "0004_provenance_schema",
+      "breakpoints": true
     }
   ]
 }

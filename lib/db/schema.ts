@@ -1,6 +1,6 @@
 // ① Identity & tenancy — canonical identity tables. Every tenant table carries
 // firm_id; RLS (0001_rls.sql) enforces firm_id isolation at the database layer.
-import { pgTable, uuid, text, jsonb, boolean, integer, timestamp, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, jsonb, boolean, integer, doublePrecision, timestamp, pgEnum, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const roleEnum = pgEnum("role", ["owner", "admin", "reviewer", "preparer"]);
@@ -198,6 +198,82 @@ export const tasks = pgTable("tasks", {
   noticeId: text("notice_id"),
   origin: text("origin"), // petal | human
   assigneeId: text("assignee_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// The four entities derive.ts also reads (provenance + activity + inbox). Same
+// firm-scoped pattern; text PKs match fixture ids; jsonb for nested sub-objects.
+
+export const positions = pgTable("positions", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  engagementId: text("engagement_id").notNull().references(() => engagements.id, { onDelete: "cascade" }),
+  householdId: text("household_id").notNull().references(() => households.id, { onDelete: "cascade" }),
+  issue: text("issue").notNull(),
+  authorityLevel: text("authority_level"),
+  confidence: doublePrecision("confidence"),
+  documentation: jsonb("documentation"), // string[]
+  status: text("status").notNull(), // open | resolved
+  resolvedBy: text("resolved_by"),
+  resolvedOn: text("resolved_on"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const skillRuns = pgTable("skill_runs", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  skillId: text("skill_id"),
+  householdId: text("household_id").notNull().references(() => households.id, { onDelete: "cascade" }),
+  engagementId: text("engagement_id"),
+  startedAt: text("started_at"),
+  status: text("status").notNull(), // running | done
+  inputs: jsonb("inputs"), // { ref, page? }[]
+  outputs: jsonb("outputs"), // string[]
+  extracted: jsonb("extracted"), // { label, value, confidence, flag? }[]
+  rule: text("rule"),
+  confidence: doublePrecision("confidence"),
+  trustTierAtRun: integer("trust_tier_at_run"),
+  approvedBy: text("approved_by"),
+  approvedAt: text("approved_at"),
+  summary: text("summary"),
+  reasoning: text("reasoning"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const activity = pgTable("activity", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  day: integer("day").notNull(),
+  at: text("at"),
+  kind: text("kind").notNull(),
+  label: text("label").notNull(),
+  actor: text("actor").notNull(), // Petal | Antonio Vazquez
+  householdId: text("household_id").references(() => households.id, { onDelete: "cascade" }),
+  runId: text("run_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const threads = pgTable("threads", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  householdId: text("household_id").notNull().references(() => households.id, { onDelete: "cascade" }),
+  clientName: text("client_name"),
+  channel: text("channel").notNull(), // email | sms | portal | call
+  subject: text("subject"),
+  preview: text("preview"),
+  time: text("time"),
+  unread: boolean("unread").notNull().default(false),
+  status: text("status").notNull(), // open | snoozed | done
+  waitingOnFirmSince: text("waiting_on_firm_since"),
+  messages: jsonb("messages"),
+  petalDraft: jsonb("petal_draft"),
+  extraction: jsonb("extraction"),
+  petalCanAnswer: jsonb("petal_can_answer"),
+  transcript: jsonb("transcript"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

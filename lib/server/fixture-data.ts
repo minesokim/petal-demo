@@ -13,6 +13,10 @@ export type FirmData = {
   tasks: typeof fx.tasks;
   notices: typeof fx.notices;
   skills: typeof fx.skills;
+  positions: typeof fx.positions;
+  skillRuns: typeof fx.skillRuns;
+  activity: typeof fx.activity;
+  threads: typeof fx.threads;
 };
 
 export function fixtureFirmData(): FirmData {
@@ -25,6 +29,10 @@ export function fixtureFirmData(): FirmData {
     tasks: fx.tasks,
     notices: fx.notices,
     skills: fx.skills,
+    positions: fx.positions,
+    skillRuns: fx.skillRuns,
+    activity: fx.activity,
+    threads: fx.threads,
   };
 }
 

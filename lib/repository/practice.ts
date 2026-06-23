@@ -1,5 +1,8 @@
 import { eq } from "drizzle-orm";
-import { households, people, entities, engagements, expectedDocs, notices, tasks, skills } from "../db/schema";
+import {
+  households, people, entities, engagements, expectedDocs, notices, tasks, skills,
+  positions, skillRuns, activity, threads,
+} from "../db/schema";
 import type { Db } from "./types";
 
 // Read selectors mirroring lib/fixtures/firm.ts. Each projects ONLY the fixture
@@ -100,3 +103,33 @@ export async function skillById(db: Db, id: string) {
   const [r] = await db.select(skillCols).from(skills).where(eq(skills.id, id));
   return r;
 }
+
+const positionCols = {
+  id: positions.id, engagementId: positions.engagementId, householdId: positions.householdId,
+  issue: positions.issue, authorityLevel: positions.authorityLevel, confidence: positions.confidence,
+  documentation: positions.documentation, status: positions.status,
+  resolvedBy: positions.resolvedBy, resolvedOn: positions.resolvedOn,
+};
+const skillRunCols = {
+  id: skillRuns.id, skillId: skillRuns.skillId, householdId: skillRuns.householdId,
+  engagementId: skillRuns.engagementId, startedAt: skillRuns.startedAt, status: skillRuns.status,
+  inputs: skillRuns.inputs, outputs: skillRuns.outputs, extracted: skillRuns.extracted, rule: skillRuns.rule,
+  confidence: skillRuns.confidence, trustTierAtRun: skillRuns.trustTierAtRun,
+  approvedBy: skillRuns.approvedBy, approvedAt: skillRuns.approvedAt, summary: skillRuns.summary, reasoning: skillRuns.reasoning,
+};
+const activityCols = {
+  id: activity.id, day: activity.day, at: activity.at, kind: activity.kind,
+  label: activity.label, actor: activity.actor, householdId: activity.householdId, runId: activity.runId,
+};
+const threadCols = {
+  id: threads.id, householdId: threads.householdId, clientName: threads.clientName, channel: threads.channel,
+  subject: threads.subject, preview: threads.preview, time: threads.time, unread: threads.unread,
+  status: threads.status, waitingOnFirmSince: threads.waitingOnFirmSince, messages: threads.messages,
+  petalDraft: threads.petalDraft, extraction: threads.extraction, petalCanAnswer: threads.petalCanAnswer,
+  transcript: threads.transcript,
+};
+
+export async function listPositions(db: Db) { return db.select(positionCols).from(positions); }
+export async function listSkillRuns(db: Db) { return db.select(skillRunCols).from(skillRuns); }
+export async function listActivity(db: Db) { return db.select(activityCols).from(activity); }
+export async function listThreads(db: Db) { return db.select(threadCols).from(threads); }
