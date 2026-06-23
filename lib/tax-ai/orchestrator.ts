@@ -16,6 +16,7 @@ import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import type { Citation, Flag } from "../tax/types";
 import { ComputeRequest, compute, type ComputeResult } from "./compute";
+import { verifyProposal, type ProposalVerdict } from "./verify";
 
 const PROPOSE_SYSTEM = `You route a tax question to the correct deterministic worksheet.
 Given a question and a taxpayer's return facts, choose exactly ONE worksheet and emit its
@@ -33,9 +34,13 @@ export type TaxAnswer = {
   flags: Flag[];
   tier: Tier;
   reviewNotes: string[]; // what the preparer must check before adopting (never auto-filed)
+  verdict?: ProposalVerdict; // the adversarial judge's fidelity verdict, when a judge is supplied
 };
 
-export type AnswerOpts = { taxYear?: number; scope?: DataScope };
+// `judge` is a SEPARATE provider (a different model than `provider`, per the spec) that
+// adversarially checks the proposal's fidelity. Omit it to skip L4 (tier then rests on the
+// deterministic flags alone).
+export type AnswerOpts = { taxYear?: number; scope?: DataScope; judge?: AIProvider };
 
 // L3: the model proposes the request; lib/tax computes. Returns the deterministic result.
 export async function proposeAndCompute(
@@ -54,12 +59,15 @@ export async function proposeAndCompute(
   return compute(object, opts.taxYear ?? 2025);
 }
 
-// L5: derive the confidence tier from the deterministic result's signals.
-//  - a "review" flag (e.g. a bounded estimate pending the exact authority) → cap at medium;
+// L5: derive the confidence tier from the deterministic signals + the adversarial verdict.
+//  - judge says the inputs are NOT faithful (or citations off-point) → "low": the model may
+//    have mis-mapped the facts, so the preparer must scrutinize before adopting;
+//  - a "review" flag (e.g. a bounded estimate pending the exact authority) → "medium";
 //  - a "reject" flag is a determination ("no credit, because …") surfaced for confirmation,
-//    not a low-confidence guess, so it does not lower the tier;
-//  - otherwise → high. The model never sets this.
-function deriveTier(flags: Flag[]): Tier {
+//    not a low-confidence guess, so it does not by itself lower the tier;
+//  - otherwise → "high". The model never sets this.
+function deriveTier(flags: Flag[], verdict?: ProposalVerdict): Tier {
+  if (verdict && (!verdict.faithful || !verdict.citationsOnPoint)) return "low";
   if (flags.some((f) => f.severity === "review")) return "medium";
   return "high";
 }
@@ -73,17 +81,26 @@ export async function answerComputation(
   facts: unknown,
   opts: AnswerOpts = {},
 ): Promise<TaxAnswer> {
-  const { worksheet, taxYear, result } = await proposeAndCompute(provider, question, facts, opts);
-  const reviewNotes = result.flags
-    .filter((f) => f.severity === "review" || f.severity === "reject")
-    .map((f) => f.message);
+  const computed = await proposeAndCompute(provider, question, facts, opts);
+  const { worksheet, taxYear, result } = computed;
+
+  // L4 — adversarial fidelity check by a separate model, when a judge is supplied.
+  const verdict = opts.judge
+    ? await verifyProposal(opts.judge, question, facts, computed, opts.scope ?? "synthetic")
+    : undefined;
+
+  const reviewNotes = [
+    ...result.flags.filter((f) => f.severity === "review" || f.severity === "reject").map((f) => f.message),
+    ...(verdict?.issues ?? []),
+  ];
   return {
     worksheet,
     taxYear,
     value: result.value,
     citations: result.citations,
     flags: result.flags,
-    tier: deriveTier(result.flags),
+    tier: deriveTier(result.flags, verdict),
     reviewNotes,
+    verdict,
   };
 }

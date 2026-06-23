@@ -42,6 +42,46 @@ function answerFromReply(reply: string): ChatAnswer {
   return { paragraphs: paragraphs.length ? paragraphs : [reply.trim()] };
 }
 
+// Conservative tax-computation intent: requires a compute verb AND a named credit/deduction,
+// so ordinary questions stay on the general assistant. Matches route to the defensible engine.
+const COMPUTE_INTENT =
+  /\b(compute|calculate|figure out|work out|how much|what'?s? the)\b[^?]*\b(eitc|earned[- ]income( tax)? credit|child tax credit|\bctc\b|aotc|american opportunity|\bqbi\b|199a|standard deduction)\b/i;
+
+type TaxAnswerWire = {
+  worksheet: string;
+  value: number;
+  taxYear: number;
+  tier: "high" | "medium" | "low" | "abstain";
+  citations: { cite: string }[];
+  reviewNotes: string[];
+};
+
+// Render a deterministic, tiered TaxAnswer in the EXISTING chat-answer shape (no new UI):
+// the computed figure as a metric, the cited authority as sources, the review notes as
+// findings. The number is the engine's (lib/tax) — the chat only displays it.
+function taxAnswerToChatAnswer(a: TaxAnswerWire): ChatAnswer {
+  const NAME: Record<string, string> = {
+    eitc: "Earned Income Credit", ctc: "Child Tax Credit", aotc: "American Opportunity Credit",
+    qbi: "QBI deduction (§199A)", standardDeduction: "Standard deduction",
+  };
+  const name = NAME[a.worksheet] ?? a.worksheet;
+  const TIER: Record<string, string> = {
+    high: "High confidence", medium: "Review the cited authority before adopting",
+    low: "Low — check the flagged items carefully", abstain: "No position taken",
+  };
+  const dollars = `$${a.value.toLocaleString()}`;
+  return {
+    paragraphs: [
+      `**${name}: ${dollars}** for tax year ${a.taxYear}. Petal proposed the inputs from your facts; the figure is computed by the deterministic engine, not the model. It's a proposal for your review — adopt it only after checking the notes below. (${TIER[a.tier] ?? a.tier}.)`,
+    ],
+    metrics: [{ value: dollars, label: name, tone: a.tier === "high" ? "brand" : a.tier === "low" ? "warning" : "neutral" }],
+    findings: a.reviewNotes.length
+      ? a.reviewNotes.map((n) => ({ title: "Check before adopting", detail: n, severity: a.tier === "low" ? ("high" as const) : ("medium" as const) }))
+      : undefined,
+    sources: a.citations.map((c) => c.cite),
+  };
+}
+
 export function usePetalChat(scopeHouseholdId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   // prior turns for /api/ask context, kept in a ref so send() stays stable
@@ -91,27 +131,51 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // REAL assistant: POST to /api/ask. The route redacts the message (§7216) and
     // never injects client records. On any failure, fall back to the scripted
     // demo bank so the experience never goes blank.
-    fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history }),
-    })
-      .then(async res => {
-        if (!res.ok) throw new Error(`ask failed: ${res.status}`);
-        const data = (await res.json()) as { reply?: string };
-        const reply = (data.reply ?? "").trim();
-        if (!reply) throw new Error("empty reply");
-        settle(answerFromReply(reply), reply);
-        persist("assistant", reply);
+    const runAsk = () => {
+      fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history }),
       })
-      .catch(() => {
-        // offline / API down → scripted demo answer (no history echo)
-        const answer = matchQuestion(message, scopeHouseholdId);
-        settle(answer);
-        // Persist a readable transcript of the fallback answer too.
-        const flat = answer.paragraphs.join("\n\n").trim();
-        if (flat) persist("assistant", flat);
-      });
+        .then(async res => {
+          if (!res.ok) throw new Error(`ask failed: ${res.status}`);
+          const data = (await res.json()) as { reply?: string };
+          const reply = (data.reply ?? "").trim();
+          if (!reply) throw new Error("empty reply");
+          settle(answerFromReply(reply), reply);
+          persist("assistant", reply);
+        })
+        .catch(() => {
+          // offline / API down → scripted demo answer (no history echo)
+          const answer = matchQuestion(message, scopeHouseholdId);
+          settle(answer);
+          // Persist a readable transcript of the fallback answer too.
+          const flat = answer.paragraphs.join("\n\n").trim();
+          if (flat) persist("assistant", flat);
+        });
+    };
+
+    // Tax-computation intent → the defensible engine (Sonnet proposes inputs, lib/tax computes
+    // the cited figure, Opus judges fidelity, tier derived). The result renders in the existing
+    // answer shape. Any failure (gated/offline/non-compute) falls back to the general assistant.
+    if (COMPUTE_INTENT.test(message)) {
+      fetch("/api/tax/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: message }),
+      })
+        .then(async res => {
+          if (!res.ok) throw new Error(`compute failed: ${res.status}`);
+          const data = (await res.json()) as { answer?: TaxAnswerWire };
+          if (!data.answer) throw new Error("no answer");
+          const ans = taxAnswerToChatAnswer(data.answer);
+          settle(ans, ans.paragraphs.join(" "));
+          persist("assistant", ans.paragraphs.join(" "));
+        })
+        .catch(runAsk);
+      return;
+    }
+    runAsk();
   }, [scopeHouseholdId, persist]);
 
   // Analyze a dropped/attached document. POSTs the file to /api/ask/analyze, which

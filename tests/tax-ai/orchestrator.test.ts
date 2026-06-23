@@ -47,3 +47,25 @@ describe("compute bridge — model proposes, lib/tax computes", () => {
     await expect(answerComputation(provider, "EITC?", eitcFacts)).rejects.toThrow();
   });
 });
+
+describe("L4 adversarial judge — fidelity drives the tier", () => {
+  it("an unfaithful proposal drops the tier to low + surfaces the issues", async () => {
+    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: eitcFacts }));
+    // a DIFFERENT model judges; here it finds a fact-mapping mismatch.
+    const judge = new MockProvider(() => ({ faithful: false, citationsOnPoint: true, issues: ["Proposed filing status does not match the facts"] }));
+    const ans = await answerComputation(provider, "EITC?", eitcFacts, { judge });
+    expect(ans.tier).toBe("low");
+    expect(ans.verdict?.faithful).toBe(false);
+    expect(ans.reviewNotes.some((n) => /filing status/i.test(n))).toBe(true);
+    // the value is STILL the deterministic figure — the judge polices fidelity, not the math.
+    expect(ans.value).toBe(eitc(eitcFacts, fed).value);
+  });
+
+  it("a faithful proposal with on-point citations keeps the high tier", async () => {
+    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: eitcFacts }));
+    const judge = new MockProvider(() => ({ faithful: true, citationsOnPoint: true, issues: [] }));
+    const ans = await answerComputation(provider, "EITC?", eitcFacts, { judge });
+    expect(ans.tier).toBe("high");
+    expect(ans.verdict?.faithful).toBe(true);
+  });
+});

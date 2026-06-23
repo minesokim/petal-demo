@@ -80,6 +80,7 @@ export type ComputeRequest = z.infer<typeof ComputeRequest>;
 export type ComputeResult = {
   worksheet: ComputeRequest["worksheet"];
   taxYear: number;
+  request: ComputeRequest; // the model's proposal — carried so a judge can check its fidelity
   result: WorksheetResult; // value + auditable lines + citations + flags — straight from lib/tax
 };
 
@@ -97,5 +98,5 @@ export function compute(request: ComputeRequest, taxYear = 2025): ComputeResult 
       case "standardDeduction": return standardDeduction(request.facts, fed);
     }
   })();
-  return { worksheet: request.worksheet, taxYear, result };
+  return { worksheet: request.worksheet, taxYear, request, result };
 }
