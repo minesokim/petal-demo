@@ -81,6 +81,7 @@ export const people = pgTable("people", {
   email: text("email"),
   phone: text("phone"),
   role: text("role").notNull(), // Taxpayer | Spouse | Owner | Partner | Bookkeeper
+  ssn: text("ssn"), // envelope-encrypted token (lib/crypto/envelope), never plaintext; excluded from default reads
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
