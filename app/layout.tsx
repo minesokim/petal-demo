@@ -7,6 +7,7 @@ import GoogleAnalyticsInit from "@/lib/ga";
 import { fontVariables } from "@/lib/fonts";
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
+import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default async function RootLayout({
   );
 
   return (
+    <ClerkProvider>
     <html lang="en" suppressHydrationWarning>
       <head />
       <body
@@ -64,5 +66,6 @@ export default async function RootLayout({
         </ThemeProvider>
       </body>
     </html>
+    </ClerkProvider>
   );
 }
