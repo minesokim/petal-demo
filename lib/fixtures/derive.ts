@@ -12,14 +12,16 @@ import {
   type Stage, type Health, type TaskStatus,
 } from "./vocab";
 import {
-  households, engagements, expectedDocs, tasks, notices, positions, skillRuns, skills, activity, threads,
-  type Household, type Engagement, type Task, type Notice, type SkillRun, type ActivityEvent,
+  households, people, entities, engagements, expectedDocs, tasks, notices, positions, skillRuns, skills, activity, threads,
+  type Household, type Person, type Entity, type Engagement, type Task, type Notice, type SkillRun, type ActivityEvent,
   type ExpectedDoc, type Position, type Thread, type Skill,
 } from "./firm";
 
 /** The data derive computes from — the subset of FirmData the dashboard aggregates. */
 export interface DeriveData {
   households: Household[];
+  people: Person[];
+  entities: Entity[];
   engagements: Engagement[];
   expectedDocs: ExpectedDoc[];
   tasks: Task[];
@@ -141,6 +143,10 @@ export function makeDerive(d: DeriveData) {
   const engagementsOf = (hid: string) => d.engagements.filter(e => e.householdId === hid);
   const docsOfEngagement = (eid: string) => d.expectedDocs.filter(x => x.engagementId === eid);
   const taskById = (id: string) => d.tasks.find(t => t.id === id);
+  const entitiesOf = (hid: string) => d.entities.filter(e => e.householdId === hid);
+  const entityById = (id: string) => d.entities.find(e => e.id === id);
+  const peopleOf = (hid: string) => d.people.filter(p => p.householdId === hid);
+  const engagementById = (id: string) => d.engagements.find(e => e.id === id);
 
   function needsYouTasks(): Task[] {
     return d.tasks.filter(t => (NEEDS_YOU_STATUSES as TaskStatus[]).includes(t.status));
@@ -452,11 +458,13 @@ export function makeDerive(d: DeriveData) {
     filingReadiness, filedThisWeek, invoiceOf, invoices, billingKpis, clientHealth, atRiskHouseholds,
     healthCounts, booksClients, openNotices, transcriptWatchCount, runsOfSkill, roiWeek, activityFeed,
     tieOutChecks,
+    // lookups (data-bound) — drop-ins for the fixture helpers in lib/fixtures/firm
+    householdById, engagementsOf, engagementById, docsOfEngagement, taskById, entitiesOf, entityById, peopleOf,
   };
 }
 
 // ── Fixture-bound named exports (used by not-yet-wired surfaces) ──
-const FIXTURE_DATA: DeriveData = { households, engagements, expectedDocs, tasks, notices, positions, skillRuns, skills, activity, threads };
+const FIXTURE_DATA: DeriveData = { households, people, entities, engagements, expectedDocs, tasks, notices, positions, skillRuns, skills, activity, threads };
 const fx = makeDerive(FIXTURE_DATA);
 
 export const needsYouTasks = fx.needsYouTasks;
