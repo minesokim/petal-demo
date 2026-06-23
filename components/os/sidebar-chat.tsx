@@ -1,12 +1,30 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
 import { Tip } from "@/components/os/tooltip";
-import { recentChats, type RecentChat } from "@/lib/fixtures/firm";
+import { listThreadsAction } from "@/app/os/ask/chat-actions";
+
+// Real persisted Ask Petal threads (RLS-scoped). Shaped to what the JSX below
+// already binds (id, title, when, unread) so the markup is unchanged.
+type RecentChat = { id: string; title: string; when: string; unread?: boolean };
+
+// "1h" / "3d" / "Jun 22" — the compact relative label the row renders.
+function whenLabel(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const mins = Math.max(0, Math.floor((Date.now() - then) / 60000));
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(then).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 /** Sidebar bottom - the Ask Petal chat zone: Recent convos, history, New chat (Solve pattern).
  *  Opening history calls onOpenHistory → the layout's full-shell glass takeover.
@@ -16,13 +34,26 @@ export function SidebarChat({ onOpenHistory }: { onOpenHistory: () => void }) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [hoverList, setHoverList] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const recent = recentChats.slice(0, 6);
+  const [recent, setRecent] = useState<RecentChat[]>([]);
   const noFade = hoverList || expanded;
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Every recent item is an AI conversation - clicking reopens it in Ask Petal.
+  // Load the firm's real recent threads on mount (RLS-scoped). Newest-first; the
+  // sidebar shows the top 6.
+  useEffect(() => {
+    let alive = true;
+    listThreadsAction()
+      .then(rows => {
+        if (!alive) return;
+        setRecent(rows.slice(0, 6).map(r => ({ id: r.id, title: r.title, when: whenLabel(r.updatedAt) })));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Every recent item is a persisted conversation - clicking reopens it in Ask Petal.
   const open = (c?: RecentChat) => {
-    router.push(c ? `/os/ask?q=${encodeURIComponent(c.title)}` : "/os/ask");
+    router.push(c ? `/os/ask?thread=${encodeURIComponent(c.id)}` : "/os/ask");
     setMenuFor(null);
   };
 

@@ -19,6 +19,11 @@ import {
   matchQuestion,
   type ChatAnswer, type ChatStep, type ChatMetric, type ChatChart, type ChatFinding,
 } from "@/lib/fixtures/demo-chat";
+import {
+  createThreadAction,
+  appendMessageAction,
+  getThreadAction,
+} from "@/app/os/ask/chat-actions";
 
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
@@ -41,6 +46,20 @@ export function usePetalChat(scopeHouseholdId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   // prior turns for /api/ask context, kept in a ref so send() stays stable
   const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
+  // Persistence: the current thread, kept as a promise so the create-on-first-send
+  // resolves once and the user/assistant appends serialize behind it (no race, no
+  // duplicate thread). null = not yet created; cleared on reset/new chat.
+  const threadRef = useRef<Promise<string | null> | null>(null);
+
+  // Append one persisted turn to the active thread. RLS-scoped + audited server-
+  // side; best-effort (a persistence failure must never break the live reply).
+  const persist = useCallback((role: "user" | "assistant", content: string) => {
+    const c = content.trim();
+    if (!c || !threadRef.current) return;
+    threadRef.current
+      .then(id => { if (id) return appendMessageAction(id, role, c); })
+      .catch(() => {});
+  }, []);
 
   const send = useCallback((text: string, attachments?: string[]) => {
     const q = text.trim();
@@ -56,6 +75,13 @@ export function usePetalChat(scopeHouseholdId?: string) {
 
     const history = historyRef.current.slice();
     historyRef.current = [...history, { role: "user", content: message }];
+
+    // On the FIRST user message of a session, create the thread (title = the
+    // message, server-truncated). Subsequent turns reuse the same thread.
+    if (!threadRef.current) {
+      threadRef.current = createThreadAction(message.slice(0, 60)).then(r => r?.id ?? null);
+    }
+    persist("user", message);
 
     const settle = (answer: ChatAnswer, replyForHistory?: string) => {
       if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
@@ -76,19 +102,42 @@ export function usePetalChat(scopeHouseholdId?: string) {
         const reply = (data.reply ?? "").trim();
         if (!reply) throw new Error("empty reply");
         settle(answerFromReply(reply), reply);
+        persist("assistant", reply);
       })
       .catch(() => {
         // offline / API down → scripted demo answer (no history echo)
-        settle(matchQuestion(message, scopeHouseholdId));
+        const answer = matchQuestion(message, scopeHouseholdId);
+        settle(answer);
+        // Persist a readable transcript of the fallback answer too.
+        const flat = answer.paragraphs.join("\n\n").trim();
+        if (flat) persist("assistant", flat);
       });
-  }, [scopeHouseholdId]);
+  }, [scopeHouseholdId, persist]);
 
   const reset = useCallback(() => {
     historyRef.current = [];
+    threadRef.current = null;
     setMessages([]);
   }, []);
 
-  return { messages, send, reset };
+  // Reopen a persisted thread: load its transcript (oldest-first) and render it in
+  // the chat surface. New turns append to THIS thread (threadRef points at it).
+  const openThread = useCallback(async (threadId: string) => {
+    const turns = await getThreadAction(threadId);
+    threadRef.current = Promise.resolve(threadId);
+    historyRef.current = turns
+      .filter(t => t.role === "user" || t.role === "assistant")
+      .map(t => ({ role: t.role as "user" | "assistant", content: t.content }));
+    setMessages(
+      turns.map(t =>
+        t.role === "user"
+          ? { id: ++msgSeq, role: "user", text: t.content }
+          : { id: ++msgSeq, role: "petal", answer: answerFromReply(t.content) },
+      ),
+    );
+  }, []);
+
+  return { messages, send, reset, openThread };
 }
 
 const prefersReduced = () =>

@@ -23,9 +23,24 @@ export type GenerateTextArgs = {
   maxTokens?: number;
 };
 
+// Document-analysis seam (Ask Petal drag-drop). Sends a document/image block + a
+// prompt and returns the model's analysis. The CALLER must pass the §7216 gate
+// (assertCleared) before invoking this — a document is real taxpayer data.
+export type AnalyzeDocumentArgs = {
+  system: string;
+  prompt: string;
+  /** the file bytes, base64-encoded */
+  base64: string;
+  /** "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif" */
+  mediaType: string;
+  model?: string;
+  maxTokens?: number;
+};
+
 export interface AIProvider {
   generateObject<T>(args: GenerateArgs<T>): Promise<{ object: T; model: string }>;
   generateText(args: GenerateTextArgs): Promise<{ text: string; model: string }>;
+  analyzeDocument(args: AnalyzeDocumentArgs): Promise<{ text: string; model: string }>;
 }
 
 // Deterministic provider for tests: responder maps the prompt to a raw object,
@@ -44,6 +59,12 @@ export class MockProvider implements AIProvider {
     const text = this.textResponder
       ? this.textResponder({ system: args.system, prompt: args.prompt })
       : args.prompt;
+    return { text, model: "mock" };
+  }
+  async analyzeDocument(args: AnalyzeDocumentArgs) {
+    const text = this.textResponder
+      ? this.textResponder({ system: args.system, prompt: args.prompt })
+      : `Analyzed ${args.mediaType} document.`;
     return { text, model: "mock" };
   }
 }

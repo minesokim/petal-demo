@@ -48,3 +48,28 @@ export async function getConnectionStatus(connectedAccountId: string): Promise<{
   const r = await composio<{ status: string; toolkit?: { slug: string } }>(`/connected_accounts/${connectedAccountId}`);
   return { status: r.status, toolkit: r.toolkit?.slug };
 }
+
+// Composio's tool-execute envelope: the tool's payload lives under `data`, with a
+// `successful` flag and a nullable `error` (verified from @composio/client's
+// ToolExecuteResponse type).
+export type ToolExecuteResult = {
+  data: Record<string, unknown>;
+  successful: boolean;
+  error: string | null;
+};
+
+// Run a Composio tool (e.g. GOOGLECALENDAR_EVENTS_LIST) for a firm. user_id namespaces
+// the call to the firm's connected account (same `firm_${firmId}` id used at connect).
+// POST /api/v3/tools/execute/{tool_slug} with { user_id, arguments }. Throws on a
+// transport error (non-2xx); a tool-level failure surfaces as { successful:false, error }
+// for the caller to inspect.
+export async function executeTool(
+  toolSlug: string,
+  userId: string,
+  args: Record<string, unknown>,
+): Promise<ToolExecuteResult> {
+  return composio<ToolExecuteResult>(`/tools/execute/${toolSlug}`, {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, arguments: args }),
+  });
+}

@@ -117,7 +117,7 @@ function AskPetalInner() {
   const params = useSearchParams();
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
   const [scopeOpen, setScopeOpen] = useState(false);
-  const { messages, send, reset } = usePetalChat(scopeId);
+  const { messages, send, reset, openThread } = usePetalChat(scopeId);
   useConnections(); // re-render the grounding rail when a source is (dis)connected
   const scopeLabel = scopeId ? householdById(scopeId)?.name ?? "All clients" : "All clients";
   const [input, setInput] = useState("");
@@ -126,14 +126,20 @@ function AskPetalInner() {
 
   const hasConvo = messages.length > 0;
 
-  // the Today composer hands its question off via ?q=
+  // Arrival handoff: ?thread= reopens a persisted conversation (sidebar Recent /
+  // history overlay); ?q= runs a fresh question (the Today composer). One-shot.
   useEffect(() => {
+    if (ranParam.current) return;
+    const thread = params.get("thread");
     const q = params.get("q");
-    if (q && !ranParam.current) {
+    if (thread) {
+      ranParam.current = true;
+      void openThread(thread);
+    } else if (q) {
       ranParam.current = true;
       send(q);
     }
-  }, [params, send]);
+  }, [params, send, openThread]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });

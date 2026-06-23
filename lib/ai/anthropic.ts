@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { AIProvider, GenerateArgs, GenerateTextArgs } from "./provider";
+import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } from "./provider";
 import { redactText } from "./redact";
 import { assertZdrModel } from "./guard";
 
@@ -55,6 +55,31 @@ export class AnthropicProvider implements AIProvider {
       max_tokens: args.maxTokens ?? 1024,
       system: redactText(args.system),
       messages: [...history, { role: "user", content: redactText(args.prompt) }],
+    });
+    const text = res.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+    return { text, model };
+  }
+
+  // Analyze a dropped document (Ask Petal). The bytes go to the model as a native
+  // document/image block — there is no text to redact, so the §7216 gate
+  // (assertCleared, enforced by the CALLER) is the control that this only runs on
+  // cleared data. ZDR allowlist still applies. Returns the model's analysis text.
+  async analyzeDocument(args: AnalyzeDocumentArgs) {
+    const model = args.model ?? this.defaultModel;
+    assertZdrModel(model);
+    const isPdf = args.mediaType === "application/pdf";
+    const block = isPdf
+      ? { type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: args.base64 } }
+      : { type: "image" as const, source: { type: "base64" as const, media_type: args.mediaType as "image/png" | "image/jpeg" | "image/webp" | "image/gif", data: args.base64 } };
+    const res = await this.client.messages.create({
+      model,
+      max_tokens: args.maxTokens ?? 1500,
+      system: redactText(args.system),
+      messages: [{ role: "user", content: [block, { type: "text", text: redactText(args.prompt) }] }],
     });
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")

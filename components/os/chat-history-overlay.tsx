@@ -10,11 +10,42 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
-import { recentChats, type RecentChat } from "@/lib/fixtures/firm";
+import { listThreadsAction } from "@/app/os/ask/chat-actions";
+
+// Real persisted Ask Petal threads (RLS-scoped). Shaped to what the JSX below
+// already binds (id, title, when, unread) so the markup is unchanged.
+type RecentChat = { id: string; title: string; when: string; unread?: boolean };
+
+// "1h" / "3d" / "Jun 22" — the compact relative label the row renders.
+function whenLabel(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const mins = Math.max(0, Math.floor((Date.now() - then) / 60000));
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(then).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export function ChatHistoryOverlay({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [chats, setChats] = useState<RecentChat[]>([]);
+
+  // Load the firm's real threads on mount (RLS-scoped), newest-first.
+  useEffect(() => {
+    let alive = true;
+    listThreadsAction()
+      .then(rows => {
+        if (!alive) return;
+        setChats(rows.map(r => ({ id: r.id, title: r.title, when: whenLabel(r.updatedAt) })));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -23,11 +54,11 @@ export function ChatHistoryOverlay({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const open = (c?: RecentChat) => {
-    router.push(c ? `/os/ask?q=${encodeURIComponent(c.title)}` : "/os/ask");
+    router.push(c ? `/os/ask?thread=${encodeURIComponent(c.id)}` : "/os/ask");
     onClose();
   };
 
-  const list = recentChats.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
+  const list = chats.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <motion.div
