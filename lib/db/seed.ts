@@ -1,6 +1,9 @@
 import * as fx from "../fixtures/firm";
 import { firmFolders as fxFolders } from "../fixtures/firm-files";
-import { households, people, entities, engagements, expectedDocs, tasks, notices, skills, firmFolders, firmFiles } from "./schema";
+import {
+  households, people, entities, engagements, expectedDocs, tasks, notices, skills,
+  positions, skillRuns, activity, threads, firmFolders, firmFiles,
+} from "./schema";
 import type { Db } from "../repository/types";
 
 // Loads the fixture world into a firm. Runs in the service context (RLS-bypassing)
@@ -17,6 +20,12 @@ export async function seedFirm(db: Db, firmId: string): Promise<void> {
   await db.insert(skills).values(stamp(fx.skills));
   await db.insert(notices).values(stamp(fx.notices));
   await db.insert(tasks).values(stamp(fx.tasks));
+
+  // provenance / activity / inbox (FKs to households + engagements, seeded above)
+  await db.insert(positions).values(stamp(fx.positions));
+  await db.insert(skillRuns).values(stamp(fx.skillRuns));
+  await db.insert(activity).values(stamp(fx.activity));
+  await db.insert(threads).values(stamp(fx.threads));
 
   // ③ document library (folders, then files)
   await db.insert(firmFolders).values(
