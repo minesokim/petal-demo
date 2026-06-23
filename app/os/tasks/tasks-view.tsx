@@ -18,7 +18,7 @@ import { TaskDetail } from "@/components/os/task-detail";
 import { RecurringButton } from "@/components/os/recurring";
 import { skillById, firmMembers, isCurrentUser, CURRENT_USER_ID, type Task } from "@/lib/fixtures/firm";
 import { useFirmData, useDerive } from "@/lib/client/firm-context";
-import { demoStore, useLiveNeedsYou, useAllTasks } from "@/lib/demo-store";
+import { demoStore } from "@/lib/demo-store";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
 import { TASK_STATUS_ORDER, taskStatusMeta, type TaskStatus } from "@/lib/fixtures/vocab";
 
@@ -362,7 +362,8 @@ function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: 
 }
 
 function TasksPageInner() {
-  const { householdById, engagementById, taskById } = useDerive();
+  const firmData = useFirmData();
+  const { householdById, engagementById, taskById, needsYouTasks } = useDerive();
   const router = useRouter();
   const params = useSearchParams();
   const deepLink = params.get("task");
@@ -409,10 +410,10 @@ function TasksPageInner() {
     if (params.get("task")) router.replace("/os/tasks", { scroll: false });
   };
 
-  // the live queue — canonical + created this session, with approvals / done / hand-to-Petal applied
+  // the live queue — the firm's real (RLS-scoped) tasks
   const assignVersion = useAssignVersion(); // re-filter when a client is reassigned
-  const liveTasks: Task[] = useAllTasks();
-  const needsYou = useLiveNeedsYou().length;
+  const liveTasks: Task[] = firmData.tasks;
+  const needsYou = needsYouTasks().length;
 
   const groups: Group[] = useMemo(() => {
     const sorters = makeSorters(householdById);

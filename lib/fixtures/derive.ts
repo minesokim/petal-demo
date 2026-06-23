@@ -147,6 +147,8 @@ export function makeDerive(d: DeriveData) {
   const entityById = (id: string) => d.entities.find(e => e.id === id);
   const peopleOf = (hid: string) => d.people.filter(p => p.householdId === hid);
   const engagementById = (id: string) => d.engagements.find(e => e.id === id);
+  const skillById = (id: string) => d.skills.find(s => s.id === id);
+  const runById = (id: string) => d.skillRuns.find(r => r.id === id);
 
   function needsYouTasks(): Task[] {
     return d.tasks.filter(t => (NEEDS_YOU_STATUSES as TaskStatus[]).includes(t.status));
@@ -460,6 +462,7 @@ export function makeDerive(d: DeriveData) {
     tieOutChecks,
     // lookups (data-bound) — drop-ins for the fixture helpers in lib/fixtures/firm
     householdById, engagementsOf, engagementById, docsOfEngagement, taskById, entitiesOf, entityById, peopleOf,
+    skillById, runById,
   };
 }
 

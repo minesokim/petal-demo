@@ -12,7 +12,7 @@ import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { SkillPetal } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
-import { householdById, engagementById } from "@/lib/fixtures/firm";
+import { useDerive } from "@/lib/client/firm-context";
 import { type SkillCategory } from "@/lib/fixtures/vocab";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -28,8 +28,9 @@ export function TodaysCall({
   skillCategory: SkillCategory;
 }) {
   const [open, setOpen] = useState(false);
-  const h = householdById(householdId);
-  const eng = engagementId ? engagementById(engagementId) : undefined;
+  const derive = useDerive();
+  const h = derive.householdById(householdId);
+  const eng = engagementId ? derive.engagementById(engagementId) : undefined;
   const form = eng?.form;
   if (!h) return null;
 

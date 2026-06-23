@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { roiWeek } from "@/lib/fixtures/derive";
+import { useDerive } from "@/lib/client/firm-context";
 import { FIRM_PROFILE } from "@/lib/fixtures/firm";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
@@ -17,7 +17,7 @@ import { Icon, I } from "@/components/os/icon";
 const WEEK_LABEL = "Jun 22 – 25, 2026";
 
 export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" | "dark"; className?: string }) {
-  const roi = roiWeek();
+  const roi = useDerive().roiWeek();
   const [open, setOpen] = useState(false);
 
   const rows: [string, string | number][] = [

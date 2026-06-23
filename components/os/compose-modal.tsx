@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
-import { households } from "@/lib/fixtures/firm";
+import { useFirmData } from "@/lib/client/firm-context";
 import { FileSignature, Paperclip, FileText, LayoutTemplate, ListChecks, Clock } from "lucide-react";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -46,6 +46,7 @@ function ToolButton({ icon: IconC, label, onClick, active }: { icon: React.Compo
 }
 
 export function ComposeModal({ onClose }: { onClose: () => void }) {
+  const { households } = useFirmData();
   const [to, setTo] = useState("");
   const [toOpen, setToOpen] = useState(false);
   const [channel, setChannel] = useState<Channel>("email");

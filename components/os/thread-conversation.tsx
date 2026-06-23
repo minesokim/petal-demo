@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { ProvenancePanel } from "@/components/os/provenance";
-import { people, skillById, expectedDocs, type Thread, type Message } from "@/lib/fixtures/firm";
+import { useFirmData, useDerive } from "@/lib/client/firm-context";
+import type { Thread, Message, Person } from "@/lib/fixtures/firm";
 
 const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2);
 const first = (name: string) => name.split(" ")[0];
-function emailFor(author: string, from: Message["from"]) {
+function emailFor(author: string, from: Message["from"], people: Person[]) {
   if (from === "firm") return `${first(author).toLowerCase()}@vazantea.com`;
   return people.find(p => p.name === author)?.email ?? `${first(author).toLowerCase()}@gmail.com`;
 }
@@ -62,6 +63,8 @@ function petalDraftFor(thread: Thread): string {
 }
 
 export function ThreadConversation({ thread }: { thread: Thread }) {
+  const { people, expectedDocs } = useFirmData();
+  const { skillById } = useDerive();
   const [reply, setReply] = useState(thread.petalDraft?.text ?? "");
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [petalDrafted, setPetalDrafted] = useState(false);
@@ -309,7 +312,7 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
             {thread.channel === "email" && (
               <div className="mb-2 flex items-center gap-1.5 border-b border-[var(--os-border)] pb-2 text-[12px] text-[var(--os-ink-subtle)]">
                 <span className="text-[var(--os-ink-muted)]">To</span>
-                <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[12px] text-[var(--os-ink)]">{thread.clientName} <span className="font-mono text-[11px] text-[var(--os-ink-subtle)]">&lt;{emailFor(thread.clientName, "client")}&gt;</span></span>
+                <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[12px] text-[var(--os-ink)]">{thread.clientName} <span className="font-mono text-[11px] text-[var(--os-ink-subtle)]">&lt;{emailFor(thread.clientName, "client", people)}&gt;</span></span>
               </div>
             )}
             <textarea

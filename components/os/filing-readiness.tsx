@@ -10,8 +10,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Icon, I } from "@/components/os/icon";
 import { Badge } from "@/components/os/primitives";
-import { filingReadiness, atRiskHouseholds, filingStateOf } from "@/lib/fixtures/derive";
-import { engagements } from "@/lib/fixtures/firm";
+import { useDerive, useFirmData } from "@/lib/client/firm-context";
+import { type FilingReadiness as FilingReadinessData } from "@/lib/fixtures/derive";
 import { healthMeta } from "@/lib/fixtures/vocab";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -23,7 +23,7 @@ const STATS = [
 ] as const;
 
 /** Shared readiness bar + 3 stat blocks (card + modal overview). */
-function ReadinessSummary({ fr, size = "card" }: { fr: ReturnType<typeof filingReadiness>; size?: "card" | "modal" }) {
+function ReadinessSummary({ fr, size = "card" }: { fr: FilingReadinessData; size?: "card" | "modal" }) {
   const pct = (n: number) => (fr.total ? (n / fr.total) * 100 : 0);
   return (
     <>
@@ -90,14 +90,15 @@ function ClientAvatar({ name, size = 30 }: { name: string; size?: number }) {
 
 export function FilingReadiness() {
   const [open, setOpen] = useState(false);
-  const fr = filingReadiness();
-  const lagging = atRiskHouseholds();
+  const derive = useDerive();
+  const fr = derive.filingReadiness();
+  const lagging = derive.atRiskHouseholds();
 
 
   const onTrackShare = fr.total ? Math.round(((fr.filed + fr.onTrack) / fr.total) * 100) : 0;
 
   // two gauge metrics - our own context (readiness vs. money collected)
-  const depositsPaid = engagements.filter(e => e.depositPaid).length;
+  const depositsPaid = useFirmData().engagements.filter(e => e.depositPaid).length;
   const depositShare = fr.total ? Math.round((depositsPaid / fr.total) * 100) : 0;
 
   return (

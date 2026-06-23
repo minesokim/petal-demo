@@ -20,7 +20,6 @@ import {
   Settings, Home, FileText, Folder, MailWarning, Wallet, BookOpen, LogOut,
   PanelLeftClose, PanelLeftOpen, Activity, Blocks, Brain, Bot,
 } from "lucide-react";
-import { useLiveNeedsYou } from "@/lib/demo-store";
 
 type Item = { label: string; href: string; icon?: React.ComponentType<{ className?: string }>; badge?: number; glyph?: boolean; logo?: boolean; hugeicon?: IconSvgElement };
 
@@ -68,7 +67,12 @@ function NavGroup({ label, icon, items, isActive, defaultOpen = true }: { label:
 export default function OsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  const needsYou = useLiveNeedsYou().length;
+  // The "needs you" count is intentionally unset here. This layout renders ABOVE the
+  // per-page FirmDataProvider, so it cannot reach the real firm count via useDerive()
+  // (needsYouCount). Rather than show a misleading demo-store number to a real firm,
+  // we leave the badge empty (falsy → not rendered). FOLLOW-UP: to show the real
+  // count, lift FirmDataProvider to this layout, then bind `badge: useDerive().needsYouCount()`.
+  const needsYou: number | undefined = undefined;
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
