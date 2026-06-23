@@ -4,7 +4,7 @@ import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
 import * as fx from "../../lib/fixtures/firm";
 import { seedFirm } from "../../lib/db/seed";
-import { listHouseholds, tasksOf, engagementsOf } from "../../lib/repository/practice";
+import { listHouseholds, tasksOf, engagementsOf, listPeople, listEntities, listExpectedDocs } from "../../lib/repository/practice";
 
 const FIRM = "11111111-1111-1111-1111-111111111111";
 let pg: Awaited<ReturnType<typeof makeTestDb>>;
@@ -53,5 +53,16 @@ describe("seedFirm loads the fixture world 1:1", () => {
     expect(out.ids).toContain(fx.households[0].id); // fixture text id preserved
     expect(out.firstTasks).toBe(fx.tasks.filter((t) => t.householdId === fx.households[0].id).length);
     expect(out.firstEng).toBe(fx.engagements.filter((e) => e.householdId === fx.households[0].id).length);
+  });
+
+  it("firm-wide list selectors (used by the data seam) return the whole world, scoped", async () => {
+    const out = await asTenant({ firm_id: FIRM, role: "owner", user_type: "preparer" }, async (d) => ({
+      people: (await listPeople(d as never)).length,
+      entities: (await listEntities(d as never)).length,
+      docs: (await listExpectedDocs(d as never)).length,
+    }));
+    expect(out.people).toBe(fx.people.length);
+    expect(out.entities).toBe(fx.entities.length);
+    expect(out.docs).toBe(fx.expectedDocs.length);
   });
 });

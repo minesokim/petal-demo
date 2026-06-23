@@ -62,9 +62,12 @@ export async function householdById(db: Db, id: string) {
 export async function peopleOf(db: Db, householdId: string) {
   return db.select(personCols).from(people).where(eq(people.householdId, householdId));
 }
+export async function listPeople(db: Db) { return db.select(personCols).from(people); }
 export async function entitiesOf(db: Db, householdId: string) {
   return db.select(entityCols).from(entities).where(eq(entities.householdId, householdId));
 }
+export async function listEntities(db: Db) { return db.select(entityCols).from(entities); }
+export async function listExpectedDocs(db: Db) { return db.select(docCols).from(expectedDocs); }
 export async function entityById(db: Db, id: string) {
   const [r] = await db.select(entityCols).from(entities).where(eq(entities.id, id));
   return r;
