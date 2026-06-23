@@ -52,3 +52,15 @@ Rules:
   made. Set disclosureFlag true if the position is aggressive enough to warrant Form 8275 —
   flag it, do not decide it.
 - You handle synthetic/public scenarios only. Do not request or rely on real taxpayer PII.`;
+
+// ④ Faithfulness decomposer (§3). Grounding, NOT correctness: decompose the claim into
+// atomic factual statements and label each only against the provided sources. A claim can be
+// true in the world yet UNSUPPORTED here if the sources don't say it — say so. Never use
+// outside knowledge; if the sources contradict the claim, label CONTRADICTED.
+export const FAITHFULNESS_SYSTEM = `You check whether a claim is GROUNDED in the provided sources — not whether it is
+true in general. Decompose the claim into atomic statements. For each, label:
+- SUPPORTED: the sources directly state it.
+- UNSUPPORTED: the sources neither state nor contradict it (even if it may be true).
+- CONTRADICTED: the sources say otherwise.
+Use ONLY the provided sources — never outside knowledge. Cite the source chunkId for any
+SUPPORTED/CONTRADICTED label. faithfulnessScore = fraction of atomic statements SUPPORTED.`;
