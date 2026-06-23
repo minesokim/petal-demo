@@ -293,6 +293,22 @@ export const connections = pgTable("connections", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("connections_firm_toolkit_uq").on(t.firmId, t.toolkit)]);
 
+// ⑧ Portal — preparer-generated intake invites. A firm creates an invite (optionally
+// pre-addressed to a prospect); the token is the capability in the portal URL. Prospects
+// authenticate via OTP against this invite before any intake data is written (the unauth
+// write surface is OTP-gated, not open). Firm-scoped RLS covers the preparer side.
+export const intakeLinks = pgTable("intake_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(), // high-entropy capability token in the URL
+  prospectName: text("prospect_name"),
+  prospectEmail: text("prospect_email"),
+  status: text("status").notNull().default("sent"), // sent | started | submitted | converted | expired
+  engagementId: text("engagement_id"), // set once the intake converts to an engagement
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ④ AI quarantine — every AI output lands here as pending_review and NEVER touches
 // a production table until a human promotes it. Non-negotiable safety boundary.
 export const aiSuggestions = pgTable("ai_suggestions", {
