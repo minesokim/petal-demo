@@ -186,13 +186,14 @@ function CapView({
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         <div className="max-w-[680px]">
-          <div className="os-label mb-2">Autonomy</div>
-          <TrustDial tier={cap.trust} onChange={onTrust} />
-          <p className="mt-2.5 text-[12.5px] leading-snug text-[var(--os-ink-muted)]">{trustTierMeta[cap.trust].blurb}</p>
+          <div className="flex items-start justify-between gap-4">
+            <p className="min-w-0 flex-1 pt-1 text-[12.5px] leading-snug text-[var(--os-ink-muted)]">{trustTierMeta[cap.trust].blurb}</p>
+            <TrustDial tier={cap.trust} onChange={onTrust} className="shrink-0" />
+          </div>
 
           {cap.description
-            ? <div className="mt-7 border-l-2 border-[var(--os-border-strong)] pl-3.5"><p className="text-[14px] leading-relaxed text-[var(--os-ink)]">{cap.description}</p></div>
-            : <p className="mt-7 text-[13px] italic text-[var(--os-ink-subtle)]">No description yet. Hit Edit to add one.</p>}
+            ? <div className="mt-6 border-l-2 border-[var(--os-border-strong)] pl-3.5"><p className="text-[14px] leading-relaxed text-[var(--os-ink)]">{cap.description}</p></div>
+            : <p className="mt-6 text-[13px] italic text-[var(--os-ink-subtle)]">No description yet. Hit Edit to add one.</p>}
 
           <SectionLabel>Details</SectionLabel>
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
