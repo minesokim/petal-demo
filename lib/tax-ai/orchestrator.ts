@@ -12,11 +12,16 @@
 // (assertCleared). Tests run on synthetic facts (scope "synthetic", always passes);
 // production callers pass "real" (gated by PETAL_7216_CLEARED).
 
+import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import type { Citation, Flag } from "../tax/types";
 import { ComputeRequest, compute, type ComputeResult } from "./compute";
 import { verifyProposal, type ProposalVerdict } from "./verify";
+
+// Anthropic tool input_schema must be a top-level object; a Zod discriminated union compiles
+// to `{anyOf:[…]}` (no top-level "type"), so we nest the union under `request`.
+const ProposeSchema = z.object({ request: ComputeRequest });
 
 const PROPOSE_SYSTEM = `You route a tax question to the correct deterministic worksheet.
 Given a question and a taxpayer's return facts, choose exactly ONE worksheet and emit its
@@ -53,10 +58,10 @@ export async function proposeAndCompute(
   const { object } = await provider.generateObject({
     system: PROPOSE_SYSTEM,
     prompt: `Question:\n${question}\n\nReturn facts (JSON):\n${JSON.stringify(facts)}`,
-    schema: ComputeRequest,
+    schema: ProposeSchema,
     maxTokens: 800,
   });
-  return compute(object, opts.taxYear ?? 2025);
+  return compute(object.request, opts.taxYear ?? 2025);
 }
 
 // L5: derive the confidence tier from the deterministic signals + the adversarial verdict.

@@ -21,7 +21,7 @@ describe("compute bridge — model proposes, lib/tax computes", () => {
 
   it("answerComputation: the model only proposes inputs — the VALUE comes from lib/tax", async () => {
     // The "model" proposes the worksheet + inputs. There is NO value field it could spoof.
-    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: eitcFacts }));
+    const provider = new MockProvider(() => ({ request: { worksheet: "eitc", facts: eitcFacts } }));
     const ans = await answerComputation(provider, "What's their EITC?", eitcFacts);
     expect(ans.value).toBe(eitc(eitcFacts, fed).value); // authoritative number is deterministic
     expect(ans.tier).toBe("high");
@@ -30,7 +30,7 @@ describe("compute bridge — model proposes, lib/tax computes", () => {
 
   it("a reject rule (EITC investment income over the limit) → $0 determination in reviewNotes", async () => {
     const facts = { ...eitcFacts, investmentIncome: 999_999 };
-    const provider = new MockProvider(() => ({ worksheet: "eitc", facts }));
+    const provider = new MockProvider(() => ({ request: { worksheet: "eitc", facts } }));
     const ans = await answerComputation(provider, "EITC?", facts);
     expect(ans.value).toBe(0);
     expect(ans.reviewNotes.some((n) => /investment income/i.test(n))).toBe(true);
@@ -43,14 +43,14 @@ describe("compute bridge — model proposes, lib/tax computes", () => {
   });
 
   it("a malformed model proposal makes the provider boundary throw (schema-validated)", async () => {
-    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: { earnedIncome: 1 } }));
+    const provider = new MockProvider(() => ({ request: { worksheet: "eitc", facts: { earnedIncome: 1 } } }));
     await expect(answerComputation(provider, "EITC?", eitcFacts)).rejects.toThrow();
   });
 });
 
 describe("L4 adversarial judge — fidelity drives the tier", () => {
   it("an unfaithful proposal drops the tier to low + surfaces the issues", async () => {
-    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: eitcFacts }));
+    const provider = new MockProvider(() => ({ request: { worksheet: "eitc", facts: eitcFacts } }));
     // a DIFFERENT model judges; here it finds a fact-mapping mismatch.
     const judge = new MockProvider(() => ({ faithful: false, citationsOnPoint: true, issues: ["Proposed filing status does not match the facts"] }));
     const ans = await answerComputation(provider, "EITC?", eitcFacts, { judge });
@@ -62,7 +62,7 @@ describe("L4 adversarial judge — fidelity drives the tier", () => {
   });
 
   it("a faithful proposal with on-point citations keeps the high tier", async () => {
-    const provider = new MockProvider(() => ({ worksheet: "eitc", facts: eitcFacts }));
+    const provider = new MockProvider(() => ({ request: { worksheet: "eitc", facts: eitcFacts } }));
     const judge = new MockProvider(() => ({ faithful: true, citationsOnPoint: true, issues: [] }));
     const ans = await answerComputation(provider, "EITC?", eitcFacts, { judge });
     expect(ans.tier).toBe("high");
