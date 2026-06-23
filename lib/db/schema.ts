@@ -140,7 +140,9 @@ export const expectedDocs = pgTable("expected_docs", {
 
 export const skills = pgTable("skills", {
   id: text("id").primaryKey(),
-  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  // The AI skill catalog is a GLOBAL product definition (firm_id NULL) readable by every
+  // firm; a firm may also define its own (firm_id set). No client data lives here.
+  firmId: uuid("firm_id").references(() => firms.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   category: text("category").notNull(), // prep_filing | signatures_chase | books | meetings_calls | briefs | estimates_deadlines
   trust: integer("trust").notNull(), // 0..3
