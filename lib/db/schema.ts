@@ -219,3 +219,30 @@ export const aiSuggestions = pgTable("ai_suggestions", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ③ Documents — the firm's own file library (Drive-style). Metadata here; the
+// actual blob lives in Supabase Storage at storage_path (set on upload, runtime).
+export const firmFolders = pgTable("firm_folders", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const firmFiles = pgTable("firm_files", {
+  id: text("id").primaryKey(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  folderId: text("folder_id").notNull().references(() => firmFolders.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  kind: text("kind").notNull(), // pdf | docx | xlsx
+  size: text("size"),
+  modified: text("modified"),
+  ts: integer("ts").notNull(),
+  owner: text("owner"),
+  starred: boolean("starred").notNull().default(false),
+  storagePath: text("storage_path"), // Supabase Storage object path; set on upload
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
