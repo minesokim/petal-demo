@@ -49,13 +49,15 @@ function f<T>(value: T, citation: Citation, verified = true): Figure<T> {
 // here scales the federal EITC down to the CalEITC; it is carried verified:false because
 // the exact 2025 §17052(f) adjustment-factor table could not be confirmed at authoring time.
 export type CalEitcParams = {
-  // Fraction of the federal-style EITC that CalEITC pays inside the credit range
-  // (the statutory Budget-Act adjustment factor; 85% for 2025).
+  // The statutory Budget-Act adjustment factor (85% for 2025): CalEITC pays this fraction
+  // of the federal-style phase-in credit (FTB 3514 method) before the CA cap + phaseout.
   adjustmentFactor: Figure<number>;
-  // The CalEITC maximum credit per return (FTB CalEITC page, 2025 = $3,756). The CA
-  // credit caps far below the federal credit, so the computed value is capped here.
-  maxCredit: Figure<number>;
-  // CA earned income at/above which CalEITC fully phases out to $0 (RTC §17052(b)).
+  // The CalEITC maximum credit by number of qualifying children (FTB 2025 credit table).
+  // 0 children ($302) and 3+ children ($3,756) are FTB-confirmed; 1 and 2 children are
+  // DERIVED from the consistent CA:federal max ratio (~0.466) and carried verified:false —
+  // the exact 2025 values live in the FTB-3514 booklet (programmatic access blocked).
+  maxCreditByChildren: Record<0 | 1 | 2 | 3, Figure<number>>;
+  // CA earned income at/above which CalEITC fully phases out to $0 (FTB 2025: $32,900).
   maxEarnedIncome: Figure<number>;
   // CalEITC has its own (CA-specific) investment-income disqualifier (RTC §17052(i)).
   investmentIncomeLimit: Figure<number>;
@@ -76,10 +78,10 @@ export type CaliforniaFigureSet = {
     maxCredit: Figure<number>;
     // YCTC eligibility requires a qualifying child UNDER this age (RTC §17052.1(a)).
     childUnderAge: Figure<number>;
-    // YCTC phases out at the same CalEITC max earned income; above it the credit is the
-    // statutory minimum ($0 once CalEITC earned income exceeds the cap). Carried for the
-    // phaseout floor described in RTC §17052.1(b)(2).
+    // YCTC pays the maximum up to phaseoutStart, then reduces linearly to $0 at phaseoutEnd
+    // (FTB 2025: $27,425 → $32,901). This linear reduction IS the FTB-3514 method, not an estimate.
     phaseoutStart: Figure<number>;
+    phaseoutEnd: Figure<number>;
   };
 };
 
@@ -97,8 +99,14 @@ export const CALIFORNIA_2025: CaliforniaFigureSet = {
   calEitc: {
     // The 85% Budget-Act adjustment factor for 2025 (FTB CalEITC) — statutory, confirmed.
     adjustmentFactor: f(0.85, RTC("RTC §17052(f) — CalEITC adjustment factor (85%, 2025)")),
-    // CalEITC maximum credit per return, 2025 = $3,756 (FTB CalEITC page) — confirmed.
-    maxCredit: f(3756, FTB_CALEITC("CalEITC maximum credit per return, 2025 ($3,756)")),
+    // Max credit by # children. 0 ($302) and 3+ ($3,756) are FTB-confirmed for 2025; 1 and 2
+    // are derived from the ~0.466 CA:federal ratio (verified:false — exact values in FTB-3514).
+    maxCreditByChildren: {
+      0: f(302, FTB_CALEITC("CalEITC max credit, 0 children, 2025 ($302)")),
+      1: f(2017, FTB_CALEITC("CalEITC max credit, 1 child, 2025 (derived ~0.466 × federal)"), false),
+      2: f(3333, FTB_CALEITC("CalEITC max credit, 2 children, 2025 (derived ~0.466 × federal)"), false),
+      3: f(3756, FTB_CALEITC("CalEITC max credit, 3+ children, 2025 ($3,756)")),
+    },
     // CalEITC fully phases out once earned income exceeds $32,900 (FTB CalEITC, 2025).
     maxEarnedIncome: f(32900, FTB_CALEITC("CalEITC income limit $32,900, 2025")),
     // CalEITC investment-income limit (RTC §17052(i)) — exact 2025 amount unconfirmed.
@@ -109,7 +117,8 @@ export const CALIFORNIA_2025: CaliforniaFigureSet = {
     maxCredit: f(1189, FTB_YCTC("YCTC maximum credit per return, 2025 ($1,189)")),
     // A qualifying child must be under age 6 at year end (RTC §17052.1(a)) — statutory.
     childUnderAge: f(6, RTC("RTC §17052.1(a) — qualifying child under age 6")),
-    // YCTC phaseout begins at $27,425 of income for 2025 (FTB 3514, 2025) — confirmed.
+    // YCTC phaseout begins at $27,425 and reaches $0 at $32,901 for 2025 (FTB 3514) — confirmed.
     phaseoutStart: f(27425, FTB_YCTC("YCTC phaseout starts at $27,425, 2025 (FTB 3514)")),
+    phaseoutEnd: f(32901, FTB_YCTC("YCTC fully phased out at $32,901, 2025 (FTB 3514)")),
   },
 };

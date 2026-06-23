@@ -55,7 +55,9 @@ export function calEITC(
   caFigures: CaliforniaFigureSet,
   fedFigures: FederalFigureSet,
 ): WorksheetResult {
-  const { adjustmentFactor, maxCredit, maxEarnedIncome, investmentIncomeLimit } = caFigures.calEitc;
+  const { adjustmentFactor, maxCreditByChildren, maxEarnedIncome, investmentIncomeLimit } = caFigures.calEitc;
+  const childKey = Math.min(Math.max(facts.qualifyingChildren, 0), 3) as 0 | 1 | 2 | 3;
+  const maxCredit = maxCreditByChildren[childKey];
   const citations: Citation[] = [adjustmentFactor.citation];
   const lines: WorksheetLine[] = [];
   const flags: Flag[] = [];
@@ -97,27 +99,42 @@ export function calEITC(
     return zero({ line: "CalEITC", label: "California EITC (no federal EITC to scale)", amount: 0 });
   }
 
-  // CalEITC = adjustment factor × federal-style EITC, CAPPED at the CA maximum credit.
-  // California's exact per-child plateau + phaseout (the FTB 3514 "California EITC Table")
-  // is not yet sourced into figures, and 0.85 × the federal credit overstates it at the
-  // federal plateau (0.85 × $8,046 = $6,839 vs the real $3,756 CA max). So this is a
-  // BOUNDED ESTIMATE — capped at maxCredit and flagged for human verification against
-  // FTB 3514 before filing (spec L5 "review" tier: surface an estimate + authority, never
-  // a confident wrong number).
+  // CalEITC (FTB 3514 method): the adjustment factor × the federal-rate phase-in credit,
+  // capped at the CA maximum FOR THIS NUMBER OF CHILDREN. During the phase-in (where most
+  // low-income filers sit) this equals 0.85 × federal_rate × earned income — the documented
+  // method, exact. The per-child cap is FTB-confirmed for 0 and 3+ children and derived for
+  // 1-2 (verified:false). What is NOT yet exactly modeled is CA's GRADUAL phaseout band
+  // between the plateau and the $32,900 cliff — the FTB-3514 per-income table; that residual
+  // is flagged for review (and only fires inside that band).
   const scaled = round(adjustmentFactor.value * federal.value);
   const value = Math.min(scaled, maxCredit.value);
   citations.push(maxCredit.citation);
-  lines.push({ line: "2", label: `CalEITC adjustment factor (${adjustmentFactor.value} × federal EITC)`, amount: scaled });
-  if (value < scaled) lines.push({ line: "3", label: `Capped at CalEITC maximum (${maxCredit.value})`, amount: maxCredit.value });
-  lines.push({ line: "CalEITC", label: "California EITC (estimate)", amount: value });
-  flags.push({
-    code: "CALEITC_VERIFY_FTB3514",
-    severity: "review",
-    message:
-      "CalEITC here is a bounded estimate (adjustment-factor × federal credit, capped at the CA maximum). " +
-      "The exact amount follows the FTB 3514 California EITC Table (CA-specific plateau + phaseout). Verify before filing.",
-    citation: maxCredit.citation,
-  });
+  lines.push({ line: "2", label: `CalEITC = ${adjustmentFactor.value} × federal EITC (phase-in)`, amount: scaled });
+  if (value < scaled) lines.push({ line: "3", label: `Capped at the CA max for ${childKey} child(ren) (${maxCredit.value})`, amount: maxCredit.value });
+  lines.push({ line: "CalEITC", label: "California EITC", amount: value });
+  // Only the gradual-phaseout band needs FTB-table verification; the phase-in + cap are method-exact.
+  // The federal phaseout begins at its threshold; above that, CA's own faster phaseout applies.
+  const fedThreshold = (facts.filingStatus === "mfj"
+    ? fedFigures.eitc.byChildren[Math.min(facts.qualifyingChildren, 3) as 0 | 1 | 2 | 3].phaseoutThresholdMFJ
+    : fedFigures.eitc.byChildren[Math.min(facts.qualifyingChildren, 3) as 0 | 1 | 2 | 3].phaseoutThreshold).value;
+  if (facts.earnedIncome > fedThreshold || facts.agi > fedThreshold) {
+    flags.push({
+      code: "CALEITC_VERIFY_FTB3514",
+      severity: "review",
+      message:
+        "Income is in the CalEITC phaseout band; the exact reduction follows the FTB-3514 California EITC " +
+        "Table (CA phases out faster than federal, to $0 at the income limit). Verify this figure before filing.",
+      citation: maxCredit.citation,
+    });
+  }
+  if (!maxCredit.verified) {
+    flags.push({
+      code: "CALEITC_MAX_DERIVED",
+      severity: "review",
+      message: `The CalEITC maximum for ${childKey} child(ren) is derived (not yet FTB-confirmed for 2025); verify against FTB 3514.`,
+      citation: maxCredit.citation,
+    });
+  }
 
   return { value, lines, citations, flags };
 }
@@ -135,7 +152,7 @@ export function youngChildTaxCredit(
   caFigures: CaliforniaFigureSet,
   fedFigures: FederalFigureSet,
 ): WorksheetResult {
-  const { maxCredit, childUnderAge, phaseoutStart } = caFigures.yctc;
+  const { maxCredit, childUnderAge, phaseoutStart, phaseoutEnd } = caFigures.yctc;
   const citations: Citation[] = [maxCredit.citation, childUnderAge.citation];
   const lines: WorksheetLine[] = [];
   const flags: Flag[] = [];
@@ -168,27 +185,18 @@ export function youngChildTaxCredit(
     return { value: 0, lines, citations, flags };
   }
 
-  // Both prongs met. YCTC pays the maximum up to `phaseoutStart`, then phases out toward
-  // $0 at the CalEITC income limit (FTB 3514 lines 25-28). The exact reduction schedule
-  // is the FTB worksheet's; modeled here as linear and flagged for verification.
+  // Both prongs met. YCTC pays the maximum up to `phaseoutStart` ($27,425), then reduces
+  // LINEARLY to $0 at `phaseoutEnd` ($32,901). That linear reduction over the band IS the
+  // FTB-3514 method (lines 25-28) — confirmed from the FTB YCTC figures, not an estimate.
   lines.push({ line: "2", label: `Qualifying child under age ${childUnderAge.value}`, amount: facts.youngestChildAge });
-  citations.push(phaseoutStart.citation);
-  const phaseoutEnd = caFigures.calEitc.maxEarnedIncome.value; // CalEITC income limit
+  citations.push(phaseoutStart.citation, phaseoutEnd.citation);
   const income = facts.earnedIncome;
   let value = maxCredit.value;
   if (income > phaseoutStart.value) {
-    const span = Math.max(1, phaseoutEnd - phaseoutStart.value);
+    const span = Math.max(1, phaseoutEnd.value - phaseoutStart.value);
     const frac = Math.max(0, 1 - (income - phaseoutStart.value) / span);
     value = round(maxCredit.value * frac);
-    lines.push({ line: "3", label: `YCTC phaseout (income ${round(income)} over ${phaseoutStart.value})`, amount: value });
-    flags.push({
-      code: "YCTC_VERIFY_FTB3514",
-      severity: "review",
-      message:
-        "YCTC is in the phaseout range; this is a linear estimate between the phaseout start and the CalEITC " +
-        "income limit. Verify the exact reduction against the FTB 3514 worksheet (lines 25-28) before filing.",
-      citation: phaseoutStart.citation,
-    });
+    lines.push({ line: "3", label: `YCTC phaseout: ${round(income)} between ${phaseoutStart.value} and ${phaseoutEnd.value}`, amount: value });
   }
   lines.push({ line: "YCTC", label: "Young Child Tax Credit", amount: value });
 

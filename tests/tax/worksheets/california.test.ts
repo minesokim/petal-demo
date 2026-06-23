@@ -55,7 +55,10 @@ describe("CalEITC (CA RTC §17052) — % of federal EITC with a CA-specific phas
     const r = calEITC(baseFacts, ca, fed);
     expect(worksheetResultSchema.safeParse(r).success).toBe(true);
     expect(r.value).toBeGreaterThan(0);
-    expect(r.value).toBeCloseTo(ca.calEitc.adjustmentFactor.value * federal, 2);
+    // CalEITC = min(0.85 × federal phase-in, the per-child CA max).
+    const childKey = Math.min(baseFacts.qualifyingChildren, 3) as 0 | 1 | 2 | 3;
+    const cap = ca.calEitc.maxCreditByChildren[childKey].value;
+    expect(r.value).toBeCloseTo(Math.min(Math.round(ca.calEitc.adjustmentFactor.value * federal * 100) / 100, cap), 2);
   });
 
   it("earned income above the CA cap fully phases out CalEITC to $0", () => {
@@ -123,21 +126,32 @@ describe("Young Child Tax Credit (CA RTC §17052.1)", () => {
 });
 
 describe("CA credit bounds (CalEITC cap + YCTC phaseout)", () => {
-  it("caps CalEITC at the CA maximum (0.85 × federal would overstate it) + flags for FTB-3514 review", () => {
-    // 3-child taxpayer in the federal plateau: federal EITC ≈ max, so 0.85× exceeds the CA cap.
+  it("caps CalEITC at the per-child CA maximum (0.85 × federal would overstate it)", () => {
+    // 3-child taxpayer in the plateau: 0.85 × federal (~$6,839) exceeds the CA 3-child max.
     const facts = { earnedIncome: 18000, agi: 18000, investmentIncome: 0, qualifyingChildren: 3, filingStatus: "single" as const, taxpayerSsnValidForWork: true, age: 40 };
     const r = calEITC(facts, ca, fed);
-    expect(r.value).toBe(ca.calEitc.maxCredit.value); // capped, not 0.85 × federal
-    expect(r.flags.some((fl) => fl.code === "CALEITC_VERIFY_FTB3514" && fl.severity === "review")).toBe(true);
+    expect(r.value).toBe(ca.calEitc.maxCreditByChildren[3].value); // $3,756, the FTB-confirmed cap
+    // A childless filer caps far lower — at the confirmed $302, never the 3-child max.
+    const childless = calEITC({ ...facts, qualifyingChildren: 0 }, ca, fed);
+    expect(childless.value).toBeLessThanOrEqual(ca.calEitc.maxCreditByChildren[0].value);
   });
 
-  it("phases YCTC out above the phaseout start, full below it", () => {
+  it("flags the CalEITC phaseout band for FTB-3514 verification (only when in the band)", () => {
+    const inBand = { earnedIncome: 28000, agi: 28000, investmentIncome: 0, qualifyingChildren: 1, filingStatus: "single" as const, taxpayerSsnValidForWork: true, age: 40 };
+    expect(calEITC(inBand, ca, fed).flags.some((fl) => fl.code === "CALEITC_VERIFY_FTB3514" && fl.severity === "review")).toBe(true);
+    const belowBand = { ...inBand, earnedIncome: 9000, agi: 9000 };
+    expect(calEITC(belowBand, ca, fed).flags.some((fl) => fl.code === "CALEITC_VERIFY_FTB3514")).toBe(false);
+  });
+
+  it("phases YCTC linearly to $0 between $27,425 and $32,901 (the FTB method)", () => {
     const base = { investmentIncome: 0, qualifyingChildren: 2, filingStatus: "single" as const, taxpayerSsnValidForWork: true, age: 40, youngestChildAge: 3 };
     const low = youngChildTaxCredit({ ...base, earnedIncome: 15000, agi: 15000 }, ca, fed);
     expect(low.value).toBe(ca.yctc.maxCredit.value); // full credit below the phaseout start
     const phasing = youngChildTaxCredit({ ...base, earnedIncome: 30000, agi: 30000 }, ca, fed);
     expect(phasing.value).toBeLessThan(ca.yctc.maxCredit.value);
     expect(phasing.value).toBeGreaterThan(0);
-    expect(phasing.flags.some((fl) => fl.code === "YCTC_VERIFY_FTB3514")).toBe(true);
+    // Above the end of the phaseout band, YCTC is $0 (and CalEITC is gone anyway).
+    const gone = youngChildTaxCredit({ ...base, earnedIncome: 33000, agi: 33000 }, ca, fed);
+    expect(gone.value).toBe(0);
   });
 });
