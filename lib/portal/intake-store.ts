@@ -2,16 +2,21 @@
 
 /**
  * Intake store — single Zustand slice that holds every client-facing
- * answer plus the current step and a coarse auth flag. Persists to
- * localStorage under `petal.v4.portal.intake` so a client who
- * closes their browser mid-intake resumes where they left off.
+ * answer plus the current step and a coarse auth flag.
+ *
+ * SECURITY: this state holds raw PII (SSN, bank routing/account, spouse +
+ * dependent SSNs). It is held IN MEMORY ONLY and is intentionally NOT
+ * persisted — writing it to localStorage would leave plaintext SSN/bank
+ * data on the client's disk, readable by any script on the origin and
+ * surviving until manually cleared. Resume-after-refresh is therefore not
+ * supported here; durable progress lives server-side in the encrypted
+ * intake_session (lib/repository/intake.ts saveAnswers, envelope-encrypted).
  *
  * Selectors (getNextStep / getPrevStep / getStepPosition) live in
  * ./intake-flow.ts — this file only owns mutation.
  */
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 
 import { INITIAL_STATE, type IntakeState, type IntakeStepKey } from "./intake-types";
 import { getLandingStep, getNextStep, getPrevStep } from "./intake-flow";
@@ -39,13 +44,10 @@ type Store = IntakeState & {
   markDepositPaid: (amount?: number) => void;
 };
 
-const PERSIST_KEY = "petal.v4.portal.intake";
-
 export const useIntakeStore = create<Store>()(
-  persist(
-    (set, get) => ({
-      ...INITIAL_STATE,
-      currentStep: getLandingStep(INITIAL_STATE),
+  (set, get) => ({
+    ...INITIAL_STATE,
+    currentStep: getLandingStep(INITIAL_STATE),
 
       goNext: () => {
         const s = get();
@@ -100,25 +102,7 @@ export const useIntakeStore = create<Store>()(
             amount
           }
         }))
-    }),
-    {
-      name: PERSIST_KEY,
-      storage: createJSONStorage(() => {
-        if (typeof window === "undefined") {
-          // SSR — provide a no-op storage so persist doesn't throw
-          return {
-            getItem: () => null,
-            setItem: () => undefined,
-            removeItem: () => undefined
-          } as Storage;
-        }
-        return window.localStorage;
-      }),
-      version: 1,
-      // Include everything — state is small and we want full resume.
-      partialize: (s) => s
-    }
-  )
+  })
 );
 
 /** Hook-free access for event handlers / tests. */

@@ -1,9 +1,12 @@
 "use client";
 
 // Petal chat runtime - shared by /os/ask and the client-record @Petal rail.
-// Answers come from the scripted demo bank (lib/fixtures/demo-chat); this file
-// owns the conversation state, the agentic reveal (steps → prose → chart →
-// findings), and the answer renderer.
+// Replies come from the REAL assistant: send() POSTs the message to /api/ask,
+// which runs the ZDR Anthropic model with the Petal persona prompt (§7216-safe:
+// the message is redacted and no client records are injected). This file owns the
+// conversation state, the agentic reveal (steps → prose → chart → findings), and
+// the answer renderer. The scripted demo bank (matchQuestion) is kept only as an
+// offline fallback when the API is unreachable, so the demo never goes blank.
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,12 +26,26 @@ export type ChatMsg =
 
 let msgSeq = 1;
 
+/** Real assistant reply text → the ChatAnswer the renderer already streams. We
+ * split on blank lines so multi-paragraph replies flow through the existing
+ * paragraph-by-paragraph reveal unchanged. */
+function answerFromReply(reply: string): ChatAnswer {
+  const paragraphs = reply
+    .split(/\n{2,}/)
+    .map(p => p.replace(/\s+\n/g, " ").trim())
+    .filter(Boolean);
+  return { paragraphs: paragraphs.length ? paragraphs : [reply.trim()] };
+}
+
 export function usePetalChat(scopeHouseholdId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  // prior turns for /api/ask context, kept in a ref so send() stays stable
+  const historyRef = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
 
   const send = useCallback((text: string, attachments?: string[]) => {
     const q = text.trim();
     if (!q && !attachments?.length) return;
+    const message = q || (attachments?.join(", ") ?? "");
     const userId = ++msgSeq;
     const thinkingId = ++msgSeq;
     setMessages(m => [
@@ -36,14 +53,40 @@ export function usePetalChat(scopeHouseholdId?: string) {
       { id: userId, role: "user", text: q, attachments },
       { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true },
     ]);
-    const answer = matchQuestion(q || (attachments?.join(", ") ?? ""), scopeHouseholdId);
-    // hold the premium loading state for a beat (Petal "working"), then answer
-    window.setTimeout(() => {
+
+    const history = historyRef.current.slice();
+    historyRef.current = [...history, { role: "user", content: message }];
+
+    const settle = (answer: ChatAnswer, replyForHistory?: string) => {
+      if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
       setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
-    }, 2400);
+    };
+
+    // REAL assistant: POST to /api/ask. The route redacts the message (§7216) and
+    // never injects client records. On any failure, fall back to the scripted
+    // demo bank so the experience never goes blank.
+    fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history }),
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(`ask failed: ${res.status}`);
+        const data = (await res.json()) as { reply?: string };
+        const reply = (data.reply ?? "").trim();
+        if (!reply) throw new Error("empty reply");
+        settle(answerFromReply(reply), reply);
+      })
+      .catch(() => {
+        // offline / API down → scripted demo answer (no history echo)
+        settle(matchQuestion(message, scopeHouseholdId));
+      });
   }, [scopeHouseholdId]);
 
-  const reset = useCallback(() => setMessages([]), []);
+  const reset = useCallback(() => {
+    historyRef.current = [];
+    setMessages([]);
+  }, []);
 
   return { messages, send, reset };
 }

@@ -1,5 +1,6 @@
 import { Stagehand } from "@browserbasehq/stagehand";
 import { z } from "zod";
+import { assertCleared } from "@/lib/ai/guard";
 
 // ⑥ OLT (OnLine Taxes) browser automation via Stagehand on Browserbase (hosted, verified
 // connectivity live). Petal OPERATES OLT to PULL a return's figures and reconcile them
@@ -48,6 +49,11 @@ export class OltPuller {
   // Pull the current return's figures as structured, schema-validated data for the quarantine
   // queue. Model-driven (no brittle selectors); verbatim transcription only.
   async pullReturn(): Promise<ReturnPull> {
+    // §7216 code-gate (enforcement point, not a comment): OLT pulls run on
+    // §7216-cleared returns, which today are synthetic/public. If real taxpayer
+    // returns are ever driven through OLT, switch this to assertCleared('real') —
+    // which throws until counsel clears real-data AI via PETAL_7216_CLEARED.
+    assertCleared("synthetic");
     await this.sh.act("Open the current tax return summary page");
     const res = await this.sh.extract("Extract the return's key figures", ReturnPull);
     return ReturnPull.parse(res);

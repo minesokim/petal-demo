@@ -4,6 +4,7 @@ import { REASONING_SYSTEM } from "./prompts";
 import { checkFaithfulness } from "./faithfulness";
 import { verifyStructural } from "./verify";
 import { deriveTier } from "./tier";
+import { assertCleared } from "./guard";
 import type { AuthorityChunk } from "./authority";
 
 // ④ Reasoning layer. Retrieve-then-reason: the agent may cite ONLY the chunks passed in.
@@ -11,6 +12,11 @@ import type { AuthorityChunk } from "./authority";
 // cites a chunkId we didn't provide, is dropped before it can reach a human. The model is
 // never trusted to police its own grounding.
 export async function reason(provider: AIProvider, question: string, chunks: AuthorityChunk[]): Promise<RO> {
+  // §7216 code-gate (enforcement point, not a comment): this pipeline reasons over
+  // synthetic/public authority chunks only. If a caller ever routes real taxpayer
+  // return data through here, switch this to assertCleared('real') — which throws
+  // until counsel clears real-data AI via PETAL_7216_CLEARED.
+  assertCleared("synthetic");
   if (chunks.length === 0) return { positions: [], abstained: true };
 
   const authorityBlock = chunks
