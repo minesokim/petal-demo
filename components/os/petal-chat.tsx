@@ -28,7 +28,7 @@ import { confirmAgentAction } from "@/app/os/ask/agent-actions";
 
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
-  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean };
+  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: string[] };
 
 let msgSeq = 1;
 
@@ -46,6 +46,85 @@ function answerFromReply(reply: string): ChatAnswer {
 // The agent's confirm-card wire shape: a staged write the model proposed. Rendered as the
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
+
+type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[] };
+
+/** Friendly inline message for an error frame (so the bubble never goes raw). */
+function friendlyAgentError(code: string): string {
+  if (code === "gated_7216")
+    return "I can't run that on real client data yet — real-data AI is still pending the §7216 sign-off.";
+  return "Something went wrong on my side. Let me try a simpler answer.";
+}
+
+/**
+ * Open the agent SSE stream and drive the live thinking trace. Resolves with the terminal
+ * `done` result; REJECTS on an `error` frame or a transport failure so the caller can fall
+ * back to /api/ask. `step` frames are pushed into the in-flight bubble as they arrive.
+ *
+ * Frames are newline-delimited SSE: `event: <name>\ndata: <json>\n\n`. We buffer the byte
+ * stream, split on the blank-line record separator, and dispatch each record.
+ */
+async function streamAgent({
+  message,
+  history,
+  pushStep,
+}: {
+  message: string;
+  history: { role: "user" | "assistant"; content: string }[];
+  pushStep: (label: string) => void;
+}): Promise<AgentResult> {
+  const res = await fetch("/api/agent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!res.ok || !res.body) throw new Error(`agent failed: ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let result: AgentResult | null = null;
+  let errored: string | null = null;
+
+  const handleRecord = (record: string) => {
+    let event = "message";
+    const dataLines: string[] = [];
+    for (const line of record.split("\n")) {
+      if (line.startsWith("event:")) event = line.slice(6).trim();
+      else if (line.startsWith("data:")) dataLines.push(line.slice(5).replace(/^ /, ""));
+    }
+    if (!dataLines.length) return;
+    let data: unknown;
+    try { data = JSON.parse(dataLines.join("\n")); } catch { return; }
+    if (event === "step") {
+      const label = (data as { label?: unknown }).label;
+      if (typeof label === "string" && label.trim()) pushStep(label);
+    } else if (event === "done") {
+      const d = data as AgentResult;
+      result = { reply: d.reply ?? "", proposedActions: d.proposedActions };
+    } else if (event === "error") {
+      errored = (data as { error?: unknown }).error as string ?? "agent_error";
+    }
+  };
+
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let sep: number;
+    // Records are separated by a blank line (\n\n).
+    while ((sep = buf.indexOf("\n\n")) !== -1) {
+      const record = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+      if (record.trim()) handleRecord(record);
+    }
+  }
+  if (buf.trim()) handleRecord(buf);
+
+  if (errored) throw new Error(errored);
+  if (!result) throw new Error("agent stream ended without a result");
+  return result;
+}
 
 export function usePetalChat(scopeHouseholdId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -75,7 +154,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     setMessages(m => [
       ...m,
       { id: userId, role: "user", text: q, attachments },
-      { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true },
+      { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true, liveSteps: [] },
     ]);
 
     const history = historyRef.current.slice();
@@ -90,7 +169,18 @@ export function usePetalChat(scopeHouseholdId?: string) {
 
     const settle = (answer: ChatAnswer, replyForHistory?: string) => {
       if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
-      setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false } : msg)));
+      setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false, liveSteps: undefined } : msg)));
+    };
+
+    // Append a streamed thinking step to the in-flight bubble (Claude-style live trace).
+    const pushStep = (label: string) => {
+      setMessages(m => m.map(msg => {
+        if (msg.id !== thinkingId || msg.role !== "petal") return msg;
+        const prev = msg.liveSteps ?? [];
+        // De-dupe an identical consecutive label (a retried turn shouldn't double a line).
+        if (prev[prev.length - 1] === label) return msg;
+        return { ...msg, liveSteps: [...prev, label] };
+      }));
     };
 
     // FALLBACK assistant: POST to /api/ask. Reached ONLY when the unified agent itself
@@ -120,27 +210,34 @@ export function usePetalChat(scopeHouseholdId?: string) {
         });
     };
 
-    // UNIFIED, MODEL-DRIVEN AGENT — no trigger-word routing. EVERY message goes to /api/agent.
-    // The model decides what to do from the natural language: it can look up a client, research a
-    // tax question (cited), compute a figure, draft an email (all reads, woven into the reply), or
-    // STAGE an external write (SMS/create/request) as a confirm card the preparer clicks. The
-    // reply renders in the existing ChatAnswer shape; staged writes render as the existing
-    // ConfirmCards. /api/ask is the fallback ONLY if /api/agent itself errors.
-    fetch("/api/agent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history }),
-    })
-      .then(async res => {
-        if (!res.ok) throw new Error(`agent failed: ${res.status}`);
-        const data = (await res.json()) as { reply?: string; proposedActions?: AgentConfirmAction[] };
-        const reply = (data.reply ?? "").trim() || "Done.";
-        const ans = answerFromReply(reply);
-        if (data.proposedActions?.length) ans.confirmActions = data.proposedActions;
-        settle(ans, reply);
-        persist("assistant", reply);
+    // UNIFIED, MODEL-DRIVEN AGENT — no trigger-word routing. EVERY message goes to /api/agent,
+    // now over a Server-Sent Event STREAM so the preparer sees a live, Claude-style thinking
+    // trace. The model decides what to do from the natural language: it can look up a client,
+    // research a tax question (cited), compute a figure, draft an email (all reads, woven into the
+    // reply), or STAGE an external write (SMS/create/request) as a confirm card the preparer
+    // clicks. `step` frames stream into liveSteps as each phase/tool fires; the terminal `done`
+    // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
+    // stream errors (network failure or an `error` frame).
+    streamAgent({ message, history, pushStep })
+      .then(({ reply, proposedActions }) => {
+        const text = (reply ?? "").trim() || "Done.";
+        const ans = answerFromReply(text);
+        if (proposedActions?.length) ans.confirmActions = proposedActions;
+        settle(ans, text);
+        persist("assistant", text);
       })
-      .catch(runAsk);
+      .catch((err: unknown) => {
+        // A §7216 gate is an honest, terminal answer — show it inline, don't paper over it with
+        // a scripted demo or an /api/ask retry. Any OTHER failure falls back to /api/ask.
+        const code = err instanceof Error ? err.message : "";
+        if (code === "gated_7216") {
+          const msg = friendlyAgentError(code);
+          settle(answerFromReply(msg), msg);
+          persist("assistant", msg);
+          return;
+        }
+        runAsk();
+      });
   }, [scopeHouseholdId, persist]);
 
   // Analyze a dropped/attached document. POSTs the file to /api/ask/analyze, which
@@ -306,6 +403,73 @@ function Thinking() {
   );
 }
 
+/* ── live thinking trace (streamed) ─────────────────────────── */
+
+// PetalThinking — the Claude-style live reasoning panel shown on the in-flight assistant bubble
+// while the agent streams `step` frames. The PetalMark pulses calmly, a "Thinking" label sits
+// beside it, and each streamed step appears one-by-one: the CURRENT step is active (an animated
+// shimmer dot), completed steps dim with a tiny check. Before the first step arrives it falls
+// back to the existing phrase rotator so the bubble is never empty. Pure ADD — reuses the chat's
+// own tokens (os-ink-muted, PetalMark, motion/react) and the surrounding type scale.
+function PetalThinking({ steps, compact }: { steps: string[]; compact?: boolean }) {
+  const reduced = prefersReduced();
+  if (!steps.length) return <Thinking />;
+
+  return (
+    <div className="min-w-0">
+      <div className="mb-2 flex items-center gap-2">
+        <motion.span
+          aria-hidden
+          className="grid place-items-center text-[var(--os-brand)]"
+          animate={reduced ? undefined : { opacity: [0.45, 1, 0.45], scale: [0.92, 1, 0.92] }}
+          transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
+        >
+          <PetalMark className={compact ? "size-3.5" : "size-4"} />
+        </motion.span>
+        <span className={cn("font-medium text-[var(--os-ink-muted)]", compact ? "text-[12px]" : "text-[12.5px]")}>
+          Thinking
+        </span>
+      </div>
+
+      <div className="space-y-1.5">
+        <AnimatePresence initial={false}>
+          {steps.map((label, i) => {
+            const isCurrent = i === steps.length - 1;
+            return (
+              <motion.div
+                key={`${i}-${label}`}
+                layout={!reduced}
+                initial={reduced ? false : { opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.26, ease: "easeOut" }}
+                className="flex items-start gap-2 text-[12px]"
+              >
+                <span className="mt-px grid size-3.5 shrink-0 place-items-center">
+                  {isCurrent ? (
+                    <motion.span
+                      aria-hidden
+                      className="size-1.5 rounded-full bg-[var(--os-brand)]"
+                      animate={reduced ? undefined : { opacity: [0.35, 1, 0.35], scale: [0.8, 1.15, 0.8] }}
+                      transition={{ duration: 1.1, ease: "easeInOut", repeat: Infinity }}
+                    />
+                  ) : (
+                    <span className="grid size-3.5 place-items-center rounded-full bg-[var(--os-brand)] text-white">
+                      <Icon icon={I.check} size={9} />
+                    </span>
+                  )}
+                </span>
+                <span className={cn("leading-snug", isCurrent ? "text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>
+                  {label}
+                </span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 /* ── agentic step trace ─────────────────────────────────────── */
 
 function AgentSteps({ steps, stream, onDone }: { steps: ChatStep[]; stream: boolean; onDone: () => void }) {
@@ -453,12 +617,15 @@ function FindingsList({ findings }: { findings: ChatFinding[] }) {
 export function PetalAnswerView({
   answer,
   thinking,
+  liveSteps,
   stream = true,
   compact = false,
   onSuggest,
 }: {
   answer: ChatAnswer;
   thinking?: boolean;
+  /** streamed reasoning steps for the in-flight bubble (Claude-style live trace) */
+  liveSteps?: string[];
   /** stream the reveal (latest message) vs render instantly (history) */
   stream?: boolean;
   /** tighter type + spacing for the record rail */
@@ -470,7 +637,7 @@ export function PetalAnswerView({
   const [revealed, setRevealed] = useState(stream ? 0 : Infinity);
   const allDone = stepsDone && revealed >= answer.paragraphs.length;
 
-  if (thinking) return <Thinking />;
+  if (thinking) return <PetalThinking steps={liveSteps ?? []} compact={compact} />;
 
   return (
     <div className={cn("min-w-0 space-y-2.5", compact && "space-y-2 text-[12.5px]")}>

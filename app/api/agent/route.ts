@@ -1,6 +1,11 @@
-// Agentic Petal endpoint. POST { message, history? } → { reply, proposedActions }.
+// Agentic Petal endpoint. POST { message, history? } → a Server-Sent Event stream.
 // Runs the tool-use agent: it reads firm state freely and STAGES writes as proposedActions
 // for the preparer to confirm (nothing mutates here). Auth-gated; §7216-real under the flag.
+//
+// EVENT CONTRACT (text/event-stream — do NOT change shape):
+//   event: step\n  data: {"label":"<present-tense human action>"}\n\n   — per phase/tool
+//   event: done\n  data: {"reply":"<text>","proposedActions":[...]}\n\n   — terminal result
+//   event: error\n data: {"error":"<short>"}\n\n                          — terminal on failure
 
 import { NextResponse } from "next/server";
 import { getFirmContext } from "@/lib/auth/context";
@@ -32,13 +37,44 @@ export async function POST(req: Request) {
   if (typeof message !== "string" || !message.trim()) return NextResponse.json({ error: "message_required" }, { status: 400 });
   if (message.length > 8000) return NextResponse.json({ error: "message_too_long" }, { status: 413 });
 
-  try {
-    const { reply, proposedActions } = await runAgent(message, sanitizeHistory((body as { history?: unknown }).history), { scope: "real" });
-    return NextResponse.json({ reply, proposedActions }, { headers: { "Cache-Control": "no-store" } });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "";
-    if (/§7216|7216 gate/.test(msg)) return NextResponse.json({ error: "gated_7216", detail: msg }, { status: 403 });
-    console.error("[/api/agent] failed:", err instanceof Error ? err.name : "unknown");
-    return NextResponse.json({ error: "agent_error" }, { status: 502 });
-  }
+  const history = sanitizeHistory((body as { history?: unknown }).history);
+  const text = message; // narrowed string
+
+  // Stream the run as SSE: `step` frames as the agent reasons/dispatches tools, then a terminal
+  // `done` (or `error`) frame. The agent loop's safety contract is unchanged — reads auto-run,
+  // writes are STAGED into proposedActions, nothing mutates here.
+  const encoder = new TextEncoder();
+  const frame = (event: string, data: unknown) =>
+    encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        const { reply, proposedActions } = await runAgent(text, history, {
+          scope: "real",
+          onEvent: (e) => {
+            // Best-effort: if the client already disconnected, enqueue throws — swallow it.
+            try { controller.enqueue(frame("step", { label: e.label })); } catch { /* closed */ }
+          },
+        });
+        controller.enqueue(frame("done", { reply, proposedActions }));
+      } catch (err) {
+        const name = err instanceof Error ? err.name : "unknown";
+        const msg = err instanceof Error ? err.message : "";
+        const error = /§7216|7216 gate/.test(msg) ? "gated_7216" : name;
+        if (error !== "gated_7216") console.error("[/api/agent] failed:", name);
+        try { controller.enqueue(frame("error", { error })); } catch { /* closed */ }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }

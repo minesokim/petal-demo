@@ -18,7 +18,7 @@ import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
 
-const AGENT_MODEL = "claude-sonnet-4-6"; // ZDR-eligible
+const AGENT_MODEL = "claude-opus-4-8"; // ZDR-eligible (Opus approved for the agent loop)
 // Raised to 8 so a lookup → act chain (find_client → get_client_detail → stage a write) has
 // room to complete in a single turn without truncation.
 const MAX_TURNS = 8;
@@ -31,6 +31,54 @@ const AGENT_SYSTEM = `You are Petal, an AI-native assistant for a tax firm. From
 
 export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string };
 export type AgentTurn = { role: "user" | "assistant"; content: string };
+
+// A streamed reasoning event. The runner emits one of these before the first model call
+// ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
+// thinking trace. `label` is a short, present-tense, HUMAN action — never a raw tool name.
+export type AgentEvent = { type: "step"; label: string };
+
+// labelFor — map a tool + its args to the human, present-tense step label in the EVENT CONTRACT.
+// `nameFor` resolves a householdId in args to the client's NAME when firm data is loaded (so the
+// label reads "Preparing a text to Haokun Li" rather than an opaque id). Pure + total: any
+// unmapped tool falls back to "Working on it" so a new tool never crashes the trace.
+function shortQuestion(q: unknown): string {
+  const s = typeof q === "string" ? q.trim() : "";
+  if (!s) return "the question";
+  return s.length > 48 ? `${s.slice(0, 48).trimEnd()}…` : s;
+}
+
+export function labelFor(
+  tool: string,
+  args: Record<string, unknown>,
+  nameFor?: (householdId: unknown) => string | undefined,
+): string {
+  const who = (key: "householdId" | "query" | "to") => nameFor?.(args[key]);
+  switch (tool) {
+    case "find_client":
+      return `Looking up ${typeof args.query === "string" && args.query.trim() ? args.query.trim() : "the client"}`;
+    case "get_client_detail":
+      return "Reading the client record";
+    case "list_clients":
+    case "list_tasks":
+      return "Reading the firm's records";
+    case "tax_research":
+      return `Researching ${shortQuestion(args.question)}`;
+    case "tax_compute":
+      return "Computing the figure";
+    case "draft_email":
+      return "Drafting the email";
+    case "send_sms": {
+      const name = who("householdId");
+      return `Preparing a text to ${name ?? "the client"}`;
+    }
+    case "send_email":
+      return "Preparing the email";
+    default:
+      if (tool.startsWith("create_")) return "Setting that up";
+      if (tool.startsWith("request_")) return "Setting that up";
+      return "Working on it";
+  }
+}
 
 // ── The model seam ────────────────────────────────────────────────────────────────────────────
 // The loop talks to the model through this one function so a test can script the turns (no
@@ -50,10 +98,30 @@ function anthropicSeam(apiKey: string): ModelSeam {
 export async function runAgent(
   message: string,
   history: AgentTurn[] = [],
-  opts: { scope?: DataScope; model?: ModelSeam } = {},
+  opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
 ): Promise<{ reply: string; proposedActions: ProposedAction[] }> {
   assertZdrModel(AGENT_MODEL);
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
+
+  // onEvent is BEST-EFFORT: a throwing listener must never break the agent loop or the
+  // safety contract. Wrap every emit so a UI-side error stays UI-side.
+  const emit = (e: AgentEvent) => {
+    if (!opts.onEvent) return;
+    try { opts.onEvent(e); } catch { /* best-effort: never throw out of the loop */ }
+  };
+
+  // Resolve a householdId → client NAME for human step labels (e.g. "Preparing a text to Haokun
+  // Li"). Loaded once, best-effort: if firm data isn't available (a scripted test, an offline
+  // seam), labels fall back to "the client". This mirrors the proposedActions name resolution.
+  let nameById: Map<string, string> | undefined;
+  try {
+    const { households } = await loadFirmData();
+    nameById = new Map(households.map((h) => [h.id, h.name] as const));
+  } catch {
+    nameById = undefined;
+  }
+  const nameFor = (hid: unknown): string | undefined =>
+    typeof hid === "string" ? nameById?.get(hid) : undefined;
 
   let seam = opts.model;
   if (!seam) {
@@ -77,6 +145,8 @@ export async function runAgent(
   let reply = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    // A generic first step before the first model call: the model is reasoning about the request.
+    if (turn === 0) emit({ type: "step", label: "Thinking" });
     const res = await seam(messages, tools);
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -91,6 +161,8 @@ export async function runAgent(
     messages.push({ role: "assistant", content: res.content });
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
+      // Emit the human, present-tense step as this tool fires (best-effort; never throws).
+      emit({ type: "step", label: labelFor(tu.name, (tu.input ?? {}) as Record<string, unknown>, nameFor) });
       const tool = TOOL_BY_NAME.get(tu.name);
       if (!tool) {
         results.push({ type: "tool_result", tool_use_id: tu.id, content: "unknown tool", is_error: true });
@@ -121,20 +193,15 @@ export async function runAgent(
   }
 
   // Friendly titles: a staged write's title comes from tool.describe(args), which only has the
-  // raw householdId (e.g. "Text client h_b5e2…"). Resolve it to the client's NAME for display.
-  // Best-effort: if firm data isn't available (e.g. a scripted test), keep the id.
-  if (proposedActions.length) {
-    try {
-      const { households } = await loadFirmData();
-      const nameById = new Map(households.map((h) => [h.id, h.name] as const));
-      for (const pa of proposedActions) {
-        const hid = pa.args.householdId;
-        if (typeof hid === "string" && nameById.has(hid)) {
-          pa.title = pa.title.split(hid).join(nameById.get(hid)!);
-        }
+  // raw householdId (e.g. "Text client h_b5e2…"). Resolve it to the client's NAME for display
+  // using the map we already loaded above. Best-effort: if firm data wasn't available (e.g. a
+  // scripted test), nameById is undefined and we keep the id.
+  if (proposedActions.length && nameById) {
+    for (const pa of proposedActions) {
+      const hid = pa.args.householdId;
+      if (typeof hid === "string" && nameById.has(hid)) {
+        pa.title = pa.title.split(hid).join(nameById.get(hid)!);
       }
-    } catch {
-      /* keep the id if firm data can't be loaded */
     }
   }
 

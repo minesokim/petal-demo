@@ -1271,6 +1271,7 @@ function ClientRecordInner({ id }: { id: string }) {
                         <PetalAnswerView
                           answer={m.answer}
                           thinking={m.thinking}
+                          liveSteps={m.liveSteps}
                           compact
                           stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
                           onSuggest={q => sendChat(q)}
