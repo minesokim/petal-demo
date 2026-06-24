@@ -62,7 +62,7 @@ function petalDraftFor(thread: Thread): string {
   return `Hi ${f} - thanks for reaching out. I've got this and will follow up with the details shortly. Let me know if anything's urgent in the meantime. Best, Antonio`;
 }
 
-export function ThreadConversation({ thread }: { thread: Thread }) {
+export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?: (body: string) => Promise<{ ok: boolean; error?: string }> }) {
   const { people, expectedDocs } = useFirmData();
   const { skillById } = useDerive();
   const [reply, setReply] = useState(thread.petalDraft?.text ?? "");
@@ -108,12 +108,22 @@ export function ThreadConversation({ thread }: { thread: Thread }) {
   function postReply(toast: string) {
     const text = reply.trim();
     if (!text) return;
+    // optimistic: append the firm bubble + clear the composer immediately
     setExtraMessages(m => [...m, { from: "firm", author: "Antonio Vazquez", text, time: "just now" }]);
     setReply("");
     setAnswerRevealed(false);
     setPetalDrafted(false);
     setSent(true);
     show(toast);
+    // real send (SMS Messages tab): fire the action; roll back the optimistic bubble on failure
+    if (onSend) {
+      void onSend(text).then(r => {
+        if (!r.ok) {
+          setExtraMessages(m => m.filter(x => !(x.from === "firm" && x.text === text)));
+          show(r.error ? `Couldn't send: ${r.error}` : "Couldn't send");
+        }
+      });
+    }
   }
   const approveAndSend = () => postReply("Approved & sent");
   const send = () => postReply("Sent");

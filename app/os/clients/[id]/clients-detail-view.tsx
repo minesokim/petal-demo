@@ -26,11 +26,13 @@ import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { uploadDocumentAction, listClientFilesAction, deleteClientFileAction } from "@/app/os/documents/actions";
+import { sendClientSmsAction, listClientSmsAction, type ClientSmsRow } from "@/app/os/clients/sms-actions";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import {
   tasksOf, threadsOf, noticesOf, positionsOf, workpaperOf, skills, skillById,
   type Task, type ExpectedDoc, type Channel, type HouseholdKind, type Notice,
+  type Thread, type Message,
 } from "@/lib/fixtures/firm";
 import { useDerive } from "@/lib/client/firm-context";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
@@ -296,6 +298,8 @@ function ClientRecordInner({ id }: { id: string }) {
   const [queuedSkills, setQueuedSkills] = useState<Set<string>>(new Set());
   const [viewAsClient, setViewAsClient] = useState(false);
   const [msgThread, setMsgThread] = useState<string | null>(null);
+  // Real SMS for this household (Twilio-backed). Loaded on mount + after each send.
+  const [smsRows, setSmsRows] = useState<ClientSmsRow[]>([]);
   const [openDoc, setOpenDoc] = useState<ExpectedDoc | null>(null);
   const [taskOpen, setTaskOpen] = useState<string | null>(null);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
@@ -331,6 +335,14 @@ function ClientRecordInner({ id }: { id: string }) {
     if (tabParam) setTab(tabFromParam(tabParam));
   }, [tabParam]);
 
+  // Load the household's real SMS thread (RLS-scoped). Re-runs when the record changes.
+  useEffect(() => {
+    if (!h?.id) { setSmsRows([]); return; }
+    let live = true;
+    listClientSmsAction(h.id).then(rows => { if (live) setSmsRows(rows); }).catch(() => {});
+    return () => { live = false; };
+  }, [h?.id]);
+
   /* every fact below derives from fixtures at render time */
   const engs = useMemo(() => (h ? engagementsOf(h.id) : []), [h]);
   const ents = h ? entitiesOf(h.id) : [];
@@ -350,6 +362,30 @@ function ClientRecordInner({ id }: { id: string }) {
   const health = clientHealth(h.id);
   const feed = activityFeed({ householdId: h.id });
   const openTasks = hhTasks.filter(t => t.status !== "done");
+
+  // Real SMS conversation, shaped into the Thread the existing <ThreadConversation> renders.
+  // direction 'outbound' → firm bubble (sent), 'inbound' → client bubble (received).
+  const smsThread: Thread | null = smsRows.length > 0 ? {
+    id: `sms-${h.id}`,
+    householdId: h.id,
+    clientName: h.name,
+    channel: "sms",
+    subject: "Text messages",
+    preview: smsRows[smsRows.length - 1]?.body ?? "",
+    time: "",
+    unread: false,
+    status: "open",
+    messages: smsRows.map((r): Message => ({
+      from: r.direction === "outbound" ? "firm" : "client",
+      author: r.direction === "outbound" ? "Antonio Vazquez" : h.name,
+      text: r.body,
+      time: new Date(r.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+    })),
+  } : null;
+  // Direct send (user-initiated, no AI confirm). On success the thread revalidates server-side.
+  const sendClientSms = async (body: string) => sendClientSmsAction({ householdId: h.id, body });
+  // Real SMS thread leads; the fixture threads (email/portal/call) follow.
+  const msgThreads: Thread[] = smsThread ? [smsThread, ...hhThreads] : hhThreads;
 
   // The canned @Petal answer - composed from the SAME derivations as the header strip.
   const petalAnswer =
@@ -385,7 +421,7 @@ function ClientRecordInner({ id }: { id: string }) {
   const tabCount: Partial<Record<Tab, number>> = {
     Returns: engs.length,
     Tasks: hhTasks.length,
-    Messages: hhThreads.length,
+    Messages: msgThreads.length,
     Positions: hhPositions.length,
   };
 
@@ -597,17 +633,17 @@ function ClientRecordInner({ id }: { id: string }) {
             </div>
 
             {tab === "Messages" ? (
-              hhThreads.length === 0 ? (
+              msgThreads.length === 0 ? (
                 <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-muted)]">
                   <p>No messages with {h.name} yet. Start one from the Inbox, or let a skill draft the first touch.</p>
                 </div>
               ) : (() => {
-                const sel = hhThreads.find(t => t.id === msgThread) ?? hhThreads[0];
+                const sel = msgThreads.find(t => t.id === msgThread) ?? msgThreads[0];
                 return (
                   <div className="flex min-h-0 flex-1 flex-col">
-                    {hhThreads.length > 1 && (
+                    {msgThreads.length > 1 && (
                       <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-4 py-1.5 sm:px-5">
-                        {hhThreads.map(t => (
+                        {msgThreads.map(t => (
                           <button
                             key={t.id}
                             onClick={() => setMsgThread(t.id)}
@@ -623,7 +659,7 @@ function ClientRecordInner({ id }: { id: string }) {
                         ))}
                       </div>
                     )}
-                    <ThreadConversation key={sel.id} thread={sel} />
+                    <ThreadConversation key={sel.id} thread={sel} onSend={smsThread && sel.id === smsThread.id ? sendClientSms : undefined} />
                   </div>
                 );
               })()

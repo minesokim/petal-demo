@@ -396,3 +396,20 @@ export const chatMessages = pgTable("chat_messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// SMS message persistence (0027_sms_messages.sql) — every outbound/inbound text a
+// firm sends a household, so the client page renders the conversation as a thread.
+// Distinct from `threads` (the richer client-messaging inbox); this is the literal
+// SMS log. household_id is a soft link (set null on household delete). firm_id scopes
+// every row (RLS); the body is the firm's own client-communication data.
+export const smsMessages = pgTable("sms_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  householdId: text("household_id").references(() => households.id, { onDelete: "set null" }),
+  direction: text("direction").notNull(), // outbound | inbound
+  body: text("body").notNull(),
+  phone: text("phone").notNull(),
+  twilioSid: text("twilio_sid"),
+  status: text("status"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
