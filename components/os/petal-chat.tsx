@@ -56,6 +56,66 @@ type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: 
 const COMPUTE_INTENT =
   /\b(compute|calculate|figure out|work out|how much|what'?s? the)\b[^?]*\b(eitc|earned[- ]income( tax)? credit|child tax credit|\bctc\b|aotc|american opportunity|\bqbi\b|199a|standard deduction)\b/i;
 
+// Tax-research intent: a tax QUESTION (not an imperative "do" request, not a pure computation)
+// that turns on a research term — a rule, threshold, conformity, or treatment the grounded
+// engine can answer from primary authority. Broader than COMPUTE_INTENT (it doesn't require a
+// named worksheet) but still keyword-gated so ordinary chat stays on the general assistant.
+// Two conditions, both required: (1) the message READS as a question — it ends with "?" or
+// opens with an interrogative/auxiliary; (2) it mentions a tax-research term. The leading
+// negative lookahead drops imperative AGENT verbs so "set the SALT cap…" can't match here.
+const RESEARCH_TERMS =
+  /\b(deduct|deduction|deductible|credit|exemption|cap|conform|conformity|conforms|depreciat\w*|basis|penalt\w*|statute of limitations|reasonable comp\w*|estate|gift tax|\bsalt\b|\bqbi\b|bonus depreciation|tips?|overtime)\b/i;
+const RESEARCH_INTENT =
+  /^(?!\s*(create|add|make|new|draft|set|mark|move|assign|request|chase|resolve|approve|update|rename|schedule)\b)(?=.*\?|.*\b(what|which|when|how|does|do|is|are|can|should|must|may|whether)\b)(?=.*[a-z]).*$/i;
+// A research question matches the interrogative shape AND a research term, but is NOT a pure
+// computation (a named-worksheet "how much is the EITC" is the compute engine's job, even though
+// it also reads as a question). Excluding COMPUTE_INTENT here keeps the spec's "NOT a pure
+// computation" boundary while preserving the agent → research → compute evaluation order.
+const isResearchQuestion = (m: string) =>
+  RESEARCH_INTENT.test(m) && RESEARCH_TERMS.test(m) && !COMPUTE_INTENT.test(m);
+
+// The grounded research engine's wire shape (/api/research). `citations` carry a resolvable
+// `sourceUrl`; `bucket` is the observable answer shape; `currencyNote` flags staleness.
+type ResearchAnswerWire = {
+  answer: string;
+  citations: { authority: string; cite: string; sourceUrl: string }[];
+  bucket: "answer" | "hedge" | "coverage_gap";
+  currencyNote?: string;
+  reviewNotes: string[];
+};
+
+// Render a SourcedAnswer in the EXISTING chat-answer shape (no new UI): the prose as
+// paragraphs, the citations as `sources` (cite strings) + `links` (deep-linked to sourceUrl),
+// the review notes as findings. A coverage_gap carries no authority, so we surface a clear
+// "no current authority in my sources" line instead of an answer that looks cited.
+function researchAnswerToChatAnswer(a: ResearchAnswerWire): ChatAnswer {
+  const paragraphs: string[] = [];
+  if (a.bucket === "coverage_gap") {
+    paragraphs.push(
+      a.answer?.trim() ||
+        "I don't have current authority for that in my sources, so I won't answer it. I can only answer what I can cite to primary law I've verified.",
+    );
+  } else {
+    paragraphs.push(a.answer.trim());
+  }
+  if (a.currencyNote?.trim()) paragraphs.push(`**Currency:** ${a.currencyNote.trim()}`);
+
+  return {
+    paragraphs,
+    sources: a.citations.length ? a.citations.map((c) => c.cite) : undefined,
+    links: a.citations.length
+      ? a.citations.map((c) => ({ label: c.cite, href: c.sourceUrl }))
+      : undefined,
+    findings: a.reviewNotes.length
+      ? a.reviewNotes.map((n) => ({
+          title: "Check before relying on this",
+          detail: n,
+          severity: "medium" as const,
+        }))
+      : undefined,
+  };
+}
+
 type TaxAnswerWire = {
   worksheet: string;
   value: number;
@@ -181,6 +241,29 @@ export function usePetalChat(scopeHouseholdId?: string) {
           if (data.proposedActions?.length) ans.confirmActions = data.proposedActions;
           settle(ans, reply);
           persist("assistant", reply);
+        })
+        .catch(runAsk);
+      return;
+    }
+
+    // Tax-research intent → the grounded research engine (/api/research): a tax question that
+    // turns on a rule/threshold/conformity/treatment, answered from primary authority with the
+    // bucket + currency note derived from adversarial verification. Ordered AFTER agent (so an
+    // imperative "do" still routes to the agent) and BEFORE compute (a named-worksheet compute
+    // question is the more specific intent). Any failure falls back to the general assistant.
+    if (isResearchQuestion(message)) {
+      fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: message }),
+      })
+        .then(async res => {
+          if (!res.ok) throw new Error(`research failed: ${res.status}`);
+          const data = (await res.json()) as ResearchAnswerWire & { answer?: string };
+          if (typeof data.answer !== "string" || !data.bucket) throw new Error("no answer");
+          const ans = researchAnswerToChatAnswer(data);
+          settle(ans, ans.paragraphs.join(" "));
+          persist("assistant", ans.paragraphs.join(" "));
         })
         .catch(runAsk);
       return;

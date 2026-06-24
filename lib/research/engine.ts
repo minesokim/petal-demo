@@ -1,0 +1,538 @@
+// GROUNDED RESEARCH PIPELINE (lib/research/engine.ts) — the architectural fix.
+//
+// This is the seam the research transcript failures pointed at. A naive LLM trained on
+// pre-2025 law answers a 2026 SALT question with "$10,000", invents a Rev. Rul. that does
+// not exist, and abstains on the OBBBA senior/overtime deductions it SHOULD answer. Three
+// distinct failures, one root cause: the model was trusted to (a) supply its own facts,
+// (b) police its own grounding, and (c) decide for itself when it lacks authority. This
+// pipeline removes all three trusts and replaces them with code:
+//
+//   1. RETRIEVE  — facts come ONLY from the year+jurisdiction-filtered authority store
+//                  (corpus-2025 + corpus-obbba). Superseded chunks are dropped for the
+//                  target year by the store itself, so a stale pre-OBBBA figure can never
+//                  reach the model. No parametric recall. (store.retrieve)
+//   2. REASON    — grounded via the existing reason / reasonAndScore path. "No citation, no
+//                  claim" is already enforced there: a position citing a chunkId we did not
+//                  retrieve is dropped before it is scored. (lib/ai/reasoning)
+//   3. VERIFY    — the 10.22(c)(1) fix. Circular 230 §10.22 imposes diligence as to accuracy:
+//                  you may not rely on an authority you have not actually checked resolves. So
+//                  EVERY cite the model emits is re-resolved here against the retrieved set AND
+//                  checked for supersession for the target year. A cite that resolves to no
+//                  retrieved chunk is FABRICATED → dropped. A cite that resolves but is
+//                  superseded/out-of-year is STALE → dropped + the position downgraded. A
+//                  model-proposed authority absent from the store never survives.
+//   4. BUCKET    — the 3-bucket calibration fix. On-point CURRENT authority retrieved and a
+//                  grounded position survives → `answer` (cite it). Genuinely indeterminate
+//                  (a facts-and-circumstances doctrine or an unreleased future figure — no
+//                  operative rule to retrieve) → `hedge` (list the factors). Should-be-covered
+//                  but retrieval came back empty → `coverage_gap` (say so explicitly and
+//                  decline). A coverage gap must NEVER masquerade as calibrated caution.
+//   5. JUDGE     — a SEPARATE model adversarially checks freshness/supersession: given the
+//                  target year and the surviving cites, did the answer lean on a rule stale for
+//                  that year? Its verdict forces a currency note and can downgrade the answer.
+//                  The model never grades its own freshness.
+//
+// SOURCES ON EVERYTHING: every substantive claim in an `answer` carries a citation that
+// resolved to a retrieved chunk; the citation carries its sourceUrl and a code-derived
+// authority tier so the preparer can see WHAT kind of authority backs it.
+//
+// §7216: this pipeline runs on PUBLIC authority only (statute / reg / IRS guidance text in
+// the corpus). assertCleared('synthetic') is asserted at entry — NO client PII reaches the
+// model here. The moment a caller routes real taxpayer return data through research, it must
+// pass scope 'real' (which throws until counsel clears it via PETAL_7216_CLEARED).
+
+import { z } from "zod";
+import type { AIProvider } from "../ai/provider";
+import { assertCleared, type DataScope } from "../ai/guard";
+import { reasonAndScore } from "../ai/reasoning";
+import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import type { Jurisdiction } from "../tax/types";
+import type { ReasoningOutput } from "../ai/schema";
+
+// ── Authority tier (the "authorityTier" on every citation) ─────────────────────────────────
+// Derived in CODE from the chunk's authorityType, never declared by the model. Statute and
+// regulation are PRIMARY/controlling; published IRS guidance and case law are STRONG but
+// interpretive; a form instruction is the WEAKEST (informal, non-precedential). The preparer
+// sees this so "right answer, weak authority" is visible rather than hidden.
+export type AuthorityTier = "primary" | "interpretive" | "informal";
+
+export function tierOfAuthority(t: AuthorityType): AuthorityTier {
+  switch (t) {
+    case "statute":
+    case "regulation":
+      return "primary";
+    case "irs_guidance":
+    case "case":
+      return "interpretive";
+    case "form_instruction":
+      return "informal";
+  }
+}
+
+// Coarse authority family for the existing chat wire (which renders `authority` + `cite` +
+// `sourceUrl`). Derived from the cite string so the rendered label matches the workpaper.
+function authorityFamily(cite: string): string {
+  if (/CFR/i.test(cite)) return "CFR";
+  if (/\bRTC\b/i.test(cite)) return "CA RTC";
+  if (/\bFTB\b/i.test(cite)) return "FTB";
+  if (/Rev\.?\s*(Proc|Rul)/i.test(cite)) return "IRS guidance";
+  if (/OBBBA|P\.?L\.?\s*119/i.test(cite)) return "Public Law";
+  if (/IRC|§\s*\d/i.test(cite)) return "IRC";
+  return "authority";
+}
+
+// ── The output contract ────────────────────────────────────────────────────────────────────
+
+/** One resolved, verified citation backing a substantive claim. Sources on everything. */
+export type SourcedCitation = {
+  chunkId: string; // the retrieved chunk it resolved to (audit anchor)
+  authority: string; // coarse family (IRC / CFR / CA RTC / …) — for the existing chat wire
+  cite: string; // the legal cite string a preparer writes on a workpaper
+  sourceUrl: string; // official, free primary source
+  authorityTier: AuthorityTier; // code-derived from the chunk's authorityType
+  taxYear: number; // the year this cite was retrieved + verified for
+};
+
+/**
+ * The observable shape of the answer to the user. The three graded buckets are
+ * answer | hedge | coverage_gap (per tests/research/golden); `abstain` is the internal fourth
+ * — the reasoning layer produced nothing groundable even though authority WAS retrieved (a
+ * grounding/freshness failure, distinct from a coverage gap where retrieval itself was empty).
+ * `abstain` renders to the user as a hedge but is reported distinctly so an operator can tell a
+ * retrieval gap from a reasoning gap.
+ */
+export type AnswerBucket = "answer" | "hedge" | "coverage_gap" | "abstain";
+
+export type SourcedAnswer = {
+  answer: string;
+  citations: SourcedCitation[];
+  bucket: AnswerBucket;
+  /** Set when a freshness/supersession concern is relevant (a year-boundary or an OBBBA
+   *  change). Explains WHY the figure is current, or notes the gap. */
+  currencyNote?: string;
+  /** What the preparer must check before adopting. Never auto-filed. */
+  reviewNotes: string[];
+};
+
+// ── The adversarial freshness/supersession judge ────────────────────────────────────────────
+// A SEPARATE model (different from `provider`, per the master spec) that does ONE job: given
+// the target tax year and the cites that survived verification, decide whether the answer rests
+// on a rule that is STALE for that year. Binary rubric → high judge accuracy. It never sees
+// client data (public authority text only) and never recomputes anything.
+const FRESHNESS_JUDGE_SYSTEM = `You are an adversarial FRESHNESS reviewer for tax research. You are
+given a target tax year, a drafted answer, and the authorities it cites (each with the year it was
+retrieved for). Your only job: decide whether the answer relies on a rule that is STALE or
+SUPERSEDED for the target year — for example, quoting a pre-2025 figure for a 2026 question, or
+treating a provision as expired when later law made it permanent. Do NOT recompute figures and do
+NOT use outside knowledge of specific dollar amounts; judge only internal consistency between the
+target year, the cited authority TEXT provided (and the year each was retrieved for), and the
+claim. This INCLUDES figure consistency: for every dollar or percentage figure the answer states,
+check it against the cited authority text you are given — if the answer presents a figure in a
+role the cited text contradicts for the target year (for example calling $10,000 the cap when the
+cited section's text gives the target-year cap as a larger amount and shows $10,000 only as a
+floor or a prior-year value), set stale=true and explain it in issues. Use ONLY the provided cited
+text for this; never introduce a figure from your own knowledge. Default stale=true if the answer
+leans on an authority whose retrieved year does not include the target year. Put a one-line
+plain-language status in currencyNote (empty string if nothing to note).`;
+
+export const FreshnessVerdict = z.object({
+  stale: z.boolean(), // does the answer rely on a rule stale/superseded for the target year?
+  currencyNote: z.string(), // one-line note on supersession status ("" if none)
+  issues: z.array(z.string()), // specific freshness concerns the preparer must check
+});
+export type FreshnessVerdict = z.infer<typeof FreshnessVerdict>;
+
+// ── Options ─────────────────────────────────────────────────────────────────────────────────
+export type ResearchOpts = {
+  taxYear: number;
+  jurisdiction: Jurisdiction;
+  /** retrieval breadth (top-k chunks). Default 4 — wide enough for multi-cite answers. */
+  k?: number;
+  /** §7216 data scope. Public-authority research is "synthetic" (always clears). A caller that
+   *  routes real taxpayer data must pass "real" (gated by PETAL_7216_CLEARED). */
+  scope?: DataScope;
+  /** Corpus override (tests inject a fixture). Defaults to the registered store. */
+  corpus?: AuthorityChunk[];
+  /**
+   * Indeterminacy classifier — the ONLY thing that tells `hedge` from `coverage_gap` when
+   * retrieval is empty. A question is INDETERMINATE when there is no operative rule to retrieve
+   * at all: a facts-and-circumstances doctrine (employee vs. IC, reasonable comp, hobby-loss) or
+   * a prediction of an unreleased future figure. Such questions SHOULD return empty from the
+   * store, and the right shape is a `hedge` (list the factors), not a coverage_gap. A question
+   * that SHOULD be covered (a settled, in-corpus rule) returning empty is a genuine
+   * `coverage_gap`. Return true ⇒ indeterminate ⇒ hedge on empty retrieval. Defaults to a
+   * conservative heuristic (INDETERMINACY_HINTS) when omitted.
+   */
+  isIndeterminate?: (question: string) => boolean;
+};
+
+// Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
+// genuinely facts-driven or unreleased. Deliberately narrow — when in doubt, an empty retrieval
+// is treated as a COVERAGE GAP (decline honestly), not a hedge, because a coverage gap
+// masquerading as calibration is the exact failure we are fixing. Better to say "I do not have
+// authority" than to dress a gap up as nuance.
+const INDETERMINACY_HINTS: RegExp[] = [
+  /employee or (an? )?independent contractor/i,
+  /\bworker\b[^.]*\bclassif/i,
+  /reasonable compensation/i,
+  /\bhobby\b|hobby-loss|hobby or (a )?business/i,
+  /facts and circumstances/i,
+  // Predictions of not-yet-released future figures (inflation-indexed amounts published late in
+  // the prior year): "What WILL the standard deduction BE for 2027".
+  /\bwill\b[^.]*\bbe\b[^.]*\b20\d\d\b/i,
+];
+
+function defaultIsIndeterminate(question: string): boolean {
+  return INDETERMINACY_HINTS.some((re) => re.test(question));
+}
+
+// ── A retrieved cite's verification verdict (the 10.22(c)(1) fix, in code) ───────────────────
+type CiteVerification =
+  | { status: "verified"; chunk: AuthorityChunk } // resolves to a retrieved, current chunk
+  | { status: "fabricated" } // resolves to NO chunk anywhere — model invented it
+  | { status: "superseded"; supersededBy: string }; // resolves but stale/out-of-year
+
+// Resolve one model-proposed chunkId. The retrieved set is ALREADY year+jurisdiction-filtered
+// and supersession-dropped by the store, so a chunkId not in it is either fabricated OR a real
+// chunk that the store filtered out (superseded / wrong year). We check the full corpus to
+// distinguish the two for the audit trail — both are barred from backing a current claim.
+function verifyCite(
+  chunkId: string,
+  retrieved: AuthorityChunk[],
+  corpus: AuthorityChunk[],
+  taxYear: number,
+): CiteVerification {
+  const hit = retrieved.find((c) => c.chunkId === chunkId);
+  if (hit) return { status: "verified", chunk: hit };
+
+  const elsewhere = corpus.find((c) => c.chunkId === chunkId);
+  if (elsewhere) {
+    const by = elsewhere.supersededBy ?? `not applicable to tax year ${taxYear}`;
+    return { status: "superseded", supersededBy: by };
+  }
+  return { status: "fabricated" };
+}
+
+// ── Value-level grounding (the residual-leak fix) ────────────────────────────────────────────
+// Citation-level verification proves a claim cites a real, current chunk — NOT that the claim's
+// PROSE restates that chunk faithfully. A position can cite the correct §164 chunk (which states
+// "$40,000") yet write "$10,000", a dollar figure pulled from the model's memory. This gate is
+// deterministic: every MONETARY and PERCENTAGE figure a claim states must match a figure that
+// literally appears in the text of one of the chunks that claim cites. A figure with no match is
+// an ungrounded parametric leak → the position is dropped (→ a safe abstain, never a memory
+// number). Years and bare counts are excluded (the freshness judge owns year currency, and those
+// are rarely memory-leaked). Matching is by NUMERIC VALUE with unit expansion ($40k == $40,000,
+// $15M == $15,000,000) so a formatting difference never causes a false drop.
+const MONEY_RE = /\$\s?\d[\d,]*(?:\.\d+)?\s?(?:k|m|b|million|billion)?/gi;
+const PERCENT_RE = /\d[\d,]*(?:\.\d+)?\s?%|\d[\d,]*(?:\.\d+)?\s*percent\b/gi;
+
+function figureValue(raw: string): number | null {
+  const m = raw.toLowerCase().replace(/[\s,$]/g, "").match(/^(\d+(?:\.\d+)?)(k|m|b|million|billion|%|percent)?$/);
+  if (!m) return null;
+  let n = parseFloat(m[1]);
+  switch (m[2]) {
+    case "k": n *= 1e3; break;
+    case "m": case "million": n *= 1e6; break;
+    case "b": case "billion": n *= 1e9; break;
+  }
+  return n;
+}
+
+function figuresIn(text: string): { money: Set<number>; percent: Set<number> } {
+  const money = new Set<number>();
+  const percent = new Set<number>();
+  for (const m of text.matchAll(MONEY_RE)) { const v = figureValue(m[0]); if (v != null) money.add(v); }
+  for (const m of text.matchAll(PERCENT_RE)) { const v = figureValue(m[0]); if (v != null) percent.add(v); }
+  return { money, percent };
+}
+
+/**
+ * Figures STATED in `claim` that no figure in `authorityText` supports. Money is checked against
+ * money and percent against percent (so "$90" never satisfies "90%"). Returns the raw figure
+ * strings for the audit trail; an empty array ⇒ every stated figure is grounded in the authority.
+ */
+export function ungroundedFigures(claim: string, authorityText: string): string[] {
+  const authority = figuresIn(authorityText);
+  const out: string[] = [];
+  for (const m of claim.matchAll(MONEY_RE)) {
+    const v = figureValue(m[0]);
+    if (v != null && !authority.money.has(v)) out.push(m[0].trim());
+  }
+  for (const m of claim.matchAll(PERCENT_RE)) {
+    const v = figureValue(m[0]);
+    if (v != null && !authority.percent.has(v)) out.push(m[0].trim());
+  }
+  return out;
+}
+
+// Verify a reasoning output's positions: keep only those whose EVERY citation verified (no
+// partial-credit claims) AND whose stated figures are all grounded in their cited authority,
+// collecting the verified SourcedCitations and the supersession / fabrication / ungrounded notes
+// for the audit trail.
+function verifyPositions(
+  out: ReasoningOutput,
+  retrieved: AuthorityChunk[],
+  corpus: AuthorityChunk[],
+  taxYear: number,
+): {
+  groundedPositions: ReasoningOutput["positions"];
+  citations: SourcedCitation[];
+  fabricated: string[];
+  superseded: string[];
+  ungrounded: string[];
+} {
+  const byChunk = new Map<string, SourcedCitation>();
+  const fabricated: string[] = [];
+  const superseded: string[] = [];
+  const ungrounded: string[] = [];
+  const groundedPositions: ReasoningOutput["positions"] = [];
+
+  for (const p of out.positions) {
+    let positionOk = p.citations.length > 0; // no citation, no claim
+    const positionChunks: AuthorityChunk[] = [];
+    for (const ref of p.citations) {
+      const v = verifyCite(ref.chunkId, retrieved, corpus, taxYear);
+      if (v.status === "fabricated") {
+        positionOk = false;
+        const tag = ref.citation || ref.chunkId;
+        if (!fabricated.includes(tag)) fabricated.push(tag);
+      } else if (v.status === "superseded") {
+        positionOk = false;
+        const note = `${ref.citation || ref.chunkId} is superseded for ${taxYear} (${v.supersededBy})`;
+        if (!superseded.includes(note)) superseded.push(note);
+      } else {
+        positionChunks.push(v.chunk);
+        if (!byChunk.has(v.chunk.chunkId)) {
+          byChunk.set(v.chunk.chunkId, {
+            chunkId: v.chunk.chunkId,
+            authority: authorityFamily(v.chunk.citation),
+            cite: v.chunk.citation,
+            sourceUrl: v.chunk.sourceUrl,
+            authorityTier: tierOfAuthority(v.chunk.authorityType),
+            taxYear,
+          });
+        }
+      }
+    }
+
+    // VALUE-LEVEL GROUNDING: with every cite verified, a stated dollar/percent figure appearing in
+    // NONE of this position's cited chunks is a parametric leak. Drop the whole position — we do
+    // not ship a number the cited authority does not contain.
+    if (positionOk) {
+      const authorityText = positionChunks.map((c) => c.text).join("\n");
+      const leaks = ungroundedFigures(p.claim, authorityText);
+      if (leaks.length) {
+        positionOk = false;
+        const note = `claim states ${leaks.join(", ")} — not found in its cited authority`;
+        if (!ungrounded.includes(note)) ungrounded.push(note);
+      }
+    }
+
+    if (positionOk) groundedPositions.push(p);
+  }
+
+  // Keep only cites that actually back a SURVIVING position — a cite attached solely to a
+  // dropped position must not leak into the answer's sources.
+  const keptChunkIds = new Set(groundedPositions.flatMap((p) => p.citations.map((c) => c.chunkId)));
+  const citations = [...byChunk.values()].filter((c) => keptChunkIds.has(c.chunkId));
+
+  return { groundedPositions, citations, fabricated, superseded, ungrounded };
+}
+
+// Compose the prose answer from the surviving grounded positions. Deterministic join — the
+// model's claim text (already grounding-checked) is reused verbatim; we never re-author facts
+// here. Each claim carries its cites inline so SOURCES sit ON the claim.
+function composeAnswer(positions: ReasoningOutput["positions"]): string {
+  return positions
+    .map((p) => {
+      const cites = p.citations.map((c) => c.citation).join("; ");
+      return cites ? `${p.claim} [${cites}]` : p.claim;
+    })
+    .join("\n\n");
+}
+
+// ── The pipeline ─────────────────────────────────────────────────────────────────────────────
+export async function researchAnswer(
+  provider: AIProvider,
+  judge: AIProvider | undefined,
+  question: string,
+  opts: ResearchOpts,
+): Promise<SourcedAnswer> {
+  // §7216 HARD GATE — public authority only. Real taxpayer data must flip scope to "real".
+  assertCleared(opts.scope ?? "synthetic");
+
+  const { taxYear, jurisdiction, k = 4 } = opts;
+  const corpus = opts.corpus ?? REGISTERED_CORPUS;
+  const isIndeterminate = opts.isIndeterminate ?? defaultIsIndeterminate;
+
+  // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
+  const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
+
+  // 4a — COVERAGE/CALIBRATION when retrieval is EMPTY. This is where a coverage gap is kept
+  // from masquerading as calibration: an indeterminate question (no rule to retrieve) hedges; a
+  // should-be-covered question that came back empty declines explicitly.
+  if (retrieved.length === 0) {
+    if (isIndeterminate(question)) {
+      return {
+        answer:
+          "This turns on the specific facts and circumstances, not a single bright-line rule, so I can't give a definite answer from the information provided. A licensed preparer should weigh the governing factors against the full facts.",
+        citations: [],
+        bucket: "hedge",
+        reviewNotes: [
+          "Genuinely indeterminate: resolution depends on a facts-and-circumstances test (or an unreleased future figure), not a retrievable rule.",
+          "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
+        ],
+      };
+    }
+    return {
+      answer:
+        "I do not have current authority on this question in my sources, so I decline to answer rather than guess. This should be checked directly against primary authority for the applicable tax year and jurisdiction.",
+      citations: [],
+      bucket: "coverage_gap",
+      currencyNote: `No in-corpus authority retrieved for tax year ${taxYear} (${jurisdiction}).`,
+      reviewNotes: [
+        "Coverage gap: the authority store returned nothing on-point. This is NOT a calibrated hedge — it is a known gap in the corpus.",
+        "Do not treat the absence of an answer as a conclusion; consult primary authority directly.",
+      ],
+    };
+  }
+
+  // 2 — REASON, grounded. The model may cite ONLY the retrieved chunkIds (enforced in
+  // reasonAndScore). Positions come back stamped with a code-derived confidence tier.
+  const reasoned = await reasonAndScore(provider, question, retrieved);
+
+  // 3 — VERIFY CITATIONS (the 10.22(c)(1) fix). Re-resolve every cite; strip fabricated +
+  // superseded; keep only fully grounded positions and their verified sources.
+  const { groundedPositions, citations, fabricated, superseded, ungrounded } = verifyPositions(
+    reasoned,
+    retrieved,
+    corpus,
+    taxYear,
+  );
+
+  // 4b — the model abstained, or every position was stripped in verification. Authority was
+  // retrieved (possibly only tangentially, by keyword overlap), but nothing groundable survived.
+  // Re-apply the calibration policy so this does not collapse into a single opaque "abstain":
+  //   - a genuinely INDETERMINATE question (facts-doctrine / prediction) → HEDGE (list factors),
+  //     even if a tangential chunk was retrieved — the indeterminacy is about the question, not
+  //     the corpus;
+  //   - otherwise → `abstain`: authority was retrieved but the model could not ground a position
+  //     on it (a reasoning/on-point gap), surfaced to the user as a hedge but marked distinctly
+  //     so an operator can tell it from a clean coverage gap.
+  if (reasoned.abstained || groundedPositions.length === 0) {
+    if (isIndeterminate(question)) {
+      return {
+        answer:
+          "This turns on the specific facts and circumstances, not a single bright-line rule, so I can't give a definite answer from the information provided. A licensed preparer should weigh the governing factors against the full facts.",
+        citations: [],
+        bucket: "hedge",
+        reviewNotes: [
+          "Genuinely indeterminate: resolution depends on a facts-and-circumstances test (or an unreleased future figure), not a retrievable rule.",
+          "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
+        ],
+      };
+    }
+    const reviewNotes = [
+      "Authority was retrieved, but no proposed position survived grounding verification.",
+      ...superseded.map((s) => `Stripped stale citation: ${s}`),
+      ...fabricated.map((f) => `Stripped unresolvable citation: ${f}`),
+      ...ungrounded.map((u) => `Dropped a position with an ungrounded figure (${u}); not asserting a number the cited authority does not contain.`),
+    ];
+    return {
+      answer:
+        "I found potentially relevant authority but could not ground a definite position on it, so I'm not asserting an answer. A preparer should review the retrieved authority directly.",
+      citations: [],
+      bucket: "abstain",
+      currencyNote: superseded.length
+        ? `Some proposed citations were superseded for tax year ${taxYear} and were dropped.`
+        : undefined,
+      reviewNotes,
+    };
+  }
+
+  // We have at least one fully grounded, current-authority-backed position → ANSWER.
+  const reviewNotes: string[] = [];
+  for (const p of groundedPositions) {
+    reviewNotes.push(...p.reviewNotes.verify);
+    if (p.reviewNotes.disclosureFlag) {
+      reviewNotes.push("Disclosure flag: this position may warrant Form 8275 — confirm before filing.");
+    }
+  }
+  for (const s of superseded) reviewNotes.push(`Dropped a superseded citation during verification: ${s}`);
+  for (const f of fabricated) reviewNotes.push(`Dropped an unresolvable (fabricated) citation during verification: ${f}`);
+  for (const u of ungrounded) reviewNotes.push(`Dropped a position whose stated figure was not supported by its cited authority: ${u}`);
+
+  let currencyNote: string | undefined = superseded.length
+    ? `Stale authority was proposed and dropped; the figures below reflect current law for tax year ${taxYear}.`
+    : undefined;
+
+  // 5 — JUDGE: adversarial freshness/supersession check (a SEPARATE model). It can override the
+  // currency note and add review notes; if it finds the surviving answer still leans on a rule
+  // stale for the target year, we DOWNGRADE to abstain rather than ship a flagged figure.
+  if (judge) {
+    const verdict = await runFreshnessJudge(
+      judge,
+      question,
+      taxYear,
+      groundedPositions,
+      citations,
+      retrieved,
+      opts.scope ?? "synthetic",
+    );
+    if (verdict.issues.length) reviewNotes.push(...verdict.issues);
+    if (verdict.currencyNote) currencyNote = verdict.currencyNote;
+    if (verdict.stale) {
+      return {
+        answer:
+          "A freshness review flagged that this answer may rely on a rule that is not current for the target tax year, so I'm not asserting it. Verify the year-effective authority before adopting.",
+        citations,
+        bucket: "abstain",
+        currencyNote: verdict.currencyNote || `Freshness review flagged possible supersession for tax year ${taxYear}.`,
+        reviewNotes,
+      };
+    }
+  }
+
+  return {
+    answer: composeAnswer(groundedPositions),
+    citations,
+    bucket: "answer",
+    currencyNote,
+    reviewNotes,
+  };
+}
+
+// Run the adversarial freshness judge over the surviving answer. Public-authority only; the
+// judge sees cites + years, never client data. Asserts its own §7216 scope (defense in depth).
+async function runFreshnessJudge(
+  judge: AIProvider,
+  question: string,
+  taxYear: number,
+  positions: ReasoningOutput["positions"],
+  citations: SourcedCitation[],
+  retrieved: AuthorityChunk[],
+  scope: DataScope,
+): Promise<FreshnessVerdict> {
+  assertCleared(scope);
+  const answerText = positions.map((p) => p.claim).join("\n");
+  // Give the judge the TEXT of each cited authority (not just its label), so it can check that
+  // every figure the answer states is consistent with how the cited section actually uses it.
+  const citeBlocks = citations
+    .map((c) => {
+      const chunk = retrieved.find((r) => r.chunkId === c.chunkId);
+      const text = chunk ? `\n  text: ${chunk.text.replace(/\s+/g, " ").trim()}` : "";
+      return `- ${c.cite} (retrieved for ${c.taxYear}, tier=${c.authorityTier}) ${c.sourceUrl}${text}`;
+    })
+    .join("\n");
+  const { object } = await judge.generateObject({
+    system: FRESHNESS_JUDGE_SYSTEM,
+    prompt:
+      `Target tax year: ${taxYear}\n\n` +
+      `Question:\n${question}\n\n` +
+      `Drafted answer:\n${answerText}\n\n` +
+      `Cited authorities (with their text — judge figures ONLY against this):\n${citeBlocks || "(none)"}`,
+    schema: FreshnessVerdict,
+    maxTokens: 700,
+  });
+  return object;
+}

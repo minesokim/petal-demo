@@ -13,6 +13,7 @@
 import { z } from "zod";
 import type { Jurisdiction } from "../types";
 import { CORPUS_2025 } from "./corpus-2025";
+import { CORPUS_OBBBA } from "../../research/corpus-obbba";
 
 export type AuthorityType = "statute" | "regulation" | "irs_guidance" | "case" | "form_instruction";
 
@@ -56,6 +57,15 @@ export type RetrieveOpts = {
   k?: number;
 };
 
+// The registered default corpus retrieve() searches: the TY2025 starter corpus PLUS the
+// OBBBA-era corpus that carries the post-OBBBA figures (and their superseded pre-OBBBA
+// probes). Combining them here is what "registers" the OBBBA chunks — a caller that does
+// retrieve(query, opts) with no explicit corpus now sees the OBBBA rules, and the year +
+// supersession filter still guarantees a stale pre-OBBBA chunk can never surface for an
+// in-scope year. (CORPUS_OBBBA's ObbbaAuthorityChunk is a structural superset of
+// AuthorityChunk, so it slots in without widening the type.)
+export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OBBBA];
+
 // retrieve(query, {taxYear, jurisdiction, k}). Order is load-bearing:
 //   1. FILTER: keep only chunks whose taxYear list includes the requested year AND whose
 //      jurisdiction matches AND which are not superseded. (Filter BEFORE ranking so a
@@ -65,7 +75,7 @@ export type RetrieveOpts = {
 export function retrieve(
   query: string,
   opts: RetrieveOpts,
-  corpus: AuthorityChunk[] = CORPUS_2025,
+  corpus: AuthorityChunk[] = REGISTERED_CORPUS,
 ): AuthorityChunk[] {
   const { taxYear, jurisdiction, k = 3 } = opts;
   const q = query.toLowerCase();
@@ -88,3 +98,4 @@ export function retrieve(
 }
 
 export { CORPUS_2025 } from "./corpus-2025";
+export { CORPUS_OBBBA } from "../../research/corpus-obbba";
