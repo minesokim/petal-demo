@@ -88,3 +88,26 @@ describe("listFirmSmsThreads (RLS-scoped, Inbox shape)", () => {
     expect(allText).not.toContain("Hi Marcus, need your W-2.");
   });
 });
+
+describe("recordSms idempotency (inbound replay / Twilio retry)", () => {
+  it("dedupes a repeated twilio_sid: the replay writes neither a second message nor a second audit row", async () => {
+    const sid = "SM_replay_0001";
+    await asTenant(claimsA, async (db) => {
+      await recordSms(db as never, ctxA, {
+        householdId: "hA", direction: "inbound", body: "replayed delivery", phone: "+19515550190", twilioSid: sid,
+      });
+      // Same signed POST delivered again (replay or Twilio non-2xx retry) — must be a no-op.
+      await recordSms(db as never, ctxA, {
+        householdId: "hA", direction: "inbound", body: "replayed delivery", phone: "+19515550190", twilioSid: sid,
+      });
+    });
+
+    const rows = await pg.query<{ count: string }>(
+      "select count(*)::text as count from sms_messages where twilio_sid = $1", [sid]);
+    expect(rows.rows[0].count).toBe("1"); // exactly one message row despite two calls
+
+    const audit = await pg.query<{ count: string }>(
+      "select count(*)::text as count from audit_log where metadata->>'sid' = $1", [sid]);
+    expect(audit.rows[0].count).toBe("1"); // and exactly one audit row — trail not doubled
+  });
+});

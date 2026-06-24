@@ -24,16 +24,25 @@ export type RecordSmsInput = {
 // the sid/direction/destination only — never the body.
 export async function recordSms(db: Db, ctx: Ctx, input: RecordSmsInput): Promise<string> {
   const id = globalThis.crypto.randomUUID();
-  await db.insert(smsMessages).values({
-    id,
-    firmId: ctx.firmId,
-    householdId: input.householdId ?? null,
-    direction: input.direction,
-    body: input.body,
-    phone: input.phone,
-    twilioSid: input.twilioSid ?? null,
-    status: input.status ?? null,
-  });
+  // Idempotent on (firm_id, twilio_sid) (0030): a replayed inbound webhook or a Twilio
+  // retry carries the same MessageSid, so the duplicate INSERT is ignored. On conflict
+  // `returning` yields no row — we skip the second audit write and report the dedup, so a
+  // replay never double-records the message OR its audit trail.
+  const inserted = await db
+    .insert(smsMessages)
+    .values({
+      id,
+      firmId: ctx.firmId,
+      householdId: input.householdId ?? null,
+      direction: input.direction,
+      body: input.body,
+      phone: input.phone,
+      twilioSid: input.twilioSid ?? null,
+      status: input.status ?? null,
+    })
+    .onConflictDoNothing()
+    .returning();
+  if (inserted.length === 0) return id; // duplicate sid — already recorded; no second audit row.
   await writeAudit(db, ctx, {
     action: "sms.record",
     resourceType: "household",

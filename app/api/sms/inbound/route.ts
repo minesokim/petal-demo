@@ -114,8 +114,20 @@ export async function POST(req: Request): Promise<Response> {
     .from(people)
     .where(inArray(people.phone, phoneVariants(fromE164)));
 
-  const match = candidates.find((p) => p.phone && toE164(p.phone) === fromE164);
-  if (!match) return twiml(); // unknown number — do nothing, no leak.
+  const matches = candidates.filter((p) => p.phone && toE164(p.phone) === fromE164);
+  if (matches.length === 0) return twiml(); // unknown number — do nothing, no leak.
+
+  // Cross-tenant safety (fail closed): we resolve the firm from the SENDER's number because
+  // a Twilio callback carries no JWT. The firm-owned DESTINATION number would identify the
+  // firm unambiguously, but every firm currently shares one global number, so the sender is
+  // all we have. If that number maps to people in MORE THAN ONE firm, we must NOT guess —
+  // stamping the text under an arbitrary firm would disclose a client's inbound message to
+  // the wrong tenant. Refuse silently (ack so Twilio stops retrying) until per-firm inbound
+  // numbers + To-based resolution exist. Within a single firm we keep first-match behavior.
+  const firmIds = new Set(matches.map((p) => p.firmId));
+  if (firmIds.size > 1) return twiml(); // ambiguous across firms — no write, no cross-tenant leak.
+
+  const match = matches[0];
 
   // Insert under the matched firm via the existing repository writer. firm_id is stamped
   // from this system ctx; the audit row it writes records direction/sid only (never body).
