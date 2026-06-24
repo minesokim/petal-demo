@@ -134,8 +134,10 @@ const INTENT_TOOLS: AgentTool[] = [
     }),
     run: async (a) => {
       const proposer = new AnthropicProvider(undefined, "claude-sonnet-4-6");
-      const judge = new AnthropicProvider(undefined, "claude-opus-4-8");
-      const result = await researchAnswer(proposer, judge, a.question as string, {
+      // In-chat FAST path: skip the adversarial Opus freshness judge (a slow extra model call).
+      // Grounding still holds — retrieval is year/jurisdiction-filtered + supersession-dropped,
+      // and the numeric + citation-verify gates run. The full judge stays on /api/research.
+      const result = await researchAnswer(proposer, undefined, a.question as string, {
         taxYear: (a.taxYear as number) ?? 2025,
         jurisdiction: ((a.jurisdiction as Jurisdiction) ?? "federal"),
       });
