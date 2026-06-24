@@ -37,11 +37,14 @@ const ExtractArgs = z.object({
 // Default deps for the runtime: the ZDR Anthropic provider + a storage loader that pulls the
 // object via a short-lived signed URL and base64-encodes it. (Injected in tests with a
 // MockProvider + an in-memory loader so extraction is deterministic and offline.)
-function runtimeDeps(): ExtractDeps {
+// The loader is bound to the CALLER's firmId so signedUrlForFirmFile's tenant guard refuses any
+// storageKey outside this firm's prefix — closing the cross-tenant document-read hole where a
+// model-supplied key could otherwise sign another firm's object via the service-role client.
+function runtimeDeps(firmId: string): ExtractDeps {
   return {
     provider: new AnthropicProvider(),
     loadBytes: async (key: string) => {
-      const url = await signedUrlForFirmFile(key);
+      const url = await signedUrlForFirmFile(key, firmId);
       const res = await fetch(url);
       if (!res.ok) throw new Error("document fetch failed");
       return Buffer.from(await res.arrayBuffer()).toString("base64");
@@ -67,12 +70,13 @@ const INTAKE_TOOLS: AgentTool[] = [
       if (!ACCEPTED.has(args.mediaType)) {
         return { gated: false, fields: null, error: `unsupported_type: ${args.mediaType}` };
       }
-      const deps = runtimeDeps();
       const doc = { storageKey: args.storageKey, mediaType: args.mediaType, fileName: args.fileName };
       const wantsLink = Boolean(args.clientId && args.period);
+      // ALWAYS run inside withFirm so the loader is bound to the caller's firmId (the storage
+      // tenant guard) — not only when a manifest link is requested.
       const out = await withFirm(async (db, ctx) =>
         extractDocument(
-          deps,
+          runtimeDeps(ctx.firmId),
           {
             doc,
             docTypeHint: args.docTypeHint,

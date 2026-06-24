@@ -52,7 +52,17 @@ export async function uploadFirmFile(firmId: string, file: File): Promise<Upload
 
 // Short-lived signed download URL for a stored object (private bucket — no public
 // URLs). Default 60s is plenty for a window.open hand-off.
-export async function signedUrlForFirmFile(storagePath: string, expiresInSec = 60): Promise<string> {
+//
+// TENANT GUARD (defense-in-depth over storage RLS): client() uses the service-role key, which
+// BYPASSES storage.objects RLS, so we MUST confirm the object lives under the CALLER's firm
+// prefix before minting a URL. Keys are `{firmId}/{uuid}-{name}` (uploadFirmFile). The required
+// firmId is supplied by the caller from its trusted firm context (Clerk-derived), never from a
+// model/client arg — this is what stops a crafted/model-supplied storageKey from reading another
+// firm's documents. Thrown before any network call (so it is unit-testable without Supabase).
+export async function signedUrlForFirmFile(storagePath: string, firmId: string, expiresInSec = 60): Promise<string> {
+  if (!firmId || !storagePath.startsWith(`${firmId}/`)) {
+    throw new Error("cross-firm storage access denied");
+  }
   const { data, error } = await client()
     .storage.from(BUCKET)
     .createSignedUrl(storagePath, expiresInSec);

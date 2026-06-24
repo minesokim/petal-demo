@@ -35,6 +35,18 @@ closures were independently re-verified. Fix commit: `a4828f6`.
 | LOW (deferred) | Recon model-turns not recorded in `agent_runs` | only applies once a model-backed drafter exists (default is deterministic); interface change documented at the call site |
 | LOW (deferred) | Legacy `runner.ts` doesn't route reads through `runTool` | redaction fix applied; dispatch-routing left as a one-line TODO |
 
+## 2b. Foundation review — slices ①–③ (2026-06-23)
+
+A second adversarial review covered the crown-jewel foundation (tenancy trust chain, RLS coverage +
+repository, PII/crypto, documents/storage). The trust chain, RLS coverage, and AES-256-GCM envelope
+encryption (`lib/crypto/envelope.ts`) came back **clean**. **One** hole was confirmed and fixed:
+
+| Sev | Finding | Fix |
+|-----|---------|-----|
+| HIGH (latent) | `extract_document` signed a **model-supplied `storageKey` via the service-role client** (bypassing storage RLS) with no firm-ownership check → once the agent read-loop is wired to Ask Petal, firm B could read firm A's stored documents | `signedUrlForFirmFile(path, firmId)` now **requires the caller's firmId and refuses any path outside that firm's prefix** (thrown before any network call); the intake loader is bound to `ctx.firmId` and always runs inside `withFirm`; the safe download path passes `ctx.firmId` too. 4 guard tests pin it (cross-firm / bare / empty-firmId / sibling-prefix-spoof all refused). |
+
+Latent today (no live HTTP route reaches the intake read-loop yet), closed before that loop ships.
+
 ## 3. Residual risks — stated honestly, not hidden
 
 These are known and accepted for the current beta posture. They must be closed before the

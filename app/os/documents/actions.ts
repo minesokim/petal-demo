@@ -145,10 +145,10 @@ export async function createFolderAction(
 // read is RLS-scoped (a firm only sees its own files); null if not found.
 export async function downloadFileAction(fileId: string): Promise<{ url: string } | null> {
   if (!fileId) return null;
-  return withFirm(async (db) => {
+  return withFirm(async (db, ctx) => {
     const path = await fileStoragePath(db, fileId);
     if (!path) return null;
-    const url = await signedUrlForFirmFile(path);
+    const url = await signedUrlForFirmFile(path, ctx.firmId);
     return { url };
   });
 }
