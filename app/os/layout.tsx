@@ -18,7 +18,7 @@ import { type IconSvgElement } from "@hugeicons/react";
 import {
   ChevronsUpDown, ListChecks, Inbox, CalendarDays, Users,
   Settings, Home, FileText, Folder, MailWarning, Wallet, BookOpen, LogOut,
-  PanelLeftClose, PanelLeftOpen, Activity, Blocks, Brain, Bot,
+  PanelLeftClose, PanelLeftOpen, Activity, Blocks, Brain, Bot, ShieldCheck,
 } from "lucide-react";
 
 type Item = { label: string; href: string; icon?: React.ComponentType<{ className?: string }>; badge?: number; glyph?: boolean; logo?: boolean; hugeicon?: IconSvgElement };
@@ -123,6 +123,7 @@ export default function OsLayout({ children }: { children: React.ReactNode }) {
   ];
   const petalAi: Item[] = [
     { label: "Agents", href: "/os/agents", icon: Bot },
+    { label: "Approvals", href: "/os/approvals", icon: ShieldCheck },
     { label: "Knowledge", href: "/os/knowledge", icon: BookOpen },
     { label: "Memory", href: "/os/memory", icon: Brain },
     { label: "Apps", href: "/os/connections", icon: Blocks },

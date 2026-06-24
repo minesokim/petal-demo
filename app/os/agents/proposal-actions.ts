@@ -20,6 +20,9 @@ export async function resolveProposalAction(
 ): Promise<ResolveProposalOutcome> {
   const result = await withFirm((db, ctx) => resolveProposalCore(db, ctx, proposalId, decision));
   if (!result) return { ok: false, error: "unauthorized" }; // withFirm returns null when not signed in
-  if (result.ok) revalidatePath("/os/agents");
+  if (result.ok) {
+    revalidatePath("/os/approvals");
+    revalidatePath("/os/agents");
+  }
   return result;
 }

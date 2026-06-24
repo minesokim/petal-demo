@@ -6,7 +6,7 @@ import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
 import { actionProposals } from "../../lib/db/schema";
 import type { Ctx } from "../../lib/repository/types";
-import { createTask, createProposal } from "../../lib/repository/agent";
+import { createTask, createProposal, listProposals } from "../../lib/repository/agent";
 import { resolveProposalCore } from "../../lib/agent/approve";
 import { classifyRisk } from "../../lib/agent/risk";
 
@@ -88,6 +88,24 @@ describe("risk gate — approval invariants", () => {
       const out = await resolveProposalCore(db as never, ALICE, p.id, "approve");
       expect(out.ok).toBe(true);
       if (out.ok) expect(out.status).toBe("approved");
+    });
+  });
+
+  it("(d) the approval queue: a staged action is pending, then leaves the queue once resolved", async () => {
+    await asTenant(CLAIMS, async (db) => {
+      const task = await createTask(db as never, ALICE, { kind: "agent:test", tier: 3 });
+      const p = await createProposal(db as never, ALICE, { taskId: task.id, toolName: "create_task", args: { title: "Chase W-2" }, rationale: "queue test", risk: taskRisk });
+      // the queue (/os/approvals) loads exactly this — listProposals(db, "pending").
+      const before = await listProposals(db as never, "pending");
+      const card = before.find((r) => r.id === p.id)!;
+      expect(card).toBeTruthy();
+      expect(card.rationale).toBe("queue test"); // decrypted from payload_enc for the reviewer
+      expect(card.riskLane).toBe("confirm");
+      // resolve it; it should leave the pending queue.
+      const out = await resolveProposalCore(db as never, ALICE, p.id, "approve");
+      expect(out.ok).toBe(true);
+      const after = await listProposals(db as never, "pending");
+      expect(after.some((r) => r.id === p.id)).toBe(false);
     });
   });
 });
