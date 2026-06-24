@@ -14,7 +14,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
-import { anthropicClient } from "@/lib/ai/anthropic-client";
+import { anthropicClient, resolveModel } from "@/lib/ai/anthropic-client";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
@@ -101,11 +101,11 @@ export type ModelSeam = (
 ) => Promise<Anthropic.Message>;
 
 function anthropicSeam(): ModelSeam {
-  // Central client: API-key in prod; the dev Claude Code subscription OAuth path when opted in.
   const client = anthropicClient();
+  const model = resolveModel(AGENT_MODEL); // dev cost-saver: PETAL_DEV_MODEL forces a cheap ZDR model locally
   return (messages, tools) =>
     client.messages.create({
-      model: AGENT_MODEL,
+      model,
       max_tokens: 1200,
       // Prompt caching (runtime cost): the large static AGENT_SYSTEM + the ~20 tool schemas are
       // re-sent on every turn of every Ask-Petal call. An ephemeral cache breakpoint on the system
@@ -124,7 +124,7 @@ export async function runAgent(
   history: AgentTurn[] = [],
   opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
 ): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[] }> {
-  assertZdrModel(AGENT_MODEL);
+  assertZdrModel(resolveModel(AGENT_MODEL)); // asserts the effective model (incl. any dev override)
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
 
   // onEvent is BEST-EFFORT: a throwing listener must never break the agent loop or the

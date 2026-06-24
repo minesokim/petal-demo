@@ -3,7 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } from "./provider";
 import { redactText } from "./redact";
 import { assertZdrModel } from "./guard";
-import { anthropicClient } from "./anthropic-client";
+import { anthropicClient, resolveModel } from "./anthropic-client";
 
 // Anthropic-direct (no LangChain). ZDR + no-training are contractual at the
 // account/DPA level; here we enforce data-minimization (redact the prompt),
@@ -21,7 +21,7 @@ export class AnthropicProvider implements AIProvider {
   }
 
   async generateObject<T>(args: GenerateArgs<T>) {
-    const model = args.model ?? this.defaultModel;
+    const model = resolveModel(args.model ?? this.defaultModel);
     // HARD ZDR allowlist: throw on any non-ZDR model (e.g. Fable/Mythos) before
     // we build or send a prompt. Centralized allowlist lives in ./guard.
     assertZdrModel(model);
@@ -46,7 +46,7 @@ export class AnthropicProvider implements AIProvider {
   // process. General Q&A only — no client records are injected here, and the
   // §7216 PII guard lives in the system prompt the caller passes in.
   async generateText(args: GenerateTextArgs) {
-    const model = args.model ?? this.defaultModel;
+    const model = resolveModel(args.model ?? this.defaultModel);
     // HARD ZDR allowlist: same gate as generateObject — no non-ZDR model carries
     // a prompt (system, user, or any prior turn) out of the process.
     assertZdrModel(model);
@@ -74,7 +74,7 @@ export class AnthropicProvider implements AIProvider {
   // (assertCleared, enforced by the CALLER) is the control that this only runs on
   // cleared data. ZDR allowlist still applies. Returns the model's analysis text.
   async analyzeDocument(args: AnalyzeDocumentArgs) {
-    const model = args.model ?? this.defaultModel;
+    const model = resolveModel(args.model ?? this.defaultModel);
     assertZdrModel(model);
     const isPdf = args.mediaType === "application/pdf";
     const block = isPdf
