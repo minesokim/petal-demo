@@ -19,6 +19,7 @@ import SOR_TOOLS from "./tools/sor";
 import INTAKE_TOOLS from "./tools/intake";
 import CHECKLIST_TOOLS from "./tools/checklist";
 import RECON_TOOLS from "./tools/recon";
+import OLT_TOOLS from "./tools/olt";
 
 export type AgentToolTier = 1 | 2 | 3 | 4;
 export type AgentToolAccess = "read" | "write";
@@ -44,6 +45,7 @@ export const ALL_TOOLS: AgentTool[] = [
   ...INTAKE_TOOLS,
   ...CHECKLIST_TOOLS,
   ...RECON_TOOLS,
+  ...OLT_TOOLS,
 ];
 
 export const TOOL_BY_NAME = new Map(ALL_TOOLS.map((t) => [t.name, t] as const));
