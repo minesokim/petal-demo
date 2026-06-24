@@ -24,6 +24,7 @@ import {
   appendMessageAction,
   getThreadAction,
 } from "@/app/os/ask/chat-actions";
+import { confirmAgentAction } from "@/app/os/ask/agent-actions";
 
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
@@ -41,6 +42,14 @@ function answerFromReply(reply: string): ChatAnswer {
     .filter(Boolean);
   return { paragraphs: paragraphs.length ? paragraphs : [reply.trim()] };
 }
+
+// Agent intent: an imperative request to DO something in the app (a write). Start-anchored on
+// an action verb so questions ("what/how/show/list…") stay on the assistant. Routes to the
+// tool-use agent, which proposes the change for the preparer to confirm.
+const AGENT_INTENT =
+  /^\s*(create|add|make|new|draft|set|mark|move|assign|request|chase|resolve|approve|update|rename|schedule)\b/i;
+
+type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
 
 // Conservative tax-computation intent: requires a compute verb AND a named credit/deduction,
 // so ordinary questions stay on the general assistant. Matches route to the defensible engine.
@@ -154,6 +163,28 @@ export function usePetalChat(scopeHouseholdId?: string) {
           if (flat) persist("assistant", flat);
         });
     };
+
+    // Imperative "do" requests → the tool-use agent. It reads firm state and STAGES writes;
+    // the staged actions render as confirm cards the preparer clicks to execute. Any failure
+    // (gated/offline/not actually an action) falls back to the general assistant.
+    if (AGENT_INTENT.test(message)) {
+      fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history }),
+      })
+        .then(async res => {
+          if (!res.ok) throw new Error(`agent failed: ${res.status}`);
+          const data = (await res.json()) as { reply?: string; proposedActions?: AgentConfirmAction[] };
+          const reply = (data.reply ?? "").trim() || "Done.";
+          const ans = answerFromReply(reply);
+          if (data.proposedActions?.length) ans.confirmActions = data.proposedActions;
+          settle(ans, reply);
+          persist("assistant", reply);
+        })
+        .catch(runAsk);
+      return;
+    }
 
     // Tax-computation intent → the defensible engine (Sonnet proposes inputs, lib/tax computes
     // the cited figure, Opus judges fidelity, tier derived). The result renders in the existing
@@ -567,6 +598,12 @@ export function PetalAnswerView({
         <ActionCard action={answer.action} compact={compact} />
       )}
 
+      {allDone && answer.confirmActions && answer.confirmActions.length > 0 && (
+        <div className="space-y-2">
+          {answer.confirmActions.map((a, i) => <ConfirmCard key={`${a.tool}-${i}`} action={a} compact={compact} />)}
+        </div>
+      )}
+
       {allDone && answer.suggest && answer.suggest.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-0.5">
           {answer.suggest.map(q => (
@@ -603,6 +640,39 @@ function ActionCard({ action, compact }: { action: NonNullable<ChatAnswer["actio
           className="flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
         >
           <Icon icon={I.trigger} size={13} /> {action.button}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// The agent confirm-gate card: a write Petal staged. Nothing ran until the preparer clicks
+// Confirm, which executes the audited server action via confirmAgentAction.
+function ConfirmCard({ action, compact }: { action: AgentConfirmAction; compact?: boolean }) {
+  const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
+  return (
+    <div className={cn("flex items-center gap-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-2.5", compact && "px-2.5 py-2")}>
+      <PetalMark className={cn("shrink-0 text-[var(--os-ink-muted)]", compact ? "size-4" : "size-5")} />
+      <div className="min-w-0 flex-1">
+        <div className={cn("font-medium text-[var(--os-ink)]", compact ? "text-[12px]" : "text-[13px]")}>{action.title}</div>
+        <div className={cn("text-[var(--os-ink-muted)]", compact ? "text-[11px]" : "text-[12px]")}>Petal staged this — confirm to run it.</div>
+      </div>
+      {state === "done" ? (
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]"><Icon icon={I.check} size={13} /> Done</span>
+      ) : state === "error" ? (
+        <span className="shrink-0 text-[12px] text-[var(--os-danger)]">Failed</span>
+      ) : (
+        <button
+          disabled={state === "running"}
+          onClick={() => {
+            setState("running");
+            confirmAgentAction(action.tool, action.args)
+              .then(r => setState(r.ok ? "done" : "error"))
+              .catch(() => setState("error"));
+          }}
+          className="flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+        >
+          <Icon icon={I.check} size={13} /> {state === "running" ? "Running…" : "Confirm"}
         </button>
       )}
     </div>

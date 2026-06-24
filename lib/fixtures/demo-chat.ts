@@ -50,6 +50,8 @@ export interface ChatAnswer {
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };
   /** suggestion chips that SEND a new question */
   suggest?: string[];
+  /** agentic confirm cards: writes Petal staged, each executed only on the preparer's click */
+  confirmActions?: { tool: string; args: Record<string, unknown>; title: string }[];
 }
 
 export interface QAEntry {
