@@ -89,7 +89,12 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
   const extractionDoc = thread.extraction ? expectedDocs.find(d => d.id === thread.extraction!.docId) : undefined;
   /** a Petal draft is sitting in the composer, unedited-or-edited but un-sent */
   const draftLoaded = reply.trim().length > 0 && (!!thread.petalDraft || answerRevealed || petalDrafted);
-  const allMessages = [...thread.messages, ...extraMessages];
+  // Once a refresh brings the real recorded message into thread.messages, drop its optimistic
+  // twin (same sender + text) so a same-thread data refresh never double-renders a sent bubble.
+  const allMessages = [
+    ...thread.messages,
+    ...extraMessages.filter((ex) => !thread.messages.some((m) => m.from === ex.from && m.text === ex.text)),
+  ];
 
   function revealAnswer() {
     if (!thread.petalCanAnswer) return;
