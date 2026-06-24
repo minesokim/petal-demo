@@ -36,6 +36,13 @@ Petal stores tax-practice data for multiple firms (tenants). Data classes:
   output.
 - Client portal accounts authenticate via **Supabase OTP** (passwordless); a
   custom access-token hook scopes each client to exactly their firm.
+- **Agentic actions** run under a tier-gated tool registry (reads auto-run; tier-3
+  writes are *staged* and never execute in the agent loop). **No external write
+  happens without a recorded human approval**, gated by an atomic compare-and-swap
+  claim (so one approval = one execution, even under double-click/retry). Scoped,
+  use-without-seeing credentials (`agent_connections.secret_ref` — never in model
+  context/logs/audit). Full posture + the 2026-06-23 red-team record:
+  `docs/security/agentic-layer-security.md`.
 
 ## 4. Encryption
 
@@ -50,6 +57,9 @@ Petal stores tax-practice data for multiple firms (tenants). Data classes:
 
 - Append-only `audit_log` row on every mutation (actor, action, resource,
   firm_id). **No crown-jewel PII in audit metadata** (enforced + tested).
+  Append-only is **DB-enforced** — UPDATE/DELETE/TRUNCATE revoked from the app
+  roles (migration `0029`), so history cannot be rewritten even by a compromised
+  app path.
 - Supabase platform logs (auth, postgres, api) retained per provider.
 - Security advisor (lint) run after every DDL change; currently **clean**.
 

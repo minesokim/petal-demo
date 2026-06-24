@@ -15,8 +15,10 @@
 | CC6.6 | Encryption in transit | TLS to all sub-processors | **[live]** (provider) |
 | CC6.7 | Encryption at rest (PII) | AES-256-GCM envelope encryption, KEK-wrapped DEK; `lib/crypto/envelope.ts` + `tests/crypto` | **[live]** |
 | CC6.8 | Malicious-output containment | AI quarantine (`pending_review` → human promote); `tests/repository/ai.test.ts` | **[live]** |
+| CC6.1/6.3 | Agentic write governance | Tier-gated tool registry (reads auto-run; tier-3 writes are staged, never run in the agent loop); **no external write without a recorded human approval** via an atomic compare-and-swap claim (`lib/agent/approve.ts`); per-tool scopes fail-closed; stubbed connectors non-live in v1; `tests/agent/security-fixes.test.ts` | **[live]** |
+| CC6.7 | Storage tenant isolation | `signedUrlForFirmFile(path, firmId)` refuses any object outside the caller's firm prefix (service-role bypasses storage RLS); `tests/storage/firm-files-guard.test.ts` | **[live]** |
 | CC7.1 | Change detection / linting | Supabase security advisor after each DDL (clean); CI on every push | **[live]** |
-| CC7.2 | Audit trail | Append-only `audit_log` on every mutation; no PII in metadata | **[live]** |
+| CC7.2 | Audit trail | Append-only `audit_log` on every mutation; no PII in metadata; **DB-enforced** append-only (REVOKE update/delete/truncate from app roles, migration `0029`) | **[live]** |
 | CC7.3/7.4 | Incident response | Runbook + breach notification | **[planned]** |
 | CC8.1 | Change management | Git + CI gate (isolation/security suite green); versioned SQL migrations | **[live]** |
 | CC9.2 | Vendor management | DPAs + SOC 2 reports for Supabase/Clerk/Anthropic/Vercel/Stripe | **[planned]** |
@@ -44,5 +46,8 @@
 5. Independent penetration test.
 
 ## Adversarial review log
-See `docs/security/adversarial-review-001.md` for the latest red-team pass over
-RLS, the repository boundary, AI quarantine, auth bridge, and crypto.
+- **001** — `docs/security/adversarial-review-001.md`: RLS, repository boundary, AI quarantine, auth bridge, crypto.
+- **2026-06-23 — AI orchestration (④):** 5-dimension red-team of the research engine + agentic layer. 8 findings, all confirmed + fixed, 2 HIGH (atomic approval gate; redact read-tool output) independently re-verified. Commit `a4828f6`. Record: `docs/security/agentic-layer-security.md`.
+- **2026-06-23 — Foundation (①–③):** tenancy trust chain, RLS coverage, PII/crypto, documents/storage. Trust chain + RLS + AES-256-GCM envelope reviewed clean; **1** confirmed hole (cross-firm document read via service-role signed URL) fixed + test-pinned. Commit `c69ba11`.
+
+UI-freeze verification (inviolable rule): across the whole backend session, the presentational layer changed by **+111 / −0** in a single file (`petal-chat.tsx`), **zero** `className`/markup/structure lines — additive data-routing only, rendering through the existing `ChatAnswer` shape. Verify: `git diff <pre-backend>..HEAD -- 'components/**' 'app/**/*.tsx'`.
