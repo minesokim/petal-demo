@@ -28,7 +28,7 @@ import { FileUploader } from "@/components/os/file-uploader";
 import { uploadDocumentAction, listClientFilesAction, deleteClientFileAction } from "@/app/os/documents/actions";
 import { sendClientSmsAction, listClientSmsAction, type ClientSmsRow, type UploadedAttachment } from "@/app/os/clients/sms-actions";
 import { updatePersonContactAction } from "@/app/os/clients/actions";
-import { ThreadConversation } from "@/components/os/thread-conversation";
+import { MessagingPanel } from "@/components/os/messaging-panel";
 import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import {
   tasksOf, threadsOf, noticesOf, positionsOf, workpaperOf, skills, skillById,
@@ -65,13 +65,6 @@ const kindLabel: Record<HouseholdKind, string> = {
   mixed: "Individual + business",
 };
 
-/* UI colors for channels live here, not in fixtures (matches the Inbox). */
-const channelDot: Record<Channel, string> = {
-  email: "bg-blue-500",
-  sms: "bg-emerald-500",
-  portal: "bg-violet-500",
-  call: "bg-yellow-500",
-};
 
 /* The portal preview speaks to the client - stageMeta stages, said in client words. */
 const clientStageWords: Record<Stage, string> = {
@@ -345,7 +338,6 @@ function ClientRecordInner({ id }: { id: string }) {
   }, [moreOpen]);
   const [queuedSkills, setQueuedSkills] = useState<Set<string>>(new Set());
   const [viewAsClient, setViewAsClient] = useState(false);
-  const [msgThread, setMsgThread] = useState<string | null>(null);
   // Real SMS for this household (Twilio-backed). Loaded on mount + after each send.
   const [smsRows, setSmsRows] = useState<ClientSmsRow[]>([]);
   const [openDoc, setOpenDoc] = useState<ExpectedDoc | null>(null);
@@ -685,36 +677,14 @@ function ClientRecordInner({ id }: { id: string }) {
             </div>
 
             {tab === "Messages" ? (
-              msgThreads.length === 0 ? (
-                <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-muted)]">
-                  <p>No messages with {h.name} yet. Start one from the Inbox, or let a skill draft the first touch.</p>
-                </div>
-              ) : (() => {
-                const sel = msgThreads.find(t => t.id === msgThread) ?? msgThreads[0];
-                return (
-                  <div className="flex min-h-0 flex-1 flex-col">
-                    {msgThreads.length > 1 && (
-                      <div className="flex items-center gap-1 overflow-x-auto border-b border-[var(--os-border)] px-4 py-1.5 sm:px-5">
-                        {msgThreads.map(t => (
-                          <button
-                            key={t.id}
-                            onClick={() => setMsgThread(t.id)}
-                            className={cn(
-                              "flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[12px] transition-colors",
-                              t.id === sel.id ? "bg-[var(--os-selected)] font-medium text-[var(--os-ink)]" : "text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]",
-                              FOCUS,
-                            )}
-                          >
-                            <span className={cn("size-1.5 shrink-0 rounded-full", channelDot[t.channel])} />
-                            <span className="max-w-[180px] truncate">{t.subject}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <ThreadConversation key={sel.id} thread={sel} onSend={smsThread && sel.id === smsThread.id ? sendClientSms : undefined} />
-                  </div>
-                );
-              })()
+              // Mirror the Inbox surface (channel filter + conversation list + ThreadPane), scoped
+              // to this client's threads across every channel. SMS sends for real; the others keep
+              // the optimistic demo behavior, exactly like the Inbox.
+              <MessagingPanel
+                threads={msgThreads}
+                onSendFor={(t) => (t.id === smsThread.id ? sendClientSms : undefined)}
+                emptyHint={`No messages with ${h.name} in this view yet.`}
+              />
             ) : (
               <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8">
                 {/* ── Overview ── Linear project-panel cards ── */}
