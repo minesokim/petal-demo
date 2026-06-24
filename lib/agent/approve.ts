@@ -15,7 +15,7 @@ import type { Db, Ctx } from "@/lib/repository/types";
 export type ResolveDecision = "approve" | "reject";
 
 export type ResolveProposalOutcome =
-  | { ok: true; status: "approved" | "rejected"; executionResult: Record<string, unknown> | null }
+  | { ok: true; status: "approved" | "rejected" | "ready_to_submit"; executionResult: Record<string, unknown> | null }
   | { ok: false; error: string };
 
 // Resolve one proposal under an already-established firm context. RLS (the caller's Db)
@@ -51,6 +51,34 @@ export async function resolveProposalCore(
   // any state change, so no surface can bypass it by forgetting to check.
   if (!canApprove(ctx.role)) {
     return { ok: false, error: "forbidden: only a reviewer, admin, or owner can approve a staged action" };
+  }
+
+  // SEPARATION OF DUTIES — on the high-stakes 'review' lane, the person who STAGED the action
+  // cannot also approve it (no self-approval of money/IRS/official-record actions). A different
+  // reviewer must sign off. Lower lanes (confirm) are not separation-gated.
+  if (proposal.riskLane === "review" && proposal.proposedByUserId && proposal.proposedByUserId === ctx.actorId) {
+    return { ok: false, error: "forbidden: a high-stakes action cannot be approved by the same person who staged it — a different reviewer must approve" };
+  }
+
+  // DRAFT-ONLY / NEVER-AUTO-SUBMIT — for irreversible external commits (e-file a return, post a
+  // journal), Petal NEVER performs the final step even after approval. Approving such a proposal
+  // CLEARS the draft for a human to submit in the external system; it does not run the tool. The
+  // status moves to 'ready_to_submit' and a human performs (and we audit) the actual submit.
+  if (proposal.humanMustSubmit) {
+    const executionResult = {
+      deferred: true,
+      humanMustSubmit: true,
+      reason: "irreversible external submit — a human must perform it in the external system; Petal does not auto-submit",
+    };
+    const claimed = await claimProposal(db, ctx, proposalId, "ready_to_submit", { resolvedByUserId: ctx.actorId ?? undefined, executionResult });
+    if (!claimed) return { ok: false, error: "already resolved" };
+    await writeAudit(db, ctx, {
+      action: "proposal.cleared_for_human_submit",
+      resourceType: "action_proposal",
+      resourceId: proposalId,
+      metadata: { tool: proposal.toolName },
+    });
+    return { ok: true, status: "ready_to_submit", executionResult };
   }
 
   // approve — the recorded human approval. HIGH-1: ATOMIC CLAIM FIRST. A single conditional

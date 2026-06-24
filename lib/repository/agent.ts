@@ -173,8 +173,8 @@ export async function claimProposal(
   db: Db,
   ctx: Ctx,
   proposalId: string,
-  status: "approved" | "rejected",
-  opts?: { resolvedByUserId?: string },
+  status: "approved" | "rejected" | "ready_to_submit",
+  opts?: { resolvedByUserId?: string; executionResult?: Record<string, unknown> },
 ) {
   const [row] = await db
     .update(actionProposals)
@@ -182,6 +182,7 @@ export async function claimProposal(
       status,
       resolvedByUserId: opts?.resolvedByUserId ?? ctx.actorId,
       resolvedAt: new Date(),
+      ...(opts?.executionResult ? { executionResult: opts.executionResult } : {}),
     })
     .where(and(eq(actionProposals.id, proposalId), eq(actionProposals.status, "pending")))
     .returning();
