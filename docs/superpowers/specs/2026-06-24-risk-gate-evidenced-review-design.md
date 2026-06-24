@@ -190,13 +190,15 @@ stores `risk` + `reviewArtifact` + proposer identity.
      irreversible external commit; a separate, explicit **human-performed** submit action does (and is audited
      as human-performed). This is the draft-only rule, enforced.
    - all other approved lanes → execute as today (`runTool(..., { allowWrite: true })`).
-4. **Surface (minimal, additive)** — DEFERRED. Finding during build: `resolveProposalAction` is not yet called
-   from any component — the agent-proposal **approval queue UI does not exist in v1** (the server action is
-   built; no card renders it). So there is no existing card to additively enhance, and building a net-new
-   surface would need a design ref (frozen-design rule). The data layer (risk lane/level/factors + the
-   evidenced artifact) is fully persisted and returned by `listProposals`, ready for whenever the approval
-   queue UI is built. That UI — badge + source-linked evidence list + the §7216 "ready_to_submit" human-submit
-   affordance — is its own design+build pass.
+4. **Surface — BUILT, inside Tasks.** Approvals are NOT a separate page (per user direction: "approvals should
+   be in tasks — that's the whole point"; staged agent actions are work the human acts on, so they belong in
+   the unified work surface). `components/os/approval-card.tsx` (`ProposalCard`) renders a staged proposal with
+   the risk badge, the source-linked evidence list, risk factors, and approve/reject; for `humanMustSubmit` it
+   shows the "ready to submit — you perform it" affordance. Pending proposals flow through the firm-data seam
+   (`loadFirmData` → `FirmData.proposals`, PII decrypted server-side) and render as a "Needs your approval"
+   section at the top of `/os/tasks` (the empty state already anticipated this: "New tasks and Petal approvals
+   land here"). `resolveProposalAction` revalidates `/os/tasks`. Browser-verified populated (risk chip +
+   field→source evidence + actions). No standalone /os/approvals route.
 
 ## 7. Honest degradation
 

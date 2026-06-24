@@ -1,11 +1,10 @@
 "use client";
 
-// The approval queue — the human-commit gate's surface. Each card is one action Petal staged
-// (DRAFT-EVERYTHING / HUMAN-COMMITS): the reviewer sees the risk lane, the evidenced artifact
-// (each field → its source, so verifying is a 30-second check, not a redo), and approves or
-// rejects. Irreversible external commits (e-file, post journal) clear to "ready to submit" — Petal
-// never performs them; the human does. Monochrome chrome per docs/DESIGN.md; the only color is the
-// risk/state punctuation.
+// One staged agent action awaiting a human commit — rendered inside Tasks (the unified work
+// surface). Shows the risk lane, the evidenced artifact (each field → its source, a 30-second
+// check), risk factors, and approve/reject. Irreversible external commits (e-file, post journal)
+// clear to "ready to submit" — Petal never performs them; the human does. Monochrome chrome per
+// docs/DESIGN.md; the only color is the risk/state punctuation.
 
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
@@ -13,21 +12,11 @@ import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
 import { resolveProposalAction } from "@/app/os/agents/proposal-actions";
 import type { ReviewArtifact } from "@/lib/agent/review-artifact";
+import type { QueuedProposal } from "@/lib/agent/proposal-types";
+
+export type { QueuedProposal };
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
-
-export type QueuedProposal = {
-  id: string;
-  toolName: string;
-  rationale: string;
-  riskLane: string | null;
-  riskLevel: string | null;
-  riskFactors: { name: string; level: string; detail: string }[];
-  humanMustSubmit: boolean;
-  reviewArtifact: ReviewArtifact | null;
-  confidence: string | null;
-  createdAt: string;
-};
 
 type Resolution = { status: "approved" | "rejected" | "ready_to_submit" } | { error: string };
 
@@ -68,7 +57,7 @@ function EvidenceRow({ field }: { field: ReviewArtifact["fields"][number] }) {
   );
 }
 
-function ProposalCard({ p }: { p: QueuedProposal }) {
+export function ProposalCard({ p }: { p: QueuedProposal }) {
   const [resolution, setResolution] = useState<Resolution | null>(null);
   const [busy, startBusy] = useTransition();
   const artifact = p.reviewArtifact;
@@ -136,7 +125,6 @@ function ProposalCard({ p }: { p: QueuedProposal }) {
         </p>
       )}
 
-      {/* actions / resolved state */}
       {resolution && "status" in resolution ? (
         <div className="mt-3 flex items-center gap-1.5 text-[12.5px]">
           {resolution.status === "ready_to_submit" ? (
@@ -170,37 +158,6 @@ function ProposalCard({ p }: { p: QueuedProposal }) {
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-export function ApprovalQueue({ proposals }: { proposals: QueuedProposal[] }) {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-[var(--os-border)] px-8 pt-5 pb-4">
-        <h1 className="os-display text-[24px] font-semibold text-[var(--os-ink)]">Approvals</h1>
-        <p className="mt-1 text-[13px] text-[var(--os-ink-muted)]">
-          Actions Petal staged for your review. Nothing runs until you approve it.
-        </p>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-        <div className="mx-auto max-w-[760px]">
-          {proposals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--os-border)] py-16 text-center">
-              <PetalMark className="size-5 text-[var(--os-ink-subtle)]" />
-              <p className="mt-3 text-[13.5px] font-medium text-[var(--os-ink)]">Nothing waiting for review</p>
-              <p className="mt-1 text-[12.5px] text-[var(--os-ink-muted)]">
-                When Petal stages an action that needs your sign-off, it shows up here.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {proposals.map((p) => <ProposalCard key={p.id} p={p} />)}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

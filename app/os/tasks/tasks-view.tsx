@@ -13,6 +13,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
+import { ProposalCard } from "@/components/os/approval-card";
 import { StatusPill, StatusHeading, DeadlineChip, SkillIcon, MemberAvatar, ScopeToggle, Segmented, BookmarkFlag, type Scope } from "@/components/os/primitives";
 import { TaskDetail } from "@/components/os/task-detail";
 import { RecurringButton } from "@/components/os/recurring";
@@ -376,6 +377,7 @@ function NewTaskModal({ onClose, onToast }: { onClose: () => void; onToast: (m: 
 
 function TasksPageInner() {
   const firmData = useFirmData();
+  const proposals = firmData.proposals ?? []; // pending agent action_proposals — "needs your approval"
   const { householdById, engagementById, taskById, needsYouTasks } = useDerive();
   const router = useRouter();
   const params = useSearchParams();
@@ -596,7 +598,20 @@ function TasksPageInner() {
         >
           {view === "board" ? (
             <Board columns={columns} selected={selected} onOpen={setSelected} onVerb={onVerb} onAdd={() => setNewTaskOpen(true)} />
-          ) : groups.length === 0 ? (
+          ) : (
+            <>
+            {proposals.length > 0 && (
+              <div className="border-b border-[var(--os-border)] px-5 py-3.5">
+                <div className="os-label mb-2.5 flex items-center gap-1.5">
+                  <PetalMark className="size-3.5" /> Needs your approval
+                  <span className="tabular-nums text-[var(--os-ink-subtle)]">{proposals.length}</span>
+                </div>
+                <div className="space-y-2.5">
+                  {proposals.map(p => <ProposalCard key={p.id} p={p} />)}
+                </div>
+              </div>
+            )}
+            {groups.length === 0 ? (proposals.length > 0 ? null : (
             <div className="grid flex-1 place-items-center px-6 py-16 text-center">
               {flaggedOnly || blockedOnly ? (
                 <div>
@@ -622,7 +637,7 @@ function TasksPageInner() {
                 </div>
               )}
             </div>
-          ) : (
+          )) : (
             groups.map(g => (
               <div key={g.key}>
                 <div className="sticky top-0 z-[1] bg-[var(--os-canvas)] px-5 pb-1 pt-2">
@@ -666,6 +681,8 @@ function TasksPageInner() {
                 ))}
               </div>
             ))
+          )}
+            </>
           )}
         </div>
 

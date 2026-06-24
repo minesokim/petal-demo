@@ -1,5 +1,6 @@
 import * as fx from "../fixtures/firm";
 import * as fxDocs from "../fixtures/firm-files";
+import type { QueuedProposal } from "../agent/proposal-types";
 
 // The base dataset the dashboard derives everything from. Same shape whether it
 // comes from the repository (real, RLS-scoped) or the fixtures (fallback) — so
@@ -17,6 +18,9 @@ export type FirmData = {
   skillRuns: typeof fx.skillRuns;
   activity: typeof fx.activity;
   threads: typeof fx.threads;
+  // Pending agent action_proposals (the human-commit gate) — rendered in Tasks as "needs your
+  // approval". Empty in the fixture world (no staged agent actions until one is created).
+  proposals: QueuedProposal[];
   // The signed-in preparer + their firm (real identity, not the demo owner). Used for the
   // greeting ("Good morning, {firstName}") and "this week at {firm.name}".
   viewer: { firstName: string; fullName: string };
@@ -37,6 +41,7 @@ export function fixtureFirmData(): FirmData {
     skillRuns: fx.skillRuns,
     activity: fx.activity,
     threads: fx.threads,
+    proposals: [],
     viewer: { firstName: "Antonio", fullName: "Antonio Vazquez" },
     firm: { name: "Vazant EA" },
   };

@@ -21,7 +21,8 @@ export async function resolveProposalAction(
   const result = await withFirm((db, ctx) => resolveProposalCore(db, ctx, proposalId, decision));
   if (!result) return { ok: false, error: "unauthorized" }; // withFirm returns null when not signed in
   if (result.ok) {
-    revalidatePath("/os/approvals");
+    // Approvals live in Tasks now — revalidate it (+ the agents surface) so the queue refreshes.
+    revalidatePath("/os/tasks");
     revalidatePath("/os/agents");
   }
   return result;

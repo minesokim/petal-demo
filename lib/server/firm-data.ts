@@ -4,7 +4,9 @@ import { withFirm } from "../auth/tenant";
 import { firms } from "../db/schema";
 import * as repo from "../repository/practice";
 import { listFirmSmsThreads } from "../repository/sms";
+import { listProposals } from "../repository/agent";
 import { fixtureFirmData, type FirmData } from "./fixture-data";
+import type { QueuedProposal } from "../agent/proposal-types";
 
 // The single data seam the dashboard reads from. When a signed-in firm resolves
 // (Clerk + DB configured + seeded), returns its real RLS-scoped data; otherwise
@@ -27,6 +29,21 @@ export async function loadFirmData(): Promise<FirmData> {
       (t) => t.channel !== "sms" || !realSmsHouseholds.has(t.householdId),
     );
     const threads = [...smsThreads, ...keptFixtures];
+    // Pending agent action_proposals (the human-commit gate) — surfaced in Tasks as "needs your
+    // approval". PII is already decrypted by listProposals; map to the serializable view shape.
+    const proposalRows = await listProposals(db, "pending");
+    const proposals: QueuedProposal[] = proposalRows.map((r) => ({
+      id: r.id,
+      toolName: r.toolName,
+      rationale: r.rationale,
+      riskLane: r.riskLane,
+      riskLevel: r.riskLevel,
+      riskFactors: (r.riskFactors as QueuedProposal["riskFactors"]) ?? [],
+      humanMustSubmit: r.humanMustSubmit,
+      reviewArtifact: (r.reviewArtifact as QueuedProposal["reviewArtifact"]) ?? null,
+      confidence: r.confidence,
+      createdAt: (r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt as string)).toISOString(),
+    }));
     return {
       households: await repo.listHouseholds(db),
       people: await repo.listPeople(db),
