@@ -34,6 +34,21 @@ const PII_GUARDRAIL =
   "private data (names tied to SSNs, SSNs/EINs, account or return contents). If asked for " +
   "a specific client's private details, say that lives in their record and offer general help instead.";
 
+// Tax-law abstention guardrail. THIS path is the fallback assistant — it has NO access to Petal's
+// grounded, cited research engine, and its training knowledge of tax law may be stale (major
+// changes such as the 2025 OBBBA can post-date it). It must therefore NEVER assert a specific tax
+// figure or "current law" from memory; a confident stale number is the worst failure for a tax tool.
+const TAX_LAW_GUARDRAIL =
+  "\n\nTax-law accuracy (critical): You do NOT have Petal's grounded, cited tax-research engine in " +
+  "this conversation, and your own knowledge of tax law may be out of date — major legislation " +
+  "(e.g. the 2025 One Big Beautiful Bill Act / OBBBA, P.L. 119-21) can post-date your training and " +
+  "change caps, thresholds, rates, and deadlines. So NEVER state a specific tax figure, dollar cap, " +
+  "threshold, rate, phase-out, or 'the current law for tax year X' from memory, and never claim a " +
+  "rule is 'scheduled to sunset' or that a change was merely 'proposed/floated' — you may be " +
+  "confidently wrong. Instead: explain the general mechanics if helpful, then say the specific " +
+  "current figure must be confirmed through Petal's cited research, and offer to look it up. " +
+  "Abstaining is always better than a confident stale number.";
+
 type Turn = { role: "user" | "assistant"; content: string };
 
 function sanitizeHistory(raw: unknown): Turn[] {
@@ -85,7 +100,7 @@ export async function POST(req: Request) {
 
   try {
     const { text, model } = await provider.generateText({
-      system: PETAL_ASSISTANT_SYSTEM + PII_GUARDRAIL,
+      system: PETAL_ASSISTANT_SYSTEM + PII_GUARDRAIL + TAX_LAW_GUARDRAIL,
       // redactText is also applied inside the provider; doing it here keeps the
       // raw message from ever being held un-redacted past this boundary.
       prompt: redactText(message.slice(0, 8000)),
