@@ -16,6 +16,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
+import { loadFirmData } from "@/lib/server/firm-data";
 
 const AGENT_MODEL = "claude-sonnet-4-6"; // ZDR-eligible
 // Raised to 8 so a lookup → act chain (find_client → get_client_detail → stage a write) has
@@ -117,6 +118,24 @@ export async function runAgent(
       }
     }
     messages.push({ role: "user", content: results });
+  }
+
+  // Friendly titles: a staged write's title comes from tool.describe(args), which only has the
+  // raw householdId (e.g. "Text client h_b5e2…"). Resolve it to the client's NAME for display.
+  // Best-effort: if firm data isn't available (e.g. a scripted test), keep the id.
+  if (proposedActions.length) {
+    try {
+      const { households } = await loadFirmData();
+      const nameById = new Map(households.map((h) => [h.id, h.name] as const));
+      for (const pa of proposedActions) {
+        const hid = pa.args.householdId;
+        if (typeof hid === "string" && nameById.has(hid)) {
+          pa.title = pa.title.split(hid).join(nameById.get(hid)!);
+        }
+      }
+    } catch {
+      /* keep the id if firm data can't be loaded */
+    }
   }
 
   return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions };

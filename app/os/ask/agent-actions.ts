@@ -30,10 +30,17 @@ export async function confirmAgentAction(
       // re-validates args + executes the underlying audited action. allowWrite is set
       // because this IS the confirm gate — the preparer has confirmed this staged write.
       // MEDIUM-2: pass ALL_SCOPES — v1: every active firm member holds all firm scopes.
-      await runTool(tool, args, ALL_SCOPES, { allowWrite: true });
+      const r = await runTool(tool, args, ALL_SCOPES, { allowWrite: true });
+      // CRITICAL: action wrappers (sendClientSmsAction/sendClientEmailAction) RETURN
+      // { ok:false, error } on failure rather than throwing — so we must inspect the result,
+      // not assume success. Surfacing the real error (e.g. the Twilio/Gmail reason) to the
+      // preparer who triggered this is intended; it is their own authenticated action.
+      if (r && typeof r === "object" && "ok" in r && (r as { ok: unknown }).ok === false) {
+        return { ok: false, error: (r as { error?: string }).error || "action failed" };
+      }
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.name : "failed" };
+      return { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : "failed" };
     }
   });
   return result ?? { ok: false, error: "unauthorized" };

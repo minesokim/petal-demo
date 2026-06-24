@@ -584,12 +584,15 @@ function ActionCard({ action, compact }: { action: NonNullable<ChatAnswer["actio
 // Confirm, which executes the audited server action via confirmAgentAction.
 function ConfirmCard({ action, compact }: { action: AgentConfirmAction; compact?: boolean }) {
   const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [err, setErr] = useState<string>();
   return (
     <div className={cn("flex items-center gap-3 rounded-lg border border-[var(--os-border)] bg-[var(--os-bg-subtle)] px-3 py-2.5", compact && "px-2.5 py-2")}>
       <PetalMark className={cn("shrink-0 text-[var(--os-ink-muted)]", compact ? "size-4" : "size-5")} />
       <div className="min-w-0 flex-1">
         <div className={cn("font-medium text-[var(--os-ink)]", compact ? "text-[12px]" : "text-[13px]")}>{action.title}</div>
-        <div className={cn("text-[var(--os-ink-muted)]", compact ? "text-[11px]" : "text-[12px]")}>Petal staged this — confirm to run it.</div>
+        <div className={cn(state === "error" && err ? "text-[var(--os-danger)]" : "text-[var(--os-ink-muted)]", compact ? "text-[11px]" : "text-[12px]")} title={err}>
+          {state === "error" && err ? err : "Petal staged this — confirm to run it."}
+        </div>
       </div>
       {state === "done" ? (
         <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-[var(--os-ink-muted)]"><Icon icon={I.check} size={13} /> Done</span>
@@ -601,7 +604,7 @@ function ConfirmCard({ action, compact }: { action: AgentConfirmAction; compact?
           onClick={() => {
             setState("running");
             confirmAgentAction(action.tool, action.args)
-              .then(r => setState(r.ok ? "done" : "error"))
+              .then(r => { setState(r.ok ? "done" : "error"); if (!r.ok) setErr(r.error); })
               .catch(() => setState("error"));
           }}
           className="flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-[var(--os-primary)] px-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.97] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
