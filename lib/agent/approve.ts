@@ -9,6 +9,7 @@ import { actionProposals } from "@/lib/db/schema";
 import { resolveProposal, claimProposal } from "@/lib/repository/agent";
 import { writeAudit } from "@/lib/repository/audit";
 import { runTool, isToolEnabled, TOOL_BY_NAME, ALL_SCOPES } from "./registry";
+import { canApprove } from "@/lib/auth/roles";
 import type { Db, Ctx } from "@/lib/repository/types";
 
 export type ResolveDecision = "approve" | "reject";
@@ -42,6 +43,14 @@ export async function resolveProposalCore(
       metadata: { tool: proposal.toolName },
     });
     return { ok: true, status: "rejected", executionResult: null };
+  }
+
+  // RBAC — the preparer-drafts / reviewer-approves split. A preparer may draft/stage a proposal
+  // but only a reviewer, admin, or owner may APPROVE it (closes the audit's "a junior preparer
+  // can approve their own AI drafts" hole). Enforced at this single approval chokepoint, before
+  // any state change, so no surface can bypass it by forgetting to check.
+  if (!canApprove(ctx.role)) {
+    return { ok: false, error: "forbidden: only a reviewer, admin, or owner can approve a staged action" };
   }
 
   // approve — the recorded human approval. HIGH-1: ATOMIC CLAIM FIRST. A single conditional

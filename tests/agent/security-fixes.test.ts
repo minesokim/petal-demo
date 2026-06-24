@@ -44,7 +44,7 @@ async function asTenant<T>(claims: Claims, fn: (db: ReturnType<typeof drizzle>) 
 }
 
 const CLAIMS: Claims = { firm_id: A, role: "owner", user_type: "preparer" };
-const CTX: Ctx = { firmId: A, actorId: "user_1", actorType: "preparer" };
+const CTX: Ctx = { firmId: A, actorId: "user_1", actorType: "preparer", role: "owner" }; // approver role
 
 // HIGH-1: a write tool that COUNTS how many times it actually executes. We register it in
 // the global registry AND mark it "live" (add its name to ENABLED_WRITE_TOOLS) so the gate

@@ -18,3 +18,11 @@ export function requireRole(ctx: { role: Role }, allowed: Role[]): void {
     throw err;
   }
 }
+
+// The preparer-drafts / reviewer-approves split: a "preparer" may stage/draft AI actions, but
+// only a reviewer/admin/owner may APPROVE a staged proposal. A missing role (a system/test ctx
+// without one) is least-privileged → cannot approve. Gates the proposal-resolution path.
+export const APPROVER_ROLES: Role[] = ["owner", "admin", "reviewer"];
+export function canApprove(role: Role | undefined | null): boolean {
+  return !!role && (APPROVER_ROLES as string[]).includes(role);
+}

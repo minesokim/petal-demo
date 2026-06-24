@@ -12,6 +12,6 @@ export async function withFirm<T>(fn: (db: Db, ctx: Ctx) => Promise<T>): Promise
   if (!fc) return null;
   const firmId = await ensureFirm(getServiceDb(), fc.clerkOrgId, fc.userId, fc.role);
   const claims: TenantClaims = { firm_id: firmId, role: fc.role, user_type: "preparer" };
-  const ctx: Ctx = { firmId, actorId: fc.userId, actorType: "preparer" };
+  const ctx: Ctx = { firmId, actorId: fc.userId, actorType: "preparer", role: fc.role };
   return withTenant(claims, (db) => fn(db, ctx));
 }

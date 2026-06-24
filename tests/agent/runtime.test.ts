@@ -68,7 +68,8 @@ async function asTenant<T>(claims: Claims, fn: (db: ReturnType<typeof drizzle>) 
 }
 
 const CLAIMS: Claims = { firm_id: A, role: "owner", user_type: "preparer" };
-const CTX: Ctx = { firmId: A, actorId: "user_1", actorType: "preparer" };
+const CTX: Ctx = { firmId: A, actorId: "user_1", actorType: "preparer", role: "owner" }; // owner may approve
+const PREPARER_CTX: Ctx = { firmId: A, actorId: "user_2", actorType: "preparer", role: "preparer" }; // may NOT approve
 
 // A WRITE tool whose run() THROWS — proof that a tier-2 task NEVER executes it inline.
 // If staging is correct, run() is never reached. Its connector is "not live" (not in the
@@ -161,6 +162,33 @@ describe("approval gate — approve records execution_result + audit; reject aud
     // A write.executed audit row was appended (INV-7).
     expect(out.audits.some((a) => a.action === "write.executed")).toBe(true);
     expect(out.audits.some((a) => a.action === "agent.proposal.approve")).toBe(true);
+  });
+
+  it("RBAC: a preparer may NOT approve a staged proposal; the proposal stays pending", async () => {
+    const out = await asTenant(CLAIMS, async (db) => {
+      const [task] = await db
+        .insert(schema.agentTasks)
+        .values({ firmId: A, clientId: "h-a", kind: "k", tier: 3 })
+        .returning();
+      const [proposal] = await db
+        .insert(schema.actionProposals)
+        .values({ taskId: task.id, firmId: A, clientId: "h-a", toolName: "__test_external_write", args: {}, rationale: "r" })
+        .returning();
+
+      // A preparer-role context attempts to approve — must be denied at the chokepoint.
+      const denied = await resolveProposalCore(db as never, PREPARER_CTX, proposal.id, "approve");
+      // A reviewer/owner can then approve the very same proposal.
+      const allowed = await resolveProposalCore(db as never, CTX, proposal.id, "approve");
+      const [after] = await db.select().from(schema.actionProposals).where(eq(schema.actionProposals.id, proposal.id));
+      return { denied, allowed, after };
+    });
+
+    expect(out.denied.ok).toBe(false);
+    if (!out.denied.ok) expect(out.denied.error).toMatch(/reviewer|owner|forbidden/i);
+    // The preparer's attempt changed nothing — still approvable by a reviewer afterwards.
+    expect(out.allowed.ok).toBe(true);
+    expect(out.after.status).toBe("approved");
+    expect(out.after.resolvedByUserId).toBe("user_1"); // the owner, not the preparer
   });
 
   it("reject path: audits approval.denied and executes nothing", async () => {
