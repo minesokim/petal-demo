@@ -10,6 +10,7 @@ import { Icon, I } from "@/components/os/icon";
 import { Badge, ScopeToggle, type Scope } from "@/components/os/primitives";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { ComposeModal } from "@/components/os/compose-modal";
+import { sendClientSmsAction } from "@/app/os/clients/sms-actions";
 import { CURRENT_USER_ID, type Thread, type Channel } from "@/lib/fixtures/firm";
 import { useFirmData } from "@/lib/client/firm-context";
 import { assigneeOf, useAssignVersion } from "@/lib/assign-store";
@@ -83,7 +84,16 @@ function ThreadPane({ thread }: { thread: Thread }) {
           <button title="More" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]", focusRing)}><Icon icon={I.more} size={16} /></button>
         </div>
 
-        <ThreadConversation thread={thread} />
+        {/* SMS threads send for real through Twilio (same action as the client Messages tab);
+            other channels keep the existing optimistic-only behavior. */}
+        <ThreadConversation
+          thread={thread}
+          onSend={
+            thread.channel === "sms" && thread.householdId
+              ? (body) => sendClientSmsAction({ householdId: thread.householdId, body })
+              : undefined
+          }
+        />
       </div>
 
       {/* Properties rail (Linear) */}
