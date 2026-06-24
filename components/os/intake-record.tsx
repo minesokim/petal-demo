@@ -172,6 +172,7 @@ export function IntakeRecord({ householdId, engagementId }: { householdId: strin
         <div className="mb-4 flex items-center gap-2">
           <PetalMark className="size-4 text-[var(--os-ink-muted)]" />
           <h3 className="os-display text-[15px] text-[var(--os-ink)]">Organizer</h3>
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]">Sample data</span>
           <span className="ml-auto rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[var(--os-ink-muted)]">TY{eng?.taxYear} · {ent?.type}</span>
         </div>
 
@@ -208,7 +209,7 @@ export function IntakeRecord({ householdId, engagementId }: { householdId: strin
         </div>
 
         <p className="mt-4 flex items-start gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
-          <PetalMark className="mt-0.5 size-3 shrink-0" /> Petal pre-fills the organizer from the prior-year return and portal intake — confirm before prep.
+          <PetalMark className="mt-0.5 size-3 shrink-0" /> Sample organizer for demonstration. Once intake is wired, Petal will pre-fill this from the prior-year return and portal intake for you to confirm before prep.
         </p>
       </div>
     );
@@ -324,6 +325,7 @@ export function IntakeRecord({ householdId, engagementId }: { householdId: strin
       <div className="mb-1 flex items-center gap-2">
         <PetalMark className="size-4 text-[var(--os-ink-muted)]" />
         <h3 className="os-display text-[15px] text-[var(--os-ink)]">Intake &amp; readiness</h3>
+        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--os-selected)] px-2 py-0.5 text-[10.5px] font-medium text-[var(--os-ink-muted)]">Sample data</span>
         <span className={cn("ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium",
           allSet ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}>
           <span className={cn("size-1.5 rounded-full", allSet ? "bg-emerald-500" : "bg-amber-500")} />
@@ -331,7 +333,7 @@ export function IntakeRecord({ householdId, engagementId }: { householdId: strin
         </span>
       </div>
       <p className="mb-4 flex items-center gap-1.5 text-[11.5px] text-[var(--os-ink-subtle)]">
-        <PetalMark className="size-3 shrink-0" /> Submitted via client portal · pre-filled from the prior-year return — confirm before prep.
+        <PetalMark className="size-3 shrink-0" /> Sample intake record for demonstration. Identity, income, and deduction fields are illustrative and not yet wired to collected portal or prior-return data.
       </p>
 
       {/* filing profile — quiet stat band */}
