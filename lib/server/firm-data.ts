@@ -3,6 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { withFirm } from "../auth/tenant";
 import { firms } from "../db/schema";
 import * as repo from "../repository/practice";
+import { listFirmSmsThreads } from "../repository/sms";
 import { fixtureFirmData, type FirmData } from "./fixture-data";
 
 // The single data seam the dashboard reads from. When a signed-in firm resolves
@@ -13,6 +14,19 @@ import { fixtureFirmData, type FirmData } from "./fixture-data";
 export async function loadFirmData(): Promise<FirmData> {
   const real = await withFirm(async (db, ctx) => {
     const [firmRow] = await db.select({ name: firms.name }).from(firms).where(eq(firms.id, ctx.firmId));
+    // The richer fixture-seeded inbox threads (email/portal/call + any seeded SMS demo)…
+    const fixtureThreads = await repo.listThreads(db);
+    // …and the REAL two-way SMS conversations from sms_messages (sendClientSmsAction +
+    // the inbound webhook both land here). One Thread per client, same Inbox shape.
+    const smsThreads = await listFirmSmsThreads(db, ctx);
+    // Real SMS leads. A fixture SMS thread is kept ONLY when that client has no real texts
+    // yet — so a real conversation is never shadowed by a seeded placeholder, but the seeded
+    // demo SMS threads (clients you haven't texted) don't vanish from the inbox either.
+    const realSmsHouseholds = new Set(smsThreads.map((t) => t.householdId).filter(Boolean));
+    const keptFixtures = fixtureThreads.filter(
+      (t) => t.channel !== "sms" || !realSmsHouseholds.has(t.householdId),
+    );
+    const threads = [...smsThreads, ...keptFixtures];
     return {
       households: await repo.listHouseholds(db),
       people: await repo.listPeople(db),
@@ -25,7 +39,7 @@ export async function loadFirmData(): Promise<FirmData> {
       positions: await repo.listPositions(db),
       skillRuns: await repo.listSkillRuns(db),
       activity: await repo.listActivity(db),
-      threads: await repo.listThreads(db),
+      threads,
       firm: { name: firmRow?.name ?? "My Firm" },
     };
   });
