@@ -161,15 +161,20 @@ export function MessagingPanel({
 }) {
   const client = variant === "client";
   const [filter, setFilter] = useState<string>("open");
-  const [channel, setChannel] = useState<"all" | Channel>("all");
+  // Client view opens on the client's first channel (SMS leads in their thread list); inbox shows all.
+  const [channel, setChannel] = useState<"all" | Channel>(() => (client ? (threads[0]?.channel ?? "all") : "all"));
   // The client tab has no status filters — it shows every conversation, sliced only by channel.
   const f = client ? { test: (_t: Thread) => true } : statusFilters.find(x => x.key === filter)!;
   const list = threads.filter(t => f.test(t) && (channel === "all" || t.channel === channel));
-  const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open")?.id ?? threads[0]?.id ?? "");
+  const [selected, setSelected] = useState<string>(() =>
+    client ? (threads[0]?.id ?? "") : (threads.find(t => t.status === "open")?.id ?? threads[0]?.id ?? ""),
+  );
   const thread = list.find(t => t.id === selected) || list[0];
   const counts = statusFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(t => x.test(t)).length; return a; }, {});
-  // Inbox keeps all four channel chips (unchanged); the client tab only offers channels they have.
-  const channelChips = client ? CHANNEL_ORDER.filter(c => threads.some(t => t.channel === c)) : CHANNEL_ORDER;
+  // Inbox: All + every channel. Client: just the channels this client actually has (no "All" — with
+  // no conversation list, each tab opens that channel's thread directly).
+  const presentChannels = CHANNEL_ORDER.filter(c => threads.some(t => t.channel === c));
+  const channelTabs: ("all" | Channel)[] = client ? presentChannels : ["all", ...CHANNEL_ORDER];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -186,7 +191,7 @@ export function MessagingPanel({
           </button>
         ))}
         <div className={cn("flex items-center gap-0.5", !client && "ml-auto")}>
-          {(["all", ...channelChips] as const).map(c => (
+          {channelTabs.map(c => (
             <button
               key={c}
               onClick={() => { setChannel(c); const next = threads.filter(x => f.test(x) && (c === "all" || x.channel === c)); if (next.length) setSelected(next[0].id); }}
@@ -200,7 +205,9 @@ export function MessagingPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-x-auto">
-        {/* Conversation list — inbox: avatar + client name; client: channel dot + subject (no redundant identity) */}
+        {/* Conversation list — INBOX ONLY. The client tab has no left rail: channel tabs above switch
+            channels, and the conversation goes full-width. */}
+        {!client && (
         <div className="flex w-[256px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[292px]">
           {list.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">{emptyHint}</div>
@@ -249,6 +256,7 @@ export function MessagingPanel({
             );
           })}
         </div>
+        )}
 
         {/* Thread */}
         <AnimatePresence mode="wait">
