@@ -4,10 +4,26 @@
 // ground answers and briefs. Distinct from Notes (human team threads) and from
 // returns/QBO (hard data): this is the soft, cross-conversation context about a
 // person. Every memory is sourced + editable; Petal *proposes* new ones and you
-// approve them (suggestions → memories). Session-only, like the rest of the demo.
+// approve them (suggestions → memories).
+//
+// This is a thin CLIENT CACHE over the real, RLS-scoped, envelope-encrypted
+// client_memory table (lib/repository/memory.ts via app/os/clients/memory-actions.ts).
+// The cache self-hydrates from listMemoriesAction() on first mount and every
+// mutation persists through a server action then re-reads the firm's truth, so the
+// three surfaces (client Memory tab, /os/memory, clients detail) keep their exact
+// memoryStore.X() / useMemory() calls but render real data. Suggestions are rows
+// with status "suggested"; confirming flips them to "confirmed".
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useEffect } from "react";
 import { householdById } from "@/lib/fixtures/firm";
+import {
+  listMemoriesAction,
+  addMemoryAction,
+  removeMemoryAction,
+  togglePinMemoryAction,
+  confirmMemoryAction,
+  type MemoryRow,
+} from "@/app/os/clients/memory-actions";
 
 export type MemoryKind = "preference" | "fact" | "history" | "flag";
 
@@ -38,80 +54,92 @@ export interface MemorySuggestion {
   kind: MemoryKind;
 }
 
-let seq = 0;
-
-const memories: Memory[] = [
-  m("h-chen", "Spouse Lin manages all document uploads and signatures", "From intake", "preference"),
-  m("h-chen", "Holds K-1s from two partnerships — Golden Spoon LLC and Riverside", "From the 2024 return", "fact"),
-  m("h-chen", "Prefers a year-end planning call in November before estimates are due", "From a call · Nov 2024", "preference"),
-  m("h-fuentes", "Roberto prefers phone calls over email for anything time-sensitive", "From a call · Jun 23", "preference", true),
-  m("h-fuentes", "Took an S-corp election in 2022; reasonable-comp set at $90k", "From the 2023 return", "history"),
-  m("h-fuentes", "Reasonable-compensation question was flagged last year — revisit for 2025", "From a prior review", "flag", true),
-  m("h-park", "Dental practice runs quarterly payroll through Gusto", "From QuickBooks + Gusto", "fact"),
-  m("h-park", "Owner asked about a Solo 401(k) for the 2025 plan year", "From a message · May 2025", "flag"),
-  m("h-williams", "First-year client — moved over from a national chain, wants more hand-holding", "From intake", "history"),
-  m("h-williams", "W-2 from Hartline Logistics arrives late every year (mid-Feb)", "From the 2023 + 2024 returns", "fact"),
-  m("h-rodriguez", "MFJ with a rental; 2024 accepted with a $2,840 refund", "From the 2024 return", "history"),
-  m("h-sandoval", "Plumbing S-corp plus a personal 1040 — keep the two engagements linked", "From the engagement setup", "fact"),
-];
-
-const suggestions: MemorySuggestion[] = [
-  s("h-chen", "Mentioned a new baby in a recent message — possible dependent change / Child Tax Credit", "From Ask Petal · today", "flag"),
-  s("h-fuentes", "Said they may sell a box truck this year — possible §179 / depreciation planning", "From a call · Jun 23", "flag"),
-  s("h-park", "Asked whether the hygienist should be W-2 or 1099 — worth a documented answer", "From a message", "flag"),
-];
-
-function m(householdId: string, text: string, source: string, kind: MemoryKind, pinned = false): Memory {
-  return { id: `mem-${householdId}-${++seq}`, householdId, text, source, kind, pinned, at: "" };
-}
-function s(householdId: string, text: string, source: string, kind: MemoryKind): MemorySuggestion {
-  return { id: `sug-${householdId}-${++seq}`, householdId, text, source, kind };
-}
-
+// ── cache ─────────────────────────────────────────────────────────────────────
+let rows: MemoryRow[] = [];
 let version = 0;
+let hydrated = false;
+let hydrating = false;
+let tempSeq = 0;
 const listeners = new Set<() => void>();
 function emit() { version++; listeners.forEach(l => l()); }
 
+const byPin = (a: { pinned: boolean }, b: { pinned: boolean }) => Number(b.pinned) - Number(a.pinned);
+const confirmedRows = () => rows.filter(r => r.status === "confirmed");
+const suggestedRows = () => rows.filter(r => r.status === "suggested");
+const toMemory = (r: MemoryRow): Memory => ({ id: r.id, householdId: r.householdId, text: r.text, source: r.source, kind: r.kind, pinned: r.pinned, at: r.at });
+const toSuggestion = (r: MemoryRow): MemorySuggestion => ({ id: r.id, householdId: r.householdId, text: r.text, source: r.source, kind: r.kind });
+
+// Re-read the firm's real memories. On failure we keep the prior cache rather than
+// blanking the surface (honest degradation; the server action logs the error).
+async function refresh() {
+  try {
+    rows = await listMemoriesAction();
+    hydrated = true;
+    emit();
+  } catch {
+    /* keep prior cache */
+  }
+}
+
+function ensureHydrated() {
+  if (hydrated || hydrating) return;
+  hydrating = true;
+  void refresh().finally(() => { hydrating = false; });
+}
+
 export const memoryStore = {
-  all: (): Memory[] => [...memories].sort((a, b) => Number(b.pinned) - Number(a.pinned)),
+  all: (): Memory[] => confirmedRows().map(toMemory).sort(byPin),
   ofHousehold: (hid: string): Memory[] =>
-    memories.filter(x => x.householdId === hid).sort((a, b) => Number(b.pinned) - Number(a.pinned)),
-  suggestionsOf: (hid: string): MemorySuggestion[] => suggestions.filter(x => x.householdId === hid),
-  allSuggestions: (): MemorySuggestion[] => [...suggestions],
-  countOf: (hid: string) => memories.filter(x => x.householdId === hid).length,
+    confirmedRows().filter(r => r.householdId === hid).map(toMemory).sort(byPin),
+  suggestionsOf: (hid: string): MemorySuggestion[] =>
+    suggestedRows().filter(r => r.householdId === hid).map(toSuggestion),
+  allSuggestions: (): MemorySuggestion[] => suggestedRows().map(toSuggestion),
+  countOf: (hid: string) => confirmedRows().filter(r => r.householdId === hid).length,
   /** households that have any memory, with counts — for the firm-wide view */
   byHousehold: () => {
     const map = new Map<string, Memory[]>();
-    memories.forEach(x => { if (!map.has(x.householdId)) map.set(x.householdId, []); map.get(x.householdId)!.push(x); });
+    confirmedRows().forEach(r => { if (!map.has(r.householdId)) map.set(r.householdId, []); map.get(r.householdId)!.push(toMemory(r)); });
     return [...map.entries()]
-      .map(([hid, list]) => ({ householdId: hid, name: householdById(hid)?.name ?? "—", memories: list.sort((a, b) => Number(b.pinned) - Number(a.pinned)) }))
+      .map(([hid, list]) => ({ householdId: hid, name: householdById(hid)?.name ?? "—", memories: list.sort(byPin) }))
       .sort((a, b) => a.name.localeCompare(b.name));
   },
 
   add(householdId: string, text: string, kind: MemoryKind = "fact", source = "Added by you · just now") {
     const t = text.trim();
     if (!t) return;
-    memories.unshift({ id: `mem-new-${++seq}`, householdId, text: t, source, kind, pinned: false, at: "" });
+    // optimistic insert so the surface responds instantly; refresh() reconciles to the
+    // real (encrypted, server-issued) row when the action returns.
+    const tempId = `mem-temp-${++tempSeq}`;
+    rows = [{ id: tempId, householdId, text: t, source, kind, status: "confirmed", pinned: false, at: new Date().toISOString() }, ...rows];
     emit();
+    void addMemoryAction({ householdId, text: t, kind, source }).then(refresh);
   },
-  remove(id: string) { const i = memories.findIndex(x => x.id === id); if (i >= 0) { memories.splice(i, 1); emit(); } },
-  togglePin(id: string) { const x = memories.find(y => y.id === id); if (x) { x.pinned = !x.pinned; emit(); } },
+  remove(id: string) {
+    rows = rows.filter(r => r.id !== id);
+    emit();
+    void removeMemoryAction(id).then(refresh);
+  },
+  togglePin(id: string) {
+    rows = rows.map(r => r.id === id ? { ...r, pinned: !r.pinned } : r);
+    emit();
+    void togglePinMemoryAction(id).then(refresh);
+  },
   /** approve a Petal suggestion → it becomes a memory */
   confirm(suggestionId: string) {
-    const i = suggestions.findIndex(x => x.id === suggestionId);
-    if (i < 0) return;
-    const sug = suggestions[i];
-    suggestions.splice(i, 1);
-    memories.unshift({ id: `mem-new-${++seq}`, householdId: sug.householdId, text: sug.text, source: `${sug.source} · confirmed`, kind: sug.kind, pinned: false, at: "" });
+    rows = rows.map(r => r.id === suggestionId ? { ...r, status: "confirmed" } : r);
     emit();
+    void confirmMemoryAction(suggestionId).then(refresh);
   },
   dismissSuggestion(suggestionId: string) {
-    const i = suggestions.findIndex(x => x.id === suggestionId);
-    if (i >= 0) { suggestions.splice(i, 1); emit(); }
+    rows = rows.filter(r => r.id !== suggestionId);
+    emit();
+    void removeMemoryAction(suggestionId).then(refresh);
   },
 };
 
 export function useMemory(): number {
+  // Hydrate from the real table on first client mount (no-op on the server snapshot).
+  useEffect(() => { ensureHydrated(); }, []);
   return useSyncExternalStore(
     cb => { listeners.add(cb); return () => listeners.delete(cb); },
     () => version,
