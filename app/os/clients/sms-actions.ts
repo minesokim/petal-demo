@@ -22,16 +22,19 @@ export type ClientSmsRow = { id: string; direction: string; body: string; create
 
 export async function listClientSmsAction(householdId: string): Promise<ClientSmsRow[]> {
   if (!householdId) return [];
-  return withFirm(async (db) => {
-    const rows = await listSmsForHousehold(db, householdId);
-    return rows.map((r) => ({
+  const rows = await withFirm(async (db) => {
+    const found = await listSmsForHousehold(db, householdId);
+    return found.map((r) => ({
       id: r.id,
       direction: r.direction,
       body: r.body,
       createdAt: (r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt)).toISOString(),
       attachments: r.attachments,
     }));
-  }) as Promise<ClientSmsRow[]>;
+  });
+  // withFirm yields null when there is no firm context (unauthenticated) — never hand the UI a
+  // null; return an empty thread so the record renders honestly instead of crashing on .length.
+  return rows ?? [];
 }
 
 // Upload one file from the composer to the firm-files bucket, returning a ref the caller holds

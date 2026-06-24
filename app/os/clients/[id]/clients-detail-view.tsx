@@ -379,7 +379,7 @@ function ClientRecordInner({ id }: { id: string }) {
   useEffect(() => {
     if (!h?.id) { setSmsRows([]); return; }
     let live = true;
-    listClientSmsAction(h.id).then(rows => { if (live) setSmsRows(rows); }).catch(() => {});
+    listClientSmsAction(h.id).then(rows => { if (live) setSmsRows(rows ?? []); }).catch(() => {});
     return () => { live = false; };
   }, [h?.id]);
 
