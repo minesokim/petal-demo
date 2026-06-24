@@ -10,6 +10,8 @@ import { describe, it, expect } from "vitest";
 import { MockProvider } from "../../lib/ai/provider";
 import { researchAnswer, ungroundedFigures } from "../../lib/research/engine";
 import { retrieve } from "../../lib/tax/authority/store";
+import { extractCompute } from "../../lib/research/extract";
+import { saltCap } from "../../lib/tax/worksheets/salt-cap";
 
 // A proposer that cites a given set of retrieved chunkIds for one claim. Mirrors the reasoning
 // schema so reasonAndScore's downstream faithfulness/verifier path runs for real.
@@ -64,6 +66,63 @@ describe("retrieval drops superseded chunks (the stale-law fix)", () => {
   it("a 'SALT cap 2026' query ranks the §164 SALT chunk first, not §68/§70111 itemized", () => {
     const hits = retrieve("what is the SALT cap for 2026", { taxYear: 2026, jurisdiction: "federal", k: 4 });
     expect(hits[0].chunkId).toBe("obbba-70120-salt-cap");
+  });
+});
+
+// ── RETRIEVAL/COVERAGE gaps the live eval exposed ─────────────────────────────────────────────
+// GAP A: a "tip income" / "deduction for tips" phrasing must retrieve the OBBBA §224 tips chunk
+// (the keywords used to miss those phrasings, so the tips question abstained with no groundable
+// position). GAP A also re-confirms the senior §151(d)(5)(C) chunk for "is there a new senior
+// deduction". GAP B: a 2025 gambling-loss question must answer the CLASSIC §165(d) rule (no 90%
+// haircut), while a 2026 one answers the OBBBA 90% rule — year-aware supersession across the pair.
+describe("retrieval gaps the live eval exposed (tips + 2025 gambling)", () => {
+  // GAP A — tips. The eval question "Is there any federal deduction for tip income in 2025?"
+  // returned no groundable position because the §224 keywords missed "tip income"/"deduction for
+  // tips". After adding those keywords the tips chunk must be a TOP hit for that phrasing.
+  it("'is there any federal deduction for tip income' retrieves the OBBBA §224 tips chunk as a top hit", () => {
+    const hits = retrieve("is there any federal deduction for tip income", {
+      taxYear: 2025,
+      jurisdiction: "federal",
+    });
+    expect(hits.map((c) => c.chunkId)).toContain("obbba-70201-tips-deduction");
+    // top hit (k defaults to 3) — the on-point tips chunk should lead, not be a tail straggler.
+    expect(hits[0].chunkId).toBe("obbba-70201-tips-deduction");
+  });
+
+  it("the 'deduction for tips' phrasing also retrieves the §224 tips chunk", () => {
+    const ids = retrieve("federal deduction for tips in 2025", { taxYear: 2025, jurisdiction: "federal" }).map(
+      (c) => c.chunkId,
+    );
+    expect(ids).toContain("obbba-70201-tips-deduction");
+  });
+
+  // GAP A audit — senior §151(d)(5)(C). "is there a new senior deduction" must retrieve the
+  // senior chunk (it already does via the "senior"/"senior deduction" keywords; locked here).
+  it("'is there a new senior deduction' retrieves the §151(d)(5)(C) senior chunk as a top hit", () => {
+    const hits = retrieve("is there a new senior deduction", { taxYear: 2025, jurisdiction: "federal" });
+    expect(hits.map((c) => c.chunkId)).toContain("obbba-70103-senior-deduction");
+    expect(hits[0].chunkId).toBe("obbba-70103-senior-deduction");
+  });
+
+  // GAP B — 2025 classic gambling. A 2025 gambling-loss question must retrieve the pre-OBBBA
+  // §165(d) chunk (100%-of-winnings ceiling, NO haircut) and NEVER the OBBBA 90% chunk (which
+  // first governs 2026). The OBBBA 90% chunk's taxYear list starts at 2026, so it is filtered out.
+  it("a 2025 gambling-loss query retrieves the classic §165(d) chunk, never the OBBBA 90% chunk", () => {
+    const ids = retrieve("can I deduct gambling losses", { taxYear: 2025, jurisdiction: "federal", k: 4 }).map(
+      (c) => c.chunkId,
+    );
+    expect(ids).toContain("irc-165d-gambling-2025");
+    expect(ids).not.toContain("obbba-70114-wagering-losses");
+  });
+
+  // GAP B — 2026 OBBBA gambling. The mirror: a 2026 gambling question answers the OBBBA 90% rule
+  // and must NOT surface the pre-OBBBA 2025 chunk (supersededFrom: 2026 filters it out from 2026).
+  it("a 2026 gambling-loss query retrieves the OBBBA 90% chunk, never the classic 2025 chunk", () => {
+    const ids = retrieve("can I deduct gambling losses", { taxYear: 2026, jurisdiction: "federal", k: 4 }).map(
+      (c) => c.chunkId,
+    );
+    expect(ids).toContain("obbba-70114-wagering-losses");
+    expect(ids).not.toContain("irc-165d-gambling-2025");
   });
 });
 
@@ -218,6 +277,90 @@ describe("ungroundedFigures — every stated figure must appear in the cited aut
 
   it("ignores claims with no monetary/percentage figure (years, counts pass through)", () => {
     expect(ungroundedFigures("This turns on the facts and circumstances for 2026.", "")).toEqual([]);
+  });
+});
+
+// ── INV-1 COMPUTE-HANDOFF (the engine-derived figure, exempt from the numeric gate) ──────────
+describe("extractCompute — deterministic input extractor + worksheet mapping", () => {
+  it("maps a SALT question with a MAGI figure to the saltCap worksheet and builds the request", () => {
+    const ex = extractCompute("My client has $700,000 of MAGI in 2026. What is their SALT cap?");
+    expect(ex).not.toBeNull();
+    expect(ex!.worksheet).toBe("saltCap");
+    expect(ex!.taxYear).toBe(2026);
+    expect(ex!.request).toEqual({
+      worksheet: "saltCap",
+      facts: { magi: 700000, filingStatus: "single", taxYear: 2026 },
+    });
+  });
+
+  it("reads 'married' as mfj filing status", () => {
+    const ex = extractCompute("A married couple filing jointly with $300,000 income — what is the SALT cap for 2025?");
+    expect(ex!.request.facts).toMatchObject({ filingStatus: "mfj" });
+  });
+
+  it("returns null when the SALT question carries no extractable income (rule-only, no guessing)", () => {
+    expect(extractCompute("What is the SALT cap for 2026?")).toBeNull();
+  });
+
+  it("returns null when the question maps to no covered worksheet", () => {
+    expect(extractCompute("What is the bonus depreciation percentage for 2026?")).toBeNull();
+  });
+
+  it("tips question needs BOTH a tips amount and MAGI", () => {
+    expect(extractCompute("I earned $8,000 in tips and have $90,000 of income in 2025")!.worksheet).toBe("tipsDeduction");
+    expect(extractCompute("Are tips deductible in 2025?")).toBeNull();
+  });
+});
+
+describe("researchAnswer attaches the engine-computed figure (INV-1 split)", () => {
+  it("a compute-flavored SALT question yields a populated .computation equal to the deterministic worksheet output", async () => {
+    // MAGI $510,000 in 2026 → cap phases down to $38,900 (40,400 − 0.30·(510,000−505,000)). That
+    // $38,900 figure appears in NEITHER the cited authority text (which lists 40,000 / 40,400 /
+    // 10,000 / 5,000 / 500,000 / 505,000) NOR the question — so it would be FLAGGED by the numeric
+    // gate if it were model-authored, and its survival proves the engine figure is gate-exempt.
+    const question = "My client has $510,000 of MAGI in 2026. What is their SALT cap?";
+    const ans = await researchAnswer(
+      proposerCiting("For 2026 the SALT cap is the OBBBA applicable limitation amount, phased down per §70120.", [
+        "obbba-70120-salt-cap",
+      ]),
+      undefined,
+      question,
+      { taxYear: 2026, jurisdiction: "federal" },
+    );
+
+    // Still a grounded, cited answer.
+    expect(ans.bucket).toBe("answer");
+    expect(ans.citations[0]?.chunkId).toBe("obbba-70120-salt-cap");
+
+    // The engine-derived figure is attached and equals the deterministic worksheet output.
+    const expected = saltCap({ magi: 510000, filingStatus: "single", taxYear: 2026 });
+    expect(expected.value).toBe(38900); // unique figure, absent from authority + question
+    expect(ans.computation).toBeDefined();
+    expect(ans.computation!.worksheet).toBe("saltCap");
+    expect(ans.computation!.taxYear).toBe(2026);
+    expect(ans.computation!.value).toBe(expected.value);
+    expect(ans.computation!.trace).toEqual(expected.lines);
+    expect(ans.computation!.citations).toEqual(expected.citations);
+
+    // The engine-derived sentence is folded into the answer text and is NOT dropped by the
+    // numeric gate — even though the worksheet value (a phased-down cap) appears in NEITHER the
+    // cited authority text NOR the question, it survives because it is engine-derived, not model-
+    // authored. ungroundedFigures would flag it; the gate never sees it.
+    expect(ans.answer).toContain(`$${expected.value.toLocaleString()}`);
+    expect(ans.answer).toMatch(/Computed by the deterministic engine/);
+  });
+
+  it("never attaches a computation to a non-answer bucket (no abstain → fabricated figure)", async () => {
+    // The position is stripped (fabricated cite) → abstain. The handoff branch is unreachable, so
+    // no engine figure is produced even though the question is compute-flavored.
+    const ans = await researchAnswer(
+      proposerCiting("The SALT cap is the OBBBA amount.", ["totally-fake-chunk"]),
+      undefined,
+      "My client has $700,000 of MAGI in 2026. What is their SALT cap?",
+      { taxYear: 2026, jurisdiction: "federal" },
+    );
+    expect(ans.bucket).not.toBe("answer");
+    expect(ans.computation).toBeUndefined();
   });
 });
 

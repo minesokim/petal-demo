@@ -82,6 +82,14 @@ type ResearchAnswerWire = {
   bucket: "answer" | "hedge" | "coverage_gap";
   currencyNote?: string;
   reviewNotes: string[];
+  /** INV-1 split: the engine-derived deterministic figure (present only on `answer`). */
+  computation?: {
+    worksheet: string;
+    value: number;
+    taxYear: number;
+    trace: { line: string; label: string; amount: number }[];
+    citations: { cite: string }[];
+  };
 };
 
 // Render a SourcedAnswer in the EXISTING chat-answer shape (no new UI): the prose as
@@ -100,19 +108,39 @@ function researchAnswerToChatAnswer(a: ResearchAnswerWire): ChatAnswer {
   }
   if (a.currencyNote?.trim()) paragraphs.push(`**Currency:** ${a.currencyNote.trim()}`);
 
+  // INV-1 split: when the engine attached a deterministic figure, render it the way
+  // taxAnswerToChatAnswer does — the value as a metric, the worksheet trace as findings. Reuses
+  // the existing ChatAnswer fields (metrics/findings); no new components (markup FROZEN).
+  const WORKSHEET_LABEL: Record<string, string> = {
+    saltCap: "SALT cap", tipsDeduction: "Tips deduction",
+    overtimeDeduction: "Overtime deduction", seniorDeduction: "Senior deduction",
+  };
+  const c = a.computation;
+  const metrics = c
+    ? [{ value: `$${c.value.toLocaleString()}`, label: WORKSHEET_LABEL[c.worksheet] ?? c.worksheet, tone: "brand" as const }]
+    : undefined;
+  const reviewFindings = a.reviewNotes.map((n) => ({
+    title: "Check before relying on this",
+    detail: n,
+    severity: "medium" as const,
+  }));
+  const traceFindings = c
+    ? c.trace.map((l) => ({
+        title: `Line ${l.line}: ${l.label}`,
+        detail: `$${l.amount.toLocaleString()}`,
+        severity: "low" as const,
+      }))
+    : [];
+  const findings = [...reviewFindings, ...traceFindings];
+
   return {
     paragraphs,
     sources: a.citations.length ? a.citations.map((c) => c.cite) : undefined,
     links: a.citations.length
       ? a.citations.map((c) => ({ label: c.cite, href: c.sourceUrl }))
       : undefined,
-    findings: a.reviewNotes.length
-      ? a.reviewNotes.map((n) => ({
-          title: "Check before relying on this",
-          detail: n,
-          severity: "medium" as const,
-        }))
-      : undefined,
+    metrics,
+    findings: findings.length ? findings : undefined,
   };
 }
 

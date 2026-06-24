@@ -30,12 +30,23 @@ export { aotc } from "./aotc";
 export { qbi } from "./qbi";
 export { headOfHousehold } from "./hoh";
 
+// OBBBA (P.L. 119-21) deterministic worksheets — model-free, sourced to primary authority.
+export { saltCap } from "./salt-cap";
+export { tipsDeduction } from "./tips-deduction";
+export { overtimeDeduction } from "./overtime-deduction";
+export { seniorDeduction } from "./senior-deduction";
+
 export type { StandardDeductionFacts } from "./standard-deduction";
 export type { EitcFacts } from "./eitc";
 export type { ChildTaxCreditFacts } from "./ctc";
 export type { AotcFacts, AotcStudent } from "./aotc";
 export type { QbiFacts } from "./qbi";
 export type { HohFacts, HohResult } from "./hoh";
+
+export type { SaltCapFacts } from "./salt-cap";
+export type { TipsDeductionFacts } from "./tips-deduction";
+export type { OvertimeDeductionFacts } from "./overtime-deduction";
+export type { SeniorDeductionFacts } from "./senior-deduction";
 
 // The single fact bundle the orchestrator consumes. It is a superset of every worksheet's
 // facts; the orchestrator slices the relevant subset for each call. Optional sub-objects

@@ -139,7 +139,7 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     verified: true,
     text:
       "OBBBA created a new ABOVE-THE-LINE deduction (also allowed to non-itemizers) for qualified tips, IRC §224. Cap: $25,000 per year (for the self-employed, limited to net income from the trade or business in which the tips were earned). Phase-out: the deduction is reduced by $100 for each $1,000 by which modified adjusted gross income exceeds $150,000 ($300,000 on a joint return). 'Qualified tips' are voluntary cash or charged tips (including tip-sharing) in an occupation that customarily and regularly received tips on or before December 31, 2024 (per IRS-published list); tips from a specified service trade or business under §199A(d)(2) do not qualify. A valid SSN is required, and married taxpayers must file jointly. The deduction terminates for tax years beginning after December 31, 2028.",
-    keywords: ["tips", "no tax on tips", "qualified tips", "224", "25000", "above-the-line", "obbba", "tipped"],
+    keywords: ["tips", "tip income", "no tax on tips", "deduction for tips", "deduction for tip income", "qualified tips", "224", "25000", "above-the-line", "obbba", "tipped", "gratuities"],
   },
 
   // ── No tax on overtime (OBBBA §70202, new IRC §225) ──
@@ -250,6 +250,26 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     text:
       "OBBBA rewrote IRC §165(d): for tax years beginning after December 31, 2025, the deduction for losses from wagering transactions is limited to 90% of such losses, and is allowed only to the extent of gains from wagering transactions during the year. 'Losses from wagering transactions' is expanded to include any otherwise-allowable deduction incurred in carrying on a wagering transaction (e.g., expenses of a professional gambler). This is a tightening: pre-OBBBA law allowed 100% of wagering losses up to winnings.",
     keywords: ["gambling", "wagering", "wagering losses", "gambling losses", "90 percent", "165", "obbba", "professional gambler"],
+  },
+  // The CORRECT pre-OBBBA gambling rule for tax year 2025 (and earlier). OBBBA §70114's 90%
+  // haircut first governs tax years beginning after Dec 31, 2025 (TY2026), so supersededFrom: 2026
+  // keeps this chunk retrievable for ≤2025 and lets the 90% chunk govern 2026+. A 2025 gambling-loss
+  // question answers the classic 100%-of-winnings ceiling; a 2026 one answers the 90% haircut.
+  {
+    chunkId: "irc-165d-gambling-2025",
+    authorityType: "statute",
+    citation: "IRC §165(d) — wagering-loss limitation, TY2025 and earlier (pre-OBBBA)",
+    jurisdiction: "federal",
+    taxYear: [2021, 2022, 2023, 2024, 2025],
+    effectiveDate: "1954-08-16", // §165(d) wagering-loss rule long predates 2025; bounded here for the modern window
+    supersededFrom: 2026, // OBBBA §70114's 90% rule first governs tax years beginning after Dec 31, 2025 (TY2026)
+    supersededBy: "OBBBA §70114 (P.L. 119-21) amending IRC §165(d) — wagering-loss limitation",
+    sourceUrl: URL.irc165,
+    ingestedAt: INGESTED,
+    verified: true, // §165(d) 100%-up-to-winnings rule confirmed: 26 U.S.C. §165(d) (pre-OBBBA text) + IRS Pub. 529 / Topic 419
+    text:
+      "For tax year 2025 and earlier (pre-OBBBA), IRC §165(d) allows a deduction for losses from wagering transactions only to the extent of the gains from wagering transactions during the same taxable year. There is NO percentage haircut: the full amount of wagering losses is deductible up to (but not exceeding) wagering winnings — the classic 100%-of-winnings ceiling. Losses above winnings are not deductible and may not be carried over. (For a non-professional, the losses are an itemized deduction; a professional gambler reports on Schedule C but is still capped at gains under §165(d).) OBBBA §70114 superseded this for tax years beginning after December 31, 2025, limiting the deduction to 90% of losses (still only to the extent of gains) — do NOT apply the 90% haircut for tax year 2025 or earlier.",
+    keywords: ["gambling", "gambling losses", "wagering", "wagering losses", "winnings", "100 percent", "up to winnings", "165", "165(d)", "professional gambler"],
   },
 
   // ── Bonus depreciation (OBBBA §70301, amending IRC §168(k)) ──

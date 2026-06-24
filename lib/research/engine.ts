@@ -46,8 +46,10 @@ import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
-import type { Jurisdiction } from "../tax/types";
+import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
+import { compute } from "../tax-ai/compute";
+import { extractCompute, type ExtractWorksheet } from "./extract";
 
 // ── Authority tier (the "authorityTier" on every citation) ─────────────────────────────────
 // Derived in CODE from the chunk's authorityType, never declared by the model. Statute and
@@ -103,6 +105,27 @@ export type SourcedCitation = {
  */
 export type AnswerBucket = "answer" | "hedge" | "coverage_gap" | "abstain";
 
+/**
+ * The INV-1 split's engine-derived half. When a research question is compute-flavored AND maps
+ * to one of the four OBBBA worksheets AND its inputs were deterministically extractable, the
+ * engine hands off to lib/tax-ai/compute() and attaches the DETERMINISTIC figure here. This is
+ * NOT a model-authored claim — lib/tax produced both the number and its trace — so it is EXEMPT
+ * from the model numeric gate (verifyPositions / ungroundedFigures). The model states the rule
+ * and cites it; this object carries the figure.
+ */
+export type EngineComputation = {
+  /** Which deterministic worksheet produced the figure. */
+  worksheet: ExtractWorksheet;
+  /** The computed amount, straight from lib/tax (cited + validated, never the model's). */
+  value: number;
+  /** The year the worksheet's year-specific figures were resolved for. */
+  taxYear: number;
+  /** The auditable worksheet trace (one line per IRS-worksheet line). */
+  trace: { line: string; label: string; amount: number }[];
+  /** The worksheet's own citations (authority the figure rests on). */
+  citations: Citation[];
+};
+
 export type SourcedAnswer = {
   answer: string;
   citations: SourcedCitation[];
@@ -112,6 +135,9 @@ export type SourcedAnswer = {
   currencyNote?: string;
   /** What the preparer must check before adopting. Never auto-filed. */
   reviewNotes: string[];
+  /** The engine-derived figure (INV-1 split). Present ONLY when the bucket is already "answer"
+   *  AND the deterministic handoff succeeded — never turns an abstain into a fabricated answer. */
+  computation?: EngineComputation;
 };
 
 // ── The adversarial freshness/supersession judge ────────────────────────────────────────────
@@ -499,12 +525,47 @@ export async function researchAnswer(
     }
   }
 
+  // ── INV-1 COMPUTE-HANDOFF ──────────────────────────────────────────────────────────────────
+  // We are in the `answer` bucket: a grounded, current-authority position survived every gate.
+  // If this question is ALSO compute-flavored — it maps to one of the four OBBBA worksheets and
+  // its inputs were deterministically extractable from the text — hand off to lib/tax-ai/compute
+  // for the FIGURE. The number is produced by lib/tax (cited, validated), never by the model, so
+  // it is EXEMPT from the numeric gate that policed the model's prose above. The engine-derived
+  // sentence we fold into `answer` is appended AFTER composeAnswer + verifyPositions have run, so
+  // it never passes through ungroundedFigures (it is trustworthy by construction, not by check).
+  // Guard: this only runs in the `answer` bucket and only when compute() succeeds — an abstain or
+  // a failed handoff can never be turned into a fabricated number here.
+  let answer = composeAnswer(groundedPositions);
+  let computation: EngineComputation | undefined;
+  const handoff = extractCompute(question);
+  if (handoff) {
+    try {
+      const { worksheet, taxYear: computedYear, result } = compute(handoff.request, handoff.taxYear);
+      computation = {
+        worksheet: worksheet as ExtractWorksheet,
+        value: result.value,
+        taxYear: computedYear,
+        trace: result.lines,
+        citations: result.citations,
+      };
+      // Engine-derived sentence — NOT run through verifyPositions / the numeric gate.
+      answer += `\n\nComputed by the deterministic engine: $${result.value.toLocaleString()} — see trace.`;
+      reviewNotes.push(
+        "The figure above was computed deterministically by lib/tax from inputs extracted from your question; confirm those inputs (and any eligibility assumptions) before relying on it.",
+      );
+    } catch {
+      // A malformed handoff must never break the grounded answer — fall back to rule-only.
+      computation = undefined;
+    }
+  }
+
   return {
-    answer: composeAnswer(groundedPositions),
+    answer,
     citations,
     bucket: "answer",
     currencyNote,
     reviewNotes,
+    computation,
   };
 }
 
