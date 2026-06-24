@@ -14,6 +14,7 @@
 // as action_proposals; they run only from the approval gate (resolveProposalAction).
 
 import { z } from "zod";
+import type { Stakes, ConnectorReliability } from "./risk";
 import CORE_TOOLS from "./tools/core";
 import INTENT_TOOLS from "./tools/intent";
 import SOR_TOOLS from "./tools/sor";
@@ -35,6 +36,15 @@ export type AgentTool = {
   run: (args: Record<string, unknown>) => Promise<unknown>;
   /** one-line human description for the approval card / audit metadata. */
   describe: (args: Record<string, unknown>) => string;
+  // ── risk-gate metadata (lib/agent/risk.ts) — optional; sensible defaults apply when omitted.
+  /** money / IRS / official-record exposure. Default: tier<=2 none, tier-3 internal low, else high. */
+  stakes?: Stakes;
+  /** easily undone? Default: tier<=2 true, tier-3 false. */
+  reversible?: boolean;
+  /** how the action reaches the world. Default "internal". browser = least reliable. */
+  connector?: ConnectorReliability;
+  /** an irreversible external commit (e-file, post journal) — Petal never performs it. */
+  irreversibleSubmit?: boolean;
 };
 
 // The assembled registry — one flat array the runtime + dispatch read from. Per-domain

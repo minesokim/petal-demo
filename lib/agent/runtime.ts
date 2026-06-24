@@ -21,6 +21,9 @@ import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import type { AgentTool } from "./registry";
 import { runTool } from "./registry";
+import { classifyRisk, type RiskAssessment } from "./risk";
+import { artifactFromOltPlan, artifactGeneric, type ReviewArtifact } from "./review-artifact";
+import type { OltStagePlan } from "@/lib/integrations/olt";
 import {
   createTask as createTaskRow,
   setTaskResult,
@@ -101,7 +104,18 @@ export type StagedProposal = {
   args: Record<string, unknown>;
   title: string;
   tier: number;
+  risk?: RiskAssessment;
+  reviewArtifact?: ReviewArtifact;
 };
+
+// Build the evidenced artifact for a staged write. OLT staging carries per-field provenance,
+// so use the rich builder; everything else gets the generic (args -> fields) artifact.
+function buildArtifact(tool: AgentTool, args: Record<string, unknown>, title: string): ReviewArtifact {
+  if (tool.name === "olt_stage_return" && Array.isArray((args as { entries?: unknown }).entries)) {
+    return artifactFromOltPlan(args as unknown as OltStagePlan);
+  }
+  return artifactGeneric(tool.name, title, args);
+}
 
 export type RunSubAgentArgs<T> = {
   role: string;
@@ -214,8 +228,18 @@ export async function runSubAgent<T>(
           results.push({ type: "tool_result", tool_use_id: tu.id, content: `error: ${e instanceof Error ? e.name : "unknown"}`, is_error: true });
         }
       } else {
-        // WRITE (tier>=3) — STAGE it, never execute inside the loop.
-        proposals.push({ toolName: tu.name, args: toolArgs, title: tool.describe(toolArgs), tier: tool.tier });
+        // WRITE (tier>=3) — STAGE it, never execute inside the loop. Classify its risk lane
+        // and build the evidenced artifact NOW, where the tool + args are in scope, so the
+        // proposal is born gate-ready. (Live confidence signals are threaded in a follow-up.)
+        const title = tool.describe(toolArgs);
+        proposals.push({
+          toolName: tu.name,
+          args: toolArgs,
+          title,
+          tier: tool.tier,
+          risk: classifyRisk(tool, toolArgs),
+          reviewArtifact: buildArtifact(tool, toolArgs, title),
+        });
         results.push({ type: "tool_result", tool_use_id: tu.id, content: `STAGED pending human approval: ${tool.describe(toolArgs)}. It is NOT done yet.` });
       }
     }
@@ -397,7 +421,9 @@ export async function runTask(
           toolName: p.toolName,
           args: p.args,
           rationale: p.title,
-          confidence: undefined,
+          confidence: p.risk?.confidence ?? undefined,
+          risk: p.risk,
+          reviewArtifact: p.reviewArtifact,
         });
         proposalIds.push(row.id);
       }

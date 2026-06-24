@@ -62,6 +62,10 @@ const OLT_TOOLS: AgentTool[] = [
     tier: 3,
     access: "write",
     requiredScopes: ["olt:write"],
+    // Browser-driven write touching the return — high stakes, least-reliable connector -> review lane.
+    stakes: "high",
+    connector: "browser",
+    reversible: false,
     schema: z.object({
       connectionId: z.string(),
       clientId: z.string(),
@@ -84,6 +88,11 @@ const OLT_TOOLS: AgentTool[] = [
     tier: 3,
     access: "write",
     requiredScopes: ["olt:write"],
+    // E-filing is the irreversible external commit — Petal NEVER performs it; a human submits.
+    stakes: "high",
+    connector: "browser",
+    reversible: false,
+    irreversibleSubmit: true,
     schema: z.object({
       connectionId: z.string(),
       clientId: z.string(),

@@ -54,6 +54,10 @@ const RECON_TOOLS: AgentTool[] = [
     tier: 3,
     access: "write",
     requiredScopes: ["xero:write"],
+    // Posts money to the books via an external API -> high stakes, review lane.
+    stakes: "high",
+    connector: "api",
+    reversible: false,
     schema: z.object({
       connectionId: z.string(),
       bankTransactionId: z.string(),
@@ -75,6 +79,10 @@ const RECON_TOOLS: AgentTool[] = [
     tier: 3,
     access: "write",
     requiredScopes: ["xero:write"],
+    // Posts money to the books via an external API -> high stakes, review lane.
+    stakes: "high",
+    connector: "api",
+    reversible: false,
     schema: z.object({
       connectionId: z.string(),
       date: z.string(),
