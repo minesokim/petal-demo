@@ -9,6 +9,7 @@ import { createClientAction } from "@/app/os/clients/actions";
 import { createTaskAction, setTaskStatusAction, markTaskDoneAction, approveTaskAction } from "@/app/os/tasks/actions";
 import { requestDocumentsAction } from "@/app/os/documents/actions";
 import { resolveNoticeAction } from "@/app/os/notices/actions";
+import { sendClientSmsAction } from "@/app/os/clients/sms-actions";
 import { loadFirmData } from "@/lib/server/firm-data";
 
 export type ToolKind = "read" | "write";
@@ -111,6 +112,17 @@ export const TOOLS: AgentTool[] = [
     kind: "write",
     run: async (a) => resolveNoticeAction(a.noticeId as string, a.note ? { note: a.note as string } : undefined),
     describe: (a) => `Resolve notice ${a.noticeId}`,
+  },
+  {
+    name: "send_sms",
+    description: "Send a text message (SMS) to a client via Twilio. householdId is required (find it with list_clients); body is the message. Drafting is fine to do unprompted; the SEND is staged for the preparer to confirm.",
+    schema: z.object({ householdId: z.string(), body: z.string().min(1).max(1600) }),
+    kind: "write",
+    run: async (a) => sendClientSmsAction({ householdId: a.householdId as string, body: a.body as string }),
+    describe: (a) => {
+      const body = a.body as string;
+      return `Text client ${a.householdId}: “${body.slice(0, 70)}${body.length > 70 ? "…" : ""}”`;
+    },
   },
 ];
 
