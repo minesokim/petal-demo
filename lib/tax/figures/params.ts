@@ -21,11 +21,12 @@ export type ParameterProvision =
   | "car_loan_interest"
   | "qbi_threshold"
   | "standard_deduction"
-  | "child_tax_credit";
+  | "child_tax_credit"
+  | "due_diligence_penalty";
 
 export const PARAMETER_PROVISIONS: ParameterProvision[] = [
   "salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction", "car_loan_interest",
-  "qbi_threshold", "standard_deduction", "child_tax_credit",
+  "qbi_threshold", "standard_deduction", "child_tax_credit", "due_diligence_penalty",
 ];
 
 export type ParameterFact = { label: string; value: string };
@@ -151,6 +152,15 @@ export function lookupParameter(
             { label: "Married filing separately", value: usd(sd.mfs.value) },
           ],
           citations: uniqCites([sd.single.citation, sd.mfj.citation, sd.hoh.citation]),
+        };
+      }
+      case "due_diligence_penalty": {
+        const p = getFigures(taxYear, "federal").dueDiligencePenaltyPerFailure;
+        return {
+          provision, taxYear, jurisdiction: "federal",
+          summary: `The §6695(g) preparer due-diligence penalty for returns filed in ${taxYear} is ${usd(p.value)} per failure, assessed separately for EACH covered item (EITC, CTC/ACTC/ODC, AOTC, and head-of-household), so a single return claiming all four can carry 4× that amount.`,
+          facts: [{ label: "Penalty per failure", value: usd(p.value) }],
+          citations: uniqCites([p.citation]),
         };
       }
       case "child_tax_credit": {

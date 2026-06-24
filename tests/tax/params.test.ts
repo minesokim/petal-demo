@@ -60,6 +60,12 @@ describe("lookupParameter — settled figures ground exactly + cited", () => {
     expect(a.facts.find(f => /ODC/i.test(f.label))!.value).toBe("$500");
   });
 
+  it("§6695(g) due-diligence penalty for returns filed in 2025 is $650/failure (verified vs Rev. Proc. 2025-32)", () => {
+    const a = lookupParameter("due_diligence_penalty", 2025)!;
+    expect(a.facts.find(f => /per failure/i.test(f.label))!.value).toBe("$650");
+    expect(a.summary).toMatch(/each covered item/i); // it stacks per credit/status
+  });
+
   it("EVERY grounded parameter ships at least one citation with an official source URL (clickable)", () => {
     for (const p of PARAMETER_PROVISIONS) {
       const a = lookupParameter(p, 2025);
