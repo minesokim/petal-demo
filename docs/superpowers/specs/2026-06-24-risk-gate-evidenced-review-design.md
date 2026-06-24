@@ -190,9 +190,13 @@ stores `risk` + `reviewArtifact` + proposer identity.
      irreversible external commit; a separate, explicit **human-performed** submit action does (and is audited
      as human-performed). This is the draft-only rule, enforced.
    - all other approved lanes → execute as today (`runTool(..., { allowWrite: true })`).
-4. **Surface (minimal, additive)** — the existing approval card renders `risk_level` as a small badge and the
-   `review_artifact.fields` as a simple source-linked list beneath the rationale. No restyle; the rich card is
-   a follow-up. Frozen-design rule respected.
+4. **Surface (minimal, additive)** — DEFERRED. Finding during build: `resolveProposalAction` is not yet called
+   from any component — the agent-proposal **approval queue UI does not exist in v1** (the server action is
+   built; no card renders it). So there is no existing card to additively enhance, and building a net-new
+   surface would need a design ref (frozen-design rule). The data layer (risk lane/level/factors + the
+   evidenced artifact) is fully persisted and returned by `listProposals`, ready for whenever the approval
+   queue UI is built. That UI — badge + source-linked evidence list + the §7216 "ready_to_submit" human-submit
+   affordance — is its own design+build pass.
 
 ## 7. Honest degradation
 
