@@ -681,6 +681,7 @@ function ClientRecordInner({ id }: { id: string }) {
               // to this client's threads across every channel. SMS sends for real; the others keep
               // the optimistic demo behavior, exactly like the Inbox.
               <MessagingPanel
+                variant="client"
                 threads={msgThreads}
                 onSendFor={(t) => (t.id === smsThread.id ? sendClientSms : undefined)}
                 emptyHint={`No messages with ${h.name} in this view yet.`}

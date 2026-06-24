@@ -1,11 +1,14 @@
 "use client";
 
-// MessagingPanel — the multi-channel conversation surface shared by the Inbox and the client
-// record's Messages tab. Status pills + channel filter, a Linear-style conversation list, and the
-// ThreadPane (breadcrumb + ThreadConversation + properties rail). The Inbox wraps this with its
-// own header/scope/compose and passes firm-wide threads; the client tab passes one client's
-// threads. onSendFor resolves the real send handler per thread (SMS → Twilio), so both surfaces
-// send for real. Keeping this as ONE component is what makes the two views identical by design.
+// MessagingPanel — the multi-channel conversation surface, in two densities:
+//   variant="inbox"  → the full firm Inbox: status filters, client-name rows + avatars, the
+//                      breadcrumb + properties rail. Wrapped by the Inbox page's header/scope/compose.
+//   variant="client" → a LITE version for a single client's Messages tab: no status filters, no
+//                      redundant client name/avatar (you're already on their page), no properties
+//                      rail — just the channel filter, a clean thread list (channel + subject), and
+//                      the conversation. Same component → the two stay consistent, but the client
+//                      view only shows what makes sense in-context.
+// onSendFor resolves the real send handler per thread (SMS → Twilio) so both surfaces send for real.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -21,6 +24,7 @@ import type { Thread, Channel } from "@/lib/fixtures/firm";
 import type { UploadedAttachment } from "@/app/os/clients/sms-actions";
 
 export type OnSend = (body: string, attachments?: UploadedAttachment[]) => Promise<{ ok: boolean; error?: string }>;
+type Variant = "inbox" | "client";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -74,16 +78,27 @@ function ChannelChip({ channel }: { channel: Channel }) {
   );
 }
 
-function ThreadPane({ thread, onSend }: { thread: Thread; onSend?: OnSend }) {
+function ThreadPane({ thread, onSend, variant }: { thread: Thread; onSend?: OnSend; variant: Variant }) {
+  const client = variant === "client";
   return (
     <div className="flex min-w-0 flex-1">
       {/* Conversation column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Breadcrumb header (Linear) */}
+        {/* Header — inbox: client → subject breadcrumb; client tab: channel + subject (no redundant name) */}
         <div className="flex items-center gap-1.5 border-b border-[var(--os-border)] px-5 py-3 text-[13px]">
-          <Link href={`/os/clients/${thread.householdId}`} className={cn("shrink-0 text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>{thread.clientName}</Link>
-          <Icon icon={I.chevronRight} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" />
-          <span className="truncate font-medium text-[var(--os-ink)]">{thread.subject}</span>
+          {client ? (
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <span className={cn("size-1.5 shrink-0 rounded-full", channelMeta[thread.channel].dot)} />
+              <span className="truncate font-medium text-[var(--os-ink)]">{thread.subject}</span>
+              <span className="shrink-0 text-[var(--os-ink-subtle)]">· {channelMeta[thread.channel].label}</span>
+            </span>
+          ) : (
+            <>
+              <Link href={`/os/clients/${thread.householdId}`} className={cn("shrink-0 text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]", focusRing)}>{thread.clientName}</Link>
+              <Icon icon={I.chevronRight} size={12} className="shrink-0 text-[var(--os-ink-subtle)]" />
+              <span className="truncate font-medium text-[var(--os-ink)]">{thread.subject}</span>
+            </>
+          )}
           <button title="Snooze" className={cn("ml-auto grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.history} size={15} /></button>
           <button title="Star" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}><Icon icon={I.star} size={15} /></button>
           <button title="More" className={cn("grid size-7 shrink-0 place-items-center rounded-md text-[var(--os-ink-muted)] hover:bg-[var(--os-hover)]", focusRing)}><Icon icon={I.more} size={16} /></button>
@@ -92,41 +107,43 @@ function ThreadPane({ thread, onSend }: { thread: Thread; onSend?: OnSend }) {
         <ThreadConversation thread={thread} onSend={onSend} />
       </div>
 
-      {/* Properties rail (Linear) */}
-      <aside className="hidden w-[220px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-4 xl:block">
-        <div className="os-label mb-3">Properties</div>
-        <div className="space-y-3">
-          <div>
-            <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Channel</div>
-            <ChannelChip channel={thread.channel} />
-          </div>
-          <div>
-            <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Client</div>
-            <Link href={`/os/clients/${thread.householdId}`} className={cn("flex items-center gap-1.5 text-[13px] text-[var(--os-link)] hover:underline", focusRing)}>
-              <span className="grid size-5 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials(thread.clientName)}</span>
-              {thread.clientName}
-            </Link>
-          </div>
-          {thread.waitingOnFirmSince && (
+      {/* Properties rail — INBOX ONLY. On a client's own page it just repeats what's already there. */}
+      {!client && (
+        <aside className="hidden w-[220px] shrink-0 overflow-y-auto border-l border-[var(--os-border)] px-4 py-4 xl:block">
+          <div className="os-label mb-3">Properties</div>
+          <div className="space-y-3">
             <div>
-              <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Waiting</div>
-              <WaitingChip since={thread.waitingOnFirmSince} />
+              <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Channel</div>
+              <ChannelChip channel={thread.channel} />
             </div>
-          )}
-          {thread.transcript && (
             <div>
-              <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Follow-ups</div>
-              <div className="flex items-center gap-1.5 text-[13px] text-[var(--os-ink)]">
-                <PetalMark className="size-3 shrink-0 text-[var(--os-ink-muted)]" />
-                {thread.transcript.followUps.length} extracted from the call
+              <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Client</div>
+              <Link href={`/os/clients/${thread.householdId}`} className={cn("flex items-center gap-1.5 text-[13px] text-[var(--os-link)] hover:underline", focusRing)}>
+                <span className="grid size-5 place-items-center rounded-full bg-[var(--os-selected)] text-[9px] font-medium text-[var(--os-ink-muted)]">{initials(thread.clientName)}</span>
+                {thread.clientName}
+              </Link>
+            </div>
+            {thread.waitingOnFirmSince && (
+              <div>
+                <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Waiting</div>
+                <WaitingChip since={thread.waitingOnFirmSince} />
               </div>
-            </div>
-          )}
-        </div>
-        <Link href={`/os/clients/${thread.householdId}`} className={cn("mt-4 flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] text-[12px] transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
-          Open record <Icon icon={I.chevronRight} size={13} />
-        </Link>
-      </aside>
+            )}
+            {thread.transcript && (
+              <div>
+                <div className="mb-1 text-[11px] text-[var(--os-ink-subtle)]">Follow-ups</div>
+                <div className="flex items-center gap-1.5 text-[13px] text-[var(--os-ink)]">
+                  <PetalMark className="size-3 shrink-0 text-[var(--os-ink-muted)]" />
+                  {thread.transcript.followUps.length} extracted from the call
+                </div>
+              </div>
+            )}
+          </div>
+          <Link href={`/os/clients/${thread.householdId}`} className={cn("mt-4 flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] text-[12px] transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+            Open record <Icon icon={I.chevronRight} size={13} />
+          </Link>
+        </aside>
+      )}
     </div>
   );
 }
@@ -134,25 +151,31 @@ function ThreadPane({ thread, onSend }: { thread: Thread; onSend?: OnSend }) {
 export function MessagingPanel({
   threads,
   onSendFor,
+  variant = "inbox",
   emptyHint = "Nothing in this view - switch filters, or compose to start a thread.",
 }: {
   threads: Thread[];
   onSendFor?: (t: Thread) => OnSend | undefined;
+  variant?: Variant;
   emptyHint?: string;
 }) {
+  const client = variant === "client";
   const [filter, setFilter] = useState<string>("open");
   const [channel, setChannel] = useState<"all" | Channel>("all");
-  const f = statusFilters.find(x => x.key === filter)!;
+  // The client tab has no status filters — it shows every conversation, sliced only by channel.
+  const f = client ? { test: (_t: Thread) => true } : statusFilters.find(x => x.key === filter)!;
   const list = threads.filter(t => f.test(t) && (channel === "all" || t.channel === channel));
   const [selected, setSelected] = useState<string>(() => threads.find(t => t.status === "open")?.id ?? threads[0]?.id ?? "");
   const thread = list.find(t => t.id === selected) || list[0];
   const counts = statusFilters.reduce<Record<string, number>>((a, x) => { a[x.key] = threads.filter(t => x.test(t)).length; return a; }, {});
+  // Inbox keeps all four channel chips (unchanged); the client tab only offers channels they have.
+  const channelChips = client ? CHANNEL_ORDER.filter(c => threads.some(t => t.channel === c)) : CHANNEL_ORDER;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Filters: status pills (left) + channel filter (right) */}
+      {/* Filters: inbox = status pills + channel filter; client = channel filter only */}
       <div className="flex items-center gap-1.5 overflow-x-auto border-b border-[var(--os-border)] px-5 py-1.5 sm:px-8">
-        {statusFilters.map(t => (
+        {!client && statusFilters.map(t => (
           <button
             key={t.key}
             onClick={() => { setFilter(t.key); const next = threads.filter(x => t.test(x) && (channel === "all" || x.channel === channel)); if (next.length) setSelected(next[0].id); }}
@@ -162,8 +185,8 @@ export function MessagingPanel({
             <span className="text-[11px] tabular-nums text-[var(--os-ink-subtle)]">{counts[t.key]}</span>
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-0.5">
-          {(["all", ...CHANNEL_ORDER] as const).map(c => (
+        <div className={cn("flex items-center gap-0.5", !client && "ml-auto")}>
+          {(["all", ...channelChips] as const).map(c => (
             <button
               key={c}
               onClick={() => { setChannel(c); const next = threads.filter(x => f.test(x) && (c === "all" || x.channel === c)); if (next.length) setSelected(next[0].id); }}
@@ -177,7 +200,7 @@ export function MessagingPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-x-auto">
-        {/* Conversation list (Linear) — tighter so the thread breathes */}
+        {/* Conversation list — inbox: avatar + client name; client: channel dot + subject (no redundant identity) */}
         <div className="flex w-[256px] shrink-0 flex-col overflow-y-auto border-r border-[var(--os-border)] sm:w-[292px]">
           {list.length === 0 ? (
             <div className="grid flex-1 place-items-center px-6 text-center text-[13px] text-[var(--os-ink-subtle)]">{emptyHint}</div>
@@ -189,19 +212,24 @@ export function MessagingPanel({
               : null;
             const meta = ai ?? contextLine(t);
             const waitDays = t.waitingOnFirmSince ? waitingDays(t.waitingOnFirmSince) : 0;
+            const title = client ? t.subject : t.clientName;
             return (
             <button
               key={t.id}
               onClick={() => setSelected(t.id)}
               className={cn("group flex items-start gap-2.5 border-b border-[var(--os-border)] px-3.5 py-2.5 text-left transition-colors", focusRing, t.id === thread?.id ? "bg-[var(--os-selected)]" : "hover:bg-[var(--os-hover)]")}
             >
-              <div className="relative mt-0.5 shrink-0">
-                <span className="grid size-7 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(t.clientName)}</span>
-                <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-[var(--os-bg)]", channelMeta[t.channel].dot)} />
-              </div>
+              {client ? (
+                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", channelMeta[t.channel].dot)} title={channelMeta[t.channel].label} />
+              ) : (
+                <div className="relative mt-0.5 shrink-0">
+                  <span className="grid size-7 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(t.clientName)}</span>
+                  <span className={cn("absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-[var(--os-bg)]", channelMeta[t.channel].dot)} />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-medium" : "font-normal")}>{t.clientName}</span>
+                  <span className={cn("truncate text-[13px] text-[var(--os-ink)]", t.unread ? "font-medium" : "font-normal")}>{title}</span>
                   <div className="ml-auto flex shrink-0 items-center gap-1.5">
                     {waitDays >= 1 && (
                       <Badge tone="amber" icon={Hourglass} size="sm" className="tabular-nums">{waitDays}d</Badge>
@@ -210,7 +238,8 @@ export function MessagingPanel({
                     {t.unread && <span className="size-2 rounded-full bg-[var(--os-info)]" />}
                   </div>
                 </div>
-                <div className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{t.subject}</div>
+                {/* inbox shows the subject on its own line under the name; the client view already leads with it */}
+                {!client && <div className="mt-0.5 truncate text-[12.5px] text-[var(--os-ink-muted)]">{t.subject}</div>}
                 <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-[var(--os-ink-subtle)]">
                   {ai && <PetalMark className="size-3 shrink-0" />}
                   <span className="truncate">{meta}</span>
@@ -225,7 +254,7 @@ export function MessagingPanel({
         <AnimatePresence mode="wait">
           {thread && (
             <motion.div key={thread.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.16, ease: "easeOut" }} className="flex min-w-[320px] flex-1">
-              <ThreadPane thread={thread} onSend={onSendFor?.(thread)} />
+              <ThreadPane thread={thread} onSend={onSendFor?.(thread)} variant={variant} />
             </motion.div>
           )}
         </AnimatePresence>
