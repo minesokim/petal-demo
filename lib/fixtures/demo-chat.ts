@@ -45,6 +45,8 @@ export interface ChatAnswer {
   /** ranked finding cards, each deep-linked to its record */
   findings?: ChatFinding[];
   sources?: string[];
+  /** cited legal authority for a research answer — each links to its official primary source. */
+  citations?: { cite: string; url?: string; authority?: string }[];
   links?: { label: string; href: string }[];
   /** the "Do" card - turns the answer into a run */
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };

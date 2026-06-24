@@ -47,7 +47,7 @@ function answerFromReply(reply: string): ChatAnswer {
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
 
-type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[] };
+type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[] };
 
 /** Friendly inline message for an error frame (so the bubble never goes raw). */
 function friendlyAgentError(code: string): string {
@@ -101,7 +101,7 @@ async function streamAgent({
       if (typeof label === "string" && label.trim()) pushStep(label);
     } else if (event === "done") {
       const d = data as AgentResult;
-      result = { reply: d.reply ?? "", proposedActions: d.proposedActions };
+      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations };
     } else if (event === "error") {
       errored = (data as { error?: unknown }).error as string ?? "agent_error";
     }
@@ -219,10 +219,12 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
     // stream errors (network failure or an `error` frame).
     streamAgent({ message, history, pushStep })
-      .then(({ reply, proposedActions }) => {
+      .then(({ reply, proposedActions, citations }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
         if (proposedActions?.length) ans.confirmActions = proposedActions;
+        // Surface the research engine's cited authority as clickable sources beside the answer.
+        if (citations?.length) ans.citations = citations.map(c => ({ cite: c.cite, url: c.sourceUrl, authority: c.authority }));
         settle(ans, text);
         persist("assistant", text);
       })
@@ -618,6 +620,39 @@ export function PetalAnswerView({
               <span className="max-w-[180px] truncate">{s}</span>
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Cited legal authority — each links to its official primary source (govinfo / IRS / Cornell
+          LII). This is the "cheap verification" affordance: the preparer clicks through and checks
+          the cite itself. Non-link when no source URL is available. */}
+      {allDone && answer.citations && answer.citations.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span className="text-[11px] text-[var(--os-ink-subtle)]">Sources</span>
+          {answer.citations.map((c, i) => {
+            const inner = (
+              <>
+                <span className="text-[10px] font-medium tabular-nums text-[var(--os-ink-subtle)]">{i + 1}</span>
+                <span className="max-w-[220px] truncate">{c.cite}</span>
+                {c.url && <Icon icon={I.link} size={11} className="text-[var(--os-ink-subtle)]" />}
+              </>
+            );
+            return c.url ? (
+              <a
+                key={c.cite}
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-1 text-[11.5px] text-[var(--os-ink)] transition-colors hover:bg-[var(--os-hover)] hover:border-[var(--os-border-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]"
+              >
+                {inner}
+              </a>
+            ) : (
+              <span key={c.cite} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-1 text-[11.5px] text-[var(--os-ink-muted)]">
+                {inner}
+              </span>
+            );
+          })}
         </div>
       )}
 

@@ -33,6 +33,10 @@ const AGENT_SYSTEM = `You are Petal, an AI-native assistant for a tax firm. From
 
 export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string };
 export type AgentTurn = { role: "user" | "assistant"; content: string };
+// A surfaced source for the answer — the legal cite + a link to the official primary source.
+// Public authority only (no PII), captured from tax_research / tax_compute so the UI can render
+// clickable sources beside the answer (cheap verification: the preparer checks the cite itself).
+export type AgentCitation = { cite: string; sourceUrl: string; authority?: string };
 
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
@@ -101,7 +105,7 @@ export async function runAgent(
   message: string,
   history: AgentTurn[] = [],
   opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
-): Promise<{ reply: string; proposedActions: ProposedAction[] }> {
+): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[] }> {
   assertZdrModel(AGENT_MODEL);
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
 
@@ -144,6 +148,7 @@ export async function runAgent(
   ];
 
   const proposedActions: ProposedAction[] = [];
+  const citations: AgentCitation[] = []; // accumulated from tax_research / tax_compute (deduped)
   let reply = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -179,6 +184,23 @@ export async function runAgent(
       if (tool.access === "read") {
         try {
           const out = await tool.run(args);
+          // Capture the structured citations from research/compute so the UI can render clickable
+          // sources. These are PUBLIC authority (legal cite + official source URL) — no PII — so we
+          // read them from the RAW result before redaction.
+          if ((tu.name === "tax_research" || tu.name === "tax_compute") && out && typeof out === "object") {
+            const cs = (out as { citations?: unknown }).citations;
+            if (Array.isArray(cs)) {
+              for (const c of cs) {
+                if (!c || typeof c !== "object") continue;
+                const cite = String((c as { cite?: unknown }).cite ?? "").trim();
+                const sourceUrl = String((c as { sourceUrl?: unknown }).sourceUrl ?? "").trim();
+                const authority = (c as { authority?: unknown }).authority;
+                if (cite && !citations.some((x) => x.cite === cite)) {
+                  citations.push({ cite, sourceUrl, authority: typeof authority === "string" ? authority : undefined });
+                }
+              }
+            }
+          }
           // HIGH-5: redact read-tool output BEFORE it re-enters the model context (client
           // records / SSN-shaped strings must not re-enter the live model — §7216/INV-4).
           results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(redactValue(out)).slice(0, 6000) });
@@ -207,5 +229,5 @@ export async function runAgent(
     }
   }
 
-  return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions };
+  return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions, citations };
 }
