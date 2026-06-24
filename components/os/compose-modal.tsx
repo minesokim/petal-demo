@@ -6,11 +6,14 @@
 // drop in a saved template, request a signature or documents, and schedule.
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { useFirmData } from "@/lib/client/firm-context";
+import { sendClientSmsAction } from "@/app/os/clients/sms-actions";
+import { sendClientEmailAction } from "@/app/os/clients/email-actions";
 import { FileSignature, Paperclip, FileText, LayoutTemplate, ListChecks, Clock } from "lucide-react";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
@@ -47,7 +50,9 @@ function ToolButton({ icon: IconC, label, onClick, active }: { icon: React.Compo
 
 export function ComposeModal({ onClose }: { onClose: () => void }) {
   const { households } = useFirmData();
+  const router = useRouter();
   const [to, setTo] = useState("");
+  const [toId, setToId] = useState(""); // the resolved householdId (set when a client is picked)
   const [toOpen, setToOpen] = useState(false);
   const [channel, setChannel] = useState<Channel>("email");
   const [subject, setSubject] = useState("");
@@ -55,9 +60,38 @@ export function ComposeModal({ onClose }: { onClose: () => void }) {
   const [attachments, setAttachments] = useState<string[]>([]);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstName = (to || "there").split(/\s|@/)[0];
+
+  // The client to send to: an explicit pick, or an exact name typed into the To field.
+  const resolvedId = toId || households.find(h => h.name.trim().toLowerCase() === to.trim().toLowerCase())?.id || "";
+  const canSend = !!resolvedId && !!body.trim() && !sending && channel !== "portal";
+
+  // Actually send (SMS via Twilio, email via Gmail). On success the inbox/threads refresh so the
+  // brand-new conversation shows up; on failure we surface the reason and stay open.
+  async function send() {
+    if (!resolvedId || !body.trim() || sending) return;
+    if (channel === "portal") { flash("Portal messaging isn't connected yet"); return; }
+    setSending(true);
+    try {
+      const res = channel === "sms"
+        ? await sendClientSmsAction({ householdId: resolvedId, body })
+        : await sendClientEmailAction({ householdId: resolvedId, subject: subject.trim() || "Message from your tax preparer", body });
+      if (res.ok) {
+        flash(channel === "sms" ? "Text sent" : "Message sent");
+        router.refresh();
+        setTimeout(onClose, 500);
+      } else {
+        flash(res.error ? `Couldn't send: ${res.error}` : "Couldn't send");
+      }
+    } catch {
+      flash("Couldn't send");
+    } finally {
+      setSending(false);
+    }
+  }
 
   const flash = (m: string) => {
     setToast(m);
@@ -120,7 +154,7 @@ export function ComposeModal({ onClose }: { onClose: () => void }) {
           <div className="relative min-w-0 flex-1">
             <input
               value={to}
-              onChange={e => { setTo(e.target.value); setToOpen(true); }}
+              onChange={e => { setTo(e.target.value); setToId(""); setToOpen(true); }}
               onFocus={() => setToOpen(true)}
               placeholder="Client name…"
               className="w-full bg-transparent text-[13px] text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
@@ -137,7 +171,7 @@ export function ComposeModal({ onClose }: { onClose: () => void }) {
                       className="absolute left-0 top-[calc(100%+8px)] z-20 max-h-[260px] w-[300px] overflow-y-auto rounded-lg border border-[var(--os-border)] bg-[var(--os-surface)] p-1 shadow-[0_12px_34px_-8px_rgba(17,17,26,0.22)]"
                     >
                       {matches.map(h => (
-                        <button key={h.id} onClick={() => { setTo(h.name); setToOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
+                        <button key={h.id} onClick={() => { setTo(h.name); setToId(h.id); setToOpen(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[var(--os-hover)]", focusRing)}>
                           <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--os-selected)] text-[10px] font-medium text-[var(--os-ink-muted)]">{initials(h.name)}</span>
                           <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--os-ink)]">{h.name}</span>
                           <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{h.serviceTier}</span>
@@ -201,11 +235,12 @@ export function ComposeModal({ onClose }: { onClose: () => void }) {
           {/* primary send + schedule */}
           <div className="flex items-center">
             <button
-              onClick={() => { flash(channel === "sms" ? "Text sent" : "Message sent"); setTimeout(onClose, 500); }}
-              disabled={!body.trim()}
+              onClick={send}
+              disabled={!canSend}
+              title={channel === "portal" ? "Portal messaging isn't connected yet" : !resolvedId ? "Pick a client" : undefined}
               className={cn("flex h-8 items-center gap-1.5 rounded-l-md bg-[var(--os-primary)] pl-3 pr-2.5 text-[12px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-[0.98] disabled:opacity-40", focusRing)}
             >
-              <Icon icon={I.send} size={14} /> Send
+              <Icon icon={I.send} size={14} /> {sending ? "Sending…" : "Send"}
             </button>
             <button
               onClick={() => flash("Scheduled for tomorrow 8:00 AM")}

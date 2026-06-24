@@ -412,14 +412,16 @@ function ClientRecordInner({ id }: { id: string }) {
   const openTasks = hhTasks.filter(t => t.status !== "done");
 
   // Real SMS conversation, shaped into the Thread the existing <ThreadConversation> renders.
-  // direction 'outbound' → firm bubble (sent), 'inbound' → client bubble (received).
-  const smsThread: Thread | null = smsRows.length > 0 ? {
+  // direction 'outbound' → firm bubble (sent), 'inbound' → client bubble (received). ALWAYS
+  // present (even with zero texts) so the composer is there to START a conversation — the
+  // preparer no longer needs an existing thread or the AI to begin texting a client.
+  const smsThread: Thread = {
     id: `sms-${h.id}`,
     householdId: h.id,
     clientName: h.name,
     channel: "sms",
     subject: "Text messages",
-    preview: smsRows[smsRows.length - 1]?.body ?? "",
+    preview: smsRows[smsRows.length - 1]?.body ?? "No messages yet",
     time: "",
     unread: false,
     status: "open",
@@ -430,12 +432,12 @@ function ClientRecordInner({ id }: { id: string }) {
       time: new Date(r.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
       ...(r.attachments?.length ? { attachments: r.attachments } : {}),
     })),
-  } : null;
+  };
   // Direct send (user-initiated, no AI confirm). On success the thread revalidates server-side.
   const sendClientSms = async (body: string, attachments?: UploadedAttachment[]) =>
     sendClientSmsAction({ householdId: h.id, body, attachments });
-  // Real SMS thread leads; the fixture threads (email/portal/call) follow.
-  const msgThreads: Thread[] = smsThread ? [smsThread, ...hhThreads] : hhThreads;
+  // Real SMS thread leads (always selectable); the fixture threads (email/portal/call) follow.
+  const msgThreads: Thread[] = [smsThread, ...hhThreads];
 
   // The canned @Petal answer - composed from the SAME derivations as the header strip.
   const petalAnswer =
