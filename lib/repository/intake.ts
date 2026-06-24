@@ -128,9 +128,16 @@ export async function setSessionStep(serviceDb: Db, sessionId: string, step: str
   });
 }
 
-export async function setDeposit(serviceDb: Db, sessionId: string, status: string, depositSessionId?: string) {
-  const [s] = await serviceDb.select({ firmId: intakeSessions.firmId }).from(intakeSessions).where(eq(intakeSessions.id, sessionId)).limit(1);
+// ⑦ Idempotent deposit-status write. "paid" is terminal: once a session is paid, this is
+// a no-op (re-delivered Stripe webhook events, or a late checkout.session.completed after a
+// manual reconcile, never double-write or downgrade). Returns whether a write happened so
+// callers/tests can assert idempotency.
+export async function setDeposit(serviceDb: Db, sessionId: string, status: string, depositSessionId?: string): Promise<{ changed: boolean }> {
+  const [s] = await serviceDb.select({ firmId: intakeSessions.firmId, depositStatus: intakeSessions.depositStatus }).from(intakeSessions).where(eq(intakeSessions.id, sessionId)).limit(1);
   if (!s) throw new Error("intake session not found");
+  // Guard: an already-paid session stays paid. Marking it paid again (or moving it back to
+  // session_created/unpaid) is a no-op — no DB mutation, no audit row, no double-write.
+  if (s.depositStatus === "paid") return { changed: false };
   await serviceDb.update(intakeSessions).set({ depositStatus: status, depositSessionId, updatedAt: new Date() }).where(eq(intakeSessions.id, sessionId));
   await writeAudit(serviceDb, prospectCtx(s.firmId), {
     action: "intake.session.deposit",
@@ -138,6 +145,7 @@ export async function setDeposit(serviceDb: Db, sessionId: string, status: strin
     resourceId: sessionId,
     metadata: { status, depositSessionId: depositSessionId ?? null },
   });
+  return { changed: true };
 }
 
 // Preparer side (firm-RLS) — session metadata only, never the decrypted answers.

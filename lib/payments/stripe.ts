@@ -12,6 +12,11 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
+// ⑦ The reservation deposit is a SERVER constant — never read from the client or from
+// webhook metadata. $50, expressed in cents to match Stripe's amount_total.
+export const DEPOSIT_DOLLARS = 50;
+export const DEPOSIT_CENTS = DEPOSIT_DOLLARS * 100; // 5000
+
 export type InvoiceCheckout = {
   amount: number; // whole dollars
   description: string;

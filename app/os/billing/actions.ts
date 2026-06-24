@@ -28,20 +28,26 @@ export async function payInvoiceAction(householdId: string): Promise<{ url: stri
     const inv = d.invoiceOf(householdId);
     if (!inv || inv.balance <= 0) return { url: null };
 
-    const session = await createInvoiceCheckout({
-      amount: inv.balance,
-      description: `${inv.clientName} — invoice ${inv.number}`,
-      clientEmail: people[0]?.email ?? undefined,
-      successUrl: `${APP_URL}/os/billing?paid=1`,
-      cancelUrl: `${APP_URL}/os/billing`,
-      metadata: { firmId: ctx.firmId, householdId, invoice: inv.number },
-    });
-    await writeAudit(db, ctx, {
-      action: "invoice.checkout",
-      resourceType: "invoice",
-      resourceId: inv.id,
-      metadata: { householdId, amount: inv.balance },
-    });
-    return { url: session.url };
+    try {
+      const session = await createInvoiceCheckout({
+        amount: inv.balance,
+        description: `${inv.clientName} — invoice ${inv.number}`,
+        clientEmail: people[0]?.email ?? undefined,
+        successUrl: `${APP_URL}/os/billing?paid=1`,
+        cancelUrl: `${APP_URL}/os/billing`,
+        metadata: { firmId: ctx.firmId, householdId, invoice: inv.number },
+      });
+      await writeAudit(db, ctx, {
+        action: "invoice.checkout",
+        resourceType: "invoice",
+        resourceId: inv.id,
+        metadata: { householdId, amount: inv.balance },
+      });
+      return { url: session.url };
+    } catch (err) {
+      // A Stripe outage must not 500 the billing page. Log the error name only.
+      console.error("payInvoiceAction: checkout failed", (err as Error)?.name);
+      return { url: null };
+    }
   });
 }
