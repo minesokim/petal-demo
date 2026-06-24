@@ -19,14 +19,14 @@ export function anthropicClient(): Anthropic {
   return new Anthropic({ apiKey });
 }
 
-const DEV_MODEL = process.env.PETAL_DEV_MODEL?.trim();
-
 /**
  * Resolve the model to actually call. In local dev, PETAL_DEV_MODEL overrides every requested
  * model with a single cheap ZDR model (e.g. claude-haiku-4-5) to keep API spend low while testing.
  * In prod/CI (env unset) it is a pass-through, so each call keeps its intended model. The caller
- * still runs assertZdrModel on the result, so an override to a non-ZDR model is rejected.
+ * still runs assertZdrModel on the result, so an override to a non-ZDR model is rejected. Read at
+ * call time (not module init) so it is trivially testable and respects a late-set env.
  */
 export function resolveModel(requested: string): string {
-  return DEV_MODEL && DEV_MODEL.length > 0 ? DEV_MODEL : requested;
+  const dev = process.env.PETAL_DEV_MODEL?.trim();
+  return dev && dev.length > 0 ? dev : requested;
 }
