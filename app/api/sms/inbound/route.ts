@@ -19,6 +19,15 @@ function twiml(): Response {
   return new Response(TWIML_EMPTY, { status: 200, headers: { "content-type": "text/xml" } });
 }
 
+// Non-PII diagnostic line for production debugging (vercel logs). NEVER logs the message body
+// or the phone number — only which BRANCH the request took + the signature/URL outcome, so a
+// misconfigured Twilio webhook (not reaching us / 403 signature mismatch / unknown sender) is
+// diagnosable from our side without ever exposing client content.
+function diag(stage: string, extra?: Record<string, string | number | boolean>) {
+  const tail = extra ? " " + Object.entries(extra).map(([k, v]) => `${k}=${v}`).join(" ") : "";
+  console.log(`[sms-inbound] ${stage}${tail}`);
+}
+
 // The exact public URL Twilio signed. Twilio HMACs the URL it posted to; behind Vercel's
 // proxy the request URL host is internal, so prefer an explicit override, then forwarded
 // headers, then the raw request URL.
@@ -74,12 +83,14 @@ function signaturesMatch(a: string, b: string): boolean {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  diag("hit"); // Twilio reached us at all — the single line that rules out "webhook not pointed here".
+
   // The webhook is meaningless (and unverifiable) without the auth token — reject.
   const authToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!authToken) return new Response("forbidden", { status: 403 });
+  if (!authToken) { diag("reject:no-auth-token"); return new Response("forbidden", { status: 403 }); }
 
   const signature = req.headers.get("x-twilio-signature");
-  if (!signature) return new Response("forbidden", { status: 403 });
+  if (!signature) { diag("reject:no-signature"); return new Response("forbidden", { status: 403 }); }
 
   // Twilio posts application/x-www-form-urlencoded.
   const form = await req.formData();
@@ -88,8 +99,12 @@ export async function POST(req: Request): Promise<Response> {
     if (typeof v === "string") params[k] = v;
   }
 
-  const expected = expectedSignature(authToken, signedUrl(req), params);
+  const url = signedUrl(req);
+  const expected = expectedSignature(authToken, url, params);
   if (!signaturesMatch(signature, expected)) {
+    // Logs OUR reconstructed URL (a public endpoint, not a secret) so a host/URL mismatch — the
+    // usual cause of a 403 behind a proxy — is obvious: compare it to the webhook URL in Twilio.
+    diag("reject:bad-signature", { signedUrl: url });
     return new Response("forbidden", { status: 403 });
   }
 
@@ -99,7 +114,7 @@ export async function POST(req: Request): Promise<Response> {
   const twilioSid = params.MessageSid || undefined;
 
   const fromE164 = toE164(from);
-  if (!fromE164) return twiml(); // unparseable sender — nothing to thread; ack so Twilio stops retrying.
+  if (!fromE164) { diag("ack:unparseable-sender"); return twiml(); } // nothing to thread; ack so Twilio stops retrying.
 
   // No JWT here: use the service-role db (bypasses RLS) to resolve the firm from the
   // sender's number, then scope everything to that firm.
@@ -115,7 +130,7 @@ export async function POST(req: Request): Promise<Response> {
     .where(inArray(people.phone, phoneVariants(fromE164)));
 
   const matches = candidates.filter((p) => p.phone && toE164(p.phone) === fromE164);
-  if (matches.length === 0) return twiml(); // unknown number — do nothing, no leak.
+  if (matches.length === 0) { diag("ack:unknown-sender"); return twiml(); } // no person on file — no leak.
 
   // Cross-tenant safety (fail closed): we resolve the firm from the SENDER's number because
   // a Twilio callback carries no JWT. The firm-owned DESTINATION number would identify the
@@ -125,7 +140,7 @@ export async function POST(req: Request): Promise<Response> {
   // the wrong tenant. Refuse silently (ack so Twilio stops retrying) until per-firm inbound
   // numbers + To-based resolution exist. Within a single firm we keep first-match behavior.
   const firmIds = new Set(matches.map((p) => p.firmId));
-  if (firmIds.size > 1) return twiml(); // ambiguous across firms — no write, no cross-tenant leak.
+  if (firmIds.size > 1) { diag("ack:ambiguous-firm", { firms: firmIds.size }); return twiml(); } // no cross-tenant guess.
 
   const match = matches[0];
 
@@ -140,5 +155,6 @@ export async function POST(req: Request): Promise<Response> {
     twilioSid,
   });
 
+  diag("recorded"); // success — inbound text written under the resolved firm (no PII logged).
   return twiml();
 }
