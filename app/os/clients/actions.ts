@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { withFirm } from "@/lib/auth/tenant";
-import { createHousehold, createPerson } from "@/lib/repository/practice-writes";
+import { createHousehold, createPerson, updatePerson } from "@/lib/repository/practice-writes";
 
 export type NewClientInput = {
   name: string;
@@ -10,6 +10,7 @@ export type NewClientInput = {
   serviceTier: string; // Basic | Standard | Premium
   contactName?: string;
   contactEmail?: string;
+  contactPhone?: string;
 };
 
 // Persists a real client (household + optional primary contact) to the firm's DB,
@@ -28,6 +29,7 @@ export async function createClientAction(input: NewClientInput): Promise<{ id: s
         householdId: hid,
         name: input.contactName.trim(),
         email: input.contactEmail?.trim() || undefined,
+        phone: input.contactPhone?.trim() || undefined,
         role: "Taxpayer",
       });
     }
@@ -35,4 +37,19 @@ export async function createClientAction(input: NewClientInput): Promise<{ id: s
   });
   if (result) revalidatePath("/os/clients");
   return result;
+}
+
+// Edit an existing contact's reachable fields (used inline on the client record so a
+// contact like Haokun can get a phone added and become textable). RLS + audit live in
+// updatePerson; we revalidate the record so the People rail + SMS lookup see the change.
+export type PersonContactInput = { phone?: string; email?: string; name?: string };
+export async function updatePersonContactAction(
+  personId: string,
+  patch: PersonContactInput,
+  householdId?: string,
+): Promise<{ ok: boolean }> {
+  if (!personId) return { ok: false };
+  const ok = await withFirm((db, ctx) => updatePerson(db, ctx, personId, patch));
+  if (ok && householdId) revalidatePath(`/os/clients/${householdId}`);
+  return { ok: !!ok };
 }

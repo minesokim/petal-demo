@@ -12,6 +12,7 @@ import { createTaskAction, setTaskStatusAction, markTaskDoneAction, approveTaskA
 import { requestDocumentsAction } from "@/app/os/documents/actions";
 import { resolveNoticeAction } from "@/app/os/notices/actions";
 import { sendClientSmsAction } from "@/app/os/clients/sms-actions";
+import { sendClientEmailAction } from "@/app/os/clients/email-actions";
 import { loadFirmData } from "@/lib/server/firm-data";
 
 // Helper: a read over the firm's loaded data (RLS-scoped inside loadFirmData).
@@ -132,6 +133,32 @@ const CORE_TOOLS: AgentTool[] = [
     describe: (a) => {
       const body = a.body as string;
       return `Text client ${a.householdId}: “${body.slice(0, 70)}${body.length > 70 ? "…" : ""}”`;
+    },
+  },
+  {
+    name: "send_email",
+    description:
+      "Email a client through the firm's connected Gmail (via Composio). Provide householdId (find it with find_client/list_clients) OR an explicit `to` address, plus subject + body. Drafting is fine to do unprompted; the SEND is staged for the preparer to confirm. Requires Gmail connected on the Connections page.",
+    tier: 3,
+    access: "write",
+    requiredScopes: ["email:send"],
+    schema: z.object({
+      householdId: z.string().optional(),
+      to: z.string().optional(),
+      subject: z.string().min(1),
+      body: z.string().min(1),
+    }),
+    run: async (a) =>
+      sendClientEmailAction({
+        householdId: a.householdId as string | undefined,
+        to: a.to as string | undefined,
+        subject: a.subject as string,
+        body: a.body as string,
+      }),
+    describe: (a) => {
+      const subj = a.subject as string;
+      const who = (a.householdId as string) || (a.to as string) || "client";
+      return `Email ${who}: “${subj.slice(0, 60)}${subj.length > 60 ? "…" : ""}”`;
     },
   },
 ];

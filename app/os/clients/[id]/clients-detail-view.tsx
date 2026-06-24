@@ -27,6 +27,7 @@ import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { uploadDocumentAction, listClientFilesAction, deleteClientFileAction } from "@/app/os/documents/actions";
 import { sendClientSmsAction, listClientSmsAction, type ClientSmsRow } from "@/app/os/clients/sms-actions";
+import { updatePersonContactAction } from "@/app/os/clients/actions";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
 import {
@@ -234,6 +235,53 @@ function StatRow({ dot, label, value }: { dot: string; label: string; value: num
       <span className="min-w-0 flex-1 truncate text-[var(--os-ink)]">{label}</span>
       <span className="shrink-0 tabular-nums text-[var(--os-ink-muted)]">{value}</span>
     </div>
+  );
+}
+
+/* ── inline phone edit for a contact (People rail) ── makes an existing client textable
+   without a modal. Mirrors the surrounding micro typography; persists via the audited,
+   RLS-scoped updatePersonContactAction, then refreshes so the SMS lookup sees the number. ── */
+function PersonPhone({
+  personId, householdId, phone, onSaved,
+}: { personId: string; householdId: string; phone?: string; onSaved: (m: string) => void }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(phone ?? "");
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const save = async () => {
+    const next = val.trim();
+    if (busy || next === (phone ?? "")) { setEditing(false); return; }
+    setBusy(true);
+    const res = await updatePersonContactAction(personId, { phone: next }, householdId);
+    setBusy(false);
+    setEditing(false);
+    if (res.ok) { onSaved(next ? "Phone saved" : "Phone removed"); router.refresh(); }
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="tel"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => { if (e.key === "Enter") save(); else if (e.key === "Escape") { setVal(phone ?? ""); setEditing(false); } }}
+        placeholder="Add phone"
+        className="w-[120px] shrink-0 rounded border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-1.5 py-0.5 text-[11px] tabular-nums text-[var(--os-ink)] focus:outline-none"
+      />
+    );
+  }
+  return (
+    <button
+      onClick={() => { setVal(phone ?? ""); setEditing(true); }}
+      className={cn("shrink-0 rounded px-1 py-0.5 text-[11px] tabular-nums transition-colors hover:bg-[var(--os-hover)]", phone ? "text-[var(--os-ink-subtle)]" : "text-[var(--os-link)]", FOCUS)}
+    >
+      {phone || "Add phone"}
+    </button>
   );
 }
 
@@ -1398,6 +1446,7 @@ function ClientRecordInner({ id }: { id: string }) {
                           <div className="truncate text-[13px] text-[var(--os-ink)]">{p.name}</div>
                           <div className="truncate text-[11px] text-[var(--os-ink-subtle)]">{p.email}</div>
                         </div>
+                        <PersonPhone personId={p.id} householdId={h.id} phone={p.phone || undefined} onSaved={show} />
                         <span className="shrink-0 text-[11px] text-[var(--os-ink-subtle)]">{p.role}</span>
                       </div>
                     ))}

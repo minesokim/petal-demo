@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import type { PGlite } from "@electric-sql/pglite";
 import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
-import { createEngagement, setEngagementStage, createTask, setTaskStatus, createHousehold, createPerson } from "../../lib/repository/practice-writes";
+import { createEngagement, setEngagementStage, createTask, setTaskStatus, createHousehold, createPerson, updatePerson } from "../../lib/repository/practice-writes";
 import { listHouseholds, peopleOf } from "../../lib/repository/practice";
 
 const A = "11111111-1111-1111-1111-111111111111";
@@ -62,6 +62,26 @@ describe("practice write-path (audited, RLS-scoped)", () => {
     });
     expect(out.hasAcme).toBe(true);
     expect(out.contacts).toEqual(["Dana Reed"]);
+  });
+
+  it("persists a contact phone on create, and updatePerson edits it in place (textable)", async () => {
+    const out = await asTenant(claimsA, async (db) => {
+      const ctx = { firmId: A, actorId: "u1", actorType: "preparer" as const };
+      // mirrors createClientAction threading contactPhone -> createPerson({ ..., phone })
+      const pid = await createPerson(db as never, ctx, {
+        householdId: "hA", name: "Haokun Li", email: "haokun@li.com", phone: "(951) 555-0190", role: "Taxpayer",
+      });
+      const onCreate = (await peopleOf(db as never, "hA")).find((p) => p.id === pid)?.phone;
+      // an existing contact gets a number added / changed via the inline edit path
+      const ok = await updatePerson(db as never, ctx, pid, { phone: "(714) 555-0200" });
+      const afterEdit = (await peopleOf(db as never, "hA")).find((p) => p.id === pid)?.phone;
+      const actions = (await db.select().from(schema.auditLog)).map((a) => a.action);
+      return { onCreate, ok, afterEdit, hasUpdateAudit: actions.includes("person.update") };
+    });
+    expect(out.onCreate).toBe("(951) 555-0190");
+    expect(out.ok).toBe(true);
+    expect(out.afterEdit).toBe("(714) 555-0200");
+    expect(out.hasUpdateAudit).toBe(true);
   });
 
   it("cannot write a row into another firm (RLS WITH CHECK)", async () => {

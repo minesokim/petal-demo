@@ -278,11 +278,12 @@ function NewClientModal({ onClose, onToast }: { onClose: () => void; onToast: (m
   const [tier, setTier] = useState<Household["serviceTier"]>("Standard");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   const create = async () => {
     const n = name.trim();
     if (!n) return;
-    const res = await createClientAction({ name: n, kind, serviceTier: tier, contactName, contactEmail });
+    const res = await createClientAction({ name: n, kind, serviceTier: tier, contactName, contactEmail, contactPhone });
     onToast("Client created");
     onClose();
     if (res?.id) router.push(`/os/clients/${res.id}`);
@@ -327,6 +328,7 @@ function NewClientModal({ onClose, onToast }: { onClose: () => void; onToast: (m
               <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Full name" className={cFieldCls} />
               <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="email@…" className={cFieldCls} />
             </div>
+            <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="Phone · for text messages" className={cn(cFieldCls, "mt-2")} />
           </div>
         </div>
 

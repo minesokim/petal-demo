@@ -15,6 +15,7 @@
 
 import { z } from "zod";
 import CORE_TOOLS from "./tools/core";
+import INTENT_TOOLS from "./tools/intent";
 import SOR_TOOLS from "./tools/sor";
 import INTAKE_TOOLS from "./tools/intake";
 import CHECKLIST_TOOLS from "./tools/checklist";
@@ -41,6 +42,7 @@ export type AgentTool = {
 // index lives here; the tool DEFINITIONS live in ./tools/*).
 export const ALL_TOOLS: AgentTool[] = [
   ...CORE_TOOLS,
+  ...INTENT_TOOLS,
   ...SOR_TOOLS,
   ...INTAKE_TOOLS,
   ...CHECKLIST_TOOLS,

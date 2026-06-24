@@ -38,6 +38,26 @@ export async function createPerson(db: Db, ctx: Ctx, input: PersonInput) {
   return id;
 }
 
+// Edit a contact's reachable fields (phone/email/name). Only the provided fields are
+// written; an undefined field is left untouched. RLS scopes the UPDATE to the caller's
+// firm and one audit row records it (no PII in metadata — id + changed keys only).
+export type PersonContactPatch = { phone?: string; email?: string; name?: string };
+export async function updatePerson(db: Db, ctx: Ctx, id: string, patch: PersonContactPatch) {
+  const set: Record<string, string | undefined> = {};
+  if (patch.phone !== undefined) set.phone = patch.phone.trim() || undefined;
+  if (patch.email !== undefined) set.email = patch.email.trim() || undefined;
+  if (patch.name !== undefined) set.name = patch.name.trim();
+  if (Object.keys(set).length === 0) return false;
+  const rows = await db.update(people).set(set).where(eq(people.id, id)).returning();
+  if (rows.length) {
+    await writeAudit(db, ctx, {
+      action: "person.update", resourceType: "person", resourceId: id,
+      metadata: { fields: Object.keys(set) }, // changed keys only — never the values
+    });
+  }
+  return rows.length > 0;
+}
+
 export type EngagementInput = {
   id?: string; entityId: string; householdId: string; form: string; taxYear: number;
   stage: string; statutoryDeadline: string; fee: number; depositPaid?: boolean; preparer?: string;
