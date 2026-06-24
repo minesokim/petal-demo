@@ -26,7 +26,7 @@ import { TaskDetail } from "@/components/os/task-detail";
 import { ReviewModal } from "@/components/os/doc-gallery";
 import { FileUploader } from "@/components/os/file-uploader";
 import { uploadDocumentAction, listClientFilesAction, deleteClientFileAction } from "@/app/os/documents/actions";
-import { sendClientSmsAction, listClientSmsAction, type ClientSmsRow } from "@/app/os/clients/sms-actions";
+import { sendClientSmsAction, listClientSmsAction, type ClientSmsRow, type UploadedAttachment } from "@/app/os/clients/sms-actions";
 import { updatePersonContactAction } from "@/app/os/clients/actions";
 import { ThreadConversation } from "@/components/os/thread-conversation";
 import { usePetalChat, PetalAnswerView, StreamedText } from "@/components/os/petal-chat";
@@ -428,10 +428,12 @@ function ClientRecordInner({ id }: { id: string }) {
       author: r.direction === "outbound" ? "Antonio Vazquez" : h.name,
       text: r.body,
       time: new Date(r.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      ...(r.attachments?.length ? { attachments: r.attachments } : {}),
     })),
   } : null;
   // Direct send (user-initiated, no AI confirm). On success the thread revalidates server-side.
-  const sendClientSms = async (body: string) => sendClientSmsAction({ householdId: h.id, body });
+  const sendClientSms = async (body: string, attachments?: UploadedAttachment[]) =>
+    sendClientSmsAction({ householdId: h.id, body, attachments });
   // Real SMS thread leads; the fixture threads (email/portal/call) follow.
   const msgThreads: Thread[] = smsThread ? [smsThread, ...hhThreads] : hhThreads;
 

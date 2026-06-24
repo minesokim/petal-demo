@@ -1,8 +1,17 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { drizzle } from "drizzle-orm/pglite";
 import type { PGlite } from "@electric-sql/pglite";
 import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
+
+// Storage is mocked: the repository signs media URLs via firm-files, which needs Supabase. The
+// signer returns a deterministic fake URL so we can assert the attachment mapping without network.
+vi.mock("../../lib/storage/firm-files", () => ({
+  signedUrlForFirmFile: async (path: string) => `https://signed.example/${path}`,
+  uploadFirmFileBytes: async () => ({ storagePath: "x", sizeBytes: 0, mimeType: "image/jpeg" }),
+  uploadFirmFile: async () => ({ storagePath: "x", sizeBytes: 0, mimeType: "image/jpeg" }),
+}));
+
 import { recordSms, listFirmSmsThreads } from "../../lib/repository/sms";
 
 // Two firms so we can prove RLS isolation: firm B must never see firm A's texts even
@@ -86,6 +95,32 @@ describe("listFirmSmsThreads (RLS-scoped, Inbox shape)", () => {
     // Marcus's texts (firm A) never leak in.
     const allText = threadsB.flatMap((t) => t.messages.map((m) => m.text));
     expect(allText).not.toContain("Hi Marcus, need your W-2.");
+  });
+});
+
+describe("sms media (MMS attachments)", () => {
+  it("persists media on a message and surfaces it as a signed-URL Attachment with the right kind", async () => {
+    await asTenant(claimsA, async (db) => {
+      await recordSms(db as never, ctxA, {
+        householdId: "hA", direction: "inbound", body: "here's the W-2", phone: "+19515550190",
+        twilioSid: "SM_media_1",
+        media: [
+          { storagePath: `${A}/u1-w2.jpg`, contentType: "image/jpeg", name: "w2.jpg", sizeBytes: 1234 },
+          { storagePath: `${A}/u2-form.pdf`, contentType: "application/pdf", name: "form.pdf", sizeBytes: 9999 },
+        ],
+      });
+    });
+
+    const threads = await asTenant(claimsA, (db) => listFirmSmsThreads(db as never, ctxA));
+    const t = threads.find((x) => x.householdId === "hA")!;
+    const m = t.messages.find((x) => x.attachments?.length)!;
+    expect(m.attachments).toHaveLength(2);
+    const img = m.attachments!.find((a) => a.name === "w2.jpg")!;
+    const pdf = m.attachments!.find((a) => a.name === "form.pdf")!;
+    expect(img.kind).toBe("image");
+    expect(pdf.kind).toBe("file");
+    expect(img.url).toBe(`https://signed.example/${A}/u1-w2.jpg`); // signed via the (mocked) firm-files store
+    expect(img.contentType).toBe("image/jpeg");
   });
 });
 

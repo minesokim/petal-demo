@@ -414,6 +414,20 @@ export const smsMessages = pgTable("sms_messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// MMS / file attachments on a text (0031). One row per media item; the blob lives in the
+// firm-files Supabase Storage bucket (storage_path = {firmId}/...), the same store as documents.
+// firm_id scopes RLS; cascade-deletes with its parent message.
+export const smsMedia = pgTable("sms_media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  smsMessageId: uuid("sms_message_id").notNull().references(() => smsMessages.id, { onDelete: "cascade" }),
+  storagePath: text("storage_path").notNull(),
+  contentType: text("content_type").notNull(),
+  name: text("name").notNull(),
+  sizeBytes: integer("size_bytes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ⑥ Agentic layer (Phase 0, 0028_agent_layer_schema.sql) — the durable substrate
 // the agent runtime drives via server actions + route handlers (no held-open
 // workflow; durability = these Postgres rows). firm_id scopes every table directly

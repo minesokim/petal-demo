@@ -50,6 +50,25 @@ export async function uploadFirmFile(firmId: string, file: File): Promise<Upload
   return { storagePath, sizeBytes: bytes.byteLength, mimeType };
 }
 
+// Upload raw bytes (not a File) to the firm-files bucket — used for inbound MMS media that we
+// fetch from Twilio's media URL, where there's no browser File object. Same path convention +
+// firm-scoping as uploadFirmFile.
+export async function uploadFirmFileBytes(
+  firmId: string,
+  bytes: Uint8Array,
+  name: string,
+  mimeType: string,
+): Promise<UploadedFirmFile> {
+  const safeName = safeFileName(name);
+  const storagePath = `${firmId}/${globalThis.crypto.randomUUID()}-${safeName}`;
+  const contentType = mimeType || "application/octet-stream";
+  const { error } = await client()
+    .storage.from(BUCKET)
+    .upload(storagePath, bytes, { contentType, upsert: false });
+  if (error) throw new Error(`firm-files upload failed: ${error.message}`);
+  return { storagePath, sizeBytes: bytes.byteLength, mimeType: contentType };
+}
+
 // Short-lived signed download URL for a stored object (private bucket — no public
 // URLs). Default 60s is plenty for a window.open hand-off.
 //

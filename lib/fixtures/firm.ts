@@ -1016,11 +1016,22 @@ export const workpapers: Workpaper[] = [
 export type Channel = "email" | "sms" | "portal" | "call";
 export type ThreadStatus = "open" | "snoozed" | "done";
 
+/** A media attachment on a message (MMS picture, PDF, or file). `url` is a short-lived signed
+ *  link to the object in the firm-files bucket; `kind` drives rendering (image = inline thumbnail,
+ *  file = a chip with an icon). Optional everywhere so plain text messages are unaffected. */
+export interface Attachment {
+  url: string;
+  name: string;
+  contentType: string;
+  kind: "image" | "file";
+}
+
 export interface Message {
   from: "client" | "firm";
   author: string;
   text: string;
   time: string;
+  attachments?: Attachment[];
 }
 
 export interface Thread {

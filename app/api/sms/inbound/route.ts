@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { inArray } from "drizzle-orm";
 import { people } from "@/lib/db/schema";
 import { toE164 } from "@/lib/sms/twilio";
+import type { SmsMediaInput } from "@/lib/repository/sms";
 
 // Inbound SMS webhook (Twilio → us). A client texts the firm's Twilio number and the
 // reply lands in the household's SMS thread. We trust NOTHING about the body until
@@ -82,6 +83,36 @@ function signaturesMatch(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
+// MMS: pull each media item off the webhook (Twilio sends NumMedia + MediaUrl{i} +
+// MediaContentType{i}), fetch the bytes from Twilio (authed — the media URL is private), store
+// in the firm-files bucket under the resolved firm, and return refs for recordSms. Best-effort
+// per item: a failed fetch is skipped and logged (the text body still records). No PII logged.
+async function collectInboundMedia(params: Record<string, string>, firmId: string): Promise<SmsMediaInput[]> {
+  const n = parseInt(params.NumMedia ?? "0", 10);
+  if (!Number.isFinite(n) || n <= 0) return [];
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token) return [];
+  const auth = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
+  const { uploadFirmFileBytes } = await import("@/lib/storage/firm-files");
+  const out: SmsMediaInput[] = [];
+  for (let i = 0; i < n; i++) {
+    const url = params[`MediaUrl${i}`];
+    const contentType = params[`MediaContentType${i}`] || "application/octet-stream";
+    if (!url) continue;
+    try {
+      const res = await fetch(url, { headers: { Authorization: auth }, redirect: "follow" });
+      if (!res.ok) { diag("media:fetch-failed", { i, status: res.status }); continue; }
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const ext = (contentType.split("/")[1] || "bin").split("+")[0].split(";")[0];
+      const name = `mms-${i + 1}.${ext}`;
+      const up = await uploadFirmFileBytes(firmId, bytes, name, contentType);
+      out.push({ storagePath: up.storagePath, contentType, name, sizeBytes: up.sizeBytes });
+    } catch { diag("media:error", { i }); }
+  }
+  return out;
+}
+
 export async function POST(req: Request): Promise<Response> {
   diag("hit"); // Twilio reached us at all — the single line that rules out "webhook not pointed here".
 
@@ -144,6 +175,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const match = matches[0];
 
+  // MMS: fetch + store any media under the matched firm before recording the message.
+  const media = await collectInboundMedia(params, match.firmId);
+
   // Insert under the matched firm via the existing repository writer. firm_id is stamped
   // from this system ctx; the audit row it writes records direction/sid only (never body).
   const { recordSms } = await import("@/lib/repository/sms");
@@ -153,8 +187,9 @@ export async function POST(req: Request): Promise<Response> {
     body,
     phone: fromE164,
     twilioSid,
+    media,
   });
 
-  diag("recorded"); // success — inbound text written under the resolved firm (no PII logged).
+  diag("recorded", { media: media.length }); // success — inbound text + N media under the resolved firm.
   return twiml();
 }

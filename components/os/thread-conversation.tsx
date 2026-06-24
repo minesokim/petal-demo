@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { Phone, Video, Paperclip, FileText, LayoutTemplate, FileSignature, ListChecks, Clock } from "lucide-react";
+import { Phone, Video, Paperclip, FileText, LayoutTemplate, FileSignature, ListChecks, Clock, X } from "lucide-react";
 import { TEMPLATES } from "@/components/os/compose-modal";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { useFirmData, useDerive } from "@/lib/client/firm-context";
+import { uploadSmsAttachmentAction, type UploadedAttachment } from "@/app/os/clients/sms-actions";
 import type { Thread, Message, Person } from "@/lib/fixtures/firm";
 
 const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2);
@@ -62,7 +63,13 @@ function petalDraftFor(thread: Thread): string {
   return `Hi ${f} - thanks for reaching out. I've got this and will follow up with the details shortly. Let me know if anything's urgent in the meantime. Best, Antonio`;
 }
 
-export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?: (body: string) => Promise<{ ok: boolean; error?: string }> }) {
+// A media item staged in the composer: the uploaded ref we send + a local preview for the chip.
+type Pending = { ref: UploadedAttachment; preview: string; kind: "image" | "file" };
+
+export function ThreadConversation({ thread, onSend }: {
+  thread: Thread;
+  onSend?: (body: string, attachments?: UploadedAttachment[]) => Promise<{ ok: boolean; error?: string }>;
+}) {
   const { people, expectedDocs } = useFirmData();
   const { skillById } = useDerive();
   const [reply, setReply] = useState(thread.petalDraft?.text ?? "");
@@ -72,7 +79,30 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [extraMessages, setExtraMessages] = useState<Message[]>([]);
+  const [pending, setPending] = useState<Pending[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const { msg, show } = useToast();
+
+  // Upload picked files to the firm-files bucket, staging each as a composer chip.
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // let the same file be re-picked later
+    if (!files.length) return;
+    setUploading(true);
+    for (const file of files) {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await uploadSmsAttachmentAction(fd);
+      if (res.ok && res.attachment) {
+        const kind: "image" | "file" = res.attachment.contentType.startsWith("image/") ? "image" : "file";
+        setPending(p => [...p, { ref: res.attachment!, preview: kind === "image" ? URL.createObjectURL(file) : "", kind }]);
+      } else {
+        show(res.error ? `Upload failed: ${res.error}` : "Upload failed");
+      }
+    }
+    setUploading(false);
+  }
 
   // Reset everything when the thread switches (also resets on page reload).
   useEffect(() => {
@@ -93,7 +123,9 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
   // twin (same sender + text) so a same-thread data refresh never double-renders a sent bubble.
   const allMessages = [
     ...thread.messages,
-    ...extraMessages.filter((ex) => !thread.messages.some((m) => m.from === ex.from && m.text === ex.text)),
+    ...extraMessages.filter((ex) => !thread.messages.some(
+      (m) => m.from === ex.from && m.text === ex.text && (m.attachments?.length ?? 0) === (ex.attachments?.length ?? 0),
+    )),
   ];
 
   function revealAnswer() {
@@ -112,19 +144,25 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
   /** append the composed reply into the conversation, then clear the composer */
   function postReply(toast: string) {
     const text = reply.trim();
-    if (!text) return;
-    // optimistic: append the firm bubble + clear the composer immediately
-    setExtraMessages(m => [...m, { from: "firm", author: "Antonio Vazquez", text, time: "just now" }]);
+    const atts = pending;
+    if (!text && atts.length === 0) return;
+    const refs = atts.map(a => a.ref);
+    // optimistic: append the firm bubble (with attachment previews) + clear the composer
+    setExtraMessages(m => [...m, {
+      from: "firm", author: "Antonio Vazquez", text, time: "just now",
+      ...(atts.length ? { attachments: atts.map(a => ({ url: a.preview || "#", name: a.ref.name, contentType: a.ref.contentType, kind: a.kind })) } : {}),
+    }]);
     setReply("");
+    setPending([]);
     setAnswerRevealed(false);
     setPetalDrafted(false);
     setSent(true);
     show(toast);
-    // real send (SMS Messages tab): fire the action; roll back the optimistic bubble on failure
+    // real send (SMS): fire the action; roll back the optimistic bubble on failure
     if (onSend) {
-      void onSend(text).then(r => {
+      void onSend(text, refs).then(r => {
         if (!r.ok) {
-          setExtraMessages(m => m.filter(x => !(x.from === "firm" && x.text === text)));
+          setExtraMessages(m => m.filter(x => !(x.from === "firm" && x.text === text && (x.attachments?.length ?? 0) === refs.length)));
           show(r.error ? `Couldn't send: ${r.error}` : "Couldn't send");
         }
       });
@@ -240,14 +278,29 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
                 </div>
               );
             }
-            // ── SMS: aligned chat bubbles ──
+            // ── SMS: aligned chat bubbles (with MMS image thumbnails + file chips) ──
             if (thread.channel === "sms") {
               const firm = msg.from === "firm";
+              const atts = msg.attachments ?? [];
               return (
                 <div key={i} className={cn("flex", firm ? "justify-end" : "justify-start")}>
-                  <div className="max-w-[76%]">
-                    <div className={cn("px-3.5 py-2 text-[13px] leading-snug", firm ? "rounded-2xl rounded-br-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "rounded-2xl rounded-bl-md bg-[var(--os-selected)] text-[var(--os-ink)]")}>{msg.text}</div>
-                    <div className={cn("mt-0.5 text-[11px] text-[var(--os-ink-subtle)]", firm && "text-right")}>{msg.time}</div>
+                  <div className={cn("flex max-w-[76%] flex-col gap-1", firm ? "items-end" : "items-start")}>
+                    {atts.map((a, j) => a.kind === "image" ? (
+                      <a key={j} href={a.url} target="_blank" rel="noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={a.url} alt={a.name} className="max-h-64 rounded-2xl border border-[var(--os-border)] object-cover" />
+                      </a>
+                    ) : (
+                      <a key={j} href={a.url} target="_blank" rel="noreferrer"
+                         className={cn("flex max-w-full items-center gap-2 rounded-2xl px-3.5 py-2 text-[12.5px] transition-opacity hover:opacity-90", firm ? "rounded-br-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "rounded-bl-md bg-[var(--os-selected)] text-[var(--os-ink)]")}>
+                        <Icon icon={I.file} size={15} className="shrink-0 opacity-80" />
+                        <span className="truncate">{a.name}</span>
+                      </a>
+                    ))}
+                    {msg.text && (
+                      <div className={cn("px-3.5 py-2 text-[13px] leading-snug", firm ? "rounded-2xl rounded-br-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]" : "rounded-2xl rounded-bl-md bg-[var(--os-selected)] text-[var(--os-ink)]")}>{msg.text}</div>
+                    )}
+                    <div className={cn("text-[11px] text-[var(--os-ink-subtle)]", firm && "text-right")}>{msg.time}</div>
                   </div>
                 </div>
               );
@@ -330,6 +383,25 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
                 <span className="rounded bg-[var(--os-selected)] px-1.5 py-0.5 text-[12px] text-[var(--os-ink)]">{thread.clientName} <span className="font-mono text-[11px] text-[var(--os-ink-subtle)]">&lt;{emailFor(thread.clientName, "client", people)}&gt;</span></span>
               </div>
             )}
+            {/* staged MMS attachments (uploaded, awaiting send) */}
+            {pending.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {pending.map((p, i) => (
+                  <div key={i} className="flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-bg-subtle)] py-1 pl-1.5 pr-1 text-[12px]">
+                    {p.kind === "image" && p.preview
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={p.preview} alt="" className="size-6 rounded object-cover" />
+                      : <Icon icon={I.file} size={14} className="text-[var(--os-ink-subtle)]" />}
+                    <span className="max-w-[120px] truncate text-[var(--os-ink-muted)]">{p.ref.name}</span>
+                    <button type="button" aria-label="Remove attachment" onClick={() => setPending(arr => arr.filter((_, j) => j !== i))} className={cn("grid size-4 place-items-center rounded text-[var(--os-ink-subtle)] hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", focusRing)}>
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+                {uploading && <span className="self-center text-[11px] text-[var(--os-ink-subtle)]">Uploading…</span>}
+              </div>
+            )}
+            <input ref={fileRef} type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={handleFiles} className="hidden" />
             <textarea
               value={reply}
               onChange={e => setReply(e.target.value)}
@@ -340,7 +412,7 @@ export function ThreadConversation({ thread, onSend }: { thread: Thread; onSend?
             <div className="mt-1 flex items-center gap-0.5">
               {/* the same tax-firm toolkit as the compose modal */}
               {([
-                { icon: Paperclip, label: "Attach file", run: () => show("File attached") },
+                { icon: Paperclip, label: "Attach file", run: () => thread.channel === "sms" ? fileRef.current?.click() : show("File attached") },
                 { icon: FileText, label: "Insert client document", run: () => show("Document attached") },
                 { icon: FileSignature, label: "Request signature (8879)", run: () => show("8879 attached for e-signature") },
                 { icon: ListChecks, label: "Request documents", run: () => show("Document request attached") },

@@ -30,12 +30,20 @@ export function toE164(raw: string): string | null {
   return null;
 }
 
-export async function sendSms(args: { to: string; body: string }): Promise<SmsResult> {
+export async function sendSms(args: { to: string; body: string; mediaUrls?: string[] }): Promise<SmsResult> {
   const { accountSid, authToken, from } = creds();
   const to = toE164(args.to);
   if (!to) throw new Error(`invalid phone: ${args.to}`);
   const body = args.body.trim();
-  if (!body) throw new Error("empty message");
+  const mediaUrls = (args.mediaUrls ?? []).filter(Boolean);
+  // A message needs SOME content: text, media, or both. With media, an empty body is valid (MMS).
+  if (!body && mediaUrls.length === 0) throw new Error("empty message");
+
+  // Twilio takes repeated MediaUrl params for a multi-attachment MMS. Each must be a public URL
+  // Twilio can fetch (we pass short-lived signed firm-files URLs; Twilio fetches within seconds).
+  const form = new URLSearchParams({ To: to, From: from });
+  if (body) form.set("Body", body.slice(0, 1600));
+  for (const u of mediaUrls.slice(0, 10)) form.append("MediaUrl", u);
 
   const res = await fetch(`${API_BASE}/Accounts/${accountSid}/Messages.json`, {
     method: "POST",
@@ -43,7 +51,7 @@ export async function sendSms(args: { to: string; body: string }): Promise<SmsRe
       Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ To: to, From: from, Body: body.slice(0, 1600) }).toString(),
+    body: form.toString(),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");

@@ -90,7 +90,7 @@ function ThreadPane({ thread }: { thread: Thread }) {
           thread={thread}
           onSend={
             thread.channel === "sms" && thread.householdId
-              ? (body) => sendClientSmsAction({ householdId: thread.householdId, body })
+              ? (body, attachments) => sendClientSmsAction({ householdId: thread.householdId, body, attachments })
               : undefined
           }
         />

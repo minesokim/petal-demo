@@ -1,14 +1,19 @@
-import { eq, asc } from "drizzle-orm";
-import { smsMessages, households } from "../db/schema";
+import { eq, asc, inArray } from "drizzle-orm";
+import { smsMessages, smsMedia, households } from "../db/schema";
 import { writeAudit } from "./audit";
+import { signedUrlForFirmFile } from "../storage/firm-files";
 import type { Db, Ctx } from "./types";
-import type { Thread, Message } from "../fixtures/firm";
+import type { Thread, Message, Attachment } from "../fixtures/firm";
 
 // SMS message persistence — RLS-scoped readers/writers for the firm's text
 // conversations with a household (mirrors lib/repository/chat.ts). Every query runs
 // under the caller's JWT so RLS narrows to the firm; firm_id is stamped from ctx on
 // writes. The body is the firm's own client-communication data — nothing here leaves
 // the process.
+
+// One stored media item to attach to a message — the blob already lives in the firm-files
+// bucket (uploaded by the inbound webhook or the composer); we persist a reference here.
+export type SmsMediaInput = { storagePath: string; contentType: string; name: string; sizeBytes?: number };
 
 export type RecordSmsInput = {
   householdId?: string;
@@ -17,7 +22,43 @@ export type RecordSmsInput = {
   phone: string;
   twilioSid?: string;
   status?: string;
+  media?: SmsMediaInput[];
 };
+
+// Mint short-lived signed URLs for every media item on a set of messages, grouped by message id.
+// RLS scopes the sms_media SELECT to the firm; signedUrlForFirmFile re-checks the {firmId}/ prefix
+// (defense in depth). Signing runs in parallel. Returns an empty map when there's no media.
+async function attachmentsByMessage(db: Db, messageIds: string[]): Promise<Map<string, Attachment[]>> {
+  const map = new Map<string, Attachment[]>();
+  if (messageIds.length === 0) return map;
+  const media = await db
+    .select({
+      smsMessageId: smsMedia.smsMessageId,
+      firmId: smsMedia.firmId,
+      storagePath: smsMedia.storagePath,
+      contentType: smsMedia.contentType,
+      name: smsMedia.name,
+    })
+    .from(smsMedia)
+    .where(inArray(smsMedia.smsMessageId, messageIds));
+  const signed = await Promise.all(
+    media.map(async (m) => ({
+      messageId: m.smsMessageId,
+      att: {
+        url: await signedUrlForFirmFile(m.storagePath, m.firmId, 600), // 10-min view window
+        name: m.name,
+        contentType: m.contentType,
+        kind: m.contentType.startsWith("image/") ? "image" : "file",
+      } as Attachment,
+    })),
+  );
+  for (const { messageId, att } of signed) {
+    const list = map.get(messageId) ?? [];
+    list.push(att);
+    map.set(messageId, list);
+  }
+  return map;
+}
 
 // Record one SMS (outbound or inbound). RLS scopes the INSERT to the caller's firm
 // (firm_id is stamped from ctx); one audit row records it. The audit metadata carries
@@ -43,11 +84,25 @@ export async function recordSms(db: Db, ctx: Ctx, input: RecordSmsInput): Promis
     .onConflictDoNothing()
     .returning();
   if (inserted.length === 0) return id; // duplicate sid — already recorded; no second audit row.
+  // Persist any media references (firm-scoped; cascade-deletes with the message). The blobs are
+  // already in the firm-files bucket; we only store the path + type + name here.
+  if (input.media?.length) {
+    await db.insert(smsMedia).values(
+      input.media.map((m) => ({
+        firmId: ctx.firmId,
+        smsMessageId: id,
+        storagePath: m.storagePath,
+        contentType: m.contentType,
+        name: m.name,
+        sizeBytes: m.sizeBytes ?? null,
+      })),
+    );
+  }
   await writeAudit(db, ctx, {
     action: "sms.record",
     resourceType: "household",
     resourceId: input.householdId ?? input.phone,
-    metadata: { direction: input.direction, sid: input.twilioSid ?? null, to: input.phone }, // never the body
+    metadata: { direction: input.direction, sid: input.twilioSid ?? null, to: input.phone, media: input.media?.length ?? 0 }, // never the body
   });
   return id;
 }
@@ -57,8 +112,8 @@ export async function recordSms(db: Db, ctx: Ctx, input: RecordSmsInput): Promis
 export async function listSmsForHousehold(
   db: Db,
   householdId: string,
-): Promise<{ id: string; direction: string; body: string; createdAt: Date }[]> {
-  return db
+): Promise<{ id: string; direction: string; body: string; createdAt: Date; attachments: Attachment[] }[]> {
+  const rows = await db
     .select({
       id: smsMessages.id,
       direction: smsMessages.direction,
@@ -68,6 +123,8 @@ export async function listSmsForHousehold(
     .from(smsMessages)
     .where(eq(smsMessages.householdId, householdId))
     .orderBy(asc(smsMessages.createdAt));
+  const byMsg = await attachmentsByMessage(db, rows.map((r) => r.id));
+  return rows.map((r) => ({ ...r, attachments: byMsg.get(r.id) ?? [] }));
 }
 
 // The firm is the preparer; outbound texts read as the firm's own bubbles. The fixture
@@ -105,6 +162,9 @@ export async function listFirmSmsThreads(db: Db, _ctx: Ctx): Promise<Thread[]> {
 
   if (rows.length === 0) return [];
 
+  // Signed-URL media for every message in one batch (empty map when there's no MMS).
+  const mediaByMsg = await attachmentsByMessage(db, rows.map((r) => r.id));
+
   // Resolve client names for the households that actually have texts (RLS-scoped).
   const hh = await db.select({ id: households.id, name: households.name }).from(households);
   const nameOf = new Map(hh.map((h) => [h.id, h.name]));
@@ -131,11 +191,13 @@ export async function listFirmSmsThreads(db: Db, _ctx: Ctx): Promise<Thread[]> {
     const waiting = last.direction === "inbound";
     const messages: Message[] = g.rows.map((r): Message => {
       const d = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt);
+      const attachments = mediaByMsg.get(r.id);
       return {
         from: r.direction === "outbound" ? "firm" : "client",
         author: r.direction === "outbound" ? FIRM_AUTHOR : clientName,
         text: r.body,
         time: msgTime(d),
+        ...(attachments?.length ? { attachments } : {}),
       };
     });
     const thread: Thread = {
@@ -145,7 +207,7 @@ export async function listFirmSmsThreads(db: Db, _ctx: Ctx): Promise<Thread[]> {
       clientName,
       channel: "sms",
       subject: "Text messages",
-      preview: last.body,
+      preview: last.body || (mediaByMsg.get(last.id)?.length ? "Sent an attachment" : ""),
       time: rowTime(lastDate),
       unread: waiting,
       status: "open",
