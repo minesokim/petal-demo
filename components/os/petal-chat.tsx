@@ -380,95 +380,35 @@ const THINKING_PHRASES = [
   "Drafting your response…",
 ];
 
-function Thinking() {
+// The single thinking indicator. When the agent streams REAL step labels (Thinking → Looking up
+// Haokun → Preparing the text), it shows the live action; with no steps (the /api/ask fallback or
+// document analyze) it rotates the existing phrases. Same animation either way — one component.
+function Thinking({ steps }: { steps?: string[] }) {
   const [i, setI] = useState(0);
+  const live = !!steps && steps.length > 0;
   useEffect(() => {
+    if (live) return; // real streamed steps drive the label; no mock rotation while streaming
     const t = window.setInterval(() => setI(x => Math.min(x + 1, THINKING_PHRASES.length - 1)), 780);
     return () => window.clearInterval(t);
-  }, []);
+  }, [live]);
+  const label = live ? steps![steps!.length - 1] : THINKING_PHRASES[i];
   return (
     <span className="relative inline-flex h-[18px] items-center overflow-hidden text-[12px] text-[var(--os-ink-subtle)]">
       <AnimatePresence mode="wait">
         <motion.span
-          key={i}
+          key={label}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
         >
-          {THINKING_PHRASES[i]}
+          {label}
         </motion.span>
       </AnimatePresence>
     </span>
   );
 }
 
-/* ── live thinking trace (streamed) ─────────────────────────── */
-
-// PetalThinking — the Claude-style live reasoning panel shown on the in-flight assistant bubble
-// while the agent streams `step` frames. The PetalMark pulses calmly, a "Thinking" label sits
-// beside it, and each streamed step appears one-by-one: the CURRENT step is active (an animated
-// shimmer dot), completed steps dim with a tiny check. Before the first step arrives it falls
-// back to the existing phrase rotator so the bubble is never empty. Pure ADD — reuses the chat's
-// own tokens (os-ink-muted, PetalMark, motion/react) and the surrounding type scale.
-function PetalThinking({ steps, compact }: { steps: string[]; compact?: boolean }) {
-  const reduced = prefersReduced();
-  if (!steps.length) return <Thinking />;
-
-  return (
-    <div className="min-w-0">
-      <div className="mb-2 flex items-center gap-2">
-        <motion.span
-          aria-hidden
-          className="grid place-items-center text-[var(--os-brand)]"
-          animate={reduced ? undefined : { opacity: [0.45, 1, 0.45], scale: [0.92, 1, 0.92] }}
-          transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
-        >
-          <PetalMark className={compact ? "size-3.5" : "size-4"} />
-        </motion.span>
-        <span className={cn("font-medium text-[var(--os-ink-muted)]", compact ? "text-[12px]" : "text-[12.5px]")}>
-          Thinking
-        </span>
-      </div>
-
-      <div className="space-y-1.5">
-        <AnimatePresence initial={false}>
-          {steps.map((label, i) => {
-            const isCurrent = i === steps.length - 1;
-            return (
-              <motion.div
-                key={`${i}-${label}`}
-                layout={!reduced}
-                initial={reduced ? false : { opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.26, ease: "easeOut" }}
-                className="flex items-start gap-2 text-[12px]"
-              >
-                <span className="mt-px grid size-3.5 shrink-0 place-items-center">
-                  {isCurrent ? (
-                    <motion.span
-                      aria-hidden
-                      className="size-1.5 rounded-full bg-[var(--os-brand)]"
-                      animate={reduced ? undefined : { opacity: [0.35, 1, 0.35], scale: [0.8, 1.15, 0.8] }}
-                      transition={{ duration: 1.1, ease: "easeInOut", repeat: Infinity }}
-                    />
-                  ) : (
-                    <span className="grid size-3.5 place-items-center rounded-full bg-[var(--os-brand)] text-white">
-                      <Icon icon={I.check} size={9} />
-                    </span>
-                  )}
-                </span>
-                <span className={cn("leading-snug", isCurrent ? "text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>
-                  {label}
-                </span>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
 
 /* ── agentic step trace ─────────────────────────────────────── */
 
@@ -637,7 +577,7 @@ export function PetalAnswerView({
   const [revealed, setRevealed] = useState(stream ? 0 : Infinity);
   const allDone = stepsDone && revealed >= answer.paragraphs.length;
 
-  if (thinking) return <PetalThinking steps={liveSteps ?? []} compact={compact} />;
+  if (thinking) return <Thinking steps={liveSteps} />;
 
   return (
     <div className={cn("min-w-0 space-y-2.5", compact && "space-y-2 text-[12.5px]")}>
