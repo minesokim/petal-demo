@@ -91,10 +91,13 @@ describe("runReconciliation — tier 2, terminates at proposals, zero external w
       expect(p.executionResult).toBeNull(); // nothing ran
       expect(p.confidence).not.toBeNull();
       expect(p.payloadEnc).toBeTruthy(); // PII payload is encrypted at rest
-      // args/evidence/rationale live in payload_enc — decrypt (as the app does) to verify them.
-      const { args, evidence, rationale } = decryptProposalPayload(p);
+      // risk gate: every recon write posts money via an external API -> review lane, with an artifact.
+      expect(p.riskLane).toBe("review");
+      // args/evidence/rationale/artifact live in payload_enc — decrypt (as the app does) to verify them.
+      const { args, evidence, rationale, reviewArtifact } = decryptProposalPayload(p);
       expect(rationale.length).toBeGreaterThan(0);
       expect(evidence).toBeTruthy(); // matched source records + tie-out trace
+      expect((reviewArtifact as { fields: unknown[] } | null)?.fields.length).toBeGreaterThan(0); // evidenced
       expect((args as Record<string, unknown>).connectionId).toBe("stub:xero-1");
       if (p.toolName === "create_xero_bank_transaction") {
         expect(typeof args.bankTransactionId).toBe("string");

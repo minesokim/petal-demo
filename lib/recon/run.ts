@@ -21,8 +21,30 @@ import type { Db, Ctx } from "@/lib/repository/types";
 import { assertCleared, type DataScope } from "@/lib/ai/guard";
 import { redactValue } from "@/lib/ai/redact";
 import { runTool } from "@/lib/agent/registry";
+import { classifyRisk, type ClassifiableTool } from "@/lib/agent/risk";
+import { artifactFromReconMatch, artifactGeneric } from "@/lib/agent/review-artifact";
 import { proposeBankTransaction, proposeManualJournal } from "@/lib/integrations/xero";
 import { reconcile, type BankTxn, type LedgerItem, type ReconResult, type Match } from "./match";
+
+// Risk-gate metadata for the two recon write tools (mirrors their registry annotations): both
+// post money to the books via the Xero API → high stakes, review lane.
+const RECON_BANK_TOOL: ClassifiableTool = { name: "create_xero_bank_transaction", tier: 3, access: "write", connector: "api", stakes: "high" };
+const RECON_JOURNAL_TOOL: ClassifiableTool = { name: "create_xero_manual_journal", tier: 3, access: "write", connector: "api", stakes: "high" };
+
+// Turn a match into human-readable reasons + any mismatches (the confidence signal the gate uses).
+function matchEvidence(m: Match, bankAmount: string, ledgerAmount: string): { reasons: string[]; mismatches: string[] } {
+  const reasons: string[] = [];
+  const mismatches: string[] = [];
+  if (m.basis === "exact") {
+    reasons.push("exact match on amount and date");
+  } else {
+    reasons.push(`memo similarity ${Math.round(m.detail.memoSimilarity * 100)}%`);
+    if (m.detail.dayGap > 0) mismatches.push(`dated ${m.detail.dayGap} day${m.detail.dayGap === 1 ? "" : "s"} apart`);
+    if (m.detail.memoSimilarity < 1) mismatches.push("memo is a fuzzy match");
+  }
+  if (bankAmount !== ledgerAmount) mismatches.push(`amount differs: bank ${bankAmount} vs ledger ${ledgerAmount}`);
+  return { reasons, mismatches };
+}
 
 // An optional rationale drafter — injected so a model can phrase the human-readable
 // rationale / suggest a category. It receives ONLY non-PII structured facts (ids, amounts,
@@ -136,6 +158,21 @@ export async function runReconciliation(
         kind: "match",
         detail: { basis: m.basis, bankId: m.bankId, ledgerId: m.ledgerId, amount: bank.amount, bankDate: bank.date },
       });
+      // Risk gate: classify with the match's real confidence + mismatches, and ship the
+      // evidenced artifact (bank ↔ ledger, each with its amount + the match reasons/mismatches).
+      const conf = confidenceFor(m);
+      const { reasons, mismatches } = matchEvidence(m, bank.amount, ledger.amount);
+      const risk = classifyRisk(RECON_BANK_TOOL, args as unknown as Record<string, unknown>, { confidence: conf, reconMismatches: mismatches });
+      const reviewArtifact = artifactFromReconMatch({
+        matchType: "bank_to_ledger",
+        bankTxnId: m.bankId,
+        ledgerItemId: m.ledgerId,
+        bankAmount: bank.amount,
+        ledgerAmount: ledger.amount,
+        matchScore: conf,
+        matchReasons: reasons,
+        mismatches,
+      });
       const row = await createProposal(db, ctx, {
         taskId: task.id,
         clientId,
@@ -149,7 +186,9 @@ export async function runReconciliation(
           matchDetail: m.detail,
           tieOut: recon.tieOut, // the tie-out trace travels with every proposal
         },
-        confidence: confidenceFor(m),
+        confidence: conf,
+        risk,
+        reviewArtifact,
       });
       proposalIds.push(row.id);
     }
@@ -166,6 +205,7 @@ export async function runReconciliation(
         kind: "journal",
         detail: { period: j.period, amount: j.amount, lineCount: j.lines.length },
       });
+      const journalRisk = classifyRisk(RECON_JOURNAL_TOOL, args as unknown as Record<string, unknown>, { confidence: 0.8 });
       const row = await createProposal(db, ctx, {
         taskId: task.id,
         clientId,
@@ -179,6 +219,8 @@ export async function runReconciliation(
           tieOut: recon.tieOut,
         },
         confidence: 0.8,
+        risk: journalRisk,
+        reviewArtifact: artifactGeneric("create_xero_manual_journal", rationale, args as unknown as Record<string, unknown>),
       });
       proposalIds.push(row.id);
     }
