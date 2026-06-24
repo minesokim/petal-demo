@@ -5,6 +5,9 @@ import path from "node:path";
 // Spin an in-process Postgres (PGlite — real PG semantics, no Docker) and apply
 // every migration in order. Used by RLS / repository tests.
 export async function makeTestDb(): Promise<PGlite> {
+  // A 32-byte test KEK so repository writers that envelope-encrypt PII (client memory, the
+  // action_proposals payload, …) work under PGlite without a real key in the environment.
+  process.env.DATA_ENCRYPTION_KEY ||= Buffer.alloc(32, 7).toString("base64");
   const db = new PGlite();
   const dir = path.join(process.cwd(), "supabase/migrations");
   const files = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();

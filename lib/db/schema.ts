@@ -555,7 +555,8 @@ export const actionProposals = pgTable("action_proposals", {
   riskLevel: text("risk_level"), // low | medium | high
   riskFactors: jsonb("risk_factors"), // RiskFactor[]
   humanMustSubmit: boolean("human_must_submit").notNull().default(false),
-  reviewArtifact: jsonb("review_artifact"), // ReviewArtifact (each field -> its source)
+  reviewArtifact: jsonb("review_artifact"), // ReviewArtifact (legacy plaintext; new rows -> payload_enc)
+  payloadEnc: text("payload_enc"), // envelope-encrypted { args, evidence, reviewArtifact, rationale }
   proposedByUserId: text("proposed_by_user_id"), // staged by (for no-self-approval)
   proposedByRole: text("proposed_by_role"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

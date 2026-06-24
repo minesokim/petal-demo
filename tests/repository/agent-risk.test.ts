@@ -16,6 +16,7 @@ const B = "22222222-2222-2222-2222-222222222222";
 let pg: PGlite;
 
 beforeAll(async () => {
+  process.env.DATA_ENCRYPTION_KEY = process.env.DATA_ENCRYPTION_KEY || Buffer.alloc(32, 7).toString("base64"); // 32-byte test KEK
   pg = await makeTestDb();
   await pg.exec(`insert into firms (id, clerk_org_id, name) values ('${A}','org_a','A'),('${B}','org_b','B');`);
 });
@@ -60,6 +61,29 @@ describe("action_proposals risk gate (persisted + firm-scoped)", () => {
     expect(p.humanMustSubmit).toBe(true);
     expect(Array.isArray(p.riskFactors)).toBe(true);
     expect((p.reviewArtifact as { summary: string }).summary).toBe("E-file the 2024 return");
+  });
+
+  it("stores the payload ENCRYPTED at rest (plaintext columns hold only placeholders)", async () => {
+    const secret = "Send SMS to 555-0142: your refund of $4,210 is ready";
+    await asTenant(claimsA, async (db) => {
+      const task = await createTask(db as never, ctxA, { kind: "agent:test", tier: 3 });
+      await createProposal(db as never, ctxA, { taskId: task.id, toolName: "send_sms", args: { to: "555-0142", body: secret }, rationale: secret, risk: classifyRisk({ name: "send_sms", tier: 3, access: "write" }, {}) });
+    });
+    // Raw columns (read as superuser, bypassing RLS) must NOT contain the plaintext.
+    const raw = await pg.query<{ payload_enc: string; args: unknown; rationale: string }>(
+      "select payload_enc, args, rationale from action_proposals where tool_name = 'send_sms'",
+    );
+    const row = raw.rows[0];
+    expect(row.payload_enc).toBeTruthy();
+    expect(row.payload_enc).not.toContain("555-0142");
+    expect(row.payload_enc).not.toContain("4,210");
+    expect(JSON.stringify(row.args)).toBe("{}"); // plaintext args column emptied
+    expect(row.rationale).not.toContain("555-0142"); // placeholder, not the real label
+    // …but the repository decrypts it back for the firm.
+    const rows = await asTenant(claimsA, (db) => listProposals(db as never));
+    const p = rows.find((r) => r.toolName === "send_sms")!;
+    expect((p.args as { body: string }).body).toBe(secret);
+    expect(p.rationale).toBe(secret);
   });
 
   it("never returns another firm's proposals (RLS holds on the new columns)", async () => {

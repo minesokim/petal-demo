@@ -8,10 +8,53 @@ import {
   artifacts,
 } from "../db/schema";
 import { writeAudit } from "./audit";
-import { redactValue } from "../ai/redact";
+import { encryptPII, decryptPII } from "../crypto/envelope";
 import type { Db, Ctx } from "./types";
 import type { RiskAssessment } from "../agent/risk";
 import type { ReviewArtifact } from "../agent/review-artifact";
+
+// ── proposal payload encryption ───────────────────────────────────────────────
+// The staged-action payload (args/evidence/reviewArtifact/rationale) carries taxpayer PII —
+// SMS bodies, phone numbers, staged wage figures, bank payee/memo, and the rationale label which
+// embeds client names. It is envelope-encrypted at rest in action_proposals.payload_enc; the
+// plaintext columns hold only non-PII placeholders. These two helpers are the single seam every
+// reader/writer goes through.
+const RATIONALE_PLACEHOLDER = "(staged action — details encrypted at rest)";
+type ProposalPayload = { args: Record<string, unknown>; evidence: unknown; reviewArtifact: unknown; rationale: string };
+
+export function encryptProposalPayload(p: ProposalPayload): string {
+  return encryptPII(JSON.stringify(p));
+}
+
+// Decrypt a proposal row back to its payload. New rows read payload_enc; legacy rows (null) fall
+// back to the plaintext columns so nothing breaks during/after the cutover.
+export function decryptProposalPayload(row: {
+  payloadEnc?: string | null;
+  args?: unknown;
+  evidence?: unknown;
+  reviewArtifact?: unknown;
+  rationale?: string | null;
+}): ProposalPayload {
+  if (row.payloadEnc) {
+    try {
+      const p = JSON.parse(decryptPII(row.payloadEnc)) as Partial<ProposalPayload>;
+      return {
+        args: (p.args ?? {}) as Record<string, unknown>,
+        evidence: p.evidence ?? null,
+        reviewArtifact: p.reviewArtifact ?? null,
+        rationale: p.rationale ?? row.rationale ?? "",
+      };
+    } catch {
+      /* fall through to legacy plaintext */
+    }
+  }
+  return {
+    args: (row.args ?? {}) as Record<string, unknown>,
+    evidence: row.evidence ?? null,
+    reviewArtifact: row.reviewArtifact ?? null,
+    rationale: row.rationale ?? "",
+  };
+}
 
 // ⑥ Agentic layer — firm-scoped readers/writers for the agent runtime's durable
 // state (0028_agent_layer_schema.sql). Every query runs under the caller's JWT so
@@ -135,21 +178,26 @@ export async function createProposal(db: Db, ctx: Ctx, input: CreateProposalInpu
       firmId: ctx.firmId,
       clientId: input.clientId ?? null,
       toolName: input.toolName,
-      args: input.args ?? {},
-      rationale: input.rationale,
-      // LOW-6: redact connector free-text (payee/memo) before it is persisted into
-      // action_proposals.evidence — so raw client data never lands at rest unredacted.
-      evidence: input.evidence == null ? null : redactValue(input.evidence),
+      // PII payload (args/evidence/reviewArtifact/rationale) is envelope-encrypted into payload_enc;
+      // the plaintext columns hold only non-PII placeholders so nothing sensitive lands at rest.
+      payloadEnc: encryptProposalPayload({
+        args: input.args ?? {},
+        evidence: input.evidence ?? null,
+        reviewArtifact: input.reviewArtifact ?? null,
+        rationale: input.rationale,
+      }),
+      args: {},
+      rationale: RATIONALE_PLACEHOLDER,
+      evidence: null,
       confidence: input.confidence === undefined ? null : String(input.confidence),
-      // Risk gate: store the lane/level/factors + the artifact the reviewer verifies against,
-      // and WHO staged it (so resolveProposal can bar self-approval on the 'review' lane).
-      // The artifact carries the firm's own staged values (parallel to args, same firm-scoped
-      // visibility) so verification stays cheap; payload-at-rest encryption is a follow-up.
+      // Risk gate: lane/level/factors + WHO staged it (so resolveProposal can bar self-approval on
+      // the 'review' lane). risk_* are non-PII and stay plaintext for filtering; the artifact's
+      // VALUES live in payload_enc.
       riskLane: input.risk?.lane ?? null,
       riskLevel: input.risk?.level ?? null,
       riskFactors: input.risk?.factors ?? null,
       humanMustSubmit: input.risk?.humanMustSubmit ?? false,
-      reviewArtifact: input.reviewArtifact ?? null,
+      reviewArtifact: null,
       proposedByUserId: ctx.actorId ?? null,
       proposedByRole: ctx.role ?? null,
     })
@@ -218,8 +266,9 @@ export async function resolveProposal(
   return row;
 }
 
-// List proposals for the firm, optionally filtered by status (e.g. the pending
-// approval queue). RLS scopes to the firm; newest first.
+// List proposals for the firm, optionally filtered by status (e.g. the pending approval queue).
+// RLS scopes to the firm; newest first. The PII payload (args/evidence/reviewArtifact/rationale)
+// is decrypted from payload_enc here so the caller sees real values; risk_* stay plaintext.
 export async function listProposals(db: Db, status?: string) {
   const base = db
     .select({
@@ -230,6 +279,7 @@ export async function listProposals(db: Db, status?: string) {
       args: actionProposals.args,
       rationale: actionProposals.rationale,
       evidence: actionProposals.evidence,
+      payloadEnc: actionProposals.payloadEnc,
       confidence: actionProposals.confidence,
       status: actionProposals.status,
       riskLane: actionProposals.riskLane,
@@ -241,7 +291,12 @@ export async function listProposals(db: Db, status?: string) {
     })
     .from(actionProposals)
     .orderBy(desc(actionProposals.createdAt));
-  return status ? base.where(eq(actionProposals.status, status)) : base;
+  const rows = await (status ? base.where(eq(actionProposals.status, status)) : base);
+  return rows.map((r) => {
+    const { args, evidence, reviewArtifact, rationale } = decryptProposalPayload(r);
+    const { payloadEnc: _omit, ...rest } = r;
+    return { ...rest, args, evidence, reviewArtifact, rationale };
+  });
 }
 
 // ── fetch_requirements (the document-collection ledger) ───────────────────────

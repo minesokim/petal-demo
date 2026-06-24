@@ -19,6 +19,7 @@ const A = "11111111-1111-1111-1111-111111111111";
 let pg: PGlite;
 
 beforeAll(async () => {
+  process.env.DATA_ENCRYPTION_KEY = process.env.DATA_ENCRYPTION_KEY || Buffer.alloc(32, 7).toString("base64"); // 32-byte test KEK
   pg = await makeTestDb();
   await pg.exec(`
     insert into firms (id, clerk_org_id, name) values ('${A}','org_a','Firm A');

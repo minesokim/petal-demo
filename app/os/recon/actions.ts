@@ -14,6 +14,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { withFirm } from "@/lib/auth/tenant";
 import { actionProposals } from "@/lib/db/schema";
+import { decryptProposalPayload } from "@/lib/repository/agent";
 
 const RECON_WRITE_TOOLS = ["create_xero_bank_transaction", "create_xero_manual_journal"] as const;
 
@@ -53,6 +54,7 @@ export async function listReconProposalsAction(
         args: actionProposals.args,
         rationale: actionProposals.rationale,
         evidence: actionProposals.evidence,
+        payloadEnc: actionProposals.payloadEnc,
         confidence: actionProposals.confidence,
         status: actionProposals.status,
         createdAt: actionProposals.createdAt,
@@ -63,19 +65,23 @@ export async function listReconProposalsAction(
   });
 
   if (!rows) return [];
-  return rows.map((r) => ({
-    id: r.id,
-    taskId: r.taskId,
-    clientId: r.clientId,
-    toolName: r.toolName,
-    title: titleFor(r.toolName, (r.args ?? {}) as Record<string, unknown>),
-    args: (r.args ?? {}) as Record<string, unknown>,
-    rationale: r.rationale,
-    evidence: r.evidence,
-    confidence: r.confidence,
-    status: r.status,
-    createdAt: r.createdAt,
-  }));
+  return rows.map((r) => {
+    // The PII payload (args/evidence/rationale) is encrypted at rest — decrypt for display.
+    const { args, evidence, rationale } = decryptProposalPayload(r);
+    return {
+      id: r.id,
+      taskId: r.taskId,
+      clientId: r.clientId,
+      toolName: r.toolName,
+      title: titleFor(r.toolName, args),
+      args,
+      rationale,
+      evidence,
+      confidence: r.confidence,
+      status: r.status,
+      createdAt: r.createdAt,
+    };
+  });
 }
 
 // A one-line human label for the confirm card (no all-caps, no em dash).

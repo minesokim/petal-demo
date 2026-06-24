@@ -5,6 +5,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
 import { runReconciliation } from "../../lib/recon/run";
+import { decryptProposalPayload } from "../../lib/repository/agent";
 import { RECON_FIXTURE_EXPECTED } from "../../lib/recon/fixture";
 import * as xero from "../../lib/integrations/xero";
 
@@ -88,12 +89,13 @@ describe("runReconciliation — tier 2, terminates at proposals, zero external w
     for (const p of proposals) {
       expect(p.status).toBe("pending"); // staged, NOT executed
       expect(p.executionResult).toBeNull(); // nothing ran
-      expect(p.rationale.length).toBeGreaterThan(0);
-      expect(p.evidence).toBeTruthy(); // matched source records + tie-out trace
       expect(p.confidence).not.toBeNull();
-      // args carry the exact would-be Xero call payload.
-      const args = p.args as Record<string, unknown>;
-      expect(args.connectionId).toBe("stub:xero-1");
+      expect(p.payloadEnc).toBeTruthy(); // PII payload is encrypted at rest
+      // args/evidence/rationale live in payload_enc — decrypt (as the app does) to verify them.
+      const { args, evidence, rationale } = decryptProposalPayload(p);
+      expect(rationale.length).toBeGreaterThan(0);
+      expect(evidence).toBeTruthy(); // matched source records + tie-out trace
+      expect((args as Record<string, unknown>).connectionId).toBe("stub:xero-1");
       if (p.toolName === "create_xero_bank_transaction") {
         expect(typeof args.bankTransactionId).toBe("string");
         expect(typeof args.ledgerItemId).toBe("string");

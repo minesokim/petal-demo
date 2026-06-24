@@ -6,7 +6,7 @@
 
 import { eq } from "drizzle-orm";
 import { actionProposals } from "@/lib/db/schema";
-import { resolveProposal, claimProposal } from "@/lib/repository/agent";
+import { resolveProposal, claimProposal, decryptProposalPayload } from "@/lib/repository/agent";
 import { writeAudit } from "@/lib/repository/audit";
 import { runTool, isToolEnabled, TOOL_BY_NAME, ALL_SCOPES } from "./registry";
 import { canApprove } from "@/lib/auth/roles";
@@ -96,7 +96,8 @@ export async function resolveProposalCore(
     return { ok: false, error: "not a confirmable write action" };
   }
 
-  const args = (proposal.args ?? {}) as Record<string, unknown>;
+  // Decrypt the staged payload (args live in payload_enc) before executing the governed write.
+  const args = decryptProposalPayload(proposal).args;
   let executionResult: Record<string, unknown>;
   if (!isToolEnabled(proposal.toolName)) {
     // External connector is Phase 3 — do NOT execute; record a deferred result so the
