@@ -428,6 +428,23 @@ export const smsMedia = pgTable("sms_media", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Client Memory (0032) — durable per-client facts Petal accumulates. The text is client PII
+// (S-corp elections, comp figures, dependents), so it is ENVELOPE-ENCRYPTED at rest in text_enc
+// (never plaintext) — replacing the old in-memory/localStorage store. firm_id scopes RLS;
+// status 'suggested' = an AI-proposed memory awaiting a human's confirm, 'confirmed' = active.
+export const clientMemory = pgTable("client_memory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  householdId: text("household_id").notNull().references(() => households.id, { onDelete: "cascade" }),
+  textEnc: text("text_enc").notNull(), // envelope-encrypted memory text (PII)
+  source: text("source").notNull(),
+  kind: text("kind").notNull(), // preference | fact | history | flag
+  status: text("status").notNull().default("confirmed"), // confirmed | suggested
+  pinned: boolean("pinned").notNull().default(false),
+  createdByUserId: text("created_by_user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ⑥ Agentic layer (Phase 0, 0028_agent_layer_schema.sql) — the durable substrate
 // the agent runtime drives via server actions + route handlers (no held-open
 // workflow; durability = these Postgres rows). firm_id scopes every table directly
