@@ -3,6 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } from "./provider";
 import { redactText } from "./redact";
 import { assertZdrModel } from "./guard";
+import { anthropicClient } from "./anthropic-client";
 
 // Anthropic-direct (no LangChain). ZDR + no-training are contractual at the
 // account/DPA level; here we enforce data-minimization (redact the prompt),
@@ -10,12 +11,13 @@ import { assertZdrModel } from "./guard";
 // model not on the ZDR allowlist (assertZdrModel) before a prompt is built.
 export class AnthropicProvider implements AIProvider {
   private client: Anthropic;
-  constructor(apiKey = process.env.ANTHROPIC_API_KEY, private defaultModel = "claude-opus-4-8") {
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  // apiKey kept for signature compatibility; the client is built by the central anthropicClient()
+  // (API-key in prod; the dev Claude Code subscription OAuth path when AI_PROVIDER=claude-code).
+  constructor(_apiKey = process.env.ANTHROPIC_API_KEY, private defaultModel = "claude-opus-4-8") {
     // Reject a non-ZDR default at construction so it can never become the
     // fallback model for a call that omits args.model.
     assertZdrModel(defaultModel);
-    this.client = new Anthropic({ apiKey });
+    this.client = anthropicClient();
   }
 
   async generateObject<T>(args: GenerateArgs<T>) {

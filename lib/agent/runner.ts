@@ -14,6 +14,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
+import { anthropicClient } from "@/lib/ai/anthropic-client";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
@@ -99,8 +100,9 @@ export type ModelSeam = (
   tools: Anthropic.Tool[],
 ) => Promise<Anthropic.Message>;
 
-function anthropicSeam(apiKey: string): ModelSeam {
-  const client = new Anthropic({ apiKey });
+function anthropicSeam(): ModelSeam {
+  // Central client: API-key in prod; the dev Claude Code subscription OAuth path when opted in.
+  const client = anthropicClient();
   return (messages, tools) =>
     client.messages.create({
       model: AGENT_MODEL,
@@ -147,9 +149,7 @@ export async function runAgent(
 
   let seam = opts.model;
   if (!seam) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
-    seam = anthropicSeam(apiKey);
+    seam = anthropicSeam(); // central client builder (API key, or the dev Claude Code OAuth path)
   }
 
   const tools: Anthropic.Tool[] = TOOLS.map((t) => ({
