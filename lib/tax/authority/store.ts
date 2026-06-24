@@ -14,6 +14,7 @@ import { z } from "zod";
 import type { Jurisdiction } from "../types";
 import { CORPUS_2025 } from "./corpus-2025";
 import { CORPUS_OBBBA } from "../../research/corpus-obbba";
+import { CORPUS_INGESTED } from "../../research/corpus-ingested";
 
 export type AuthorityType = "statute" | "regulation" | "irs_guidance" | "case" | "form_instruction";
 
@@ -70,7 +71,7 @@ export type RetrieveOpts = {
 // supersession filter still guarantees a stale pre-OBBBA chunk can never surface for an
 // in-scope year. (CORPUS_OBBBA's ObbbaAuthorityChunk is a structural superset of
 // AuthorityChunk, so it slots in without widening the type.)
-export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OBBBA];
+export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OBBBA, ...CORPUS_INGESTED];
 
 // retrieve(query, {taxYear, jurisdiction, k}). Order is load-bearing:
 //   1. FILTER: keep only chunks whose taxYear list includes the requested year AND whose
