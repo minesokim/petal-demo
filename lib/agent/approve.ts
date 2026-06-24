@@ -6,9 +6,9 @@
 
 import { eq } from "drizzle-orm";
 import { actionProposals } from "@/lib/db/schema";
-import { resolveProposal } from "@/lib/repository/agent";
+import { resolveProposal, claimProposal } from "@/lib/repository/agent";
 import { writeAudit } from "@/lib/repository/audit";
-import { runTool, isToolEnabled, TOOL_BY_NAME } from "./registry";
+import { runTool, isToolEnabled, TOOL_BY_NAME, ALL_SCOPES } from "./registry";
 import type { Db, Ctx } from "@/lib/repository/types";
 
 export type ResolveDecision = "approve" | "reject";
@@ -32,7 +32,9 @@ export async function resolveProposalCore(
   if (proposal.status !== "pending") return { ok: false, error: "already resolved" };
 
   if (decision === "reject") {
-    await resolveProposal(db, ctx, proposalId, "rejected", { resolvedByUserId: ctx.actorId ?? undefined });
+    // HIGH-1: atomic claim to "rejected" WHERE status="pending" — only one resolver wins.
+    const claimed = await claimProposal(db, ctx, proposalId, "rejected", { resolvedByUserId: ctx.actorId ?? undefined });
+    if (!claimed) return { ok: false, error: "already resolved" };
     await writeAudit(db, ctx, {
       action: "approval.denied",
       resourceType: "action_proposal",
@@ -42,7 +44,15 @@ export async function resolveProposalCore(
     return { ok: true, status: "rejected", executionResult: null };
   }
 
-  // approve — the recorded human approval. Re-validate the staged tool is a known WRITE.
+  // approve — the recorded human approval. HIGH-1: ATOMIC CLAIM FIRST. A single conditional
+  // UPDATE (status pending -> approved) decides the winner; two concurrent approvals of one
+  // proposal race here and exactly one wins, so the staged write runs EXACTLY once. The
+  // loser gets null and bails without ever invoking runTool (no double-execution).
+  const claimed = await claimProposal(db, ctx, proposalId, "approved", { resolvedByUserId: ctx.actorId ?? undefined });
+  if (!claimed) return { ok: false, error: "already resolved" };
+
+  // Re-validate the staged tool is a known WRITE. (We have already won the claim; if the
+  // tool isn't confirmable, flip the row to rejected by id.)
   const tool = TOOL_BY_NAME.get(proposal.toolName);
   if (!tool || tool.access !== "write") {
     await resolveProposal(db, ctx, proposalId, "rejected", { resolvedByUserId: ctx.actorId ?? undefined });
@@ -57,7 +67,9 @@ export async function resolveProposalCore(
     executionResult = { deferred: true, reason: "external connector not enabled in v1" };
   } else {
     try {
-      const out = await runTool(proposal.toolName, args, undefined, { allowWrite: true });
+      // MEDIUM-2: pass ALL_SCOPES — v1 posture: every active firm member holds all firm
+      // scopes (per-role narrowing is a follow-up once a role->scope model exists).
+      const out = await runTool(proposal.toolName, args, ALL_SCOPES, { allowWrite: true });
       executionResult = { executed: true, output: (out ?? null) as unknown };
     } catch (e) {
       executionResult = { executed: false, error: e instanceof Error ? e.name : "failed" };

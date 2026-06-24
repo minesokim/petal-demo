@@ -203,7 +203,13 @@ export async function runSubAgent<T>(
         // tier 1/2 read — auto-execute. runTool re-checks scope at dispatch (INV-4).
         try {
           const out = await runTool(tu.name, toolArgs, args.callerScopes);
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out).slice(0, 6000) });
+          // HIGH-5: redact read-tool output BEFORE it re-enters the model context. Read
+          // results carry client records; redactValue is best-effort data-minimization —
+          // it masks STRUCTURED PII patterns (SSN/EIN/account/phone shapes), NOT arbitrary
+          // free-text PII (names, addresses). It is defense-in-depth, not a guarantee: the
+          // load-bearing §7216 controls are assertCleared(scope) + ZDR + the no-real-PII-
+          // without-clearance posture. (§7216/INV-4 data-minimization.)
+          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(redactValue(out)).slice(0, 6000) });
         } catch (e) {
           results.push({ type: "tool_result", tool_use_id: tu.id, content: `error: ${e instanceof Error ? e.name : "unknown"}`, is_error: true });
         }

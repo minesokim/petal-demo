@@ -8,6 +8,7 @@ import {
   artifacts,
 } from "../db/schema";
 import { writeAudit } from "./audit";
+import { redactValue } from "../ai/redact";
 import type { Db, Ctx } from "./types";
 
 // ⑥ Agentic layer — firm-scoped readers/writers for the agent runtime's durable
@@ -130,7 +131,9 @@ export async function createProposal(db: Db, ctx: Ctx, input: CreateProposalInpu
       toolName: input.toolName,
       args: input.args ?? {},
       rationale: input.rationale,
-      evidence: input.evidence ?? null,
+      // LOW-6: redact connector free-text (payee/memo) before it is persisted into
+      // action_proposals.evidence — so raw client data never lands at rest unredacted.
+      evidence: input.evidence == null ? null : redactValue(input.evidence),
       confidence: input.confidence === undefined ? null : String(input.confidence),
     })
     .returning();
@@ -141,6 +144,31 @@ export async function createProposal(db: Db, ctx: Ctx, input: CreateProposalInpu
     metadata: { tool: input.toolName, taskId: input.taskId },
   });
   return row;
+}
+
+// HIGH-1: ATOMIC CLAIM of a pending proposal. A single conditional UPDATE transitions
+// status pending -> (approved|rejected) WHERE the row is still pending — so two concurrent
+// resolvers race on the DB and exactly one wins. RLS additionally narrows to the firm.
+// Returns the claimed row (the winner) or null (the loser / already-resolved / foreign).
+// The winner alone proceeds to execute the staged write; the loser returns "already
+// resolved" and runs nothing — closing the TOCTOU double-execution gap.
+export async function claimProposal(
+  db: Db,
+  ctx: Ctx,
+  proposalId: string,
+  status: "approved" | "rejected",
+  opts?: { resolvedByUserId?: string },
+) {
+  const [row] = await db
+    .update(actionProposals)
+    .set({
+      status,
+      resolvedByUserId: opts?.resolvedByUserId ?? ctx.actorId,
+      resolvedAt: new Date(),
+    })
+    .where(and(eq(actionProposals.id, proposalId), eq(actionProposals.status, "pending")))
+    .returning();
+  return row ?? null;
 }
 
 // Record a human's decision on a proposal (approved | rejected) plus the eventual

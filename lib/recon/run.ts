@@ -18,6 +18,8 @@
 
 import { createTask, createProposal, setTaskResult } from "@/lib/repository/agent";
 import type { Db, Ctx } from "@/lib/repository/types";
+import { assertCleared, type DataScope } from "@/lib/ai/guard";
+import { redactValue } from "@/lib/ai/redact";
 import { runTool } from "@/lib/agent/registry";
 import { proposeBankTransaction, proposeManualJournal } from "@/lib/integrations/xero";
 import { reconcile, type BankTxn, type LedgerItem, type ReconResult, type Match } from "./match";
@@ -37,7 +39,7 @@ const deterministicRationale: RationaleDrafter = ({ kind, detail }) => {
   if (kind === "journal") {
     return `Month-end accrual journal for ${detail.period} totalling ${detail.amount} (${detail.lineCount} line(s)).`;
   }
-  return `Exception (${detail.side}): ${detail.label} ${detail.amount} on ${detail.date} — ${detail.reason}.`;
+  return `Exception (${detail.side}): ${detail.amount} on ${detail.date} — ${detail.reason}.`;
 };
 
 export type ReconExceptionFlag = {
@@ -68,6 +70,8 @@ export type RunReconciliationOpts = {
   /** optional model-backed rationale/suggestion drafter (default deterministic). */
   draftRationale?: RationaleDrafter;
   period?: string; // yyyy-mm label for the task input (cosmetic)
+  /** §7216 data scope; 'synthetic' until counsel clears real-data AI (MEDIUM-7). */
+  taxScope?: DataScope;
 };
 
 export async function runReconciliation(
@@ -77,8 +81,23 @@ export async function runReconciliation(
   connectionId: string,
   opts: RunReconciliationOpts = {},
 ): Promise<RunReconciliationResult> {
+  // MEDIUM-7: §7216 parity. A real-data caller must trip the same HARD gate the model
+  // pipeline does — enforced in code at entry, not in a comment. 'synthetic' (the default)
+  // passes; 'real' THROWS until counsel clears real-data AI (PETAL_7216_CLEARED).
+  assertCleared(opts.taxScope ?? "synthetic");
+
   const callerScopes = opts.callerScopes ?? ["xero:read"];
-  const draft = opts.draftRationale ?? deterministicRationale;
+  const baseDraft = opts.draftRationale ?? deterministicRationale;
+  // MEDIUM-7: every fact reaching the drafter is routed through redactValue as a second
+  // pass — so even if a future MODEL-backed drafter is wired in, no PII-shaped string in
+  // the (already free-text-free) facts can reach it verbatim.
+  // DEFER LOW-8: the default drafter is deterministic (no model turn). When a MODEL-backed
+  // drafter is introduced here, each draft(...) call becomes a model turn and MUST be wired
+  // to recordRun (agent_runs) for the §7216 model-turn audit trail (and assertCleared above
+  // must gate on the real tax scope). That needs a RationaleDrafter interface change, so it
+  // is deferred until a model drafter exists.
+  const draft: RationaleDrafter = (facts) =>
+    baseDraft({ kind: facts.kind, detail: redactValue(facts.detail) as Record<string, unknown> });
 
   // 1. durable task row (tier 2 — propose-only). INV-3.
   const task = await createTask(db, ctx, {
@@ -168,9 +187,11 @@ export async function runReconciliation(
     //     NOT staged as a write. They travel back in the result for the review surface.
     const exceptions: ReconExceptionFlag[] = [];
     for (const e of [...recon.unmatched.bank, ...recon.unmatched.ledger]) {
+      // MEDIUM-7: pass only side, amount, date, and the coded reason — STOP passing the
+      // free-text party/label so a (future) model drafter never sees a party name.
       const suggestion = await draft({
         kind: "exception",
-        detail: { side: e.side, label: e.label, amount: e.amount, date: e.date, reason: e.reason },
+        detail: { side: e.side, amount: e.amount, date: e.date, reason: e.reason },
       });
       exceptions.push({ ...e, suggestion });
     }

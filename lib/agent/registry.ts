@@ -48,6 +48,14 @@ export const ALL_TOOLS: AgentTool[] = [
 
 export const TOOL_BY_NAME = new Map(ALL_TOOLS.map((t) => [t.name, t] as const));
 
+// MEDIUM-2: the union of every registered tool's requiredScopes — the full-privilege
+// scope set. v1 posture: every active firm member holds all firm scopes, so authorized
+// server-action call sites pass ALL_SCOPES as callerScopes (per-role narrowing is a
+// follow-up once a role->scope model exists).
+export const ALL_SCOPES: string[] = [
+  ...new Set(ALL_TOOLS.flatMap((t) => t.requiredScopes)),
+];
+
 // Write tools whose underlying connector is LIVE in v1 (the in-app core writes, which
 // wrap existing audited server actions). The approval gate executes one of these on
 // approve; a write tool NOT in this set is an external connector that is Phase 3 — the
@@ -119,14 +127,16 @@ export async function runTool(
   }
 
   // Scope re-check at dispatch — least privilege enforced here, not just by omission.
-  if (callerScopes !== undefined) {
-    const held = new Set(callerScopes);
-    const missing = tool.requiredScopes.filter((s) => !held.has(s));
-    if (missing.length) {
-      throw new ToolAccessError(
-        `caller lacks required scope(s) for "${name}": ${missing.join(", ")}`,
-      );
-    }
+  // MEDIUM-2: FAIL-CLOSED. The check ALWAYS evaluates: an undefined callerScopes is
+  // treated as the EMPTY granted set, so any tool with a non-empty requiredScopes is
+  // refused unless the granted set covers them. (Previously the whole check was skipped
+  // when callerScopes was undefined — dead code that let unscoped calls through.)
+  const held = new Set(callerScopes ?? []);
+  const missing = tool.requiredScopes.filter((s) => !held.has(s));
+  if (missing.length) {
+    throw new ToolAccessError(
+      `caller lacks required scope(s) for "${name}": ${missing.join(", ")}`,
+    );
   }
 
   const args = tool.schema.parse(rawArgs ?? {});

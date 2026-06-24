@@ -7,7 +7,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
-import { redactText } from "@/lib/ai/redact";
+import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 
 const AGENT_MODEL = "claude-sonnet-4-6"; // ZDR-eligible
@@ -65,8 +65,13 @@ export async function runAgent(
       const args = parsed.data as Record<string, unknown>;
       if (tool.access === "read") {
         try {
+          // DEFER LOW-3: this legacy runner calls tool.run() directly rather than routing
+          // through registry.runTool (the dispatch-time scope re-check). Routing it through
+          // runTool is a follow-up; the HIGH-5 redact fix below is applied regardless.
           const out = await tool.run(args);
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out).slice(0, 6000) });
+          // HIGH-5: redact read-tool output BEFORE it re-enters the model context (client
+          // records / SSN-shaped strings must not re-enter the live model — §7216/INV-4).
+          results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(redactValue(out)).slice(0, 6000) });
         } catch (e) {
           results.push({ type: "tool_result", tool_use_id: tu.id, content: `error: ${e instanceof Error ? e.name : "unknown"}`, is_error: true });
         }
