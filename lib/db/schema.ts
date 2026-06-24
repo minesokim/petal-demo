@@ -546,10 +546,18 @@ export const actionProposals = pgTable("action_proposals", {
   rationale: text("rationale").notNull(),
   evidence: jsonb("evidence"),
   confidence: numeric("confidence"),
-  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  status: text("status").notNull().default("pending"), // pending | approved | rejected | ready_to_submit
   resolvedByUserId: text("resolved_by_user_id"),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   executionResult: jsonb("execution_result"),
+  // ── risk gate (0033): how the action was classified + the evidence a human verifies against.
+  riskLane: text("risk_lane"), // auto | confirm | review | blocked
+  riskLevel: text("risk_level"), // low | medium | high
+  riskFactors: jsonb("risk_factors"), // RiskFactor[]
+  humanMustSubmit: boolean("human_must_submit").notNull().default(false),
+  reviewArtifact: jsonb("review_artifact"), // ReviewArtifact (each field -> its source)
+  proposedByUserId: text("proposed_by_user_id"), // staged by (for no-self-approval)
+  proposedByRole: text("proposed_by_role"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("action_proposals_firm_idx").on(t.firmId),

@@ -10,6 +10,8 @@ import {
 import { writeAudit } from "./audit";
 import { redactValue } from "../ai/redact";
 import type { Db, Ctx } from "./types";
+import type { RiskAssessment } from "../agent/risk";
+import type { ReviewArtifact } from "../agent/review-artifact";
 
 // ⑥ Agentic layer — firm-scoped readers/writers for the agent runtime's durable
 // state (0028_agent_layer_schema.sql). Every query runs under the caller's JWT so
@@ -117,6 +119,10 @@ export type CreateProposalInput = {
   rationale: string;
   evidence?: unknown;
   confidence?: number;
+  /** risk-gate classification (lib/agent/risk.ts) — lane/level/factors/humanMustSubmit. */
+  risk?: RiskAssessment;
+  /** evidenced review artifact (lib/agent/review-artifact.ts) — each field -> its source. */
+  reviewArtifact?: ReviewArtifact;
 };
 
 // Stage a tier-3 WRITE as a proposal — it does NOT execute here. A human resolves
@@ -135,6 +141,17 @@ export async function createProposal(db: Db, ctx: Ctx, input: CreateProposalInpu
       // action_proposals.evidence — so raw client data never lands at rest unredacted.
       evidence: input.evidence == null ? null : redactValue(input.evidence),
       confidence: input.confidence === undefined ? null : String(input.confidence),
+      // Risk gate: store the lane/level/factors + the artifact the reviewer verifies against,
+      // and WHO staged it (so resolveProposal can bar self-approval on the 'review' lane).
+      // The artifact carries the firm's own staged values (parallel to args, same firm-scoped
+      // visibility) so verification stays cheap; payload-at-rest encryption is a follow-up.
+      riskLane: input.risk?.lane ?? null,
+      riskLevel: input.risk?.level ?? null,
+      riskFactors: input.risk?.factors ?? null,
+      humanMustSubmit: input.risk?.humanMustSubmit ?? false,
+      reviewArtifact: input.reviewArtifact ?? null,
+      proposedByUserId: ctx.actorId ?? null,
+      proposedByRole: ctx.role ?? null,
     })
     .returning();
   await writeAudit(db, ctx, {
@@ -214,6 +231,11 @@ export async function listProposals(db: Db, status?: string) {
       evidence: actionProposals.evidence,
       confidence: actionProposals.confidence,
       status: actionProposals.status,
+      riskLane: actionProposals.riskLane,
+      riskLevel: actionProposals.riskLevel,
+      riskFactors: actionProposals.riskFactors,
+      humanMustSubmit: actionProposals.humanMustSubmit,
+      reviewArtifact: actionProposals.reviewArtifact,
       createdAt: actionProposals.createdAt,
     })
     .from(actionProposals)
