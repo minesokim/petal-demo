@@ -274,6 +274,7 @@ function verifyPositions(
   retrieved: AuthorityChunk[],
   corpus: AuthorityChunk[],
   taxYear: number,
+  question: string,
 ): {
   groundedPositions: ReasoningOutput["positions"];
   citations: SourcedCitation[];
@@ -319,7 +320,11 @@ function verifyPositions(
     // NONE of this position's cited chunks is a parametric leak. Drop the whole position — we do
     // not ship a number the cited authority does not contain.
     if (positionOk) {
-      const authorityText = positionChunks.map((c) => c.text).join("\n");
+      // Ground figures against the cited authority AND the QUESTION: a number the user supplied
+      // in their question (a $700,000 MAGI, a $40,000 income) is a client input the claim may
+      // restate — not a memory leak. The gate's job is to catch figures the model INVENTED (not
+      // in the authority and not given by the user), e.g. a stale $13.61M exemption from memory.
+      const authorityText = positionChunks.map((c) => c.text).join("\n") + "\n" + question;
       const leaks = ungroundedFigures(p.claim, authorityText);
       if (leaks.length) {
         positionOk = false;
@@ -408,6 +413,7 @@ export async function researchAnswer(
     retrieved,
     corpus,
     taxYear,
+    question,
   );
 
   // 4b — the model abstained, or every position was stripped in verification. Authority was

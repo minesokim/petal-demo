@@ -59,6 +59,28 @@ describe("④ reasoning vertical slice (synthetic/public authority)", () => {
     expect(out.abstained).toBe(true);
   });
 
+  // BUG 1 (reliability): generateObject THROWS a ZodError on a non-conforming / truncated shape.
+  // reason() must NOT propagate it (a 500); it retries once and then returns a SAFE DECLINE.
+  it("returns a safe decline (no throw) when the model returns a non-conforming shape", async () => {
+    const chunks = retrieve("dependent standard deduction");
+    // The MockProvider validates the raw against the schema; this malformed object throws a
+    // ZodError inside generateObject — exactly the crash this fix contains.
+    const malformed = new MockProvider(() => ({ positions: "not-an-array", abstained: "nope" }));
+    const out = await reason(malformed, "dependent standard deduction", chunks);
+    expect(out.positions).toHaveLength(0);
+    expect(out.abstained).toBe(true);
+  });
+
+  it("returns a safe decline when the provider itself throws (transport failure)", async () => {
+    const chunks = retrieve("dependent standard deduction");
+    const throwing = new MockProvider(() => {
+      throw new Error("simulated provider/transport failure");
+    });
+    const out = await reason(throwing, "dependent standard deduction", chunks);
+    expect(out.positions).toHaveLength(0);
+    expect(out.abstained).toBe(true);
+  });
+
   it("verifier FAILs an uncited position", () => {
     const bad: ReasoningOutput = {
       positions: [{ claim: "Uncited.", citations: [], computedValueRefs: [], confidenceSignals: signals, reviewNotes: notes }],

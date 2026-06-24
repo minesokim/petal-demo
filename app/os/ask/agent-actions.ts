@@ -6,7 +6,7 @@
 // server action enforces auth + RLS + audit, so this is a thin, safe execution shim.
 
 import { getFirmContext } from "@/lib/auth/context";
-import { TOOL_BY_NAME, runTool } from "@/lib/agent/tools";
+import { TOOL_BY_NAME, runTool } from "@/lib/agent/registry";
 
 export async function confirmAgentAction(
   tool: string,
@@ -16,10 +16,12 @@ export async function confirmAgentAction(
   if (!ctx) return { ok: false, error: "unauthorized" };
 
   const t = TOOL_BY_NAME.get(tool);
-  if (!t || t.kind !== "write") return { ok: false, error: "not a confirmable action" };
+  if (!t || t.access !== "write") return { ok: false, error: "not a confirmable action" };
 
   try {
-    await runTool(tool, args); // re-validates args + executes the underlying audited action
+    // re-validates args + executes the underlying audited action. allowWrite is set
+    // because this IS the confirm gate — the preparer has confirmed this staged write.
+    await runTool(tool, args, undefined, { allowWrite: true });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.name : "failed" };

@@ -1,0 +1,211 @@
+// THE recon task (CAPABILITY 3) — tier 2, terminates at proposals, writes NOTHING
+// external. It:
+//   1. READS the two sides via the stubbed Xero read tools (through the registry's runTool
+//      so the xero:read scope is re-checked at dispatch — INV-4).
+//   2. Runs the DETERMINISTIC matcher (lib/recon/match) — the match + the math are CODE,
+//      never the model (INV-1).
+//   3. For each CLEAN match and each month-end manual journal, stages an action_proposals
+//      row whose tool_name is the tier-3 Xero WRITE tool, args are the EXACT would-be args,
+//      with rationale + evidence (the matched source records + the tie-out trace) + a
+//      confidence. The proposals are the ONLY outputs; nothing external is written (INV-3).
+//   4. Flags exceptions (unmatched / ambiguous) with a reason for a human — never
+//      auto-resolved.
+//
+// The model is used ONLY (optionally) to draft a human-readable rationale or to categorize
+// an ambiguous exception as a SUGGESTION inside the proposal/flag — NEVER to decide a match
+// or a number. Default behavior is fully deterministic (no model, no key needed), so the
+// golden test runs offline and proves zero external writes.
+
+import { createTask, createProposal, setTaskResult } from "@/lib/repository/agent";
+import type { Db, Ctx } from "@/lib/repository/types";
+import { runTool } from "@/lib/agent/registry";
+import { proposeBankTransaction, proposeManualJournal } from "@/lib/integrations/xero";
+import { reconcile, type BankTxn, type LedgerItem, type ReconResult, type Match } from "./match";
+
+// An optional rationale drafter — injected so a model can phrase the human-readable
+// rationale / suggest a category. It receives ONLY non-PII structured facts (ids, amounts,
+// dates, a basis) and returns a short string. Default: deterministic, model-free.
+export type RationaleDrafter = (facts: {
+  kind: "match" | "journal" | "exception";
+  detail: Record<string, unknown>;
+}) => string | Promise<string>;
+
+const deterministicRationale: RationaleDrafter = ({ kind, detail }) => {
+  if (kind === "match") {
+    return `${detail.basis === "exact" ? "Exact" : "Fuzzy"} match: bank ${detail.bankId} ↔ ledger ${detail.ledgerId} for ${detail.amount} on ${detail.bankDate}.`;
+  }
+  if (kind === "journal") {
+    return `Month-end accrual journal for ${detail.period} totalling ${detail.amount} (${detail.lineCount} line(s)).`;
+  }
+  return `Exception (${detail.side}): ${detail.label} ${detail.amount} on ${detail.date} — ${detail.reason}.`;
+};
+
+export type ReconExceptionFlag = {
+  side: "bank" | "ledger";
+  id: string;
+  amount: string;
+  date: string;
+  label: string;
+  reason: string;
+  suggestion: string; // human-readable; a SUGGESTION only, never an auto-resolution
+};
+
+export type RunReconciliationResult = {
+  taskId: string;
+  status: "awaiting_approval" | "completed";
+  proposalIds: string[];
+  matchedCount: number;
+  proposedJournalCount: number;
+  exceptions: ReconExceptionFlag[];
+  tieOut: ReconResult["tieOut"];
+  /** invariant: this task performs ZERO external writes. Always 0. */
+  externalWrites: 0;
+};
+
+export type RunReconciliationOpts = {
+  /** scopes the caller holds — must include xero:read for the read tools to dispatch. */
+  callerScopes?: string[];
+  /** optional model-backed rationale/suggestion drafter (default deterministic). */
+  draftRationale?: RationaleDrafter;
+  period?: string; // yyyy-mm label for the task input (cosmetic)
+};
+
+export async function runReconciliation(
+  db: Db,
+  ctx: Ctx,
+  clientId: string,
+  connectionId: string,
+  opts: RunReconciliationOpts = {},
+): Promise<RunReconciliationResult> {
+  const callerScopes = opts.callerScopes ?? ["xero:read"];
+  const draft = opts.draftRationale ?? deterministicRationale;
+
+  // 1. durable task row (tier 2 — propose-only). INV-3.
+  const task = await createTask(db, ctx, {
+    clientId,
+    createdByUserId: ctx.actorId ?? undefined,
+    kind: "reconciliation",
+    tier: 2,
+    input: { connectionId, period: opts.period ?? null },
+  });
+
+  try {
+    // 2. READ both sides via the registry (scope re-checked at dispatch — INV-4). The
+    //    read tools are tier-1; runTool runs them and returns the synthetic stub data.
+    const bankTxns = (await runTool("xero_list_bank_transactions", { connectionId }, callerScopes)) as BankTxn[];
+    const ledgerItems = (await runTool("xero_list_ledger_items", { connectionId }, callerScopes)) as LedgerItem[];
+
+    // 3. DETERMINISTIC match + math (INV-1). No model, no I/O.
+    const recon = reconcile(bankTxns, ledgerItems);
+
+    const proposalIds: string[] = [];
+
+    // 4a. one proposal per CLEAN match — staged as the tier-3 Xero bank-transaction write.
+    //     args = the EXACT would-be args (built by the NON-executing propose* helper).
+    for (const m of recon.matched) {
+      const bank = bankTxns.find((b) => b.id === m.bankId)!;
+      const ledger = ledgerItems.find((l) => l.id === m.ledgerId)!;
+      const args = proposeBankTransaction({
+        connectionId,
+        bankTransactionId: m.bankId,
+        ledgerItemId: m.ledgerId,
+        amount: bank.amount,
+        date: bank.date,
+        reference: bank.reference ?? ledger.reference,
+      });
+      const rationale = await draft({
+        kind: "match",
+        detail: { basis: m.basis, bankId: m.bankId, ledgerId: m.ledgerId, amount: bank.amount, bankDate: bank.date },
+      });
+      const row = await createProposal(db, ctx, {
+        taskId: task.id,
+        clientId,
+        toolName: "create_xero_bank_transaction",
+        args: args as unknown as Record<string, unknown>,
+        rationale,
+        evidence: {
+          basis: m.basis,
+          bank,
+          ledger,
+          matchDetail: m.detail,
+          tieOut: recon.tieOut, // the tie-out trace travels with every proposal
+        },
+        confidence: confidenceFor(m),
+      });
+      proposalIds.push(row.id);
+    }
+
+    // 4b. one proposal per month-end MANUAL JOURNAL — staged as the tier-3 Xero journal write.
+    for (const j of recon.proposedJournals) {
+      const args = proposeManualJournal({
+        connectionId,
+        date: j.date,
+        narration: j.narration,
+        lines: j.lines,
+      });
+      const rationale = await draft({
+        kind: "journal",
+        detail: { period: j.period, amount: j.amount, lineCount: j.lines.length },
+      });
+      const row = await createProposal(db, ctx, {
+        taskId: task.id,
+        clientId,
+        toolName: "create_xero_manual_journal",
+        args: args as unknown as Record<string, unknown>,
+        rationale,
+        evidence: {
+          kind: "month_end_journal",
+          journal: j,
+          sourceBankIds: j.sourceBankIds,
+          tieOut: recon.tieOut,
+        },
+        confidence: 0.8,
+      });
+      proposalIds.push(row.id);
+    }
+
+    // 4c. EXCEPTIONS — flagged for a human with a reason + a SUGGESTION. NOT auto-resolved,
+    //     NOT staged as a write. They travel back in the result for the review surface.
+    const exceptions: ReconExceptionFlag[] = [];
+    for (const e of [...recon.unmatched.bank, ...recon.unmatched.ledger]) {
+      const suggestion = await draft({
+        kind: "exception",
+        detail: { side: e.side, label: e.label, amount: e.amount, date: e.date, reason: e.reason },
+      });
+      exceptions.push({ ...e, suggestion });
+    }
+
+    // 5. terminate. tier-2 with staged writes -> awaiting_approval; nothing external written.
+    const status: RunReconciliationResult["status"] = proposalIds.length ? "awaiting_approval" : "completed";
+    await setTaskResult(db, ctx, task.id, status, {
+      proposals: proposalIds,
+      matched: recon.matched.length,
+      proposedJournals: recon.proposedJournals.length,
+      exceptions: exceptions.length,
+      tieOut: recon.tieOut,
+      externalWrites: 0,
+    });
+
+    return {
+      taskId: task.id,
+      status,
+      proposalIds,
+      matchedCount: recon.matched.length,
+      proposedJournalCount: recon.proposedJournals.length,
+      exceptions,
+      tieOut: recon.tieOut,
+      externalWrites: 0,
+    };
+  } catch (e) {
+    await setTaskResult(db, ctx, task.id, "failed", { error: e instanceof Error ? e.message : "unknown" });
+    throw e;
+  }
+}
+
+// A code-derived confidence (never a model number): exact matches are near-certain;
+// fuzzy matches scale with memo similarity and date proximity.
+function confidenceFor(m: Match): number {
+  if (m.basis === "exact") return 0.99;
+  const dateFactor = Math.max(0, 1 - m.detail.dayGap / 10);
+  return Math.round((0.6 + 0.3 * m.detail.memoSimilarity + 0.1 * dateFactor) * 100) / 100;
+}

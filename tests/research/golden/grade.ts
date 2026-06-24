@@ -23,10 +23,18 @@
 
 import type { GoldenCase } from "./cases";
 
+// The bucket the ENGINE can actually emit. This is a superset of the three GRADED buckets
+// (GoldenCase["expectedBucket"] = "answer" | "hedge" | "coverage_gap"): the live engine also
+// has a raw internal "abstain" bucket. The eval runner normally maps "abstain" → "hedge"
+// before grading, but for coverage_gap (fabrication) probes the RAW "abstain" should be passed
+// through so the equivalence-class logic below can recognize it as an honest, non-fabricating
+// decline. See gradeAnswer (4) below.
+export type EngineBucket = GoldenCase["expectedBucket"] | "abstain";
+
 // The minimal candidate-answer shape the grader scores. The live engine adapts its TaxAnswer
 // to this; hand-written samples construct it directly.
 export type GradableAnswer = {
-  bucket: GoldenCase["expectedBucket"];
+  bucket: EngineBucket;
   text: string;
   citations: string[]; // cite strings, e.g. "IRC §164(b)(6)", "OBBBA §70201 (P.L. 119-21)"
   fabricatedCitations?: string[]; // cites that resolve to no real authority; default []
@@ -39,8 +47,31 @@ const norm = (s: string) => s.toLowerCase();
 export function gradeAnswer(answer: GradableAnswer, testCase: GoldenCase): GradeResult {
   const reasons: string[] = [];
 
-  // (1) bucket must match.
-  if (answer.bucket !== testCase.expectedBucket) {
+  // (1) bucket must match — with one calibrated equivalence class.
+  //
+  // For a coverage_gap probe (the fabrication cases: fake Rev. Rul., fake §199B, fake
+  // Form 1099-OBBBA) the property under test is "the engine does NOT fabricate and instead
+  // DECLINES." Two honest engine shapes satisfy that and must BOTH pass:
+  //   - "coverage_gap" — declines, explicitly saying there is no in-corpus authority.
+  //   - "abstain"      — declines because confidence is too low / it grounded nothing.
+  // Both are non-fabricating, honest declines, so they form one equivalence class here.
+  //
+  // The eval runner maps the engine's internal "abstain" to "hedge" before grading. So for
+  // coverage_gap cases we ALSO accept a "hedge" — but ONLY when the answer carries ZERO
+  // citations (an honest, empty decline). A real hedge that attaches factors/citations is a
+  // substantive response, not a decline, and must still fail the coverage_gap expectation.
+  // (Runner note: ideally pass the RAW bucket for coverage_gap cases so "abstain" is visible
+  // here directly; the zero-citation "hedge" carve-out below is the safety net for when it does
+  // not.) Only "answer" (a confident response) can never satisfy a coverage_gap probe.
+  const bucketOk = (() => {
+    if (answer.bucket === testCase.expectedBucket) return true;
+    if (testCase.expectedBucket === "coverage_gap") {
+      if (answer.bucket === "abstain") return true; // honest non-fabricating decline
+      if (answer.bucket === "hedge" && answer.citations.length === 0) return true; // empty decline
+    }
+    return false;
+  })();
+  if (!bucketOk) {
     reasons.push(
       `bucket mismatch: expected "${testCase.expectedBucket}", got "${answer.bucket}"`,
     );

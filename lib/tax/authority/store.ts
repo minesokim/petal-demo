@@ -28,7 +28,12 @@ export type AuthorityChunk = {
   jurisdiction: Jurisdiction; // "federal" | "CA"
   taxYear: number[]; // every tax year this chunk's rule applies to (non-empty)
   effectiveDate: string; // ISO date the rule took effect
-  supersededBy?: string; // cite of the authority that replaced this one (absent ⇒ current)
+  supersededBy?: string; // cite of the authority that replaced this one (audit metadata; absent ⇒ no known successor)
+  // The FIRST tax year the successor rule governs. A chunk is correct for years BEFORE this and
+  // dropped from this year on. Absent ⇒ fall back to supersededBy as an absolute supersession
+  // flag (no year-aware override). Example: the pre-OBBBA flat $10k SALT cap was correct through
+  // 2024 and only superseded FROM 2025, so it carries supersededFrom: 2025.
+  supersededFrom?: number;
   sourceUrl: string; // official, free primary source (uscode.house.gov / irs.gov / leginfo…)
   ingestedAt: string; // ISO timestamp the chunk entered the store (audit trail)
   text: string; // concise public-domain paraphrase of the operative rule
@@ -45,6 +50,7 @@ export const authorityChunkSchema = z.object({
   taxYear: z.array(z.number().int()).min(1, "a chunk must apply to at least one tax year"),
   effectiveDate: z.string().min(1),
   supersededBy: z.string().optional(),
+  supersededFrom: z.number().int().optional(),
   sourceUrl: z.string().url(),
   ingestedAt: z.string().min(1),
   text: z.string().min(1),
@@ -68,10 +74,46 @@ export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OB
 
 // retrieve(query, {taxYear, jurisdiction, k}). Order is load-bearing:
 //   1. FILTER: keep only chunks whose taxYear list includes the requested year AND whose
-//      jurisdiction matches AND which are not superseded. (Filter BEFORE ranking so a
-//      high-keyword-overlap wrong-year/stale chunk can never crowd out a correct one.)
-//   2. RANK: score the survivors by keyword overlap with the query, drop zero-score
-//      chunks (no spurious authority), sort, and take the top k.
+//      jurisdiction matches AND which are eligible for the year (YEAR-AWARE supersession —
+//      see isEligibleForYear). (Filter BEFORE ranking so a high-keyword-overlap wrong-year/stale
+//      chunk can never crowd out a correct one.)
+//   2. RANK: score the survivors by SPECIFICITY-WEIGHTED keyword overlap (a rare/long or
+//      section-number keyword outweighs a common one like "deduction"), drop zero-score chunks
+//      (no spurious authority), sort, and take the top k.
+
+// Year-aware supersession (BUG 2). A chunk that carries supersededFrom is correct for years
+// BEFORE that year and dropped from that year on — so the pre-OBBBA $10k SALT rule (supersededFrom:
+// 2025) is eligible for ≤2024 and dropped for ≥2025. supersededBy alone is AUDIT METADATA and does
+// NOT gate eligibility; only supersededFrom does. A chunk with neither is always eligible (its
+// taxYear list already bounds it). This replaces the old absolute "supersededBy !== undefined ⇒
+// drop", which wrongly excluded a rule that was correct for its own pre-supersession years.
+function isEligibleForYear(c: AuthorityChunk, year: number): boolean {
+  return c.supersededFrom === undefined ? true : year < c.supersededFrom;
+}
+
+// Specificity-weighted keyword score (BUG 3). A keyword hit is worth more when the keyword is
+// rare/long (a section number like "164", a distinctive phrase like "state and local tax")
+// than when it is a common tax word ("deduction", "limitation") that many tangential chunks
+// share. score = Σ over matched keywords of (1 + (kw.length ≥ 5 ? 1 : 0)), plus +2 if the query
+// contains the chunk's governing section number — so an on-point §164 SALT chunk ranks above a
+// tangential "deduction limitation" chunk that merely ties on common-word hits.
+const SECTION_RE = /§?\s?(\d{1,4}[A-Za-z]?)/g;
+function sectionNumbersOf(chunk: AuthorityChunk): string[] {
+  const out = new Set<string>();
+  for (const m of chunk.citation.matchAll(SECTION_RE)) out.add(m[1].toLowerCase());
+  for (const kw of chunk.keywords) if (/^\d{2,4}[a-z]?$/.test(kw)) out.add(kw.toLowerCase());
+  return [...out];
+}
+function specificityScore(chunk: AuthorityChunk, q: string): number {
+  let score = chunk.keywords.reduce(
+    (s, kw) => s + (q.includes(kw) ? 1 + (kw.length >= 5 ? 1 : 0) : 0),
+    0,
+  );
+  // +2 when the query names this chunk's section number (e.g. a "§164" query → the §164 chunk).
+  if (sectionNumbersOf(chunk).some((sec) => q.includes(sec))) score += 2;
+  return score;
+}
+
 export function retrieve(
   query: string,
   opts: RetrieveOpts,
@@ -80,17 +122,17 @@ export function retrieve(
   const { taxYear, jurisdiction, k = 3 } = opts;
   const q = query.toLowerCase();
 
-  // 1 — year + jurisdiction + supersession filter (BEFORE any ranking).
+  // 1 — year + jurisdiction + YEAR-AWARE supersession filter (BEFORE any ranking).
   const eligible = corpus.filter(
     (c) =>
       c.jurisdiction === jurisdiction &&
       c.taxYear.includes(taxYear) &&
-      c.supersededBy === undefined,
+      isEligibleForYear(c, taxYear),
   );
 
-  // 2 — keyword-overlap rank over the eligible set only.
+  // 2 — specificity-weighted keyword-overlap rank over the eligible set only.
   return eligible
-    .map((c) => ({ c, score: c.keywords.reduce((s, kw) => s + (q.includes(kw) ? 1 : 0), 0) }))
+    .map((c) => ({ c, score: specificityScore(c, q) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, k)

@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { redactText } from "@/lib/ai/redact";
-import { TOOLS, TOOL_BY_NAME } from "./tools";
+import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 
 const AGENT_MODEL = "claude-sonnet-4-6"; // ZDR-eligible
 const MAX_TURNS = 6;
@@ -63,7 +63,7 @@ export async function runAgent(
       const parsed = tool.schema.safeParse(tu.input ?? {});
       if (!parsed.success) { results.push({ type: "tool_result", tool_use_id: tu.id, content: `invalid args: ${parsed.error.message.slice(0, 300)}`, is_error: true }); continue; }
       const args = parsed.data as Record<string, unknown>;
-      if (tool.kind === "read") {
+      if (tool.access === "read") {
         try {
           const out = await tool.run(args);
           results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(out).slice(0, 6000) });

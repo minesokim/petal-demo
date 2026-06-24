@@ -44,6 +44,27 @@ describe("retrieval drops superseded chunks (the stale-law fix)", () => {
     expect(ids).toContain("obbba-70120-salt-cap");
     expect(ids).not.toContain("irc-164-salt-pre-obbba-superseded");
   });
+
+  // BUG 2 (year-aware supersession). The pre-OBBBA flat $10k SALT rule was CORRECT for 2024 and
+  // is only superseded FROM 2025 (supersededFrom: 2025). So it must be RETRIEVED for 2024 (the
+  // salt-cap-2024-control answer) and DROPPED for 2026 — supersededBy alone (audit metadata) must
+  // not gate it out of its own valid pre-supersession years.
+  it("the pre-OBBBA $10k SALT chunk IS retrieved for 2024 and NOT for 2026", () => {
+    const ids2024 = retrieve("what is the salt cap", { taxYear: 2024, jurisdiction: "federal", k: 4 }).map((c) => c.chunkId);
+    expect(ids2024).toContain("irc-164-salt-pre-obbba-superseded");
+    expect(ids2024).not.toContain("obbba-70120-salt-cap"); // OBBBA cap does not govern 2024
+
+    const ids2026 = retrieve("what is the salt cap", { taxYear: 2026, jurisdiction: "federal", k: 4 }).map((c) => c.chunkId);
+    expect(ids2026).not.toContain("irc-164-salt-pre-obbba-superseded");
+  });
+
+  // BUG 3 (specificity-weighted ranking). A "SALT cap 2026" query must rank the on-point §164
+  // SALT chunk FIRST — a tangential "deduction limitation" chunk (§68 itemized / §70111) must not
+  // tie or beat it on shared common-word hits.
+  it("a 'SALT cap 2026' query ranks the §164 SALT chunk first, not §68/§70111 itemized", () => {
+    const hits = retrieve("what is the SALT cap for 2026", { taxYear: 2026, jurisdiction: "federal", k: 4 });
+    expect(hits[0].chunkId).toBe("obbba-70120-salt-cap");
+  });
 });
 
 describe("step 3 — citation verification (the 10.22(c)(1) fix)", () => {
@@ -213,5 +234,21 @@ describe("step 3b — the numeric gate drops a verified-cite position that state
     expect(ans.bucket).toBe("abstain");
     expect(ans.answer).not.toMatch(/88,888/);
     expect(ans.reviewNotes.join(" ")).toMatch(/ungrounded figure|not supported by its cited authority/i);
+  });
+
+  it("does NOT drop a client INPUT figure restated from the question (it's not a memory leak)", async () => {
+    // The claim restates the $700,000 MAGI the USER supplied — grounded by the question, not a
+    // figure invented from model memory. The gate must let it through and the engine must answer.
+    const ans = await researchAnswer(
+      proposerCiting(
+        "For a taxpayer with $700,000 of MAGI in 2026, the §164 SALT limitation is phased down per OBBBA §70120.",
+        ["obbba-70120-salt-cap"],
+      ),
+      undefined,
+      "My client has $700,000 of MAGI in 2026. Is their SALT deduction still capped at $10,000?",
+      { taxYear: 2026, jurisdiction: "federal" },
+    );
+    expect(ans.bucket).toBe("answer");
+    expect(ans.citations[0]?.chunkId).toBe("obbba-70120-salt-cap");
   });
 });

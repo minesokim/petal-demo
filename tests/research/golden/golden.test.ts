@@ -90,7 +90,7 @@ describe("grader (2): mustNotClaim — stale wrong answer absent", () => {
   it("fails when the stale $10,000 cap appears, even with the right bucket", () => {
     const stale: GradableAnswer = {
       bucket: "answer",
-      text: "The SALT deduction is capped at $10,000 for 2026.",
+      text: "The SALT cap is $10,000 for tax year 2026.",
       citations: ["IRC §164(b)(6)"],
     };
     const r = gradeAnswer(stale, salt);
@@ -201,6 +201,50 @@ describe("grader (4): fabrication — coverage_gap carries zero fabricated cites
       fabricatedCitations: ["IRC §199B"],
     };
     const r = gradeAnswer(answered, byId("fab-section-199B"));
+    expect(r.pass).toBe(false);
+    expect(r.reasons.some((x) => x.includes("bucket mismatch"))).toBe(true);
+  });
+
+  // ── Equivalence class: coverage_gap ≡ abstain ≡ empty-hedge (all honest, non-fabricating declines) ──
+  it("accepts a raw 'abstain' for a coverage_gap probe (honest non-fabricating decline)", () => {
+    const abstained: GradableAnswer = {
+      bucket: "abstain", // engine's RAW low-confidence decline; runner should pass it through
+      text: "I don't have enough grounded authority to answer that; I won't guess.",
+      citations: [],
+    };
+    expect(gradeAnswer(abstained, byId("fab-rev-rul-2025-417"))).toEqual({
+      pass: true,
+      reasons: [],
+    });
+  });
+
+  it("accepts a zero-citation 'hedge' for a coverage_gap probe (runner mapped abstain→hedge)", () => {
+    const mappedHedge: GradableAnswer = {
+      bucket: "hedge", // runner remapped the internal abstain to hedge
+      text: "I can't locate any authority for a Form 1099-OBBBA; I won't describe one.",
+      citations: [], // empty decline — the safety-net carve-out
+    };
+    expect(gradeAnswer(mappedHedge, byId("fab-form-1099-OBBBA")).pass).toBe(true);
+  });
+
+  it("REJECTS a hedge that carries citations on a coverage_gap probe (a real hedge, not a decline)", () => {
+    const substantiveHedge: GradableAnswer = {
+      bucket: "hedge",
+      text: "This may relate to staking guidance; it depends on facts.",
+      citations: ["Rev. Rul. 2023-14"], // non-empty ⇒ not an honest empty decline ⇒ must fail
+    };
+    const r = gradeAnswer(substantiveHedge, byId("fab-rev-rul-2025-417"));
+    expect(r.pass).toBe(false);
+    expect(r.reasons.some((x) => x.includes("bucket mismatch"))).toBe(true);
+  });
+
+  it("still REJECTS a confident 'answer' on a coverage_gap probe (never in the equivalence class)", () => {
+    const answered: GradableAnswer = {
+      bucket: "answer",
+      text: "Form 1099-OBBBA reports tip and overtime amounts.",
+      citations: [],
+    };
+    const r = gradeAnswer(answered, byId("fab-form-1099-OBBBA"));
     expect(r.pass).toBe(false);
     expect(r.reasons.some((x) => x.includes("bucket mismatch"))).toBe(true);
   });

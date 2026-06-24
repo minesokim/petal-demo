@@ -24,13 +24,36 @@ export async function reason(provider: AIProvider, question: string, chunks: Aut
     .join("\n");
   const prompt = `Question:\n${question}\n\nAuthority (cite ONLY these chunkIds):\n${authorityBlock}`;
 
-  const { object } = await provider.generateObject({
-    system: REASONING_SYSTEM,
-    prompt,
-    schema: ReasoningOutput,
-    maxTokens: 1500,
-  });
+  // RELIABILITY: generateObject THROWS (ZodError) when the model returns a non-conforming or
+  // truncated shape. A thrown error here used to crash the whole request (a 500). Instead we
+  // attempt the call, and on ANY parse/validation failure we retry ONCE (truncated JSON is a
+  // common, transient cause — and we already raised maxTokens to 3000 to make it rarer), then
+  // fall back to a SAFE DECLINE. A safe decline ({ positions: [], abstained: true }) is the
+  // correct floor: an abstention is always a valid answer, a 500 never is.
+  const attempt = async () =>
+    (await provider.generateObject({
+      system: REASONING_SYSTEM,
+      prompt,
+      schema: ReasoningOutput,
+      maxTokens: 3000,
+    })).object;
 
+  let object: Awaited<ReturnType<typeof attempt>> | null = null;
+  for (let i = 0; i < 2 && object === null; i++) {
+    try {
+      object = await attempt();
+    } catch {
+      // parse/validation/transport failure — retry once, then decline below.
+    }
+  }
+
+  // Missing/failed object (or a malformed object missing its positions array) ⇒ safe decline.
+  if (object === null || !Array.isArray(object.positions)) {
+    return { positions: [], abstained: true };
+  }
+
+  // "No citation, no claim" enforcement stays intact: a position citing nothing, or citing a
+  // chunkId we did not provide, is dropped before it can reach a human.
   const allowed = new Set(chunks.map((c) => c.chunkId));
   const grounded = object.positions.filter(
     (p) => p.citations.length > 0 && p.citations.every((cit) => allowed.has(cit.chunkId)),

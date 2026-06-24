@@ -1,0 +1,134 @@
+// Agentic Petal — THE tool registry (Phase 0). This module owns the AgentTool type
+// (the SHARED CONTRACT shape) and the registry index that concatenates the per-domain
+// tool modules into one dispatch surface. Tiers + scopes are first-class so the
+// runtime can filter what a sub-agent may even see (least-privilege, INV-4) and
+// runTool can RE-CHECK access + scopes at dispatch time (defense in depth — refusing a
+// write or an unscoped call even if a filtered toolset somehow leaked it, INV-3).
+//
+// Read | write is expressed as a (tier, access) pair:
+//   tier 1 read  — auto-executes during the agent loop.
+//   tier 2       — propose-only; writes NOTHING external (staged as proposals).
+//   tier 3 write — governed write; executes ONLY after a recorded human approval.
+//   tier 4       — scheduled.
+// Write tools (tier >= 3) NEVER execute inside the agent loop — runSubAgent stages them
+// as action_proposals; they run only from the approval gate (resolveProposalAction).
+
+import { z } from "zod";
+import CORE_TOOLS from "./tools/core";
+import SOR_TOOLS from "./tools/sor";
+import INTAKE_TOOLS from "./tools/intake";
+import CHECKLIST_TOOLS from "./tools/checklist";
+import RECON_TOOLS from "./tools/recon";
+
+export type AgentToolTier = 1 | 2 | 3 | 4;
+export type AgentToolAccess = "read" | "write";
+
+export type AgentTool = {
+  name: string;
+  description: string;
+  tier: AgentToolTier;
+  access: AgentToolAccess;
+  requiredScopes: string[];
+  schema: z.ZodTypeAny;
+  run: (args: Record<string, unknown>) => Promise<unknown>;
+  /** one-line human description for the approval card / audit metadata. */
+  describe: (args: Record<string, unknown>) => string;
+};
+
+// The assembled registry — one flat array the runtime + dispatch read from. Per-domain
+// modules import the AgentTool type from THIS file (the type lives here, the registry
+// index lives here; the tool DEFINITIONS live in ./tools/*).
+export const ALL_TOOLS: AgentTool[] = [
+  ...CORE_TOOLS,
+  ...SOR_TOOLS,
+  ...INTAKE_TOOLS,
+  ...CHECKLIST_TOOLS,
+  ...RECON_TOOLS,
+];
+
+export const TOOL_BY_NAME = new Map(ALL_TOOLS.map((t) => [t.name, t] as const));
+
+// Write tools whose underlying connector is LIVE in v1 (the in-app core writes, which
+// wrap existing audited server actions). The approval gate executes one of these on
+// approve; a write tool NOT in this set is an external connector that is Phase 3 — the
+// gate records execution_result {deferred:true} instead of running anything. Reads are
+// never gated, so this is a write-only allowlist.
+export const ENABLED_WRITE_TOOLS: ReadonlySet<string> = new Set(CORE_TOOLS.map((t) => t.name));
+
+export function isToolEnabled(name: string): boolean {
+  const tool = TOOL_BY_NAME.get(name);
+  if (!tool) return false;
+  if (tool.access === "read") return true;
+  return ENABLED_WRITE_TOOLS.has(name);
+}
+
+// Filter the registry to the tools a given context may use. The runtime passes the
+// result as the sub-agent's visible toolset, so a read-only sub-agent never even sees
+// a write tool. (Visibility is the first line; runTool's re-check is the second.)
+export type ToolFilter = {
+  /** the highest tier the caller may invoke inline (reads are tier<=2). */
+  maxTier?: AgentToolTier;
+  /** restrict to a set of access kinds (e.g. ["read"] for a read-only sub-agent). */
+  access?: AgentToolAccess[];
+  /** scopes the caller holds; a tool whose requiredScopes aren't all held is dropped. */
+  callerScopes?: string[];
+  /** explicit allowlist of tool names (intersected with everything else). */
+  names?: string[];
+};
+
+export function filterTools(filter: ToolFilter = {}): AgentTool[] {
+  const scopes = new Set(filter.callerScopes ?? []);
+  return ALL_TOOLS.filter((t) => {
+    if (filter.maxTier !== undefined && t.tier > filter.maxTier) return false;
+    if (filter.access && !filter.access.includes(t.access)) return false;
+    if (filter.names && !filter.names.includes(t.name)) return false;
+    if (filter.callerScopes && !t.requiredScopes.every((s) => scopes.has(s))) return false;
+    return true;
+  });
+}
+
+export class ToolAccessError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ToolAccessError";
+  }
+}
+
+// Validate + execute a single tool by name. RE-CHECKS access + scopes at dispatch
+// (not just relying on the caller having filtered the toolset): a write tool (tier>=3)
+// is REFUSED here unless allowWrite is set (the approval gate sets it after a recorded
+// human approval); a tool whose requiredScopes the caller lacks is REFUSED here too.
+// Throws ToolAccessError on a policy refusal, Error on an unknown tool / invalid args.
+export async function runTool(
+  name: string,
+  rawArgs: unknown,
+  callerScopes?: string[],
+  opts: { allowWrite?: boolean } = {},
+): Promise<unknown> {
+  const tool = TOOL_BY_NAME.get(name);
+  if (!tool) throw new Error(`unknown tool: ${name}`);
+
+  // Defense in depth: a write tool only ever executes from the approval gate, which
+  // opts in explicitly. Inside the agent loop allowWrite is false, so a write is
+  // refused at dispatch even if it somehow reached here.
+  if (tool.access === "write" && !opts.allowWrite) {
+    throw new ToolAccessError(
+      `tool "${name}" is a tier-${tool.tier} write and may not be executed inline; ` +
+        `it must be staged as a proposal and approved.`,
+    );
+  }
+
+  // Scope re-check at dispatch — least privilege enforced here, not just by omission.
+  if (callerScopes !== undefined) {
+    const held = new Set(callerScopes);
+    const missing = tool.requiredScopes.filter((s) => !held.has(s));
+    if (missing.length) {
+      throw new ToolAccessError(
+        `caller lacks required scope(s) for "${name}": ${missing.join(", ")}`,
+      );
+    }
+  }
+
+  const args = tool.schema.parse(rawArgs ?? {});
+  return tool.run(args as Record<string, unknown>);
+}

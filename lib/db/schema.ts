@@ -1,6 +1,6 @@
 // ① Identity & tenancy — canonical identity tables. Every tenant table carries
 // firm_id; RLS (0001_rls.sql) enforces firm_id isolation at the database layer.
-import { pgTable, uuid, text, jsonb, boolean, integer, doublePrecision, timestamp, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, jsonb, boolean, integer, doublePrecision, numeric, timestamp, pgEnum, unique, index, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const roleEnum = pgEnum("role", ["owner", "admin", "reviewer", "preparer"]);
@@ -413,3 +413,132 @@ export const smsMessages = pgTable("sms_messages", {
   status: text("status"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ⑥ Agentic layer (Phase 0, 0028_agent_layer_schema.sql) — the durable substrate
+// the agent runtime drives via server actions + route handlers (no held-open
+// workflow; durability = these Postgres rows). firm_id scopes every table directly
+// except agent_runs, which inherits its firm via its parent agent_task (RLS join).
+// INV-3 tier on agent_tasks; INV-4 secret_ref (never the secret) on agentConnections;
+// tier-3 writes are STAGED in actionProposals and execute only after a recorded human
+// approval (mirrors confirmAgentAction). Every run/proposal/approval/write is also
+// appended to the existing append-only audit_log (INV-7).
+
+// One unit of agentic work. tier mirrors INV-3 (1 read / 2 propose / 3 governed
+// write / 4 scheduled). client_id nullable (firm-level tasks exist).
+export const agentTasks = pgTable("agent_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => households.id, { onDelete: "set null" }),
+  createdByUserId: text("created_by_user_id"), // Clerk user id of the preparer who launched it
+  kind: text("kind").notNull(),
+  tier: integer("tier").notNull(), // 1 read | 2 propose | 3 governed write | 4 scheduled
+  status: text("status").notNull().default("pending"),
+  input: jsonb("input").notNull().default(sql`'{}'::jsonb`),
+  result: jsonb("result"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("agent_tasks_firm_idx").on(t.firmId),
+  index("agent_tasks_firm_client_idx").on(t.firmId, t.clientId),
+  index("agent_tasks_status_idx").on(t.firmId, t.status),
+]);
+
+// Each LLM turn under a task. parent_run_id models the planner -> sub-agent tree
+// (INV-6). No direct firm_id — RLS scopes it via the parent task's firm.
+export const agentRuns = pgTable("agent_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => agentTasks.id, { onDelete: "cascade" }),
+  parentRunId: uuid("parent_run_id").references((): AnyPgColumn => agentRuns.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  model: text("model").notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  transcript: jsonb("transcript"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("agent_runs_task_idx").on(t.taskId),
+  index("agent_runs_parent_idx").on(t.parentRunId),
+]);
+
+// A scoped credential reference (INV-4 least-privilege). secret_ref points at the
+// secret store; the secret itself is NEVER stored here / never enters model context.
+// Distinct from the Composio `connections` table above — this is the agentic-layer
+// credential ledger keyed by provider + auth_type.
+export const agentConnections = pgTable("agent_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => households.id, { onDelete: "set null" }),
+  provider: text("provider").notNull(),
+  authType: text("auth_type").notNull(),
+  scopes: jsonb("scopes").notNull().default(sql`'[]'::jsonb`),
+  secretRef: text("secret_ref").notNull(), // pointer into the secret store, never the secret
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("agent_connections_firm_idx").on(t.firmId),
+  index("agent_connections_firm_client_idx").on(t.firmId, t.clientId),
+]);
+
+// The document-collection ledger: per client+period, one row per item we still
+// need. client_id NOT NULL (always about a specific client). connection_id links
+// the connector that will fetch it; evidence_r2_key points at the fetched blob.
+export const fetchRequirements = pgTable("fetch_requirements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull().references(() => households.id, { onDelete: "cascade" }),
+  period: text("period").notNull(),
+  item: text("item").notNull(),
+  sourceType: text("source_type").notNull(), // client_upload | connector | third_party
+  connectionId: uuid("connection_id").references(() => agentConnections.id, { onDelete: "set null" }),
+  fetchMethod: text("fetch_method").notNull(), // manual | api | email
+  status: text("status").notNull().default("needed"),
+  assignedTo: text("assigned_to"),
+  evidenceR2Key: text("evidence_r2_key"),
+  lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("fetch_requirements_firm_idx").on(t.firmId),
+  index("fetch_requirements_client_period_idx").on(t.firmId, t.clientId, t.period),
+  index("fetch_requirements_status_idx").on(t.firmId, t.status),
+]);
+
+// The tier-3 approval gate. A write tool NEVER executes inside the agent loop; it
+// is STAGED here. A human resolves it; on approval the confirm shim re-validates +
+// executes, stamping execution_result. firm_id direct so listProposals is a simple
+// firm-scoped scan.
+export const actionProposals = pgTable("action_proposals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => agentTasks.id, { onDelete: "cascade" }),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => households.id, { onDelete: "set null" }),
+  toolName: text("tool_name").notNull(),
+  args: jsonb("args").notNull().default(sql`'{}'::jsonb`),
+  rationale: text("rationale").notNull(),
+  evidence: jsonb("evidence"),
+  confidence: numeric("confidence"),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  resolvedByUserId: text("resolved_by_user_id"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  executionResult: jsonb("execution_result"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("action_proposals_firm_idx").on(t.firmId),
+  index("action_proposals_task_idx").on(t.taskId),
+  index("action_proposals_status_idx").on(t.firmId, t.status),
+]);
+
+// Durable outputs of a task: a brief, a drafted reply, a computed worksheet. Either
+// r2_key (a blob in R2) OR content (inline jsonb).
+export const artifacts = pgTable("artifacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => agentTasks.id, { onDelete: "cascade" }),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => households.id, { onDelete: "set null" }),
+  type: text("type").notNull(),
+  r2Key: text("r2_key"),
+  content: jsonb("content"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("artifacts_firm_idx").on(t.firmId),
+  index("artifacts_task_idx").on(t.taskId),
+  index("artifacts_firm_client_idx").on(t.firmId, t.clientId),
+]);

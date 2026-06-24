@@ -30,6 +30,12 @@ import type { AuthorityChunk } from "../tax/authority/store";
 // Zod object schemas ignore the extra key.
 export type ObbbaAuthorityChunk = AuthorityChunk & {
   verified: boolean; // true ⇒ figures confirmed against sourceUrl primary material THIS run
+  // First tax year the SUCCESSOR authority governs. A superseded chunk stays the correct,
+  // retrievable answer for years BEFORE this and is filtered out from this year onward — so a
+  // pre-OBBBA figure can serve its in-scope years (e.g. the $10k SALT cap for 2024) without ever
+  // surfacing for a year the successor governs. Declared optional here too (the field also lives
+  // on AuthorityChunk in store.ts); identical optional `number` types intersect cleanly.
+  supersededFrom?: number;
 };
 
 // Official, free PRIMARY-source URLs. The congress.gov Public Law text is the controlling
@@ -57,6 +63,8 @@ const URL = {
     "https://www.irs.gov/newsroom/treasury-irs-issue-guidance-on-the-additional-first-year-depreciation-deduction-amended-as-part-of-the-one-big-beautiful-bill",
   // California conformity (Franchise Tax Board).
   ftbConformity: "https://www.ftb.ca.gov/about-ftb/newsroom/tax-news/2025/12.html",
+  // Circular 230 (31 C.F.R. Part 10, Subpart B) — practitioner duties, on the official eCFR.
+  circ230SubpartB: "https://www.ecfr.gov/current/title-31/subtitle-A/part-10/subpart-B",
 };
 
 const INGESTED = "2026-06-23T00:00:00.000Z"; // when this corpus was committed to the store
@@ -102,13 +110,19 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2018, 2019, 2020, 2021, 2022, 2023, 2024],
     effectiveDate: "2018-01-01",
+    // supersededFrom: the successor (OBBBA §70120) first governs tax year 2025, so this chunk
+    // is the CORRECT, retrievable authority for 2018-2024 (it answers the salt-cap-2024-control
+    // case with the $10k figure) and is filtered out only from 2025 onward. Pairing
+    // supersededFrom with a taxYear that stops at 2024 is belt-and-suspenders: even if a future
+    // edit extended the year list, retrieve() would still drop it for any year ≥ 2025.
+    supersededFrom: 2025,
     supersededBy: "OBBBA §70120 (P.L. 119-21) amending IRC §164(b)(6),(7) — SALT deduction cap",
     sourceUrl: URL.irc164,
     ingestedAt: INGESTED,
-    verified: true,
+    verified: true, // $10,000 / $5,000-MFS cap for 2018-2025 confirmed: IRS 2025 Sch A (Form 1040) instructions + Congress.gov CRS R46246
     text:
-      "Pre-OBBBA stale-law probe: under TCJA the aggregate SALT itemized deduction was capped at a FLAT $10,000 ($5,000 MFS) for 2018-2025, scheduled to expire after 2025. OBBBA §70120 superseded this flat cap for tax years beginning after Dec 31, 2024 (raising it to $40,000 with a phase-down). NEVER cite the flat $10,000 figure for tax years 2025-2029.",
-    keywords: ["salt", "10000", "stale", "superseded", "tcja", "flat cap", "164"],
+      "Pre-OBBBA SALT cap (the CORRECT answer for tax years 2018-2024): under TCJA (IRC §164(b)(6)) the aggregate state-and-local-tax itemized deduction was capped at a FLAT $10,000 ($5,000 for married filing separately) for taxable years beginning after Dec 31, 2017 and before Jan 1, 2026 (i.e., 2018 through 2025), and was scheduled to expire after 2025. OBBBA §70120 superseded this flat cap for tax years beginning after Dec 31, 2024 (raising it to $40,000 with a phase-down). For 2018-2024 the $10,000 ($5,000 MFS) figure is correct; NEVER cite the flat $10,000 figure for tax years 2025-2029.",
+    keywords: ["salt", "10000", "5000", "state and local tax", "salt cap", "tcja", "flat cap", "164", "2024"],
   },
 
   // ── No tax on tips (OBBBA §70201, new IRC §224) ──
@@ -185,6 +199,11 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2024, 2025],
     effectiveDate: "2018-01-01",
+    // Pure NEGATIVE stale probe (the $13.61M / scheduled-$7M-reversion myth) — must NEVER surface
+    // in retrieval. supersededFrom set at/below the start of its taxYear list so year < supersededFrom
+    // is always false for its in-scope years ⇒ always dropped. The correct, citable 2025 estate
+    // figure lives in irc-2010-estate-2025 ($13.99M); 2026+ lives in obbba-70106-estate-exemption.
+    supersededFrom: 2024,
     supersededBy: "OBBBA §70106 (P.L. 119-21) amending IRC §2010(c)(3) — estate & gift exemption",
     sourceUrl: URL.irc2010,
     ingestedAt: INGESTED,
@@ -192,6 +211,28 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     text:
       "Pre-OBBBA stale-law probe: under TCJA the basic exclusion amount was the inflation-adjusted doubled figure ($13.61M for 2024; ~$13.99M for 2025) and was SCHEDULED to revert to roughly $7M (the un-doubled $5M base, inflation-adjusted) for decedents dying / gifts made after December 31, 2025. OBBBA §70106 superseded that reversion, making $15,000,000 permanent from 2026. NEVER cite the ~$7M reversion or the $13.61M figure for tax year 2026 or later.",
     keywords: ["estate tax", "exemption", "13.61", "13610000", "7 million", "revert", "stale", "superseded", "2010"],
+  },
+  // The CORRECT 2025 estate/gift basic exclusion (over-correction guard for estate-exemption-2025-control).
+  // This is the operative, citable answer for a 2025 estate question: $13,990,000 (Rev. Proc. 2024-40,
+  // the pre-OBBBA inflation amount). OBBBA §70106's $15M permanent figure first governs decedents dying /
+  // gifts made AFTER Dec 31, 2025 — i.e. tax year 2026 — so supersededFrom: 2026 keeps this chunk
+  // retrievable for 2025 only and lets the $15M chunk govern 2026+. A 2025 question answers $13.99M;
+  // a 2026 question answers $15M.
+  {
+    chunkId: "irc-2010-estate-2025",
+    authorityType: "statute",
+    citation: "IRC §2010(c)(3) — estate & gift basic exclusion amount, TY2025 (Rev. Proc. 2024-40)",
+    jurisdiction: "federal",
+    taxYear: [2025],
+    effectiveDate: "2025-01-01",
+    supersededFrom: 2026, // OBBBA §70106's $15M permanent figure first governs decedents dying after Dec 31, 2025 (TY2026)
+    supersededBy: "OBBBA §70106 (P.L. 119-21) amending IRC §2010(c)(3) — estate & gift exemption",
+    sourceUrl: URL.irsEstate,
+    ingestedAt: INGESTED,
+    verified: true, // $13,990,000 for 2025 confirmed: IRS Instructions for Form 709 (2025) + Rev. Proc. 2024-40 (rp-24-40)
+    text:
+      "For decedents dying and gifts made in calendar year 2025, the unified estate and gift tax basic exclusion amount under IRC §2010(c)(3) is $13,990,000 per individual (Rev. Proc. 2024-40, the 2025 inflation adjustment). This is the PRE-OBBBA 2025 figure. OBBBA §70106 raised the basic exclusion to a permanent $15,000,000 only for decedents dying and gifts made AFTER December 31, 2025 — i.e., beginning tax year 2026 — so the 2025 amount remains $13,990,000. NEVER cite the $15,000,000 figure for a 2025 estate or gift, and never cite the scheduled-but-repealed ~$7M reversion.",
+    keywords: ["estate tax", "gift tax", "exemption", "exclusion", "basic exclusion amount", "13990000", "13.99", "2025", "2010", "rev. proc. 2024-40"],
   },
 
   // ── Gambling / wagering losses (OBBBA §70114, amending IRC §165(d)) ──
@@ -234,6 +275,10 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2023, 2024],
     effectiveDate: "2023-01-01",
+    // Pure NEGATIVE stale probe (the 80/60/40 phase-down myth) — must NEVER surface. supersededFrom
+    // at/below the start of its taxYear list ⇒ always dropped (preserves the prior absolute-drop
+    // behavior under the new year-aware filter).
+    supersededFrom: 2023,
     supersededBy: "OBBBA (P.L. 119-21) amending IRC §168(k) — 100% additional first-year depreciation",
     sourceUrl: URL.irc168,
     ingestedAt: INGESTED,
@@ -266,6 +311,9 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2024, 2025],
     effectiveDate: "2018-01-01",
+    // Pure NEGATIVE stale probe (the "§199A sunsets/repealed after 2025" myth) — must NEVER surface.
+    // supersededFrom at/below the start of its taxYear list ⇒ always dropped.
+    supersededFrom: 2024,
     supersededBy: "OBBBA §70105 (P.L. 119-21) amending IRC §199A — QBI deduction made permanent",
     sourceUrl: URL.irc199A,
     ingestedAt: INGESTED,
@@ -405,6 +453,9 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     effectiveDate: "2018-01-01",
+    // Pure NEGATIVE stale probe (the "§68 suspended / itemized deductions unlimited" myth) — must
+    // NEVER surface. supersededFrom at/below the start of its taxYear list ⇒ always dropped.
+    supersededFrom: 2018,
     supersededBy: "OBBBA §70111 (P.L. 119-21) rewriting IRC §68 — limitation on tax benefit of itemized deductions",
     sourceUrl: URL.irc68,
     ingestedAt: INGESTED,
@@ -412,6 +463,30 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     text:
       "Pre-OBBBA stale-law probe: TCJA SUSPENDED the §68 Pease overall limitation on itemized deductions for tax years 2018 through 2025 (so high earners faced NO §68 haircut). OBBBA §70111 superseded that suspension with a new 2/37 limitation effective for tax years beginning after December 31, 2025. NEVER state that itemized deductions are unlimited by §68 for tax year 2026 or later.",
     keywords: ["68", "pease", "suspended", "no limitation", "stale", "superseded", "itemized"],
+  },
+
+  // ── Circular 230 §10.34(d) — reliance on information furnished by the client ──
+  // Practice-standard authority (a REGULATION, not OBBBA). Closes the corpus gap the
+  // circ230-reliance-on-others case exposed: the engine had no Circular 230 at all. The right
+  // cite for relying on client-furnished information is §10.34(d); §10.22(c)(1) is the off-point
+  // mis-cite. Tied to the cash-charitable-contribution substantiation context (a practitioner may
+  // rely in good faith on a client's stated cash gift, but must make reasonable inquiries if it
+  // looks unsubstantiated/inconsistent). Broad current taxYear range — a practice standard is not
+  // year-keyed — and no supersession.
+  {
+    chunkId: "circ-230-10-34-d-reliance",
+    authorityType: "regulation",
+    citation: "31 C.F.R. §10.34(d) (Circular 230) — reliance on information furnished by the client",
+    jurisdiction: "federal",
+    taxYear: [2023, 2024, 2025, 2026, 2027],
+    effectiveDate: "2014-06-12", // current Circular 230 (Rev. 6-2014) text of §10.34(d)
+    supersededBy: undefined,
+    sourceUrl: URL.circ230SubpartB,
+    ingestedAt: INGESTED,
+    verified: true, // §10.34(d) text confirmed against eCFR 31 CFR Part 10 Subpart B + IRS Circular 230 (Rev. 6-2014)
+    text:
+      "Circular 230 §10.34(d) (31 C.F.R. §10.34(d)): a practitioner advising a client to take a position on, or preparing or signing, a tax return, document, affidavit, or other paper submitted to the IRS GENERALLY MAY RELY IN GOOD FAITH WITHOUT VERIFICATION upon information furnished by the client. The practitioner may NOT, however, ignore the implications of information furnished to or actually known by the practitioner, and MUST MAKE REASONABLE INQUIRIES if the information as furnished appears to be incorrect, inconsistent with an important fact or another factual assumption, or incomplete. Applied to substantiation (e.g. a claimed cash charitable contribution): the preparer may rely on the client's representation of the gift, but must make reasonable inquiries where the amount or documentation appears incorrect, inconsistent, or incomplete rather than accept it blindly.",
+    keywords: ["circular 230", "10.34", "10.34(d)", "reliance", "rely in good faith", "client representations", "reasonable inquiries", "information furnished by the client", "substantiation", "charitable contribution", "practitioner", "due diligence"],
   },
 ];
 

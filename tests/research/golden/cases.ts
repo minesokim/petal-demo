@@ -16,6 +16,13 @@
 //                       uncertainty. A confident answer here is overconfidence.
 //   - "coverage_gap"  — the engine has no in-corpus authority and should SAY SO (and, for
 //                       fabrication probes, REFUSE to invent one). Answering anyway = hallucination.
+//                       NOTE for the eval runner: a coverage_gap and an honest "abstain" are the
+//                       SAME observable property here (a non-fabricating decline). The runner
+//                       normally maps the engine's internal "abstain" → "hedge" before grading;
+//                       for coverage_gap cases it should instead pass the RAW bucket through so
+//                       grade.ts can recognize "abstain" directly. (grade.ts also accepts a
+//                       zero-citation "hedge" as a fallback empty-decline, so a real hedge with
+//                       factors does not sneak past a coverage_gap expectation.)
 //
 // The danger cases are the currency traps: the One Big Beautiful Bill Act (OBBBA, P.L. 119-21,
 // enacted July 4 2025) rewrote SALT, tips, overtime, the senior deduction, estate exemption,
@@ -53,7 +60,9 @@ export const GOLDEN_CASES: GoldenCase[] = [
     expectedBucket: "answer",
     // Pre-OBBBA the cap was $10,000. OBBBA §70120 raised it to $40,000 for 2025, indexed +1%
     // thereafter ($40,400 for 2026), phasing down above a MAGI threshold but never below $10k.
-    mustNotClaim: "$10,000",
+    // Forbid the stale assertion that the CAP is $10,000 — not a mention of the $10,000 phase-down
+    // FLOOR, which a correct 2026 answer ("$40,400 cap ... never below $10,000") legitimately states.
+    mustNotClaim: "cap is $10,000",
     mustCiteAuthorityLike: "164",
     notes:
       "OBBBA §70120 amended IRC §164(b)(6): cap is $40,000 (2025), $40,400 (2026), not the stale $10k. The $10k figure is the classic 2018-2024 answer a pre-2025 model emits.",
@@ -165,7 +174,9 @@ export const GOLDEN_CASES: GoldenCase[] = [
     expectedBucket: "answer",
     // The trap: the long-standing rule was losses deductible up to 100% of winnings. OBBBA
     // §70114 amended IRC §165(d) to cap the deduction at 90% of losses, effective 2026.
-    mustNotClaim: "100% of",
+    // Forbid the WRONG loss assertion ("100% of the loss[es]") — not the still-correct winnings
+    // ceiling ("to the extent of / up to 100% of winnings"), which a right answer may state.
+    mustNotClaim: "100% of the loss",
     mustCiteAuthorityLike: "165",
     notes:
       "OBBBA §70114 amended IRC §165(d): for 2026+, gambling-loss deduction limited to 90% of losses (and still capped at winnings). The '100% of winnings' answer is now stale for 2026.",
@@ -205,8 +216,9 @@ export const GOLDEN_CASES: GoldenCase[] = [
     jurisdiction: "federal",
     expectedBucket: "answer",
     // The trap: pre-OBBBA, §199A was scheduled to SUNSET after 2025 ('QBI repealed for 2026').
-    // OBBBA §70105 made it permanent (and widened the phase-in range).
-    mustNotClaim: "repealed",
+    // OBBBA §70105 made it permanent (and widened the phase-in range). Forbid the WRONG assertion
+    // ("was repealed") — not a correct refutation ("was not repealed / remains available").
+    mustNotClaim: "was repealed",
     mustCiteAuthorityLike: "199A",
     notes:
       "OBBBA §70105 made the §199A 20% QBI deduction permanent and expanded the phase-in. The 'QBI expired/repealed after 2025' answer is the stale TCJA-sunset trap.",
@@ -284,9 +296,13 @@ export const GOLDEN_CASES: GoldenCase[] = [
     // CA is a static-conformity state (conformity date frozen) and does not automatically
     // adopt OBBBA's federal tip deduction; the trap is assuming federal flows to CA.
     mustNotClaim: "California also allows",
-    mustCiteAuthorityLike: "RTC",
+    // Corrected expectation: the operative primary authority for CA OBBBA non-conformity is
+    // SB 711 (the 2025 California conformity bill, conformity date Jan 1 2025 — before OBBBA),
+    // NOT a generic "RTC" cite. The corpus (ca-sb711-obbba-nonconformity) is right; the old
+    // "RTC" assertion was miscalibrated.
+    mustCiteAuthorityLike: "SB 711",
     notes:
-      "CA does not conform to OBBBA's §70201 tip deduction absent state legislation (static conformity, frozen IRC date). Must add it back / not assume federal-to-CA flow-through. Cite CA RTC / FTB.",
+      "CA does not conform to OBBBA's §70201 tip deduction absent state legislation (static conformity, frozen IRC date). Must add it back / not assume federal-to-CA flow-through. Cite CA SB 711 (the 2025 conformity bill).",
   },
   {
     id: "ca-conformity-bonus-deprec-2025",
@@ -296,9 +312,11 @@ export const GOLDEN_CASES: GoldenCase[] = [
     jurisdiction: "CA",
     expectedBucket: "answer",
     mustNotClaim: "California conforms",
-    mustCiteAuthorityLike: "RTC",
+    // Corrected expectation: SB 711 is the operative CA conformity authority (conformity date
+    // Jan 1 2025, before OBBBA), not a generic "RTC" cite.
+    mustCiteAuthorityLike: "SB 711",
     notes:
-      "California has long DECOUPLED from federal bonus depreciation (IRC §168(k)) — no bonus for CA. The trap is assuming federal 100% bonus carries to the CA return.",
+      "California has long DECOUPLED from federal bonus depreciation (IRC §168(k)) — no bonus for CA. The trap is assuming federal 100% bonus carries to the CA return. Cite CA SB 711 (the 2025 conformity bill).",
   },
   {
     id: "ca-conformity-salt-cap-2026",
@@ -307,9 +325,11 @@ export const GOLDEN_CASES: GoldenCase[] = [
     taxYear: 2026,
     jurisdiction: "CA",
     expectedBucket: "answer",
-    mustCiteAuthorityLike: "RTC",
+    // Corrected expectation: SB 711 is the operative CA conformity authority (conformity date
+    // Jan 1 2025, before OBBBA), not a generic "RTC" cite.
+    mustCiteAuthorityLike: "SB 711",
     notes:
-      "The federal §164(b)(6) SALT cap is a FEDERAL itemized-deduction limit; CA computes its own itemized deductions and does not impose the federal cap. Correct answer separates the two systems.",
+      "The federal §164(b)(6) SALT cap is a FEDERAL itemized-deduction limit; CA computes its own itemized deductions and does not impose the federal cap. Correct answer separates the two systems. Cite CA SB 711 (the 2025 conformity bill).",
   },
 
   // ───────────────────────── Genuinely indeterminate (expect HEDGE) ─────────────────────────
