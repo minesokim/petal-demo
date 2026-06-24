@@ -27,7 +27,9 @@ export class AnthropicProvider implements AIProvider {
     const res = await this.client.messages.create({
       model,
       max_tokens: args.maxTokens ?? 1024,
-      system: redactText(args.system),
+      // Prompt caching: the (static) reasoning system prompt repeats across research calls; an
+      // ephemeral breakpoint caches it (no-op below the cache minimum, so always safe). ZDR-safe.
+      system: [{ type: "text", text: redactText(args.system), cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: redactText(args.prompt) }],
       tools: [{ name: "emit", description: "Return the structured result.", input_schema: inputSchema as never }],
       tool_choice: { type: "tool", name: "emit" },
@@ -53,7 +55,8 @@ export class AnthropicProvider implements AIProvider {
     const res = await this.client.messages.create({
       model,
       max_tokens: args.maxTokens ?? 1024,
-      system: redactText(args.system),
+      // Prompt caching for the (static) assistant system prompt; no-op below the cache minimum.
+      system: [{ type: "text", text: redactText(args.system), cache_control: { type: "ephemeral" } }],
       messages: [...history, { role: "user", content: redactText(args.prompt) }],
     });
     const text = res.content

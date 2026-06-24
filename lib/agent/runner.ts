@@ -102,7 +102,19 @@ export type ModelSeam = (
 function anthropicSeam(apiKey: string): ModelSeam {
   const client = new Anthropic({ apiKey });
   return (messages, tools) =>
-    client.messages.create({ model: AGENT_MODEL, max_tokens: 1200, system: AGENT_SYSTEM, tools, messages });
+    client.messages.create({
+      model: AGENT_MODEL,
+      max_tokens: 1200,
+      // Prompt caching (runtime cost): the large static AGENT_SYSTEM + the ~20 tool schemas are
+      // re-sent on every turn of every Ask-Petal call. An ephemeral cache breakpoint on the system
+      // block caches the tools+system prefix (tools precede system precede messages in cache order),
+      // so repeat turns within ~5 min pay ~10% on that prefix instead of full input rate. The
+      // conversation (messages) varies and is intentionally NOT cached. ZDR-safe (5-min ephemeral
+      // cache, not training retention).
+      system: [{ type: "text", text: AGENT_SYSTEM, cache_control: { type: "ephemeral" } }],
+      tools,
+      messages,
+    });
 }
 
 export async function runAgent(
