@@ -24,6 +24,7 @@ import type { AgentTool } from "../registry";
 import { loadFirmData } from "@/lib/server/firm-data";
 import { researchAnswer } from "@/lib/research/engine";
 import { compute, ComputeRequest } from "@/lib/tax-ai/compute";
+import { lookupParameter, type ParameterProvision } from "@/lib/tax/figures/params";
 import { AnthropicProvider } from "@/lib/ai/anthropic";
 import type { Jurisdiction } from "@/lib/tax/types";
 
@@ -180,6 +181,31 @@ const INTENT_TOOLS: AgentTool[] = [
       };
     },
     describe: (a) => `Compute ${a.worksheet}`,
+  },
+  {
+    name: "tax_param",
+    description:
+      "Look up a SETTLED, published tax parameter (a cap, threshold, rate, phase-out, floor, or standard amount) by name and year — a DETERMINISTIC keyed lookup of lib/tax's cited figures, NOT the model's memory and NOT corpus search. Use this FIRST for any \"what IS the X for year Y\" figure question (SALT cap, tips/overtime cap, senior deduction, QBI threshold, standard deduction, child tax credit). provision is one of: salt_cap | tips_deduction | overtime_deduction | senior_deduction | qbi_threshold | standard_deduction | child_tax_credit. Returns the value(s) with their official source cite — ground the number EXACTLY as returned. If it returns found:false, fall back to tax_research; do not state a figure from memory.",
+    tier: 1,
+    access: "read",
+    requiredScopes: [],
+    schema: z.object({
+      provision: z.enum(["salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction", "qbi_threshold", "standard_deduction", "child_tax_credit"]),
+      taxYear: z.number().int().min(2020).max(2030).optional(),
+    }),
+    run: async (a) => {
+      const result = lookupParameter(a.provision as ParameterProvision, (a.taxYear as number) ?? 2025, "federal");
+      if (!result) return { found: false, note: "No confirmed figure for that provision/year — use tax_research to ground it, or hedge honestly. Do NOT state a number from memory." };
+      return {
+        found: true,
+        provision: result.provision,
+        taxYear: result.taxYear,
+        summary: result.summary,
+        facts: result.facts,
+        citations: result.citations.map((c) => ({ cite: c.cite, sourceUrl: c.sourceUrl, authority: c.authority })),
+      };
+    },
+    describe: (a) => `Look up ${a.provision} (${a.taxYear ?? 2025})`,
   },
   {
     name: "draft_email",
