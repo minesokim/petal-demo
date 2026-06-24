@@ -185,12 +185,12 @@ const INTENT_TOOLS: AgentTool[] = [
   {
     name: "tax_param",
     description:
-      "Look up a SETTLED, published tax parameter (a cap, threshold, rate, phase-out, floor, or standard amount) by name and year — a DETERMINISTIC keyed lookup of lib/tax's cited figures, NOT the model's memory and NOT corpus search. Use this FIRST for any \"what IS the X for year Y\" figure question (SALT cap, tips/overtime cap, senior deduction, QBI threshold, standard deduction, child tax credit). provision is one of: salt_cap | tips_deduction | overtime_deduction | senior_deduction | qbi_threshold | standard_deduction | child_tax_credit. Returns the value(s) with their official source cite — ground the number EXACTLY as returned. If it returns found:false, fall back to tax_research; do not state a figure from memory.",
+      "Look up a SETTLED, published tax parameter (a cap, threshold, rate, phase-out, floor, or standard amount) by name and year — a DETERMINISTIC keyed lookup of lib/tax's cited figures, NOT the model's memory and NOT corpus search. Use this FIRST for any \"what IS the X for year Y\" figure question (SALT cap, tips/overtime cap, senior deduction, car-loan interest deduction, QBI threshold, standard deduction, child tax credit). provision is one of: salt_cap | tips_deduction | overtime_deduction | senior_deduction | car_loan_interest | qbi_threshold | standard_deduction | child_tax_credit. Returns the value(s) with their official source cite — ground the number EXACTLY as returned. If it returns found:false, fall back to tax_research; do not state a figure from memory.",
     tier: 1,
     access: "read",
     requiredScopes: [],
     schema: z.object({
-      provision: z.enum(["salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction", "qbi_threshold", "standard_deduction", "child_tax_credit"]),
+      provision: z.enum(["salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction", "car_loan_interest", "qbi_threshold", "standard_deduction", "child_tax_credit"]),
       taxYear: z.number().int().min(2020).max(2030).optional(),
     }),
     run: async (a) => {

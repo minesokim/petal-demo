@@ -22,6 +22,7 @@ const URL_SALT_IRS = "https://www.irs.gov/newsroom/irs-releases-tax-inflation-ad
 const URL_WORKERS_SENIORS = "https://www.irs.gov/newsroom/one-big-beautiful-bill-act-tax-deductions-for-working-americans-and-seniors";
 const URL_OT_QA = "https://www.irs.gov/newsroom/questions-and-answers-about-the-new-deduction-for-qualified-overtime-compensation";
 const URL_SENIOR = "https://www.irs.gov/newsroom/check-your-eligibility-for-the-new-enhanced-deduction-for-seniors";
+const URL_CAR_LOAN = "https://www.irs.gov/newsroom/treasury-irs-provide-guidance-on-the-new-deduction-for-car-loan-interest-under-the-one-big-beautiful-bill";
 
 const cite = (authority: string, c: string, sourceUrl: string): Citation => ({ authority, cite: c, sourceUrl });
 
@@ -53,6 +54,11 @@ export type OvertimeFigures = {
   phaseOutThreshold: Record<"default" | "mfj", Figure<number>>; // $150k / $300k
   phaseOutPer1000: Figure<number>; // $100 per $1,000 over threshold
 };
+export type CarLoanFigures = {
+  cap: Figure<number>; // $10,000 max interest deductible
+  phaseOutThreshold: Record<"default" | "mfj", Figure<number>>; // $100k / $200k MAGI
+  phaseOutPer1000: Figure<number>; // $200 per $1,000 of MAGI over threshold
+};
 export type SeniorFigures = {
   perIndividual: Figure<number>; // $6,000 per qualifying individual age 65+
   phaseOutThreshold: Record<"default" | "mfj", Figure<number>>; // $75k / $150k
@@ -66,6 +72,7 @@ export type ObbbaFigureSet = {
   tips: TipsFigures;
   overtime: OvertimeFigures;
   senior: SeniorFigures;
+  carLoan: CarLoanFigures;
 };
 
 // Statuses that use the "married/joint" thresholds for the tips/overtime/senior phase-outs.
@@ -74,38 +81,29 @@ export type ObbbaFigureSet = {
 // enforced in the worksheets).
 export const JOINT_RETURN_STATUSES: ReadonlySet<FilingStatus> = new Set<FilingStatus>(["mfj", "qss"]);
 
-const saltCite = cite(
-  "OBBBA §70120 (P.L. 119-21) / IRC §164(b)(6),(7)",
-  "SALT applicable limitation amount + 30% phase-down over MAGI threshold, floor $10,000",
-  URL_PL,
+// cite(authority, cite, sourceUrl): authority = coarse family (IRC / IRS), cite = the section
+// string a preparer writes on a workpaper. (Earlier these had the two swapped, so the Sources
+// chips showed prose; corrected so they render the clean cite.)
+const saltCite = cite("IRC", "IRC §164(b)(6),(7) (OBBBA §70120)", URL_PL);
+const saltIrsCite = cite("IRS", "IRS guidance — SALT cap (OBBBA §70120)", URL_SALT_IRS);
+const tipsCite = cite("IRC", "IRC §224 (OBBBA §70201)", URL_PL);
+const tipsIrsCite = cite("IRS", "IRS guidance — no tax on tips (OBBBA §70201)", URL_WORKERS_SENIORS);
+const otCite = cite("IRC", "IRC §225 (OBBBA §70202)", URL_PL);
+const otIrsCite = cite("IRS", "IRS guidance — no tax on overtime (OBBBA §70202)", URL_OT_QA);
+const seniorCite = cite("IRC", "IRC §151(d)(5)(C) (OBBBA §70103)", URL_PL);
+const seniorIrsCite = cite("IRS", "IRS guidance — enhanced senior deduction (OBBBA §70103)", URL_SENIOR);
+// NOTE: cite() is cite(authority, cite, sourceUrl). The sibling OBBBA cites above put the section
+// string in `authority` and a prose description in `cite` (a pre-existing swap — flagged for a
+// follow-up sweep). car-loan uses the CORRECT convention so its Source chip renders the clean cite.
+const carLoanCite = cite(
+  "IRC", // authority = coarse family
+  "IRC §163(h)(4)(A) (OBBBA, P.L. 119-21)", // cite = the section string the preparer writes
+  URL_CAR_LOAN,
 );
-const saltIrsCite = cite(
-  "IRS / OBBBA §70120",
-  "SALT cap $40,000 (2025) / $40,400 (2026), tax years 2025-2029",
-  URL_SALT_IRS,
-);
-const tipsCite = cite(
-  "OBBBA §70201 (P.L. 119-21) / IRC §224",
-  "Above-the-line qualified-tips deduction, cap $25,000, $100/$1,000 phase-out over $150k/$300k MAGI",
-  URL_PL,
-);
-const tipsIrsCite = cite("IRS / OBBBA §70201", "No tax on tips — up to $25,000, MAGI phase-out $150k/$300k", URL_WORKERS_SENIORS);
-const otCite = cite(
-  "OBBBA §70202 (P.L. 119-21) / IRC §225",
-  "Above-the-line qualified-overtime deduction, cap $12,500 ($25,000 MFJ), $100/$1,000 phase-out over $150k/$300k MAGI",
-  URL_PL,
-);
-const otIrsCite = cite("IRS / OBBBA §70202", "No tax on overtime — up to $12,500 ($25,000 joint), MAGI phase-out $150k/$300k", URL_OT_QA);
-const seniorCite = cite(
-  "OBBBA §70103 (P.L. 119-21) / IRC §151(d)(5)(C)",
-  "Temporary $6,000 senior deduction per qualifying individual age 65+, 6% phase-out over $75k/$150k MAGI",
-  URL_PL,
-);
-const seniorIrsCite = cite("IRS / OBBBA §70103", "Enhanced deduction for seniors — $6,000, phases out 6% over $75k/$150k MAGI", URL_SENIOR);
 
 // Tips/overtime/senior caps + phase-out rates are FIXED by statute (not indexed) for 2025-2028,
 // so the three deduction blocks are identical across those years. SALT differs by year.
-function deductionBlocks(taxYear: number): Pick<ObbbaFigureSet, "tips" | "overtime" | "senior"> {
+function deductionBlocks(taxYear: number): Pick<ObbbaFigureSet, "tips" | "overtime" | "senior" | "carLoan"> {
   return {
     tips: {
       cap: fig(taxYear, 25000, tipsCite),
@@ -131,6 +129,14 @@ function deductionBlocks(taxYear: number): Pick<ObbbaFigureSet, "tips" | "overti
         mfj: fig(taxYear, 150000, seniorIrsCite),
       },
       phaseOutRate: fig(taxYear, 0.06, seniorCite),
+    },
+    carLoan: {
+      cap: fig(taxYear, 10000, carLoanCite),
+      phaseOutThreshold: {
+        default: fig(taxYear, 100000, carLoanCite),
+        mfj: fig(taxYear, 200000, carLoanCite),
+      },
+      phaseOutPer1000: fig(taxYear, 200, carLoanCite),
     },
   };
 }

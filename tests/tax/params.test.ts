@@ -37,6 +37,16 @@ describe("lookupParameter — settled figures ground exactly + cited", () => {
     expect(a.summary).toMatch(/PER qualifying spouse/);
   });
 
+  it("car-loan interest (§163(h)(4)(A)): $10,000 cap, $200 per $1,000 over $100k/$200k, 2025-2028", () => {
+    const a = lookupParameter("car_loan_interest", 2025)!;
+    expect(a.facts.find(f => /cap/i.test(f.label))!.value).toBe("$10,000");
+    expect(a.facts.find(f => /non-joint/i.test(f.label))!.value).toBe("$100,000");
+    expect(a.facts.find(f => /MFJ/i.test(f.label))!.value).toBe("$200,000");
+    expect(a.facts.find(f => /per \$1,000/i.test(f.label))!.value).toBe("$200");
+    expect(a.summary).toMatch(/reduces the lesser of the actual interest and the cap/); // the nuance you corrected
+    expect(a.citations[0].cite).toMatch(/163\(h\)\(4\)\(A\)/);
+  });
+
   it("§199A QBI: 20%, thresholds $197,300 single / $394,600 MFJ, $50,000 phase-in", () => {
     const a = lookupParameter("qbi_threshold", 2025)!;
     expect(a.facts.find(f => /rate/i.test(f.label))!.value).toBe("20%");

@@ -18,12 +18,13 @@ export type ParameterProvision =
   | "tips_deduction"
   | "overtime_deduction"
   | "senior_deduction"
+  | "car_loan_interest"
   | "qbi_threshold"
   | "standard_deduction"
   | "child_tax_credit";
 
 export const PARAMETER_PROVISIONS: ParameterProvision[] = [
-  "salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction",
+  "salt_cap", "tips_deduction", "overtime_deduction", "senior_deduction", "car_loan_interest",
   "qbi_threshold", "standard_deduction", "child_tax_credit",
 ];
 
@@ -108,6 +109,20 @@ export function lookupParameter(
             { label: "Phase-out rate (of MAGI over threshold)", value: pct(s.phaseOutRate.value) },
           ],
           citations: uniqCites([s.perIndividual.citation, s.phaseOutThreshold.default.citation, s.phaseOutRate.citation]),
+        };
+      }
+      case "car_loan_interest": {
+        const c = getObbbaFigures(taxYear).carLoan;
+        return {
+          provision, taxYear, jurisdiction,
+          summary: `The qualified car-loan interest deduction (IRC §163(h)(4)(A)) for ${taxYear} is capped at ${usd(c.cap.value)} of interest, phasing out by ${usd(c.phaseOutPer1000.value)} per $1,000 of MAGI over ${usd(c.phaseOutThreshold.default.value)} (${usd(c.phaseOutThreshold.mfj.value)} MFJ); the vehicle must be new with US final assembly and the loan originated after 12/31/2024. Note: the phase-out reduces the lesser of the actual interest and the cap.`,
+          facts: [
+            { label: "Cap (max interest)", value: usd(c.cap.value) },
+            { label: "Phase-out threshold (non-joint)", value: usd(c.phaseOutThreshold.default.value) },
+            { label: "Phase-out threshold (MFJ)", value: usd(c.phaseOutThreshold.mfj.value) },
+            { label: "Phase-out per $1,000 over", value: usd(c.phaseOutPer1000.value) },
+          ],
+          citations: uniqCites([c.cap.citation, c.phaseOutThreshold.default.citation, c.phaseOutPer1000.citation]),
         };
       }
       case "qbi_threshold": {
