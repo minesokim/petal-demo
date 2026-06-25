@@ -88,6 +88,40 @@ export function coverageFor(
   return { covered: true, entry };
 }
 
+// Topic anchors — map a question's TOPIC to the code section that governs it, so an empty
+// retrieval can name WHICH provision is missing. This is a small topic→section index, NOT a
+// coverage claim (coverage always comes from the derived manifest). Extend as the corpus grows.
+const TOPIC_ANCHORS: { re: RegExp; section: string }[] = [
+  { re: /1099-?k\b|third.?party settlement|tpso/i, section: "OBBBA §70432" },
+  { re: /1099-?nec\b|1099-?misc\b|nonemployee comp/i, section: "OBBBA §70433" },
+  { re: /clean vehicle|\bev\b credit|electric vehicle credit|\b30d\b/i, section: "IRC §30D" },
+  { re: /residential clean energy|rooftop solar|solar credit|\b25d\b/i, section: "IRC §25D" },
+  { re: /salt cap|state and local tax/i, section: "IRC §164" },
+  { re: /\bqbi\b|qualified business income|199a/i, section: "IRC §199A" },
+];
+
+// Identify the code section(s) a question is about: explicit cites in the text plus topic anchors.
+export function identifyProvisions(question: string): string[] {
+  const found = new Set<string>();
+  for (const m of question.matchAll(/(?:section|sec\.?|§)\s*(\d+[A-Za-z]?)/gi)) {
+    const key = normalizeSection(m[1]);
+    if (key) found.add(key);
+  }
+  for (const a of TOPIC_ANCHORS) if (a.re.test(question)) found.add(a.section);
+  return [...found];
+}
+
+// The identified provisions that are NOT covered for this year/jurisdiction — the named gaps a
+// coverage_gap answer can call out ("no authority loaded for OBBBA §70432"), instead of a vague hedge.
+export function namedCoverageGaps(
+  question: string,
+  taxYear: number,
+  jurisdiction: Jurisdiction,
+  manifest: Map<string, CoverageEntry> = COVERAGE_MANIFEST,
+): string[] {
+  return identifyProvisions(question).filter((p) => !coverageFor(p, taxYear, jurisdiction, manifest).covered);
+}
+
 // Normalize a raw section string ("§70432", "IRC 163(j)", "OBBBA §70432") to a manifest key.
 export function normalizeSection(section: string): string | null {
   const s = section.trim();

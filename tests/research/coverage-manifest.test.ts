@@ -7,7 +7,7 @@
 // LOADED — which is the signal the calibration layer needs to stop calling a coverage gap "unsettled".
 
 import { describe, it, expect } from "vitest";
-import { COVERAGE_MANIFEST, coverageFor, normalizeSection } from "../../lib/research/coverage-manifest";
+import { COVERAGE_MANIFEST, coverageFor, normalizeSection, identifyProvisions, namedCoverageGaps } from "../../lib/research/coverage-manifest";
 
 describe("coverage manifest — derived from the real corpus", () => {
   it("catalogs the loaded provisions (non-trivial, section-keyed)", () => {
@@ -46,5 +46,26 @@ describe("coverage manifest — derived from the real corpus", () => {
     expect(normalizeSection("IRC §164(b)(6)")).toBe("IRC §164"); // subsection -> section grain
     expect(normalizeSection("30D")).toBe("IRC §30D");
     expect(normalizeSection("R&TC §17052.1")).toBe("Cal. R&TC §17052.1");
+  });
+});
+
+describe("identifyProvisions + namedCoverageGaps — naming a gap from a question", () => {
+  it("maps a 1099-K question to OBBBA §70432 and flags it as a not-loaded gap", () => {
+    const q = "Will my client get a 1099-K for $9,000 across 15 transactions?";
+    expect(identifyProvisions(q)).toContain("OBBBA §70432");
+    expect(namedCoverageGaps(q, 2026, "federal")).toContain("OBBBA §70432");
+  });
+
+  it("maps an EV clean-vehicle question to IRC §30D (a not-loaded gap)", () => {
+    expect(namedCoverageGaps("Walk me through the clean vehicle credit for a new EV", 2026, "federal")).toContain("IRC §30D");
+  });
+
+  it("a LOADED provision (QBI / §199A) is identified but NOT flagged as a gap", () => {
+    expect(identifyProvisions("how does the QBI deduction work")).toContain("IRC §199A");
+    expect(namedCoverageGaps("how does the QBI deduction work", 2025, "federal")).not.toContain("IRC §199A");
+  });
+
+  it("picks up an explicit section cite from the question text", () => {
+    expect(identifyProvisions("the definition of qualified production property under section 168(n)")).toContain("IRC §168");
   });
 });

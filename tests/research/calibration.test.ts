@@ -1,10 +1,9 @@
 // CALIBRATION REASON-CODES — the research honesty layer (tests/research/calibration.test.ts)
 //
-// Every SourcedAnswer now carries a `calibration` code naming WHY it has the confidence it does.
-// The load-bearing new distinction: `unsettled` (the LAW conflicts -> §6662 / Form 8275 territory)
-// vs `indeterminate` (the FACTS drive it -> apply the multi-factor test). Conflating those is the
-// failure this fixes: a preparer must know whether to gather facts or to run a substantial-authority
-// analysis. These drive the live engine with deterministic MockProviders + corpus control.
+// Corrected per the round-3 diagnostic: "unsettled" is NO LONGER inferred from the question's
+// wording. With nothing retrieved, the honest state is a COVERAGE GAP ("I don't have this loaded"),
+// not a claim that the law is open — and the manifest lets us NAME the missing provision. A
+// fact-driven question still hedges as `indeterminate` (that's a property of the question).
 
 import { describe, it, expect } from "vitest";
 import { MockProvider } from "../../lib/ai/provider";
@@ -13,10 +12,8 @@ import { retrieve } from "../../lib/tax/authority/store";
 
 const abstaining = new MockProvider(() => ({ positions: [], abstained: true }));
 // Empty corpus -> retrieval is empty -> the calibration classifier on the question decides the code.
-const empty = { taxYear: 2025, jurisdiction: "federal" as const, corpus: [] };
+const empty = { taxYear: 2026, jurisdiction: "federal" as const, corpus: [] };
 
-// A proposer that grounds one claim on real retrieved chunkIds (mirrors engine.test's helper) so we
-// can exercise the grounded -> "grounded" path against the real registered corpus.
 function groundingProposer(claim: string, chunkIds: string[]) {
   return new MockProvider((args) => {
     if (/atomic statements/i.test(args.system) || /GROUNDED in the provided sources/i.test(args.system)) {
@@ -38,36 +35,23 @@ function groundingProposer(claim: string, chunkIds: string[]) {
 }
 
 describe("calibration reason-codes", () => {
-  it("UNSETTLED law (conflicting authority) -> bucket hedge, calibration 'unsettled', §6662/8275 guidance", async () => {
-    const r = await researchAnswer(
-      abstaining,
-      undefined,
-      "Is there a circuit split on whether daily-fantasy-sports entry fees are wagering losses under §165(d)?",
-      empty,
-    );
-    expect(r.calibration).toBe("unsettled");
-    expect(r.bucket).toBe("hedge");
-    expect(r.reviewNotes.join(" ")).toMatch(/§6662|8275/);
-    expect(r.answer).toMatch(/unsettled|conflict/i);
+  it("a not-loaded provision -> coverage_gap that NAMES the missing section (the 1099-K case)", async () => {
+    const r = await researchAnswer(abstaining, undefined, "Will my client receive a 1099-K for $9,000 across 15 PayPal transactions in 2026?", empty);
+    expect(r.bucket).toBe("coverage_gap");
+    expect(r.calibration).toBe("coverage_gap");
+    expect(`${r.answer} ${r.currencyNote} ${r.reviewNotes.join(" ")}`).toMatch(/70432/);
   });
 
-  it("FACT-DRIVEN question -> calibration 'indeterminate' (NOT unsettled)", async () => {
+  it("NO false 'unsettled' on empty retrieval — a 'circuit split' question is an honest coverage_gap", async () => {
+    const r = await researchAnswer(abstaining, undefined, "Is there a circuit split on the treatment of crypto staking rewards?", empty);
+    expect(r.calibration).toBe("coverage_gap"); // NOT "unsettled" — we retrieved nothing, so we can't claim the law is open
+    expect(r.calibration).not.toBe("unsettled");
+  });
+
+  it("a fact-driven question still hedges as 'indeterminate'", async () => {
     const r = await researchAnswer(abstaining, undefined, "Is my delivery driver an employee or an independent contractor?", empty);
     expect(r.calibration).toBe("indeterminate");
     expect(r.bucket).toBe("hedge");
-  });
-
-  it("settled-but-missing rule -> calibration 'coverage_gap'", async () => {
-    const r = await researchAnswer(abstaining, undefined, "What is the foreign tax credit limitation formula for 2025?", empty);
-    expect(r.calibration).toBe("coverage_gap");
-    expect(r.bucket).toBe("coverage_gap");
-  });
-
-  it("UNSETTLED takes precedence over indeterminate when a question trips both markers", async () => {
-    // "reasonable compensation" is a facts-doctrine marker; "courts disagree" is a conflict marker.
-    // The higher-stakes signal (the law is contested) must win.
-    const r = await researchAnswer(abstaining, undefined, "Courts disagree on the reasonable-compensation factors for an S-corp owner; what is the rule?", empty);
-    expect(r.calibration).toBe("unsettled");
   });
 
   it("a grounded answer carries calibration 'grounded'", async () => {

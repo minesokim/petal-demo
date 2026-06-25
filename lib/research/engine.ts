@@ -46,6 +46,7 @@ import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import { namedCoverageGaps } from "./coverage-manifest";
 import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
 import { compute } from "../tax-ai/compute";
@@ -206,13 +207,6 @@ export type ResearchOpts = {
    * conservative heuristic (INDETERMINACY_HINTS) when omitted.
    */
   isIndeterminate?: (question: string) => boolean;
-  /**
-   * Unsettled-law classifier — distinguishes a CONTESTED point of law (conflicting/split authority
-   * → §6662 + Form 8275 territory) from a merely fact-driven question. Checked BEFORE indeterminacy
-   * so an explicitly-contested question reads as `unsettled`, not a generic hedge. Defaults to a
-   * narrow conflict-marker heuristic (UNSETTLED_HINTS) when omitted.
-   */
-  isUnsettled?: (question: string) => boolean;
 };
 
 // Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
@@ -235,38 +229,14 @@ function defaultIsIndeterminate(question: string): boolean {
   return INDETERMINACY_HINTS.some((re) => re.test(question));
 }
 
-// UNSETTLED-law markers: the question is about a point of law that is genuinely CONTESTED, not
-// merely fact-driven. Deliberately narrow (explicit conflict language only) so it never poaches a
-// plain coverage gap — when the markers are absent we fall through to the indeterminate/coverage
-// logic. Distinct from indeterminacy: an unsettled answer points the preparer at §6662 substantial
-// authority + possible Form 8275 disclosure, not at a facts-and-circumstances test.
-const UNSETTLED_HINTS: RegExp[] = [
-  /circuit split|split (in|of|among) (the )?(authorit|circuit)/i,
-  /courts? (are )?(split|divided|disagree|in conflict)/i,
-  /\bunsettled\b|\bcontested\b|conflicting authorit|contrary authorit/i,
-  /tax court[^.]*(disagree|contrary|declined to follow|rejected)/i,
-  /(is|are) (this|these|it) (point|issue|questions?) settled/i,
-];
-
-function defaultIsUnsettled(question: string): boolean {
-  return UNSETTLED_HINTS.some((re) => re.test(question));
-}
-
-// The shared `unsettled` hedge — the law is contested, not the facts. Emitted from both the
-// empty-retrieval and post-reasoning paths so the signal is identical wherever it triggers.
-function unsettledAnswer(): SourcedAnswer {
-  return {
-    answer:
-      "This rests on a genuinely unsettled point of law: the authorities are in conflict, so there is no single controlling answer. I will not assert one side as settled. A licensed preparer should weigh the competing authorities for the applicable circuit and consider whether the position has substantial authority under §6662 and warrants Form 8275 disclosure.",
-    citations: [],
-    bucket: "hedge",
-    calibration: "unsettled",
-    reviewNotes: [
-      "Unsettled law: the governing authorities conflict (e.g. a circuit split or contra holdings); this is not a facts-and-circumstances hedge.",
-      "Run the §6662 substantial-authority analysis for the relevant circuit and decide on Form 8275 disclosure before taking a position.",
-    ],
-  };
-}
+// NOTE on the `unsettled` calibration reason: it is intentionally NOT derived from the question's
+// wording any more. A wording heuristic (round-2/3 "Fix 4") cannot tell "I failed to retrieve a
+// settled rule" from "the law is genuinely open" — it just trusts the asker's framing, which is the
+// 10a failure (calling a settled-but-unloaded 1099-K threshold "still in flux"). "unsettled" must
+// come from RETRIEVED authority that is itself non-final (a proposed/reserved reg, a live circuit
+// conflict in the retrieved text). The corpus carries no non-final tier yet, so `unsettled` is
+// dormant — and that is honest: with nothing loaded, the truthful answer is a coverage gap, not a
+// claim that the law is open. Reintroduce `unsettled` here once the corpus tags non-final authority.
 
 // ── A retrieved cite's verification verdict (the 10.22(c)(1) fix, in code) ───────────────────
 type CiteVerification =
@@ -451,16 +421,17 @@ export async function researchAnswer(
   const { taxYear, jurisdiction, k = 4 } = opts;
   const corpus = opts.corpus ?? REGISTERED_CORPUS;
   const isIndeterminate = opts.isIndeterminate ?? defaultIsIndeterminate;
-  const isUnsettled = opts.isUnsettled ?? defaultIsUnsettled;
 
   // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
   const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
 
-  // 4a — COVERAGE/CALIBRATION when retrieval is EMPTY. This is where a coverage gap is kept
-  // from masquerading as calibration: an indeterminate question (no rule to retrieve) hedges; a
-  // should-be-covered question that came back empty declines explicitly.
+  // 4a — COVERAGE/CALIBRATION when retrieval is EMPTY. A genuinely INDETERMINATE question (a
+  // facts-and-circumstances doctrine — a property of the question, knowable from its wording)
+  // hedges. Everything else is a COVERAGE GAP: we retrieved nothing, so we say so. We do NOT call
+  // it "unsettled" — claiming the law is open with zero authority in hand is the exact failure the
+  // round-3 diagnostic flagged (10a). "unsettled" must come from RETRIEVED non-final authority, not
+  // from the question's wording. The manifest lets us NAME the missing provision instead of a vague hedge.
   if (retrieved.length === 0) {
-    if (isUnsettled(question)) return unsettledAnswer();
     if (isIndeterminate(question)) {
       return {
         answer:
@@ -474,15 +445,22 @@ export async function researchAnswer(
         ],
       };
     }
+    const named = namedCoverageGaps(question, taxYear, jurisdiction);
+    const gapList = named.length ? named.join(", ") : null;
     return {
-      answer:
-        "I do not have current authority on this question in my sources, so I decline to answer rather than guess. This should be checked directly against primary authority for the applicable tax year and jurisdiction.",
+      answer: gapList
+        ? `I don't have authority on ${gapList} loaded in my sources, so I won't answer from memory. Check ${named.length === 1 ? "it" : "them"} directly against primary authority for tax year ${taxYear}.`
+        : "I do not have current authority on this question in my sources, so I decline to answer rather than guess. This should be checked directly against primary authority for the applicable tax year and jurisdiction.",
       citations: [],
       bucket: "coverage_gap",
       calibration: "coverage_gap",
-      currencyNote: `No in-corpus authority retrieved for tax year ${taxYear} (${jurisdiction}).`,
+      currencyNote: gapList
+        ? `Not loaded: ${gapList} (tax year ${taxYear}, ${jurisdiction}).`
+        : `No in-corpus authority retrieved for tax year ${taxYear} (${jurisdiction}).`,
       reviewNotes: [
-        "Coverage gap: the authority store returned nothing on-point. This is NOT a calibrated hedge — it is a known gap in the corpus.",
+        gapList
+          ? `Coverage gap: ${gapList} ${named.length === 1 ? "is" : "are"} not in the corpus (the manifest confirms it). This is a KNOWN gap, not a calibrated hedge and not "unsettled law".`
+          : "Coverage gap: the authority store returned nothing on-point. This is NOT a calibrated hedge — it is a known gap in the corpus.",
         "Do not treat the absence of an answer as a conclusion; consult primary authority directly.",
       ],
     };
@@ -512,7 +490,6 @@ export async function researchAnswer(
   //     on it (a reasoning/on-point gap), surfaced to the user as a hedge but marked distinctly
   //     so an operator can tell it from a clean coverage gap.
   if (reasoned.abstained || groundedPositions.length === 0) {
-    if (isUnsettled(question)) return unsettledAnswer();
     if (isIndeterminate(question)) {
       return {
         answer:
