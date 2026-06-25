@@ -266,6 +266,9 @@ export async function runAgent(
   const finalReply = reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done.");
   // Ground-or-refuse SENSOR: figures the reply asserts that no grounded tool produced — parametric
   // leaks the UI must flag (honest degradation). Empty/undefined ⇒ every stated figure is grounded.
-  const ungrounded = ungroundedReplyFigures(finalReply, groundedTexts);
+  // The user's own message(s) are anchors: a figure the user supplied (a $200,000 win, a $12M gain)
+  // and the arithmetic built on it are never "ungrounded" — the gate flags only invented parameters.
+  const userText = [...history.filter((h) => h.role === "user").map((h) => h.content), message].join("\n");
+  const ungrounded = ungroundedReplyFigures(finalReply, groundedTexts, userText);
   return { reply: finalReply, proposedActions, citations, calibration, ungroundedFigures: ungrounded.length ? ungrounded : undefined };
 }

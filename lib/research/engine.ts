@@ -278,7 +278,7 @@ function verifyCite(
 const MONEY_RE = /\$\s?\d[\d,]*(?:\.\d+)?\s?(?:k|m|b|million|billion)?/gi;
 const PERCENT_RE = /\d[\d,]*(?:\.\d+)?\s?%|\d[\d,]*(?:\.\d+)?\s*percent\b/gi;
 
-function figureValue(raw: string): number | null {
+export function figureValue(raw: string): number | null {
   const m = raw.toLowerCase().replace(/[\s,$]/g, "").match(/^(\d+(?:\.\d+)?)(k|m|b|million|billion|%|percent)?$/);
   if (!m) return null;
   let n = parseFloat(m[1]);
@@ -296,6 +296,14 @@ function figuresIn(text: string): { money: Set<number>; percent: Set<number> } {
   for (const m of text.matchAll(MONEY_RE)) { const v = figureValue(m[0]); if (v != null) money.add(v); }
   for (const m of text.matchAll(PERCENT_RE)) { const v = figureValue(m[0]); if (v != null) percent.add(v); }
   return { money, percent };
+}
+
+// All numeric figure values (money and percent, merged) literally present in `text`. Used by the
+// agent ground-gate as the ANCHOR set for its arithmetic-derivation check (user inputs + grounded
+// authority figures); a reply figure derivable from these by simple arithmetic is not a leak.
+export function figureValuesIn(text: string): number[] {
+  const { money, percent } = figuresIn(text);
+  return [...money, ...percent];
 }
 
 /**
