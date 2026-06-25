@@ -106,6 +106,20 @@ export type SourcedCitation = {
 export type AnswerBucket = "answer" | "hedge" | "coverage_gap" | "abstain";
 
 /**
+ * The CALIBRATION REASON-CODE — names WHY the answer carries the confidence it does, so a preparer
+ * can tell apart failure modes that the coarse bucket conflates. The critical split: `indeterminate`
+ * (the question is inherently fact-driven — give the facts and apply the test) vs `unsettled` (the
+ * LAW itself is contested — conflicting/split authority), because only the latter implicates a
+ * §6662 substantial-authority analysis and possible Form 8275 disclosure. Every answer carries one.
+ *   grounded     → on-point current authority retrieved and a position grounded on it (bucket answer)
+ *   indeterminate→ no operative rule: facts-and-circumstances / unreleased figure (bucket hedge)
+ *   unsettled    → the law is genuinely contested (circuit split / contra authority) (bucket hedge)
+ *   coverage_gap → a should-be-covered settled rule, but retrieval came back empty (bucket coverage_gap)
+ *   ungrounded   → authority was retrieved but no position survived grounding (bucket abstain)
+ */
+export type CalibrationReason = "grounded" | "indeterminate" | "unsettled" | "coverage_gap" | "ungrounded";
+
+/**
  * The INV-1 split's engine-derived half. When a research question is compute-flavored AND maps
  * to one of the four OBBBA worksheets AND its inputs were deterministically extractable, the
  * engine hands off to lib/tax-ai/compute() and attaches the DETERMINISTIC figure here. This is
@@ -130,6 +144,8 @@ export type SourcedAnswer = {
   answer: string;
   citations: SourcedCitation[];
   bucket: AnswerBucket;
+  /** Why the answer carries the confidence it does (finer than `bucket`). Always set. */
+  calibration: CalibrationReason;
   /** Set when a freshness/supersession concern is relevant (a year-boundary or an OBBBA
    *  change). Explains WHY the figure is current, or notes the gap. */
   currencyNote?: string;
@@ -190,6 +206,13 @@ export type ResearchOpts = {
    * conservative heuristic (INDETERMINACY_HINTS) when omitted.
    */
   isIndeterminate?: (question: string) => boolean;
+  /**
+   * Unsettled-law classifier — distinguishes a CONTESTED point of law (conflicting/split authority
+   * → §6662 + Form 8275 territory) from a merely fact-driven question. Checked BEFORE indeterminacy
+   * so an explicitly-contested question reads as `unsettled`, not a generic hedge. Defaults to a
+   * narrow conflict-marker heuristic (UNSETTLED_HINTS) when omitted.
+   */
+  isUnsettled?: (question: string) => boolean;
 };
 
 // Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
@@ -210,6 +233,39 @@ const INDETERMINACY_HINTS: RegExp[] = [
 
 function defaultIsIndeterminate(question: string): boolean {
   return INDETERMINACY_HINTS.some((re) => re.test(question));
+}
+
+// UNSETTLED-law markers: the question is about a point of law that is genuinely CONTESTED, not
+// merely fact-driven. Deliberately narrow (explicit conflict language only) so it never poaches a
+// plain coverage gap — when the markers are absent we fall through to the indeterminate/coverage
+// logic. Distinct from indeterminacy: an unsettled answer points the preparer at §6662 substantial
+// authority + possible Form 8275 disclosure, not at a facts-and-circumstances test.
+const UNSETTLED_HINTS: RegExp[] = [
+  /circuit split|split (in|of|among) (the )?(authorit|circuit)/i,
+  /courts? (are )?(split|divided|disagree|in conflict)/i,
+  /\bunsettled\b|\bcontested\b|conflicting authorit|contrary authorit/i,
+  /tax court[^.]*(disagree|contrary|declined to follow|rejected)/i,
+  /(is|are) (this|these|it) (point|issue|questions?) settled/i,
+];
+
+function defaultIsUnsettled(question: string): boolean {
+  return UNSETTLED_HINTS.some((re) => re.test(question));
+}
+
+// The shared `unsettled` hedge — the law is contested, not the facts. Emitted from both the
+// empty-retrieval and post-reasoning paths so the signal is identical wherever it triggers.
+function unsettledAnswer(): SourcedAnswer {
+  return {
+    answer:
+      "This rests on a genuinely unsettled point of law: the authorities are in conflict, so there is no single controlling answer. I will not assert one side as settled. A licensed preparer should weigh the competing authorities for the applicable circuit and consider whether the position has substantial authority under §6662 and warrants Form 8275 disclosure.",
+    citations: [],
+    bucket: "hedge",
+    calibration: "unsettled",
+    reviewNotes: [
+      "Unsettled law: the governing authorities conflict (e.g. a circuit split or contra holdings); this is not a facts-and-circumstances hedge.",
+      "Run the §6662 substantial-authority analysis for the relevant circuit and decide on Form 8275 disclosure before taking a position.",
+    ],
+  };
 }
 
 // ── A retrieved cite's verification verdict (the 10.22(c)(1) fix, in code) ───────────────────
@@ -395,6 +451,7 @@ export async function researchAnswer(
   const { taxYear, jurisdiction, k = 4 } = opts;
   const corpus = opts.corpus ?? REGISTERED_CORPUS;
   const isIndeterminate = opts.isIndeterminate ?? defaultIsIndeterminate;
+  const isUnsettled = opts.isUnsettled ?? defaultIsUnsettled;
 
   // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
   const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
@@ -403,12 +460,14 @@ export async function researchAnswer(
   // from masquerading as calibration: an indeterminate question (no rule to retrieve) hedges; a
   // should-be-covered question that came back empty declines explicitly.
   if (retrieved.length === 0) {
+    if (isUnsettled(question)) return unsettledAnswer();
     if (isIndeterminate(question)) {
       return {
         answer:
           "This turns on the specific facts and circumstances, not a single bright-line rule, so I can't give a definite answer from the information provided. A licensed preparer should weigh the governing factors against the full facts.",
         citations: [],
         bucket: "hedge",
+        calibration: "indeterminate",
         reviewNotes: [
           "Genuinely indeterminate: resolution depends on a facts-and-circumstances test (or an unreleased future figure), not a retrievable rule.",
           "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
@@ -420,6 +479,7 @@ export async function researchAnswer(
         "I do not have current authority on this question in my sources, so I decline to answer rather than guess. This should be checked directly against primary authority for the applicable tax year and jurisdiction.",
       citations: [],
       bucket: "coverage_gap",
+      calibration: "coverage_gap",
       currencyNote: `No in-corpus authority retrieved for tax year ${taxYear} (${jurisdiction}).`,
       reviewNotes: [
         "Coverage gap: the authority store returned nothing on-point. This is NOT a calibrated hedge — it is a known gap in the corpus.",
@@ -452,12 +512,14 @@ export async function researchAnswer(
   //     on it (a reasoning/on-point gap), surfaced to the user as a hedge but marked distinctly
   //     so an operator can tell it from a clean coverage gap.
   if (reasoned.abstained || groundedPositions.length === 0) {
+    if (isUnsettled(question)) return unsettledAnswer();
     if (isIndeterminate(question)) {
       return {
         answer:
           "This turns on the specific facts and circumstances, not a single bright-line rule, so I can't give a definite answer from the information provided. A licensed preparer should weigh the governing factors against the full facts.",
         citations: [],
         bucket: "hedge",
+        calibration: "indeterminate",
         reviewNotes: [
           "Genuinely indeterminate: resolution depends on a facts-and-circumstances test (or an unreleased future figure), not a retrievable rule.",
           "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
@@ -475,6 +537,7 @@ export async function researchAnswer(
         "I found potentially relevant authority but could not ground a definite position on it, so I'm not asserting an answer. A preparer should review the retrieved authority directly.",
       citations: [],
       bucket: "abstain",
+      calibration: "ungrounded",
       currencyNote: superseded.length
         ? `Some proposed citations were superseded for tax year ${taxYear} and were dropped.`
         : undefined,
@@ -519,6 +582,7 @@ export async function researchAnswer(
           "A freshness review flagged that this answer may rely on a rule that is not current for the target tax year, so I'm not asserting it. Verify the year-effective authority before adopting.",
         citations,
         bucket: "abstain",
+        calibration: "ungrounded",
         currencyNote: verdict.currencyNote || `Freshness review flagged possible supersession for tax year ${taxYear}.`,
         reviewNotes,
       };
@@ -563,6 +627,7 @@ export async function researchAnswer(
     answer,
     citations,
     bucket: "answer",
+    calibration: "grounded",
     currencyNote,
     reviewNotes,
     computation,

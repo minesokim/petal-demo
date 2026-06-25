@@ -58,6 +58,7 @@ describe("artifactFromResearch", () => {
         { chunkId: "c1", authority: "IRC", cite: "IRC §162(a)", sourceUrl: "https://x/162", authorityTier: "statute" as never, taxYear: 2024 },
       ],
       bucket: "answer",
+      calibration: "grounded",
       reviewNotes: ["Confirm the comp study is on file"],
       currencyNote: "post-OBBBA",
     });
@@ -68,7 +69,7 @@ describe("artifactFromResearch", () => {
   });
 
   it("flags a weak bucket as a warning", () => {
-    const a = artifactFromResearch({ answer: "", citations: [], bucket: "abstain", reviewNotes: [] });
+    const a = artifactFromResearch({ answer: "", citations: [], bucket: "abstain", calibration: "ungrounded", reviewNotes: [] });
     expect(a.warnings.length).toBeGreaterThan(0);
   });
 });

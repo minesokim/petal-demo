@@ -147,6 +147,9 @@ const INTENT_TOOLS: AgentTool[] = [
       return {
         answer: result.answer,
         bucket,
+        // Calibration reason-code: WHY this confidence (grounded | indeterminate | unsettled |
+        // coverage_gap | ungrounded). 'unsettled' = conflicting authority -> §6662/8275 territory.
+        calibration: result.calibration,
         citations: result.citations.map((c) => ({ cite: c.cite, sourceUrl: c.sourceUrl, authority: c.authority })),
         currencyNote: result.currencyNote,
         reviewNotes: result.reviewNotes,

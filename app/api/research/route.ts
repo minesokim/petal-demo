@@ -84,6 +84,9 @@ export async function POST(req: Request) {
           authorityTier: c.authorityTier,
         })),
         bucket: wireBucket,
+        // Calibration reason-code (finer than bucket): grounded | indeterminate | unsettled |
+        // coverage_gap | ungrounded. Lets a reviewer tell contested law from fact-dependence.
+        calibration: result.calibration,
         currencyNote: result.currencyNote,
         reviewNotes: result.reviewNotes,
       },
