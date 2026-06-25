@@ -9,32 +9,63 @@ import { researchAnswer } from "../lib/research/engine";
 import { GOLDEN_CASES } from "../tests/research/golden/cases";
 import { gradeAll, type GradableAnswer } from "../tests/research/golden/grade";
 
+// --shard k/N → grade only the cases whose index (in id-sorted order) ≡ k (mod N). Lets the A/B fan
+// out across parallel workers so no single run is long enough to time out or be killed mid-flight.
+function parseShard(): { k: number; n: number } | null {
+  const i = process.argv.indexOf("--shard");
+  if (i < 0) return null;
+  const [k, n] = (process.argv[i + 1] ?? "").split("/").map(Number);
+  if (![k, n].every(Number.isInteger) || n < 1 || k < 0 || k >= n) {
+    throw new Error(`bad --shard "${process.argv[i + 1]}" (want k/N, 0<=k<N)`);
+  }
+  return { k, n };
+}
+
 async function main() {
   const noJudge = process.argv.includes("--no-judge");
+  const asJson = process.argv.includes("--json"); // machine-readable, for the parallel A/B aggregator
+  const shard = parseShard();
   // Provider-aware: with PETAL_DEV_INFERENCE=codex-sub the whole eval runs on GPT-5.5 (via the local
   // proxy); otherwise it's the Anthropic baseline (Sonnet proposer, Opus judge). Same golden set,
   // same grader → an apples-to-apples Claude vs GPT-5.5 measured error rate.
   const proposer = getProvider("claude-sonnet-4-6");
   const judge = noJudge ? undefined : getProvider("claude-opus-4-8");
 
+  const sorted = [...GOLDEN_CASES].sort((a, b) => a.id.localeCompare(b.id));
+  const cases = shard ? sorted.filter((_, i) => i % shard.n === shard.k) : sorted;
+
   const answers: Record<string, GradableAnswer> = {};
-  for (const c of GOLDEN_CASES) {
+  for (const c of cases) {
     try {
       const r = await researchAnswer(proposer, judge, c.question, { taxYear: c.taxYear, jurisdiction: c.jurisdiction });
       // Map SourcedAnswer -> GradableAnswer. Pass the RAW bucket (the grader handles "abstain" for
       // coverage_gap probes directly); the engine already strips fabricated cites, so none survive.
       answers[c.id] = { bucket: r.bucket, text: r.answer, citations: r.citations.map((x) => x.cite), fabricatedCitations: [] };
-      process.stdout.write(`  ${r.bucket === "answer" ? "·" : "~"} ${c.id} → ${r.bucket}\n`);
+      if (!asJson) process.stdout.write(`  ${r.bucket === "answer" ? "·" : "~"} ${c.id} → ${r.bucket}\n`);
     } catch (e) {
       answers[c.id] = { bucket: "abstain", text: `ERROR: ${e instanceof Error ? e.message : e}`, citations: [] };
-      process.stdout.write(`  ! ${c.id} → ERROR\n`);
+      if (!asJson) process.stdout.write(`  ! ${c.id} → ERROR\n`);
     }
   }
 
-  const results = gradeAll(answers, GOLDEN_CASES);
+  const results = gradeAll(answers, cases);
   const ids = Object.keys(results);
   const passed = ids.filter((id) => results[id].pass);
   const failed = ids.filter((id) => !results[id].pass);
+
+  if (asJson) {
+    // One self-describing line the aggregator greps for. Per-case bucket+pass+reasons so the final
+    // report can show the exact failures without re-running anything.
+    const out = {
+      mode: process.env.PETAL_GRAPH_RETRIEVAL === "1" ? "graph" : "memory",
+      shard: shard ? `${shard.k}/${shard.n}` : "all",
+      total: ids.length,
+      pass: passed.length,
+      results: Object.fromEntries(ids.map((id) => [id, { bucket: answers[id].bucket, pass: results[id].pass, reasons: results[id].reasons }])),
+    };
+    process.stdout.write(`BENCH_JSON ${JSON.stringify(out)}\n`);
+    return;
+  }
 
   console.log(`\n=== MEASURED RESEARCH-AI ERROR RATE (golden set, n=${ids.length}) ===`);
   console.log(`PASS: ${passed.length}/${ids.length}  (${((passed.length / ids.length) * 100).toFixed(1)}%)`);
