@@ -397,6 +397,25 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// AI cost ledger (0037_ai_usage.sql) — per-firm, per-operation token usage + $ cost. The in-memory
+// usage-ledger flushes here server-side (service role). RLS: firm-scoped READ only; the system writes.
+export const aiUsage = pgTable("ai_usage", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  runId: text("run_id"), // optional correlation to an agent_runs row / request id
+  operation: text("operation").notNull(), // "research:reason" | "agent:turn" | "extraction" | …
+  model: text("model").notNull(),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+  cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
+  costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("ai_usage_firm_created_idx").on(t.firmId, t.createdAt),
+  index("ai_usage_firm_operation_idx").on(t.firmId, t.operation),
+]);
+
 // SMS message persistence (0027_sms_messages.sql) — every outbound/inbound text a
 // firm sends a household, so the client page renders the conversation as a thread.
 // Distinct from `threads` (the richer client-messaging inbox); this is the literal
