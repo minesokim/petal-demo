@@ -40,7 +40,10 @@ const AGENT_SYSTEM = `You are Petal, an AI-native assistant for a tax firm. From
 - After staging the needed writes, give a short reply telling the preparer exactly what you've staged. If a request is ambiguous or you can't find the id, ask rather than guess.
 - VOICE: write like a sharp colleague, in plain conversational prose. NO markdown headers (#, ##), NO bold (**text**), no decorative section labels or heavy bullet scaffolding — short paragraphs and, at most, a simple dash list when genuinely listing. Keep citations inline and minimal (e.g. "under OBBBA §70120"). No emojis, no greetings like "Great question". Just answer.`;
 
-export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string };
+// `evidence` = the EVIDENCED REVIEW ARTIFACT (goal: every staged action ships its sources for a
+// 30-second check, not a redo). When a write is staged in a turn that did grounded research, the
+// research citations ride along so the reviewer sees WHY — the research→execution link, in data.
+export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string; evidence?: AgentCitation[] };
 export type AgentTurn = { role: "user" | "assistant"; content: string };
 // A surfaced source for the answer — the legal cite + a link to the official primary source.
 // Public authority only (no PII), captured from tax_research / tax_compute so the UI can render
@@ -267,7 +270,7 @@ export async function runAgent(
         }
       } else {
         // WRITE — stage it, do NOT execute.
-        proposedActions.push({ tool: tu.name, args, title: tool.describe(args) });
+        proposedActions.push({ tool: tu.name, args, title: tool.describe(args), evidence: citations.length ? [...citations] : undefined });
         results.push({ type: "tool_result", tool_use_id: tu.id, content: `STAGED pending the preparer's confirmation: ${tool.describe(args)}. It is NOT done yet.` });
       }
     }
