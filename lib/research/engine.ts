@@ -46,6 +46,7 @@ import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
 import type { Citation, Jurisdiction } from "../tax/types";
@@ -220,6 +221,9 @@ export type ResearchOpts = {
   fetch?: boolean;
   /** Injectable fetcher for tests (defaults to the real fetchPrimary). */
   fetchPrimary?: (question: string, taxYear: number, jurisdiction: Jurisdiction) => Promise<AuthorityChunk[]>;
+  // Phase 1b cutover: use the RRF-fused authority-GRAPH retrieval (Supabase) instead of the in-memory
+  // keyword corpus. Defaults to the PETAL_GRAPH_RETRIEVAL env flag; a graph error degrades to in-memory.
+  useGraph?: boolean;
 };
 
 // Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
@@ -484,8 +488,21 @@ export async function researchAnswer(
   const corpus = opts.corpus ?? REGISTERED_CORPUS;
   const isIndeterminate = opts.isIndeterminate ?? defaultIsIndeterminate;
 
-  // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
-  const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
+  // 1 — RETRIEVE. Year + jurisdiction filtered; superseded versions never enter ranking.
+  // Flag-gated cutover (Phase 1b): the authority GRAPH (RRF-fused sparse+dense on Supabase) vs the
+  // in-memory keyword corpus. Default stays in-memory until graph parity is proven on the golden set.
+  // A graph error degrades to in-memory — HONEST DEGRADATION (a DB hiccup never crashes a research answer).
+  const useGraph = opts.useGraph ?? process.env.PETAL_GRAPH_RETRIEVAL === "1";
+  let retrieved: AuthorityChunk[];
+  if (useGraph) {
+    try {
+      retrieved = await graphRetrieve(question, { taxYear, jurisdiction, k });
+    } catch {
+      retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
+    }
+  } else {
+    retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
+  }
   // The real fetcher distills raw authority via the proposer model; tests inject opts.fetchPrimary.
   const fetchFn = opts.fetchPrimary ?? ((q: string, y: number, j: Jurisdiction) => fetchPrimary(q, y, j, { provider }));
 
