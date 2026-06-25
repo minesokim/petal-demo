@@ -409,6 +409,43 @@ const THINKING_PHRASES = [
   "Drafting your response…",
 ];
 
+// COGNITION TRACE — the live "what Petal is doing" checklist (reassurance, Claude/Harvey-style).
+// Each real streamed step stacks as it fires: completed steps get a check, the current one pulses.
+// Once the answer starts streaming (`settling`), every step reads as done.
+function CognitionTrace({ steps, settling }: { steps: string[]; settling?: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      {steps.map((s, i) => {
+        const current = !settling && i === steps.length - 1;
+        return (
+          <motion.div
+            key={`${i}-${s}`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            className="flex items-center gap-2"
+          >
+            <span className="flex size-3.5 shrink-0 items-center justify-center">
+              {current ? (
+                <motion.span
+                  className="size-[7px] rounded-full bg-[var(--os-primary)]"
+                  animate={{ opacity: [0.35, 1, 0.35] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                />
+              ) : (
+                <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
+              )}
+            </span>
+            <span className={cn("text-[12px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>
+              {s}
+            </span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 // The single thinking indicator. When the agent streams REAL step labels (Thinking → Looking up
 // Haokun → Preparing the text), it shows the live action; with no steps (the /api/ask fallback or
 // document analyze) it rotates the existing phrases. Same animation either way — one component.
@@ -612,9 +649,10 @@ export function PetalAnswerView({
   const allDone = stepsDone && revealed >= answer.paragraphs.length;
 
   if (thinking) {
+    const hasTrace = (liveSteps?.length ?? 0) > 0;
     return (
       <div className="min-w-0 space-y-2.5">
-        <Thinking steps={liveSteps} />
+        {hasTrace ? <CognitionTrace steps={liveSteps!} settling={!!streamingText} /> : <Thinking steps={liveSteps} />}
         {streamingText && (
           <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--os-ink)]">
             <Rich text={streamingText} />
