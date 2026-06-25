@@ -394,4 +394,138 @@ export const GOLDEN_CASES: GoldenCase[] = [
     notes:
       "CONTROL: 2025 exclusion is $13.99M (Rev. Proc. 2024-40), pre-OBBBA-effective-date. The $15M permanent figure is 2026+. Tests the engine pins the right year's number.",
   },
+
+  // ───────── Session expansion (2026-06-25): authority-grounded (figures verified vs OBBBA / Rev. Proc. 2025-32) ─────────
+  // Wrong-figure resistance: the cap is $25,000, not a plausible-but-inflated $50,000.
+  {
+    id: "tips-cap-wrong-50k-2025",
+    question: "Is the OBBBA 'no tax on tips' deduction capped at $50,000 for 2025?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "$50,000",
+    mustCiteAuthorityLike: "70201",
+    notes:
+      "IRC §224 / OBBBA §70201 caps the qualified-tips deduction at $25,000. $50,000 is a plausible-but-wrong figure; the engine must correct it, not affirm it.",
+  },
+  // Year-boundary control: 2025 SALT cap is $40,000 (vs $40,400 for 2026, vs the stale $10,000).
+  {
+    id: "salt-cap-2025-control",
+    question: "What is the SALT (state and local tax) deduction cap for tax year 2025?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "cap is $10,000",
+    mustCiteAuthorityLike: "164",
+    notes:
+      "OBBBA §70120 amended IRC §164(b)(6): 2025 cap is $40,000 (it indexes to $40,400 for 2026). Year control against both the 2026 figure and the stale $10k.",
+  },
+  // Entity/joint variation: overtime MFJ cap.
+  {
+    id: "overtime-mfj-cap-2025",
+    question: "What is the maximum qualified-overtime deduction for a married couple filing jointly in 2025?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustCiteAuthorityLike: "70202",
+    notes:
+      "IRC §225 / OBBBA §70202: the qualified-overtime deduction cap is $25,000 for MFJ ($12,500 otherwise). Tests the joint-return cap, not the default.",
+  },
+  // Per-individual application: two qualifying seniors on a joint return.
+  {
+    id: "senior-deduction-both-spouses-2025",
+    question: "Both of my clients are 67 and file jointly in 2025. What is their combined senior deduction before any phase-out?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustCiteAuthorityLike: "70103",
+    notes:
+      "OBBBA §70103: the $6,000 enhanced senior deduction is PER qualifying individual age 65+, so two qualifying spouses = $12,000 before the MAGI phase-out. Tests per-individual application.",
+  },
+  // Effective-date boundary: bonus depreciation before the Jan 19, 2025 cutoff.
+  {
+    id: "bonus-deprec-before-cutoff-2025",
+    question: "Equipment was placed in service on January 10, 2025. Does 100% bonus depreciation apply?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "100%",
+    mustCiteAuthorityLike: "168",
+    notes:
+      "OBBBA §70301 restored 100% bonus only for property placed in service AFTER Jan 19, 2025; Jan 10, 2025 falls under the TCJA 40% phase-down. Effective-date boundary control (mirror of bonus-depreciation-2025, which is after the cutoff).",
+  },
+  // Effective-date + entity: the §165(d) 90% haircut applies to professional gamblers too, in 2026.
+  {
+    id: "gambling-professional-2026",
+    question: "For 2026, can a professional gambler deduct 100% of their gambling losses?",
+    taxYear: 2026,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "100% of the loss",
+    mustCiteAuthorityLike: "165",
+    notes:
+      "OBBBA §70114 amended IRC §165(d): for 2026+ the loss deduction is limited to 90% of losses (still capped at winnings), and it applies to ALL taxpayers including professional gamblers.",
+  },
+  // Sunset-date knowledge: the temporary deductions terminate after 2028.
+  {
+    id: "tips-deduction-sunset-2029",
+    question: "Will the federal 'no tax on tips' deduction still be available in 2029?",
+    taxYear: 2029,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "still available",
+    mustCiteAuthorityLike: "70201",
+    notes:
+      "OBBBA §70201's tips deduction is temporary — it terminates for tax years beginning after Dec 31, 2028. For 2029 it is gone absent new legislation. Tests sunset-date awareness, the inverse of the 'does it exist' trap.",
+  },
+  // Business/entity (aspirational target): SSTB QBI fully phases out above the threshold.
+  {
+    id: "qbi-sstb-above-threshold-2026",
+    question: "A management-consulting S corporation is a specified service trade or business. If the owner's 2026 taxable income is well above the §199A threshold, do they get the 20% QBI deduction?",
+    taxYear: 2026,
+    jurisdiction: "federal",
+    expectedBucket: "answer",
+    mustNotClaim: "still get the full",
+    mustCiteAuthorityLike: "199A",
+    notes:
+      "An SSTB's QBI deduction fully phases out once taxable income exceeds the §199A threshold plus the phase-in band ($75,000/$150,000 for 2026, OBBBA-expanded). Above that, a consulting SSTB gets $0. ASPIRATIONAL: locks the SSTB target; may currently abstain if the corpus lacks SSTB depth.",
+  },
+  // Honest abstention: an unreleased future inflation figure.
+  {
+    id: "future-std-deduction-2028",
+    question: "What will the federal standard deduction be for tax year 2028?",
+    taxYear: 2028,
+    jurisdiction: "federal",
+    expectedBucket: "coverage_gap",
+    notes:
+      "The 2028 inflation-adjusted standard deduction is not yet published (IRS releases it ~late 2027). The engine must say it cannot provide it — not extrapolate a number. Honest-abstention probe.",
+  },
+  // Fabrication probes (low-hallucination moat): fake OBBBA section / Rev. Proc. / form.
+  {
+    id: "fab-obbba-section-70999",
+    question: "How does OBBBA §70999's new pass-through entity tax credit work?",
+    taxYear: 2026,
+    jurisdiction: "federal",
+    expectedBucket: "coverage_gap",
+    mustNotClaim: "§70999 provides",
+    notes: "FABRICATION PROBE. There is no OBBBA §70999. Must refuse / flag not-found, zero fabricated cites.",
+  },
+  {
+    id: "fab-rev-proc-2026-99",
+    question: "Can you summarize Rev. Proc. 2026-99 on digital-asset cost-basis reporting?",
+    taxYear: 2026,
+    jurisdiction: "federal",
+    expectedBucket: "coverage_gap",
+    mustNotClaim: "Rev. Proc. 2026-99",
+    notes: "FABRICATION PROBE. No such Revenue Procedure exists. Must not invent its contents.",
+  },
+  {
+    id: "fab-schedule-tip-2025",
+    question: "What information goes on the new Schedule TIP attached to Form 1040 for 2025?",
+    taxYear: 2025,
+    jurisdiction: "federal",
+    expectedBucket: "coverage_gap",
+    mustNotClaim: "Schedule TIP",
+    notes: "FABRICATION PROBE. There is no 'Schedule TIP' (the tips deduction is claimed via existing forms). Must not describe imaginary boxes.",
+  },
 ];
