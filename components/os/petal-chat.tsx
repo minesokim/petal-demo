@@ -649,17 +649,17 @@ export function PetalAnswerView({
   const allDone = stepsDone && revealed >= answer.paragraphs.length;
 
   if (thinking) {
+    // Once the real answer starts streaming, the thinking trace goes AWAY — show only the streaming
+    // text (not kept around until done). Before any text streams, show the live cognition trace.
+    if (streamingText) {
+      return (
+        <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--os-ink)]">
+          <Rich text={streamingText} />
+        </p>
+      );
+    }
     const hasTrace = (liveSteps?.length ?? 0) > 0;
-    return (
-      <div className="min-w-0 space-y-2.5">
-        {hasTrace ? <CognitionTrace steps={liveSteps!} settling={!!streamingText} /> : <Thinking steps={liveSteps} />}
-        {streamingText && (
-          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--os-ink)]">
-            <Rich text={streamingText} />
-          </p>
-        )}
-      </div>
-    );
+    return hasTrace ? <CognitionTrace steps={liveSteps!} /> : <Thinking steps={liveSteps} />;
   }
 
   return (
