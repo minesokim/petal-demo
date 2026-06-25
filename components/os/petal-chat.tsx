@@ -47,7 +47,7 @@ function answerFromReply(reply: string): ChatAnswer {
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
 
-type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[]; calibration?: string };
+type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[]; calibration?: string; ungroundedFigures?: string[] };
 
 // Friendly, action-pointing labels for the research calibration reason-codes (grounded is never shown).
 const CAL_LABEL: Record<string, string> = {
@@ -109,7 +109,7 @@ async function streamAgent({
       if (typeof label === "string" && label.trim()) pushStep(label);
     } else if (event === "done") {
       const d = data as AgentResult;
-      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration };
+      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration, ungroundedFigures: d.ungroundedFigures };
     } else if (event === "error") {
       errored = (data as { error?: unknown }).error as string ?? "agent_error";
     }
@@ -227,7 +227,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
     // stream errors (network failure or an `error` frame).
     streamAgent({ message, history, pushStep })
-      .then(({ reply, proposedActions, citations, calibration }) => {
+      .then(({ reply, proposedActions, citations, calibration, ungroundedFigures }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
         if (proposedActions?.length) ans.confirmActions = proposedActions;
@@ -235,6 +235,8 @@ export function usePetalChat(scopeHouseholdId?: string) {
         if (citations?.length) ans.citations = citations.map(c => ({ cite: c.cite, url: c.sourceUrl, authority: c.authority }));
         // Surface the calibration reason-code (only when it's a caution worth showing).
         if (calibration && calibration !== "grounded") ans.calibration = calibration;
+        // Ground-or-refuse: figures Petal stated that no authority grounded — flag them loudly.
+        if (ungroundedFigures?.length) ans.ungroundedFigures = ungroundedFigures;
         settle(ans, text);
         persist("assistant", text);
       })
@@ -674,6 +676,20 @@ export function PetalAnswerView({
           <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-1 text-[11px] text-[var(--os-ink-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-ink-subtle)]" />
             {CAL_LABEL[answer.calibration] ?? answer.calibration}
+          </span>
+        </div>
+      )}
+
+      {/* Ground-or-refuse caution — Petal stated a verifiable figure it could not trace to grounded
+          authority (a parametric leak). Surfaced as a hard, prominent warning, not a quiet pill:
+          these are the figures a preparer must NOT rely on without checking the source. */}
+      {allDone && answer.ungroundedFigures && answer.ungroundedFigures.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-[var(--os-border-strong)] bg-[var(--os-hover)] px-2.5 py-2 text-[11.5px] text-[var(--os-ink)]">
+          <Icon icon={I.alert} size={14} className="mt-0.5 shrink-0 text-[var(--os-ink-muted)]" />
+          <span>
+            Unverified figures: {answer.ungroundedFigures.join(", ")}. Petal could not ground{" "}
+            {answer.ungroundedFigures.length === 1 ? "this number" : "these numbers"} in cited authority — do not rely on{" "}
+            {answer.ungroundedFigures.length === 1 ? "it" : "them"} without confirming the source.
           </span>
         </div>
       )}

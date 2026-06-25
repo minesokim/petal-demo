@@ -50,14 +50,14 @@ export async function POST(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const { reply, proposedActions, citations, calibration } = await runAgent(text, history, {
+        const { reply, proposedActions, citations, calibration, ungroundedFigures } = await runAgent(text, history, {
           scope: "real",
           onEvent: (e) => {
             // Best-effort: if the client already disconnected, enqueue throws — swallow it.
             try { controller.enqueue(frame("step", { label: e.label })); } catch { /* closed */ }
           },
         });
-        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration }));
+        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures }));
       } catch (err) {
         const name = err instanceof Error ? err.name : "unknown";
         const msg = err instanceof Error ? err.message : "";

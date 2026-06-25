@@ -49,6 +49,8 @@ export interface ChatAnswer {
   citations?: { cite: string; url?: string; authority?: string }[];
   /** research calibration reason-code when it's a caution worth flagging (unsettled law, coverage gap, …). */
   calibration?: string;
+  /** figures Petal stated that no authority grounded — the ground-or-refuse gate surfaces these as a hard caution. */
+  ungroundedFigures?: string[];
   links?: { label: string; href: string }[];
   /** the "Do" card - turns the answer into a run */
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };

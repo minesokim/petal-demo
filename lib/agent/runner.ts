@@ -16,6 +16,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { anthropicClient } from "@/lib/ai/anthropic-client";
 import type { CalibrationReason } from "@/lib/research/engine";
+import { groundedFigureText, ungroundedReplyFigures } from "@/lib/agent/ground-gate";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
@@ -128,7 +129,7 @@ export async function runAgent(
   message: string,
   history: AgentTurn[] = [],
   opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
-): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[]; calibration?: AgentCalibration }> {
+): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[]; calibration?: AgentCalibration; ungroundedFigures?: string[] }> {
   assertZdrModel(AGENT_MODEL);
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
 
@@ -171,6 +172,7 @@ export async function runAgent(
   const proposedActions: ProposedAction[] = [];
   const citations: AgentCitation[] = []; // accumulated from tax_research / tax_compute (deduped)
   let calibration: AgentCalibration | undefined; // most cautionary tax_research calibration this turn
+  const groundedTexts: string[] = []; // grounded figure-bearing tool output, for the ground-or-refuse gate
   let reply = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -229,6 +231,10 @@ export async function runAgent(
               if (calibration === undefined || CAL_RANK[c] > CAL_RANK[calibration]) calibration = c;
             }
           }
+          // Collect grounded figure-bearing output (deterministic/authority-verified) so the
+          // ground-or-refuse gate can check the agent's reply figures against it after the loop.
+          const gt = groundedFigureText(tu.name, out);
+          if (gt.trim()) groundedTexts.push(gt);
           // HIGH-5: redact read-tool output BEFORE it re-enters the model context (client
           // records / SSN-shaped strings must not re-enter the live model — §7216/INV-4).
           results.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(redactValue(out)).slice(0, 6000) });
@@ -257,5 +263,9 @@ export async function runAgent(
     }
   }
 
-  return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions, citations, calibration };
+  const finalReply = reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done.");
+  // Ground-or-refuse SENSOR: figures the reply asserts that no grounded tool produced — parametric
+  // leaks the UI must flag (honest degradation). Empty/undefined ⇒ every stated figure is grounded.
+  const ungrounded = ungroundedReplyFigures(finalReply, groundedTexts);
+  return { reply: finalReply, proposedActions, citations, calibration, ungroundedFigures: ungrounded.length ? ungrounded : undefined };
 }
