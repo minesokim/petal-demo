@@ -48,7 +48,7 @@ export type AgentCitation = { cite: string; sourceUrl: string; authority?: strin
 // The research calibration surfaced to the UI: the MOST CAUTIONARY reason-code across the turn's
 // tax_research calls, so the chat can flag "unsettled law" / "coverage gap" next to the answer.
 export type AgentCalibration = CalibrationReason;
-const CAL_RANK: Record<AgentCalibration, number> = { grounded: 0, indeterminate: 1, ungrounded: 2, coverage_gap: 3, unsettled: 4 };
+const CAL_RANK: Record<AgentCalibration, number> = { grounded: 0, fetched: 1, indeterminate: 2, ungrounded: 3, coverage_gap: 4, unsettled: 5 };
 
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style

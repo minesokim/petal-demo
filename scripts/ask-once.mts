@@ -13,7 +13,8 @@ async function main() {
   if (!question) { console.error("usage: ask-once.mts [--year N] \"question\""); process.exit(1); }
 
   const proposer = getProvider("claude-sonnet-4-6");
-  const r = await researchAnswer(proposer, undefined, question, { taxYear, jurisdiction: "federal" });
+  const useFetch = args.includes("--fetch"); // retrieve-on-demand: live-fetch primary authority on a gap
+  const r = await researchAnswer(proposer, undefined, question, { taxYear, jurisdiction: "federal", fetch: useFetch });
   console.log(`Q (TY${taxYear}): ${question}\n`);
   console.log(`bucket:      ${r.bucket}`);
   console.log(`calibration: ${r.calibration}`);

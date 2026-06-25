@@ -55,6 +55,7 @@ const CAL_LABEL: Record<string, string> = {
   coverage_gap: "Coverage gap — no authority found; check the primary source",
   ungrounded: "Not grounded — review the retrieved authority directly",
   indeterminate: "Fact-dependent — apply the governing multi-factor test",
+  fetched: "Fetched live from primary authority — verify it is current",
 };
 
 /** Friendly inline message for an error frame (so the bubble never goes raw). */

@@ -141,6 +141,10 @@ const INTENT_TOOLS: AgentTool[] = [
       const result = await researchAnswer(proposer, undefined, a.question as string, {
         taxYear: (a.taxYear as number) ?? 2025,
         jurisdiction: ((a.jurisdiction as Jurisdiction) ?? "federal"),
+        // Retrieve-on-demand: a coverage gap fetches primary authority live (the "third door") and
+        // grounds in it, instead of refusing real-but-unloaded law. §7216-guarded; honest abstain
+        // if the fetch is empty too. Public-authority research → §7216-clean.
+        fetch: true,
       });
       // Map the internal `abstain` bucket to the observable `hedge` (same as /api/research).
       const bucket = result.bucket === "abstain" ? "hedge" : result.bucket;

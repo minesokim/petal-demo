@@ -47,6 +47,7 @@ import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
 import { namedCoverageGaps } from "./coverage-manifest";
+import { fetchPrimary } from "./fetch/fetch-primary";
 import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
 import { compute } from "../tax-ai/compute";
@@ -118,7 +119,9 @@ export type AnswerBucket = "answer" | "hedge" | "coverage_gap" | "abstain";
  *   coverage_gap → a should-be-covered settled rule, but retrieval came back empty (bucket coverage_gap)
  *   ungrounded   → authority was retrieved but no position survived grounding (bucket abstain)
  */
-export type CalibrationReason = "grounded" | "indeterminate" | "unsettled" | "coverage_gap" | "ungrounded";
+//   fetched      → corpus had nothing, but a LIVE fetch of primary authority grounded a position
+//                  on the fetched text (bucket answer; carries a verify-currency caveat)
+export type CalibrationReason = "grounded" | "fetched" | "indeterminate" | "unsettled" | "coverage_gap" | "ungrounded";
 
 /**
  * The INV-1 split's engine-derived half. When a research question is compute-flavored AND maps
@@ -207,6 +210,16 @@ export type ResearchOpts = {
    * conservative heuristic (INDETERMINACY_HINTS) when omitted.
    */
   isIndeterminate?: (question: string) => boolean;
+  /**
+   * Retrieve-on-demand. When true, a coverage gap triggers a LIVE fetch of primary authority
+   * (the "third door") before abstaining: fetch → ground in the fetched text → answer with
+   * calibration `fetched`. OPT-IN (default off) so tests + the golden benchmark stay offline and
+   * deterministic; the agent's tax_research passes fetch:true. Queries are §7216-guarded
+   * (public-law-shaped, no PII); a fetch failure or empty result falls through to the honest abstain.
+   */
+  fetch?: boolean;
+  /** Injectable fetcher for tests (defaults to the real fetchPrimary). */
+  fetchPrimary?: (question: string, taxYear: number, jurisdiction: Jurisdiction) => Promise<AuthorityChunk[]>;
 };
 
 // Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
@@ -416,6 +429,37 @@ function composeAnswer(positions: ReasoningOutput["positions"]): string {
     .join("\n\n");
 }
 
+// Retrieve-on-demand fallback used at an abstain point (empty retrieval OR corpus authority too
+// tangential to ground). Fetch primary authority live, reason + ground in it through the SAME gates,
+// and return a `fetched` answer — or null to fall through to the honest abstain. The fetched text is
+// ephemeral (not written to the corpus). §7216 is enforced inside the source search().
+async function tryFetchGround(
+  provider: AIProvider,
+  question: string,
+  taxYear: number,
+  jurisdiction: Jurisdiction,
+  fetchFn: (q: string, y: number, j: Jurisdiction) => Promise<AuthorityChunk[]>,
+): Promise<SourcedAnswer | null> {
+  const fetched = await fetchFn(question, taxYear, jurisdiction).catch(() => [] as AuthorityChunk[]);
+  if (fetched.length === 0) return null;
+  const reasoned = await reasonAndScore(provider, question, fetched);
+  const { groundedPositions, citations } = verifyPositions(reasoned, fetched, fetched, taxYear, question);
+  if (reasoned.abstained || groundedPositions.length === 0) return null; // fetched, but nothing grounded → abstain
+  const reviewNotes: string[] = [];
+  for (const p of groundedPositions) reviewNotes.push(...p.reviewNotes.verify);
+  reviewNotes.push(
+    "Answered from a LIVE FETCH of primary authority (not the vetted corpus) — verify the cite and that it is current for the tax year before relying on it.",
+  );
+  return {
+    answer: composeAnswer(groundedPositions),
+    citations,
+    bucket: "answer",
+    calibration: "fetched",
+    currencyNote: `Fetched live from primary authority for tax year ${taxYear}; confirm currency before filing.`,
+    reviewNotes,
+  };
+}
+
 // ── The pipeline ─────────────────────────────────────────────────────────────────────────────
 export async function researchAnswer(
   provider: AIProvider,
@@ -432,6 +476,7 @@ export async function researchAnswer(
 
   // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
   const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
+  const fetchFn = opts.fetchPrimary ?? fetchPrimary;
 
   // 4a — COVERAGE/CALIBRATION when retrieval is EMPTY. A genuinely INDETERMINATE question (a
   // facts-and-circumstances doctrine — a property of the question, knowable from its wording)
@@ -452,6 +497,14 @@ export async function researchAnswer(
           "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
         ],
       };
+    }
+    // RETRIEVE-ON-DEMAND (the third door): before declaring a coverage gap, try a LIVE fetch of
+    // primary authority and ground in it. §7216-guarded (public-law queries only, no PII); HONEST
+    // DEGRADATION — a fetch failure or empty/ungroundable result falls through to the abstain below.
+    // OPT-IN via opts.fetch so tests + the golden benchmark stay offline.
+    if (opts.fetch) {
+      const fetchedAnswer = await tryFetchGround(provider, question, taxYear, jurisdiction, fetchFn);
+      if (fetchedAnswer) return fetchedAnswer;
     }
     const named = namedCoverageGaps(question, taxYear, jurisdiction);
     const gapList = named.length ? named.join(", ") : null;
@@ -510,6 +563,13 @@ export async function researchAnswer(
           "Gather the relevant facts and apply the controlling multi-factor analysis before reaching a position.",
         ],
       };
+    }
+    // RETRIEVE-ON-DEMAND: the corpus authority was too tangential to ground. Before abstaining, try a
+    // LIVE fetch of primary authority and ground in THAT (this is the branch the remittance-tax and
+    // similar real-but-unloaded questions land in). §7216-guarded; honest abstain if the fetch is empty.
+    if (opts.fetch) {
+      const fetchedAnswer = await tryFetchGround(provider, question, taxYear, jurisdiction, fetchFn);
+      if (fetchedAnswer) return fetchedAnswer;
     }
     const reviewNotes = [
       "Authority was retrieved, but no proposed position survived grounding verification.",
