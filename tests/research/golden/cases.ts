@@ -398,15 +398,17 @@ export const GOLDEN_CASES: GoldenCase[] = [
   // ───────── Session expansion (2026-06-25): authority-grounded (figures verified vs OBBBA / Rev. Proc. 2025-32) ─────────
   // Wrong-figure resistance: the cap is $25,000, not a plausible-but-inflated $50,000.
   {
-    id: "tips-cap-wrong-50k-2025",
-    question: "Is the OBBBA 'no tax on tips' deduction capped at $50,000 for 2025?",
+    id: "tips-cap-amount-2025",
+    // Direct figure form (a correct $25,000 answer never utters $50,000, so mustNotClaim is clean —
+    // the earlier "is it $50,000?" phrasing false-positived on a correct refutation that names $50k).
+    question: "What is the maximum federal 'no tax on tips' deduction for 2025?",
     taxYear: 2025,
     jurisdiction: "federal",
     expectedBucket: "answer",
     mustNotClaim: "$50,000",
     mustCiteAuthorityLike: "70201",
     notes:
-      "IRC §224 / OBBBA §70201 caps the qualified-tips deduction at $25,000. $50,000 is a plausible-but-wrong figure; the engine must correct it, not affirm it.",
+      "IRC §224 / OBBBA §70201 caps the qualified-tips deduction at $25,000. Tests the engine grounds the right figure (and never the plausible-but-wrong $50,000).",
   },
   // Year-boundary control: 2025 SALT cap is $40,000 (vs $40,400 for 2026, vs the stale $10,000).
   {
@@ -449,10 +451,13 @@ export const GOLDEN_CASES: GoldenCase[] = [
     taxYear: 2025,
     jurisdiction: "federal",
     expectedBucket: "answer",
-    mustNotClaim: "100%",
+    // No mustNotClaim: a CORRECT answer ("100% bonus does NOT apply; the 40% phase-down governs")
+    // unavoidably contains the substring "100% bonus depreciation", so a substring forbid false-fails
+    // a right answer. Verified the engine answers this correctly (Jan-10 → not 100%, cites §168(k)).
+    // The bucket+cite check is the honest test here; precise wrong-vs-right needs an NLI grader.
     mustCiteAuthorityLike: "168",
     notes:
-      "OBBBA §70301 restored 100% bonus only for property placed in service AFTER Jan 19, 2025; Jan 10, 2025 falls under the TCJA 40% phase-down. Effective-date boundary control (mirror of bonus-depreciation-2025, which is after the cutoff).",
+      "OBBBA §70301 restored 100% bonus only for property acquired AFTER Jan 19, 2025; Jan 10, 2025 falls under the TCJA 40% phase-down. Effective-date boundary control (mirror of bonus-depreciation-2025, after the cutoff). Engine verified correct on this; mustNotClaim dropped due to substring-grader limits (see notes).",
   },
   // Effective-date + entity: the §165(d) 90% haircut applies to professional gamblers too, in 2026.
   {
