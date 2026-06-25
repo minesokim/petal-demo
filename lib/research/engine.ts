@@ -46,6 +46,7 @@ import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import { assessAuthorityWeight, type AuthorityAssessment } from "./authority-assess";
 import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
@@ -159,6 +160,9 @@ export type SourcedAnswer = {
   /** The engine-derived figure (INV-1 split). Present ONLY when the bucket is already "answer"
    *  AND the deterministic handoff succeeded — never turns an abstain into a fabricated answer. */
   computation?: EngineComputation;
+  /** §6662 weight-of-authorities assessment over the grounded authority (live on `answer` only).
+   *  Standard is corpus-scoped + capped at substantial-authority until a contra search is wired. */
+  weightOfAuthority?: AuthorityAssessment;
 };
 
 // ── The adversarial freshness/supersession judge ────────────────────────────────────────────
@@ -355,11 +359,14 @@ function verifyPositions(
 ): {
   groundedPositions: ReasoningOutput["positions"];
   citations: SourcedCitation[];
+  /** the verified authority CHUNKS backing the surviving positions — the §6662 weighing input. */
+  groundedChunks: AuthorityChunk[];
   fabricated: string[];
   superseded: string[];
   ungrounded: string[];
 } {
   const byChunk = new Map<string, SourcedCitation>();
+  const groundedChunkById = new Map<string, AuthorityChunk>();
   const fabricated: string[] = [];
   const superseded: string[] = [];
   const ungrounded: string[] = [];
@@ -420,15 +427,19 @@ function verifyPositions(
       }
     }
 
-    if (positionOk) groundedPositions.push(p);
+    if (positionOk) {
+      groundedPositions.push(p);
+      for (const c of positionChunks) if (!groundedChunkById.has(c.chunkId)) groundedChunkById.set(c.chunkId, c);
+    }
   }
 
   // Keep only cites that actually back a SURVIVING position — a cite attached solely to a
   // dropped position must not leak into the answer's sources.
   const keptChunkIds = new Set(groundedPositions.flatMap((p) => p.citations.map((c) => c.chunkId)));
   const citations = [...byChunk.values()].filter((c) => keptChunkIds.has(c.chunkId));
+  const groundedChunks = [...groundedChunkById.values()].filter((c) => keptChunkIds.has(c.chunkId));
 
-  return { groundedPositions, citations, fabricated, superseded, ungrounded };
+  return { groundedPositions, citations, groundedChunks, fabricated, superseded, ungrounded };
 }
 
 // Compose the prose answer from the surviving grounded positions. Deterministic join — the
@@ -561,7 +572,7 @@ export async function researchAnswer(
 
   // 3 — VERIFY CITATIONS (the 10.22(c)(1) fix). Re-resolve every cite; strip fabricated +
   // superseded; keep only fully grounded positions and their verified sources.
-  const { groundedPositions, citations, fabricated, superseded, ungrounded } = verifyPositions(
+  const { groundedPositions, citations, groundedChunks, fabricated, superseded, ungrounded } = verifyPositions(
     reasoned,
     retrieved,
     corpus,
@@ -696,6 +707,16 @@ export async function researchAnswer(
     }
   }
 
+  // §6662 WEIGHT-OF-AUTHORITIES (live): weigh the grounded supporting authority deterministically.
+  // Corpus-scoped + capped at substantial-authority (no automated contra search yet). Surface the
+  // genuinely-defensible signal: a Form 8275 disclosure recommendation when support is non-precedential.
+  const weightOfAuthority = assessAuthorityWeight(groundedChunks);
+  if (weightOfAuthority.disclosureRecommended) {
+    reviewNotes.push(
+      `Authority weight: ${weightOfAuthority.standard} — Form 8275 disclosure recommended. ${weightOfAuthority.rationale}`,
+    );
+  }
+
   return {
     answer,
     citations,
@@ -704,6 +725,7 @@ export async function researchAnswer(
     currencyNote,
     reviewNotes,
     computation,
+    weightOfAuthority,
   };
 }
 

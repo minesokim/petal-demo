@@ -101,6 +101,8 @@ export async function POST(req: Request) {
         calibration: result.calibration,
         currencyNote: result.currencyNote,
         reviewNotes: result.reviewNotes,
+        // §6662 weight-of-authorities (compliance lane): standard + Form 8275 disclosure flag + scope.
+        weightOfAuthority: result.weightOfAuthority,
       },
       { headers: { "Cache-Control": "no-store" } },
     );
