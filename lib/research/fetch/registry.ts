@@ -4,9 +4,10 @@
 // source whose getText isn't wired yet (or fails) throws → the engine abstains, never guesses.
 
 import { assertPublicLawQuery } from "./guard";
-import { searchGovInfo, fetchGovInfoText, type GovInfoResult } from "./govinfo";
+import { searchGovInfo, fetchGovInfoText, stripHtml, type GovInfoResult } from "./govinfo";
 import { searchTaxCourt, taxCourtDownloadUrl } from "./tax-court";
 import { searchIrb } from "./irs-irb";
+import { searchFederalRegister } from "./federal-register";
 
 export type FetchHit = {
   source: string; // "govinfo" | "tax-court" | ...
@@ -92,9 +93,46 @@ const irsIrb: FetchSource = {
   },
 };
 
-const SOURCES: FetchSource[] = [govinfoStatute, taxCourt, irsIrb];
+// ── Federal Register: Treasury/IRS regulations (Treasury Decisions = final regs; "Proposed Rule" =
+// REG- NPRMs). The STRUCTURED tier-1 source — clean JSON, topic-tagged, ID-addressable — and where
+// OBBBA implementation regs land (the remittance REG-, the tips T.D.). The `type` carries the
+// final-vs-proposed signal: a final Rule is settled reg authority; a Proposed Rule is directional
+// (flag it, don't treat as binding). getText prefers the clean abstract, falling back to page text. ──
+const federalRegister: FetchSource = {
+  id: "federal-register",
+  label: "Federal Register (Treasury/IRS regulations)",
+  matches: (q) =>
+    /\b(regulation|regulations|t\.?\s?d\.?\s?\d|treasury decision|final rule|proposed rule|rulemaking|notice of proposed|reg[-\s]?\d|remittance|tip(s)? (deduction|regulation|rule)|trump account|no tax on tips|effective date)\b/i.test(q),
+  search: async (q, opts) => {
+    const safe = assertPublicLawQuery(q);
+    const docs = await searchFederalRegister(safe, { perPage: 5, signal: opts?.signal });
+    return docs.map((d) => {
+      const isFinal = /^rule$/i.test(d.type.trim());
+      return {
+        source: "federal-register",
+        title: d.title,
+        citation: `${d.type || "Federal Register"} — ${d.agency || "Treasury/IRS"} (${d.publicationDate})`,
+        sourceUrl: d.htmlUrl,
+        authorityTier: isFinal ? 2 : 4, // final reg = tier 2; proposed/notice ranks lower
+        precedential: isFinal, // a proposed rule is not binding authority
+        getText: async () => {
+          if (d.abstract && d.abstract.length > 120) return d.abstract; // clean structured summary
+          try {
+            const r = await fetch(d.htmlUrl, { signal: opts?.signal, headers: { "user-agent": "PetalResearch/1.0" } });
+            if (r.ok) return stripHtml(await r.text()).slice(0, 8000);
+          } catch {
+            /* fall through to abstract/title */
+          }
+          return d.abstract ?? d.title;
+        },
+      };
+    });
+  },
+};
 
-const TIER_ORDER: Record<string, number> = { govinfo: 0, "tax-court": 1, "irs-irb": 2 };
+const SOURCES: FetchSource[] = [govinfoStatute, federalRegister, taxCourt, irsIrb];
+
+const TIER_ORDER: Record<string, number> = { govinfo: 0, "federal-register": 1, "tax-court": 2, "irs-irb": 3 };
 
 /** Sources that fit the question, highest-authority first. Empty ⇒ no fetch source applies → abstain. */
 export function pickSources(question: string): FetchSource[] {

@@ -67,11 +67,18 @@ export async function reasonAndScore(provider: AIProvider, question: string, chu
   const out = await reason(provider, question, chunks);
   const scored = await Promise.all(
     out.positions.map(async (p) => {
-      const f = await checkFaithfulness(provider, p.claim, chunks);
-      const v = verifyStructural({ positions: [p], abstained: false }, chunks);
-      const tier = deriveTier({ signals: p.confidenceSignals, faithfulnessScore: f.faithfulnessScore, verifierPass: v.overall === "PASS" });
-      return { ...p, tier };
+      try {
+        const f = await checkFaithfulness(provider, p.claim, chunks);
+        const v = verifyStructural({ positions: [p], abstained: false }, chunks);
+        const tier = deriveTier({ signals: p.confidenceSignals, faithfulnessScore: f.faithfulnessScore, verifierPass: v.overall === "PASS" });
+        return { ...p, tier };
+      } catch {
+        // HONEST DEGRADATION: a scoring sub-call (e.g. the faithfulness model returning a malformed
+        // object) must DROP this position, never crash the whole request. A dropped position → abstain.
+        return null;
+      }
     }),
   );
-  return { positions: scored, abstained: out.abstained };
+  const kept = scored.filter((p): p is NonNullable<typeof p> => p !== null);
+  return { positions: kept, abstained: out.abstained || kept.length === 0 };
 }

@@ -72,7 +72,10 @@ export async function fetchPrimary(
   if (!sources.length) return [];
   const max = opts.maxChunks ?? 3;
   const nowIso = opts.nowIso ?? new Date().toISOString();
-  const raw: AuthorityChunk[] = [];
+  // Try sources in authority order. A source that returns RAW chunks but whose content doesn't
+  // DISTILL to anything on-topic (e.g. GovInfo's tangential 2024-edition §224 for a brand-new OBBBA
+  // §224 question) must fall through to the next source — not stop the search. The first source that
+  // yields relevant, distilled authority wins.
   for (const src of sources) {
     let hits;
     try {
@@ -80,6 +83,7 @@ export async function fetchPrimary(
     } catch {
       continue; // a source failure (network, or a §7216-rejected query) → try the next, never throw out
     }
+    const raw: AuthorityChunk[] = [];
     for (const hit of hits) {
       if (raw.length >= max) break;
       let text: string;
@@ -103,8 +107,9 @@ export async function fetchPrimary(
         keywords: [],
       });
     }
-    if (raw.length) break; // grounded from the top-authority source; don't pull lower tiers too
+    if (!raw.length) continue;
+    const out = opts.provider ? await distill(opts.provider, question, raw) : raw;
+    if (out.length) return out; // on-topic, distilled authority from the highest-authority source that has it
   }
-  // Distill raw authority into clean, grounded paraphrases the engine can actually reason over.
-  return opts.provider ? distill(opts.provider, question, raw) : raw;
+  return [];
 }
