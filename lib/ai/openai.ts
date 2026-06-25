@@ -2,6 +2,21 @@ import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } from "./provider";
 import { redactText } from "./redact";
+import { recordUsage } from "./usage-ledger";
+import type { TokenUsage } from "./pricing";
+
+// OpenAI reports prompt_tokens INCLUSIVE of cached input; split it so the meter prices cache reads
+// cheaply. completion_tokens includes GPT-5.x hidden reasoning tokens, which ARE billed → count them.
+function openaiUsage(
+  u: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } } | undefined,
+): TokenUsage {
+  const cached = u?.prompt_tokens_details?.cached_tokens ?? 0;
+  return {
+    inputTokens: Math.max(0, (u?.prompt_tokens ?? 0) - cached),
+    outputTokens: u?.completion_tokens ?? 0,
+    cacheReadTokens: cached,
+  };
+}
 
 // DEV-ONLY OpenAI-compatible provider, for running Petal's AI on a GPT-5.5 endpoint during LOCAL
 // development (e.g. a Codex-subscription proxy that exposes http://127.0.0.1:PORT/v1). It is
@@ -64,6 +79,7 @@ export class OpenAIProvider implements AIProvider {
       tools: [{ type: "function", function: { name: "emit", description: "Return the structured result.", parameters } }],
       tool_choice: { type: "function", function: { name: "emit" } },
     }));
+    recordUsage({ operation: args.operation ?? "generateObject", model, usage: openaiUsage(res.usage) });
     const call = res.choices[0]?.message?.tool_calls?.[0];
     if (!call || call.type !== "function") throw new Error("no function tool_call in OpenAI response");
     let raw: unknown;
@@ -87,6 +103,7 @@ export class OpenAIProvider implements AIProvider {
         { role: "user", content: redactText(args.prompt) },
       ],
     }));
+    recordUsage({ operation: args.operation ?? "generateText", model, usage: openaiUsage(res.usage) });
     return { text: (res.choices[0]?.message?.content ?? "").trim(), model };
   }
 
@@ -111,6 +128,7 @@ export class OpenAIProvider implements AIProvider {
         },
       ],
     }));
+    recordUsage({ operation: args.operation ?? "analyzeDocument", model, usage: openaiUsage(res.usage) });
     return { text: (res.choices[0]?.message?.content ?? "").trim(), model };
   }
 }

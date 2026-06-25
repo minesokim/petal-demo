@@ -8,6 +8,8 @@ export type GenerateArgs<T> = {
   schema: z.ZodType<T>;
   model?: string;
   maxTokens?: number;
+  /** cost-meter tag for this call (e.g. "research:reason"); defaults to the method name. */
+  operation?: string;
 };
 
 // Plain-text completion seam (the assistant chat). Same provider, no schema:
@@ -21,6 +23,8 @@ export type GenerateTextArgs = {
   history?: { role: "user" | "assistant"; content: string }[];
   model?: string;
   maxTokens?: number;
+  /** cost-meter tag for this call; defaults to the method name. */
+  operation?: string;
 };
 
 // Document-analysis seam (Ask Petal drag-drop). Sends a document/image block + a
@@ -35,6 +39,8 @@ export type AnalyzeDocumentArgs = {
   mediaType: string;
   model?: string;
   maxTokens?: number;
+  /** cost-meter tag for this call; defaults to the method name. */
+  operation?: string;
 };
 
 export interface AIProvider {

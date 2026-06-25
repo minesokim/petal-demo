@@ -4,6 +4,19 @@ import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } 
 import { redactText } from "./redact";
 import { assertZdrModel } from "./guard";
 import { anthropicClient } from "./anthropic-client";
+import { recordUsage } from "./usage-ledger";
+import type { TokenUsage } from "./pricing";
+
+// Anthropic reports cache reads/writes SEPARATELY from input_tokens (input_tokens is the uncached
+// remainder), which is exactly the split the cost meter prices. Map it 1:1.
+function anthropicUsage(u: Anthropic.Usage): TokenUsage {
+  return {
+    inputTokens: u.input_tokens ?? 0,
+    outputTokens: u.output_tokens ?? 0,
+    cacheReadTokens: u.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: u.cache_creation_input_tokens ?? 0,
+  };
+}
 
 // Anthropic-direct (no LangChain). ZDR + no-training are contractual at the
 // account/DPA level; here we enforce data-minimization (redact the prompt),
@@ -36,6 +49,7 @@ export class AnthropicProvider implements AIProvider {
       tools: [{ name: "emit", description: "Return the structured result.", input_schema: inputSchema as never }],
       tool_choice: { type: "tool", name: "emit" },
     });
+    recordUsage({ operation: args.operation ?? "generateObject", model, usage: anthropicUsage(res.usage) });
     const block = res.content.find((b) => b.type === "tool_use");
     if (!block || block.type !== "tool_use") throw new Error("no tool_use block in response");
     return { object: args.schema.parse(block.input), model };
@@ -61,6 +75,7 @@ export class AnthropicProvider implements AIProvider {
       system: [{ type: "text", text: redactText(args.system), cache_control: { type: "ephemeral" } }],
       messages: [...history, { role: "user", content: redactText(args.prompt) }],
     });
+    recordUsage({ operation: args.operation ?? "generateText", model, usage: anthropicUsage(res.usage) });
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
@@ -86,6 +101,7 @@ export class AnthropicProvider implements AIProvider {
       system: redactText(args.system),
       messages: [{ role: "user", content: [block, { type: "text", text: redactText(args.prompt) }] }],
     });
+    recordUsage({ operation: args.operation ?? "analyzeDocument", model, usage: anthropicUsage(res.usage) });
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
