@@ -288,12 +288,13 @@ export const GOLDEN_CASES: GoldenCase[] = [
     taxYear: 2025,
     jurisdiction: "federal",
     expectedBucket: "answer",
-    // The trap: §10.22(c)(1) is the WRONG cite (that subsection concerns diligence as to
-    // accuracy generally). Reliance on the work of others is governed by §10.34(d).
-    mustNotClaim: "10.22(c)(1)",
-    mustCiteAuthorityLike: "10.34(d)",
+    // Reliance on the WORK PRODUCT OF ANOTHER PERSON (a colleague's calculations) is §10.22(b)
+    // ("Reliance on others"). §10.34(d) is the DIFFERENT rule for relying on CLIENT-furnished
+    // information — the plausible-but-wrong cite. (Verified 2026-06-25 vs eCFR / Cornell LII / IRS
+    // Circular 230; the prior version of this case demanded §10.34(d), which was the author's error.)
+    mustCiteAuthorityLike: "10.22(b)",
     notes:
-      "Circular 230 (31 CFR Part 10). Reliance on others' work product = §10.34(d). A model often mis-cites §10.22(c)(1) (a real but off-point section). Right-answer-wrong-cite must FAIL via mustCiteAuthorityLike + mustNotClaim.",
+      "Circular 230 (31 CFR Part 10). Reliance on ANOTHER PRACTITIONER's work product = §10.22(b); reliance on CLIENT-furnished info = §10.34(d). Both are ingested; the engine must cite §10.22(b) for a colleague's-work question (discrimination test). Positive cite requirement only — no fragile mustNotClaim substring (a correct answer may legitimately contrast §10.34(d)).",
   },
 
   // ───────────────────────── CA conformity ─────────────────────────

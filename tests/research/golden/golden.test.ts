@@ -178,26 +178,26 @@ describe("grader (3): mustCiteAuthorityLike — right answer needs right authori
     expect(r.reasons.some((x) => x.includes("required authority substring"))).toBe(true);
   });
 
-  it("Circular 230: right-answer-WRONG-cite fails (10.22(c)(1) instead of 10.34(d))", () => {
+  it("Circular 230: the WRONG reliance cite fails (§10.34(d) client-info instead of §10.22(b))", () => {
     const circ = byId("circ230-reliance-on-others");
+    // §10.34(d) is the CLIENT-furnished-information rule — the plausible-but-wrong cite for a question
+    // about relying on another PRACTITIONER's work product (which is §10.22(b)).
     const misCited: GradableAnswer = {
       bucket: "answer",
-      text: "A practitioner may rely on the work of another person if done in good faith and with reasonable care, under §10.22(c)(1).",
-      citations: ["31 CFR §10.22(c)(1)"],
+      text: "A practitioner may rely on the work of another person in good faith under §10.34(d).",
+      citations: ["31 CFR §10.34(d) (Circular 230)"],
     };
     const r = gradeAnswer(misCited, circ);
     expect(r.pass).toBe(false);
-    // Both the forbidden cite AND the missing right cite should fire.
-    expect(r.reasons.some((x) => x.includes("10.22(c)(1)"))).toBe(true);
-    expect(r.reasons.some((x) => x.includes("10.34(d)"))).toBe(true);
+    expect(r.reasons.some((x) => x.includes("10.22(b)"))).toBe(true); // missing the required right cite
   });
 
-  it("the right Circular 230 answer (§10.34(d)) passes", () => {
+  it("the right Circular 230 answer (§10.22(b)) passes", () => {
     const circ = byId("circ230-reliance-on-others");
     const good: GradableAnswer = {
       bucket: "answer",
-      text: "Reliance on another person's work product is governed by §10.34(d): a practitioner may rely in good faith without verification, but not when reliance is unreasonable.",
-      citations: ["31 CFR §10.34(d)"],
+      text: "Reliance on another person's work product is governed by §10.22(b): presumed due diligence if the practitioner used reasonable care in engaging, supervising, training, and evaluating that person.",
+      citations: ["31 CFR §10.22(b) (Circular 230)"],
     };
     expect(gradeAnswer(good, circ).pass).toBe(true);
   });

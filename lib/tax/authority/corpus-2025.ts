@@ -24,6 +24,9 @@ const URL = {
   irc199A: "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A",
   irc2: "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2",
   irc6695: "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6695",
+  // Circular 230 (31 CFR Part 10) — Treasury practice regulations, public domain (eCFR).
+  cir230_1022: "https://www.ecfr.gov/current/title-31/subtitle-A/part-10/subpart-B/section-10.22",
+  cir230_1034: "https://www.ecfr.gov/current/title-31/subtitle-A/part-10/subpart-B/section-10.34",
   // California Legislative Information — official RTC text.
   rtc17052: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17052.",
   rtc170521: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17052.1.",
@@ -215,6 +218,36 @@ export const FEDERAL_CHUNKS: AuthorityChunk[] = [
     ingestedAt: INGESTED,
     text: "A tax return preparer who fails to comply with the due-diligence requirements for the earned income credit, child tax credit / additional child tax credit / credit for other dependents, American Opportunity Tax Credit, or head-of-household filing status is liable for a penalty for each such failure, indexed for inflation.",
     keywords: ["due diligence", "preparer penalty", "6695", "eitc", "ctc", "aotc", "head of household"],
+  },
+  {
+    // Circular 230 RELIANCE ON OTHERS — the work product of ANOTHER PERSON (e.g. a colleague's
+    // calculations). Distinct from §10.34(d) (reliance on CLIENT-furnished information).
+    chunkId: "cir230-10-22-b",
+    authorityType: "regulation",
+    citation: "31 CFR §10.22(b) (Circular 230)",
+    jurisdiction: "federal",
+    taxYear: [2024, 2025, 2026],
+    effectiveDate: "2014-06-12", // current Circular 230 revision (Rev. 6-2014)
+    sourceUrl: URL.cir230_1022,
+    ingestedAt: INGESTED,
+    delegationBasis: "express", // issued under 31 U.S.C. §330 (express authority to regulate practice)
+    text: "Reliance on others: a practitioner is presumed to have exercised due diligence (as to accuracy under §10.22(a)) if the practitioner relies on the work product of another person and used reasonable care in engaging, supervising, training, and evaluating that person, taking proper account of the nature of the relationship between the practitioner and the person. This reliance standard is modified by §§10.34 and 10.37.",
+    keywords: ["reliance on others", "work product of another person", "colleague", "calculations", "due diligence", "reasonable care", "supervising", "Circular 230", "10.22"],
+  },
+  {
+    // Circular 230 RELIANCE ON CLIENT INFORMATION — the GOOD-FAITH-without-verification rule for
+    // information furnished BY THE CLIENT. NOT the rule for relying on another practitioner's work.
+    chunkId: "cir230-10-34-d",
+    authorityType: "regulation",
+    citation: "31 CFR §10.34(d) (Circular 230)",
+    jurisdiction: "federal",
+    taxYear: [2024, 2025, 2026],
+    effectiveDate: "2014-06-12",
+    sourceUrl: URL.cir230_1034,
+    ingestedAt: INGESTED,
+    delegationBasis: "express",
+    text: "Relying on information furnished by clients: a practitioner advising a client to take a position on, or preparing or signing, a tax return, document, affidavit, or other paper submitted to the IRS generally may rely in good faith without verification on information furnished by the client. The practitioner may not, however, ignore the implications of information furnished to or actually known by the practitioner, and must make reasonable inquiries if the information appears to be incorrect, inconsistent with another known fact or assumption, or incomplete.",
+    keywords: ["reliance on client information", "information furnished by client", "good faith", "without verification", "reasonable inquiries", "Circular 230", "10.34"],
   },
 ];
 
