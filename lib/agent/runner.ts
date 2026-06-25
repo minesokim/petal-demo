@@ -61,10 +61,11 @@ export type AgentEvent =
 // `nameFor` resolves a householdId in args to the client's NAME when firm data is loaded (so the
 // label reads "Preparing a text to Haokun Li" rather than an opaque id). Pure + total: any
 // unmapped tool falls back to "Working on it" so a new tool never crashes the trace.
+// The full question, untruncated, for the "Researching …" step label (David wants the whole sentence,
+// no ellipsis). Falls back to a generic phrase only when no question text is present.
 function shortQuestion(q: unknown): string {
   const s = typeof q === "string" ? q.trim() : "";
-  if (!s) return "the question";
-  return s.length > 48 ? `${s.slice(0, 48).trimEnd()}…` : s;
+  return s || "the question";
 }
 
 export function labelFor(
