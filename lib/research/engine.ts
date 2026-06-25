@@ -472,13 +472,9 @@ function lifecycleFallback(
 ): SourcedAnswer | null {
   const life = retrieveLifecycle(question, { taxYear, jurisdiction }, corpus);
   if (!life) return null;
-  const { chunk, relation, boundaryYear, firstYear } = life;
-  const answer =
-    relation === "expired"
-      ? `${chunk.citation} applied for tax years ${firstYear}–${boundaryYear} and terminates for tax years beginning after ${boundaryYear}, so it does not apply for tax year ${taxYear} absent new legislation enacted after that date. Confirm against current law before relying on this.`
-      : `${chunk.citation} first applies for tax year ${boundaryYear} and does not apply for tax year ${taxYear}. Confirm against current law before relying on this.`;
+  const { chunk, boundaryYear, firstYear } = life;
   return {
-    answer,
+    answer: `${chunk.citation} applied for tax years ${firstYear}–${boundaryYear} and terminates for tax years beginning after ${boundaryYear}, so it does not apply for tax year ${taxYear} absent new legislation enacted after that date. Confirm against current law before relying on this.`,
     citations: [{
       chunkId: chunk.chunkId,
       authority: authorityFamily(chunk.citation),
@@ -489,12 +485,9 @@ function lifecycleFallback(
     }],
     bucket: "answer",
     calibration: "grounded",
-    currencyNote:
-      relation === "expired"
-        ? `This provision sunset after ${boundaryYear}; verify no later legislation revived it for ${taxYear}.`
-        : `This provision first takes effect in ${boundaryYear}.`,
+    currencyNote: `This provision sunset after ${boundaryYear}; verify no later legislation revived it for ${taxYear}.`,
     reviewNotes: [
-      `Point-in-time answer: the provision does not govern ${taxYear} (${relation}); answered from its effective-year range (${firstYear}–${Math.max(...chunk.taxYear)}).`,
+      `Point-in-time answer: the provision sunset after ${boundaryYear} and does not govern ${taxYear}; answered from its statutory sunset.`,
     ],
     weightOfAuthority: assessAuthorityWeight([chunk]),
   };

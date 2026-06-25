@@ -133,6 +133,7 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2025, 2026, 2027, 2028],
     effectiveDate: "2025-01-01",
+    sunsetAfter: 2028, // §224 terminates for tax years beginning after Dec 31, 2028 (statutory sunset)
     supersededBy: undefined,
     sourceUrl: URL.pl119_21,
     ingestedAt: INGESTED,
@@ -150,6 +151,7 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     jurisdiction: "federal",
     taxYear: [2025, 2026, 2027, 2028],
     effectiveDate: "2025-01-01",
+    sunsetAfter: 2028, // §225 terminates for tax years beginning after Dec 31, 2028 (statutory sunset)
     supersededBy: undefined,
     sourceUrl: URL.pl119_21,
     ingestedAt: INGESTED,
