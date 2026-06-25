@@ -25,7 +25,7 @@ import { loadFirmData } from "@/lib/server/firm-data";
 import { researchAnswer } from "@/lib/research/engine";
 import { compute, ComputeRequest } from "@/lib/tax-ai/compute";
 import { lookupParameter, type ParameterProvision } from "@/lib/tax/figures/params";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
 import type { Jurisdiction } from "@/lib/tax/types";
 
 async function firm() {
@@ -134,7 +134,7 @@ const INTENT_TOOLS: AgentTool[] = [
       jurisdiction: z.enum(["federal", "CA"]).optional(),
     }),
     run: async (a) => {
-      const proposer = new AnthropicProvider(undefined, "claude-sonnet-4-6");
+      const proposer = getProvider("claude-sonnet-4-6");
       // In-chat FAST path: skip the adversarial Opus freshness judge (a slow extra model call).
       // Grounding still holds — retrieval is year/jurisdiction-filtered + supersession-dropped,
       // and the numeric + citation-verify gates run. The full judge stays on /api/research.
@@ -233,7 +233,7 @@ const INTENT_TOOLS: AgentTool[] = [
         }
       }
       // Draft the body with the model (text only, redacted by the provider). DRAFT-ONLY — no send.
-      const provider = new AnthropicProvider(undefined, "claude-sonnet-4-6");
+      const provider = getProvider("claude-sonnet-4-6");
       const { text } = await provider.generateText({
         system:
           "You are Petal, drafting a short, professional email on behalf of a US tax preparer. Write only the email body (no subject line, no preamble). Warm but concise; no emojis; no em dashes.",

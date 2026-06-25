@@ -9,7 +9,8 @@
 // See docs/superpowers/specs/2026-06-23-tax-ai-master-spec.md.
 
 import { NextResponse } from "next/server";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
+import type { AIProvider } from "@/lib/ai/provider";
 import { assertCleared } from "@/lib/ai/guard";
 import { getFirmContext } from "@/lib/auth/context";
 import { withFirm } from "@/lib/auth/tenant";
@@ -79,9 +80,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: AnthropicProvider;
+  let provider: AIProvider;
   try {
-    provider = new AnthropicProvider();
+    provider = getProvider();
   } catch {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }

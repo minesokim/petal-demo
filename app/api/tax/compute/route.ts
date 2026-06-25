@@ -8,7 +8,8 @@
 // PETAL_7216_CLEARED is set (David's explicit, recorded decision). Drop the flag to re-gate.
 
 import { NextResponse } from "next/server";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
+import type { AIProvider } from "@/lib/ai/provider";
 import { getFirmContext } from "@/lib/auth/context";
 import { answerComputation } from "@/lib/tax-ai/orchestrator";
 
@@ -36,11 +37,11 @@ export async function POST(req: Request) {
   const taxYear = yearRaw >= 2020 && yearRaw <= 2030 ? yearRaw : 2025; // clamp to a sane range
 
   // Proposer = Sonnet (routine grounded generation); judge = Opus (hard reasoning). Both ZDR.
-  let proposer: AnthropicProvider;
-  let judge: AnthropicProvider;
+  let proposer: AIProvider;
+  let judge: AIProvider;
   try {
-    proposer = new AnthropicProvider(undefined, "claude-sonnet-4-6");
-    judge = new AnthropicProvider(undefined, "claude-opus-4-8");
+    proposer = getProvider("claude-sonnet-4-6");
+    judge = getProvider("claude-opus-4-8");
   } catch {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }

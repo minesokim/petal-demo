@@ -12,7 +12,7 @@
 import { z } from "zod";
 import type { AgentTool } from "../registry";
 import { withFirm } from "@/lib/auth/tenant";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
 import { signedUrlForFirmFile } from "@/lib/storage/firm-files";
 import { extractDocument, type ExtractDeps } from "@/lib/intake/extract";
 
@@ -42,7 +42,7 @@ const ExtractArgs = z.object({
 // model-supplied key could otherwise sign another firm's object via the service-role client.
 function runtimeDeps(firmId: string): ExtractDeps {
   return {
-    provider: new AnthropicProvider(),
+    provider: getProvider(),
     loadBytes: async (key: string) => {
       const url = await signedUrlForFirmFile(key, firmId);
       const res = await fetch(url);

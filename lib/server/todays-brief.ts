@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
-import { AnthropicProvider } from "../ai/anthropic";
+import { getProvider } from "../ai/provider-factory";
 import { makeDerive } from "../fixtures/derive";
 import { brief as FIXTURE_BRIEF, type BriefItem } from "../fixtures/firm";
 import type { FirmData } from "./fixture-data";
@@ -39,7 +39,7 @@ small firm. Tone: urgent (act now), alert (watch), win (good news), info (contex
 const getDailyAiDesks = unstable_cache(
   async (dateStr: string): Promise<BriefItem[]> => {
     try {
-      const provider = new AnthropicProvider(undefined, "claude-haiku-4-5");
+      const provider = getProvider("claude-haiku-4-5");
       const { object } = await provider.generateObject({
         system: BRIEF_SYSTEM,
         prompt: `Today is ${dateStr}. Write 3 "irs" desk items (the most relevant current IRS/regulatory

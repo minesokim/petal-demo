@@ -14,7 +14,8 @@
 // docs/superpowers/specs/2026-06-23-tax-ai-master-spec.md.
 
 import { NextResponse } from "next/server";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
+import type { AIProvider } from "@/lib/ai/provider";
 import { PETAL_ASSISTANT_SYSTEM } from "@/lib/ai/prompts";
 import { redactText } from "@/lib/ai/redact";
 import { getFirmContext } from "@/lib/auth/context";
@@ -90,9 +91,9 @@ export async function POST(req: Request) {
 
   const history = sanitizeHistory((body as { history?: unknown }).history);
 
-  let provider: AnthropicProvider;
+  let provider: AIProvider;
   try {
-    provider = new AnthropicProvider();
+    provider = getProvider();
   } catch {
     // ANTHROPIC_API_KEY missing — surface a clean 503 so the UI can fall back.
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });

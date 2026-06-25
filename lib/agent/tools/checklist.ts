@@ -11,7 +11,8 @@
 import { z } from "zod";
 import type { AgentTool } from "../registry";
 import { withFirm } from "@/lib/auth/tenant";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
+import type { AIProvider } from "@/lib/ai/provider";
 import { createTask } from "@/lib/repository/agent";
 import { getChecklist, runChecklist, makeResearchSubAgent } from "@/lib/checklists";
 
@@ -40,11 +41,11 @@ const CHECKLIST_TOOLS: AgentTool[] = [
       // Proposer = Sonnet (grounded generation), judge = Opus (adversarial freshness) — the same
       // separate-model pairing the research route uses. Constructed lazily so a missing key fails
       // cleanly inside the tool rather than at import.
-      let proposer: AnthropicProvider;
-      let judge: AnthropicProvider;
+      let proposer: AIProvider;
+      let judge: AIProvider;
       try {
-        proposer = new AnthropicProvider(undefined, "claude-sonnet-4-6");
-        judge = new AnthropicProvider(undefined, "claude-opus-4-8");
+        proposer = getProvider("claude-sonnet-4-6");
+        judge = getProvider("claude-opus-4-8");
       } catch {
         return { error: "ai_unavailable" };
       }

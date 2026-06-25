@@ -14,7 +14,8 @@
 // (a signed-in firm) so the endpoint is never hittable anonymously, mirroring the OS routes.
 
 import { NextResponse } from "next/server";
-import { AnthropicProvider } from "@/lib/ai/anthropic";
+import { getProvider } from "@/lib/ai/provider-factory";
+import type { AIProvider } from "@/lib/ai/provider";
 import { getFirmContext } from "@/lib/auth/context";
 import { researchAnswer } from "@/lib/research/engine";
 import type { Jurisdiction } from "@/lib/tax/types";
@@ -55,12 +56,13 @@ export async function POST(req: Request) {
       : "federal";
 
   // Proposer = Sonnet (routine grounded generation); judge = Opus (hard adversarial reasoning).
-  // Both ZDR — AnthropicProvider hard-rejects any non-ZDR model at construction.
-  let proposer: AnthropicProvider;
-  let judge: AnthropicProvider;
+  // Prod: Anthropic (ZDR, hard-rejects non-ZDR at construction). Dev: getProvider may route to the
+  // GPT-5.5 Codex-proxy provider when PETAL_DEV_INFERENCE=codex-sub (non-prod, synthetic only).
+  let proposer: AIProvider;
+  let judge: AIProvider;
   try {
-    proposer = new AnthropicProvider(undefined, "claude-sonnet-4-6");
-    judge = new AnthropicProvider(undefined, "claude-opus-4-8");
+    proposer = getProvider("claude-sonnet-4-6");
+    judge = getProvider("claude-opus-4-8");
   } catch {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
