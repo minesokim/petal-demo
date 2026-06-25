@@ -154,5 +154,45 @@ export function retrieve(
     .map((x) => x.c);
 }
 
+export type LifecycleRelation = "expired" | "not-yet-effective";
+export type LifecycleHit = { chunk: AuthorityChunk; relation: LifecycleRelation; boundaryYear: number; firstYear: number };
+
+// LIFECYCLE / point-in-time fallback. retrieve() is correctly year-filtered, so for a year a provision
+// does NOT govern (e.g. an expired sunset provision, or one not yet effective) it returns nothing and the
+// engine abstains. But "is X available in <year>?" for a year past X's sunset has a DETERMINABLE answer
+// ("no — it terminated after <boundary>"). This finds a STRONGLY-matching provision that existed for OTHER
+// years (max < year ⇒ expired; min > year ⇒ not-yet-effective). Used ONLY when normal retrieval already
+// came back empty, so it can never alter an in-year answer. Confidence-gated to avoid a spurious lifecycle
+// answer where an honest abstain is correct.
+const LIFECYCLE_MIN_SCORE = 3;
+export function retrieveLifecycle(
+  query: string,
+  opts: { taxYear: number; jurisdiction: Jurisdiction },
+  corpus: AuthorityChunk[] = REGISTERED_CORPUS,
+): LifecycleHit | null {
+  const { taxYear, jurisdiction } = opts;
+  const q = query.toLowerCase();
+  const top = corpus
+    .filter(
+      (c) =>
+        c.jurisdiction === jurisdiction &&
+        c.taxYear.length > 0 &&
+        !c.taxYear.includes(taxYear) &&
+        // A SUPERSEDED rule was REPLACED (amended), not expired — its replacement governs the later
+        // year, so "X applied A–B and terminated" would be misleading. Only a clean sunset / effective-
+        // range provision (no supersededFrom) is a valid lifecycle answer.
+        c.supersededFrom === undefined,
+    )
+    .map((c) => ({ c, score: specificityScore(c, q) }))
+    .filter((x) => x.score >= LIFECYCLE_MIN_SCORE)
+    .sort((a, b) => b.score - a.score)[0];
+  if (!top) return null;
+  const firstYear = Math.min(...top.c.taxYear);
+  const lastYear = Math.max(...top.c.taxYear);
+  if (lastYear < taxYear) return { chunk: top.c, relation: "expired", boundaryYear: lastYear, firstYear };
+  if (firstYear > taxYear) return { chunk: top.c, relation: "not-yet-effective", boundaryYear: firstYear, firstYear };
+  return null; // a gap year inside the range — not a clean lifecycle answer; abstain honestly
+}
+
 export { CORPUS_2025 } from "./corpus-2025";
 export { CORPUS_OBBBA } from "../../research/corpus-obbba";

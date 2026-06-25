@@ -45,7 +45,7 @@ import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
-import { retrieve, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import { retrieve, retrieveLifecycle, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
 import { assessAuthorityWeight, type AuthorityAssessment } from "./authority-assess";
 import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
@@ -459,6 +459,47 @@ function composeAnswer(positions: ReasoningOutput["positions"]): string {
     .join("\n\n");
 }
 
+// LIFECYCLE / point-in-time fallback. When normal (year-filtered) retrieval found nothing groundable for
+// the asked year, but a strongly-matching provision EXISTED for other years (expired before, or not yet
+// effective), answer that lifecycle fact DETERMINISTICALLY from the chunk's own year range + cite, rather
+// than abstaining. The answer is built from chunk METADATA (no model arithmetic, no hallucinated figure)
+// and is confidence-gated in retrieveLifecycle, so it only fires on a high-confidence out-of-year match.
+function lifecycleFallback(
+  question: string,
+  taxYear: number,
+  jurisdiction: Jurisdiction,
+  corpus: AuthorityChunk[],
+): SourcedAnswer | null {
+  const life = retrieveLifecycle(question, { taxYear, jurisdiction }, corpus);
+  if (!life) return null;
+  const { chunk, relation, boundaryYear, firstYear } = life;
+  const answer =
+    relation === "expired"
+      ? `${chunk.citation} applied for tax years ${firstYear}–${boundaryYear} and terminates for tax years beginning after ${boundaryYear}, so it does not apply for tax year ${taxYear} absent new legislation enacted after that date. Confirm against current law before relying on this.`
+      : `${chunk.citation} first applies for tax year ${boundaryYear} and does not apply for tax year ${taxYear}. Confirm against current law before relying on this.`;
+  return {
+    answer,
+    citations: [{
+      chunkId: chunk.chunkId,
+      authority: authorityFamily(chunk.citation),
+      cite: chunk.citation,
+      sourceUrl: chunk.sourceUrl,
+      authorityTier: tierOfAuthority(chunk.authorityType),
+      taxYear,
+    }],
+    bucket: "answer",
+    calibration: "grounded",
+    currencyNote:
+      relation === "expired"
+        ? `This provision sunset after ${boundaryYear}; verify no later legislation revived it for ${taxYear}.`
+        : `This provision first takes effect in ${boundaryYear}.`,
+    reviewNotes: [
+      `Point-in-time answer: the provision does not govern ${taxYear} (${relation}); answered from its effective-year range (${firstYear}–${Math.max(...chunk.taxYear)}).`,
+    ],
+    weightOfAuthority: assessAuthorityWeight([chunk]),
+  };
+}
+
 // Retrieve-on-demand fallback used at an abstain point (empty retrieval OR corpus authority too
 // tangential to ground). Fetch primary authority live, reason + ground in it through the SAME gates,
 // and return a `fetched` answer — or null to fall through to the honest abstain. The fetched text is
@@ -529,6 +570,10 @@ export async function researchAnswer(
   // round-3 diagnostic flagged (10a). "unsettled" must come from RETRIEVED non-final authority, not
   // from the question's wording. The manifest lets us NAME the missing provision instead of a vague hedge.
   if (retrieved.length === 0) {
+    // LIFECYCLE first: a sunset/effective-range question ("available in 2029?") is DETERMINABLE, not
+    // indeterminate — answer it from the provision's year range before any facts-and-circumstances hedge.
+    const lifeEmpty = lifecycleFallback(question, taxYear, jurisdiction, corpus);
+    if (lifeEmpty) return lifeEmpty;
     if (isIndeterminate(question)) {
       return {
         answer:
@@ -595,6 +640,10 @@ export async function researchAnswer(
   //     on it (a reasoning/on-point gap), surfaced to the user as a hedge but marked distinctly
   //     so an operator can tell it from a clean coverage gap.
   if (reasoned.abstained || groundedPositions.length === 0) {
+    // LIFECYCLE first (same precedence as the empty-retrieval branch): a determinable sunset/effective-
+    // range answer beats both an indeterminate hedge and an abstain.
+    const lifeB = lifecycleFallback(question, taxYear, jurisdiction, corpus);
+    if (lifeB) return lifeB;
     if (isIndeterminate(question)) {
       return {
         answer:
