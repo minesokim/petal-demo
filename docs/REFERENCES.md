@@ -94,10 +94,14 @@ Double-entry ledger is a first-class future subsystem (Petal will do bookkeeping
 
 - Harness: `scripts/research-benchmark.mts` over `tests/research/golden/cases.ts`; `--no-judge` for the
   deterministic grade. `PETAL_DEV_INFERENCE` toggles Claude vs GPT-5.5 on the same golden set.
-- Latest run (2026-06-25, Claude baseline, `--no-judge`): **80.8% pass (21/26)**. 5 abstain-regressions
-  flagged for investigation — salt-cap §164, salt-phasedown, tips-SE-tax (OBBBA), estate §2010, qbi
-  §199A — all "expected answer, got abstain / no citation". NOT yet confirmed as caused by the
-  `reasonAndScore` drop-on-error change vs. being the no-judge baseline; needs a clean before/after.
+- Latest run (2026-06-25, Claude baseline, `--no-judge`): **80.8% pass (21/26)** — but `--no-judge` is
+  the conservative FLOOR. Re-running the 5 failures WITH the Opus judge (the real release config) shows
+  3 PASS (salt-phasedown, estate §2010, qbi §199A — they were the no-judge floor, NOT regressions). Only
+  **2 genuinely fail with the judge: `salt-cap-2026` and `tips-se-tax-2025`** (abstain / ungrounded / no
+  cite). Notable: `salt-cap-2026` fails while its phasedown sibling passes (same §164 topic) → likely
+  run-variance near the answer/abstain margin or a phrasing-specific grounding gap, not broad breakage.
+  Root cause (variance vs the `reasonAndScore` change) still TBD — needs a re-run / before-after.
+  Probe: `scripts/bench-cases.mts <id>… [--no-judge]` runs specific cases.
 
 ## 9. Blocked on David (not engineering)
 
