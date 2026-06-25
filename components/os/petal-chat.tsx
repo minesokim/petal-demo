@@ -28,7 +28,7 @@ import { confirmAgentAction } from "@/app/os/ask/agent-actions";
 
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
-  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: string[] };
+  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: string[]; streamingText?: string; streamTurn?: number };
 
 let msgSeq = 1;
 
@@ -76,10 +76,12 @@ async function streamAgent({
   message,
   history,
   pushStep,
+  pushText,
 }: {
   message: string;
   history: { role: "user" | "assistant"; content: string }[];
   pushStep: (label: string) => void;
+  pushText: (delta: string, turn: number) => void;
 }): Promise<AgentResult> {
   const res = await fetch("/api/agent", {
     method: "POST",
@@ -107,6 +109,9 @@ async function streamAgent({
     if (event === "step") {
       const label = (data as { label?: unknown }).label;
       if (typeof label === "string" && label.trim()) pushStep(label);
+    } else if (event === "text") {
+      const d = data as { delta?: unknown; turn?: unknown };
+      if (typeof d.delta === "string") pushText(d.delta, typeof d.turn === "number" ? d.turn : 0);
     } else if (event === "done") {
       const d = data as AgentResult;
       result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration, ungroundedFigures: d.ungroundedFigures };
@@ -177,7 +182,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
 
     const settle = (answer: ChatAnswer, replyForHistory?: string) => {
       if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
-      setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false, liveSteps: undefined } : msg)));
+      setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false, liveSteps: undefined, streamingText: undefined, streamTurn: undefined } : msg)));
     };
 
     // Append a streamed thinking step to the in-flight bubble (Claude-style live trace).
@@ -188,6 +193,16 @@ export function usePetalChat(scopeHouseholdId?: string) {
         // De-dupe an identical consecutive label (a retried turn shouldn't double a line).
         if (prev[prev.length - 1] === label) return msg;
         return { ...msg, liveSteps: [...prev, label] };
+      }));
+    };
+
+    // Append a REAL streamed text delta to the in-flight bubble (true token streaming). The `turn`
+    // resets the preview at each loop turn so a tool-call preamble never sticks to the final answer.
+    const pushText = (delta: string, turn: number) => {
+      setMessages(m => m.map(msg => {
+        if (msg.id !== thinkingId || msg.role !== "petal") return msg;
+        const base = msg.streamTurn === turn ? (msg.streamingText ?? "") : "";
+        return { ...msg, streamTurn: turn, streamingText: base + delta };
       }));
     };
 
@@ -226,7 +241,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // clicks. `step` frames stream into liveSteps as each phase/tool fires; the terminal `done`
     // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
     // stream errors (network failure or an `error` frame).
-    streamAgent({ message, history, pushStep })
+    streamAgent({ message, history, pushStep, pushText })
       .then(({ reply, proposedActions, citations, calibration, ungroundedFigures }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
@@ -572,6 +587,7 @@ export function PetalAnswerView({
   answer,
   thinking,
   liveSteps,
+  streamingText,
   stream = true,
   compact = false,
   onSuggest,
@@ -580,6 +596,8 @@ export function PetalAnswerView({
   thinking?: boolean;
   /** streamed reasoning steps for the in-flight bubble (Claude-style live trace) */
   liveSteps?: string[];
+  /** REAL token-streamed answer text for the in-flight bubble (true generation streaming) */
+  streamingText?: string;
   /** stream the reveal (latest message) vs render instantly (history) */
   stream?: boolean;
   /** tighter type + spacing for the record rail */
@@ -588,10 +606,23 @@ export function PetalAnswerView({
 }) {
   const hasSteps = (answer.steps?.length ?? 0) > 0;
   const [stepsDone, setStepsDone] = useState(!(stream && hasSteps));
-  const [revealed, setRevealed] = useState(stream ? 0 : Infinity);
+  // Real token streaming shows the live text during `thinking`; the settled answer renders INSTANTLY
+  // (no client-side typewriter), so it never replays on remount and never desyncs from the model.
+  const [revealed, setRevealed] = useState(Infinity);
   const allDone = stepsDone && revealed >= answer.paragraphs.length;
 
-  if (thinking) return <Thinking steps={liveSteps} />;
+  if (thinking) {
+    return (
+      <div className="min-w-0 space-y-2.5">
+        <Thinking steps={liveSteps} />
+        {streamingText && (
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--os-ink)]">
+            <Rich text={streamingText} />
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={cn("min-w-0 space-y-2.5", compact && "space-y-2 text-[12.5px]")}>
@@ -604,7 +635,7 @@ export function PetalAnswerView({
           <StreamedParagraph
             key={i}
             text={p}
-            active={stream && i === revealed}
+            active={false}
             onDone={() => setRevealed(r => (r === i ? r + 1 : r))}
           />
         )

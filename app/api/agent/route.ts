@@ -4,6 +4,7 @@
 //
 // EVENT CONTRACT (text/event-stream — do NOT change shape):
 //   event: step\n  data: {"label":"<present-tense human action>"}\n\n   — per phase/tool
+//   event: text\n  data: {"delta":"<token text>","turn":<n>}\n\n         — live answer streaming
 //   event: done\n  data: {"reply":"<text>","proposedActions":[...]}\n\n   — terminal result
 //   event: error\n data: {"error":"<short>"}\n\n                          — terminal on failure
 
@@ -54,7 +55,10 @@ export async function POST(req: Request) {
           scope: "real",
           onEvent: (e) => {
             // Best-effort: if the client already disconnected, enqueue throws — swallow it.
-            try { controller.enqueue(frame("step", { label: e.label })); } catch { /* closed */ }
+            try {
+              if (e.type === "text") controller.enqueue(frame("text", { delta: e.delta, turn: e.turn }));
+              else controller.enqueue(frame("step", { label: e.label }));
+            } catch { /* closed */ }
           },
         });
         controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures }));

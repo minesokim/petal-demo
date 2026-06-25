@@ -76,7 +76,7 @@ describe("runAgent onEvent — the streamed thinking trace", () => {
       { ...SYNTH, model: seam, onEvent: (e) => events.push(e) },
     );
 
-    const labels = events.map((e) => e.label);
+    const labels = events.filter((e) => e.type === "step").map((e) => e.label);
     // First: the generic pre-model "Thinking" step. Then the human label for each tool as it
     // fires — find_client → "Looking up …", send_sms → "Preparing a text to …". Never tool names.
     expect(labels[0]).toBe("Thinking");

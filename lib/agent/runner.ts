@@ -53,7 +53,9 @@ const CAL_RANK: Record<AgentCalibration, number> = { grounded: 0, indeterminate:
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
 // thinking trace. `label` is a short, present-tense, HUMAN action — never a raw tool name.
-export type AgentEvent = { type: "step"; label: string };
+export type AgentEvent =
+  | { type: "step"; label: string }
+  | { type: "text"; delta: string; turn: number };
 
 // labelFor — map a tool + its args to the human, present-tense step label in the EVENT CONTRACT.
 // `nameFor` resolves a householdId in args to the client's NAME when firm data is loaded (so the
@@ -105,12 +107,16 @@ export function labelFor(
 export type ModelSeam = (
   messages: Anthropic.MessageParam[],
   tools: Anthropic.Tool[],
+  // When provided, the seam STREAMS and forwards each text delta as the model generates it (real
+  // token streaming, Claude-style). The returned message is still the fully assembled turn, so the
+  // tool-use loop is unchanged. Omitted by scripted test seams (they return canned messages).
+  onTextDelta?: (delta: string) => void,
 ) => Promise<Anthropic.Message>;
 
 function anthropicSeam(): ModelSeam {
   const client = anthropicClient();
-  return (messages, tools) =>
-    client.messages.create({
+  return (messages, tools, onTextDelta) => {
+    const params = {
       model: AGENT_MODEL,
       max_tokens: 1200,
       // Prompt caching (runtime cost): the large static AGENT_SYSTEM + the ~20 tool schemas are
@@ -119,10 +125,16 @@ function anthropicSeam(): ModelSeam {
       // so repeat turns within ~5 min pay ~10% on that prefix instead of full input rate. The
       // conversation (messages) varies and is intentionally NOT cached. ZDR-safe (5-min ephemeral
       // cache, not training retention).
-      system: [{ type: "text", text: AGENT_SYSTEM, cache_control: { type: "ephemeral" } }],
+      system: [{ type: "text" as const, text: AGENT_SYSTEM, cache_control: { type: "ephemeral" as const } }],
       tools,
       messages,
-    });
+    };
+    if (!onTextDelta) return client.messages.create(params);
+    // Streaming path: forward each text delta live; resolve the assembled final message.
+    const s = client.messages.stream(params);
+    s.on("text", (delta) => { try { onTextDelta(delta); } catch { /* best-effort, never break the loop */ } });
+    return s.finalMessage();
+  };
 }
 
 export async function runAgent(
@@ -178,7 +190,9 @@ export async function runAgent(
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     // A generic first step before the first model call: the model is reasoning about the request.
     if (turn === 0) emit({ type: "step", label: "Thinking" });
-    const res = await seam(messages, tools);
+    // Stream the model's text deltas live (real token streaming). `turn` lets the client reset its
+    // streamed preview at each turn boundary, so a tool-call preamble never sticks to the final prose.
+    const res = await seam(messages, tools, (delta) => emit({ type: "text", delta, turn }));
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
