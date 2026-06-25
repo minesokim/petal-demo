@@ -105,6 +105,11 @@ export async function fetchPrimary(
         ingestedAt: nowIso,
         text: clean.slice(0, 8000),
         keywords: [],
+        // Preserve the weighting signal the source already computed (was discarded before): the
+        // §6662 authority rank and whether it may stand as sole authority (a proposed rule / PLR /
+        // non-precedential opinion = false). The future weight-of-authorities engine reads these.
+        authorityClass: hit.authorityTier,
+        precedential: hit.precedential,
       });
     }
     if (!raw.length) continue;

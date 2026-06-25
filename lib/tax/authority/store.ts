@@ -39,6 +39,14 @@ export type AuthorityChunk = {
   ingestedAt: string; // ISO timestamp the chunk entered the store (audit trail)
   text: string; // concise public-domain paraphrase of the operative rule
   keywords: string[]; // retrieval terms (lowercase)
+  // ── §6662 weighting metadata (the spine's authority-weighting inputs). OPTIONAL so legacy chunks
+  // and thin paraphrases still validate; populated by the fetch path + ingest, read by the future
+  // weight-of-authorities engine. Absent ⇒ derive a coarse class from authorityType. ──
+  precedential?: boolean; // false ⇒ never SOLE substantial authority (PLR/TAM/Tax Court Summary Opinion)
+  authorityClass?: number; // §6662 substantial-authority rank (lower = stronger: statute < reg < case < guidance)
+  delegationBasis?: "express" | "general_7805" | "skidmore"; // post-Loper-Bright reg delegation strength
+  courtLevel?: "tax" | "district" | "circuit" | "supreme"; // for case authority
+  circuit?: string; // controlling circuit for a holding (e.g. "9", "DC", "Fed")
 };
 
 // Mandatory-metadata schema. A chunk missing any required field fails validation, so a
@@ -56,6 +64,12 @@ export const authorityChunkSchema = z.object({
   ingestedAt: z.string().min(1),
   text: z.string().min(1),
   keywords: z.array(z.string()),
+  // §6662 weighting metadata — optional (see the type); a chunk without them stays valid.
+  precedential: z.boolean().optional(),
+  authorityClass: z.number().int().optional(),
+  delegationBasis: z.enum(["express", "general_7805", "skidmore"]).optional(),
+  courtLevel: z.enum(["tax", "district", "circuit", "supreme"]).optional(),
+  circuit: z.string().optional(),
 });
 
 export type RetrieveOpts = {
