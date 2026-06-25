@@ -134,9 +134,43 @@ const SOURCES: FetchSource[] = [govinfoStatute, federalRegister, taxCourt, irsIr
 
 const TIER_ORDER: Record<string, number> = { govinfo: 0, "federal-register": 1, "tax-court": 2, "irs-irb": 3 };
 
-/** Sources that fit the question, highest-authority first. Empty ⇒ no fetch source applies → abstain. */
+/**
+ * Sources that fit the question, highest-authority first. LIVE-FETCH-ONLY policy (owner decision):
+ * a coverage-gap question must reach SOME primary source, so when only tangential/no specialized
+ * sources match we fall back to the universal pair — GovInfo (statute: any federal tax topic maps to
+ * a Code section) and the IRS Bulletin (current guidance + the annual inflation Rev Procs, where the
+ * post-OBBBA / indexed figures actually live). The per-source distill + figure-gate remain the
+ * backstop against grounding an off-topic or stale figure.
+ *
+ * STALE-EDITION GUARD: GovInfo's USCODE is the 2024 edition (pre-OBBBA-2025), so for a post-2025
+ * figure it can carry a superseded number. We therefore order the IRB and Federal Register (OBBBA-era,
+ * current) AHEAD of GovInfo for any question that names a year ≥ 2026 or an OBBBA-touched topic, so the
+ * current source is tried first and the stale statute is only a last resort.
+ */
+// Does the question name a tax/law concept at all? Gates the universal fallback so a NON-tax string
+// (e.g. a UI question) still gets no fetch source — preserving the honest "no source ⇒ no fetch".
+const TAX_SHAPE =
+  /\b(tax|deduct\w*|credit|exempt\w*|income|depreciat\w*|expens\w*|amortiz\w*|irs|irc|§|section\s*\d|return|filing|withhold\w*|capital gain|basis|qbi|salt|estate|gift|premium|mortgage|insurance|child|dependent|standard deduction|bracket|threshold|phase[-\s]?out|deadline|penalt\w*)\b/i;
+
+// Post-2025 / OBBBA-era questions: demote the stale 2024-edition statute (GovInfo USCODE) below the
+// current OBBBA-era sources (IRB, Federal Register) so a superseded figure is never tried first.
+function currentLawFirst(sources: FetchSource[], question: string): FetchSource[] {
+  const post2025 = /\b(202[6-9]|20[3-9]\d|obbba|one big beautiful)\b/i.test(question);
+  const rank = (id: string) => (TIER_ORDER[id] ?? 9) + (post2025 && id === "govinfo" ? 10 : 0);
+  return [...sources].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+/**
+ * Sources that fit the question, highest-authority first. LIVE-FETCH-ONLY policy (owner decision):
+ * when a specialized source matches, use it. When NONE matches but the question is tax-shaped, fall
+ * back to the universal pair — GovInfo (statute: any federal tax topic maps to a Code section) and the
+ * IRS Bulletin (current guidance + the annual inflation Rev Procs) — so a coverage-gap question still
+ * reaches primary authority. A non-tax question still gets nothing (honest: no fetch). The per-source
+ * distill + figure-gate are the backstop against grounding an off-topic or stale figure.
+ */
 export function pickSources(question: string): FetchSource[] {
-  return SOURCES.filter((s) => s.matches(question)).sort(
-    (a, b) => (TIER_ORDER[a.id] ?? 9) - (TIER_ORDER[b.id] ?? 9),
-  );
+  const matched = SOURCES.filter((s) => s.matches(question));
+  if (matched.length) return currentLawFirst(matched, question);
+  if (!TAX_SHAPE.test(question)) return []; // not a tax question → no fetch
+  return currentLawFirst([govinfoStatute, irsIrb], question);
 }
