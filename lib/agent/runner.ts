@@ -20,6 +20,8 @@ import { groundedFigureText, ungroundedReplyFigures } from "@/lib/agent/ground-g
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
+import { usingDevCodexProvider } from "@/lib/ai/provider-factory";
+import { codexSeam } from "./codex-seam";
 
 const AGENT_MODEL = "claude-opus-4-8"; // ZDR-eligible (Opus approved for the agent loop)
 // Raised to 8 so a lookup → act chain (find_client → get_client_detail → stage a write) has
@@ -143,7 +145,11 @@ export async function runAgent(
   history: AgentTurn[] = [],
   opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
 ): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[]; calibration?: AgentCalibration; ungroundedFigures?: string[] }> {
-  assertZdrModel(AGENT_MODEL);
+  // ZDR allowlist applies to the ANTHROPIC path (the only surface real taxpayer data may touch).
+  // The dev codex seam is a sanctioned NON-ZDR local-eval path (synthetic data only, never deployed —
+  // usingDevCodexProvider() requires !isDeployed()), so it deliberately skips the ZDR assertion, exactly
+  // as lib/ai/openai.ts does. assertCleared (the §7216 data-scope gate) still applies on every path.
+  if (!usingDevCodexProvider()) assertZdrModel(AGENT_MODEL);
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
 
   // onEvent is BEST-EFFORT: a throwing listener must never break the agent loop or the
@@ -168,7 +174,10 @@ export async function runAgent(
 
   let seam = opts.model;
   if (!seam) {
-    seam = anthropicSeam(); // central client builder (API key, or the dev Claude Code OAuth path)
+    // Dev (localhost, flag set) → run the whole loop on the GPT-5.5 Codex proxy so localhost is
+    // genuinely "the codex version". Deployed / default → Anthropic Opus (ZDR). The choice is
+    // hard-gated: usingDevCodexProvider() is false on any deployed server.
+    seam = usingDevCodexProvider() ? codexSeam(AGENT_SYSTEM) : anthropicSeam();
   }
 
   const tools: Anthropic.Tool[] = TOOLS.map((t) => ({
