@@ -59,10 +59,13 @@ model hedge/abstain (SALT) or fall back to the parametric "40%" (bonus). **Dense
 context.** This *falsifies* the earlier naive hypothesis below that "hybrid embeddings + a citation
 graph" would by itself lift the score.
 
-**Fix (Phase 1b tuning, not more data):** gate dense matches by a cosine-similarity floor, lower `k`,
-and add a rerank, so dense recall adds coverage WITHOUT injecting off-topic chunks. The graph earns the
-default only when it ≥ in-memory AND closes the 4 shared corpus-depth gaps below, with no new
-regressions. Re-run this A/B after each retrieval change.
+**Fix attempt + reframe (see changelog 2026-06-25):** the obvious gated-hybrid (dense cosine floor 0.50
++ k cap 6) was tried and **reverted** — it cleared neither target and starved a third case. The failure
+proved `bonus-depreciation-2025` is **parametric** (stale "40%" survives even a single-correct-node
+context), so the real fix is a **faithfulness gate** that rejects a stale figure contradicting the
+retrieved current authority (confident-wrong is the worst failure mode), not retrieval tuning. The graph
+earns the default only when it ≥ in-memory AND closes the 4 shared corpus-depth gaps below, with no new
+regressions. Re-run this A/B after each change.
 
 ## Dominant failure mode (the real signal)
 
@@ -101,3 +104,13 @@ regressed two cases. The actual fix is a *gated* hybrid (similarity floor + rera
   **32/38 (84.2%)**. Graph does NOT yet earn the default — naive RRF dense recall injects off-topic
   chunks (probed: right node is #1, but §2010/§199A/§68 noise rides along) and regresses `salt-cap-2026`
   + `bonus-depreciation-2025`. Next: gated hybrid (similarity floor + rerank), then re-A/B.
+- **2026-06-25** — Gated-hybrid fix ATTEMPTED (dense cosine floor 0.50 + final k cap 6) and **reverted**.
+  Re-measured graph: still **32/38** — neither target cleared, and a NEW regression (`senior-6k-deduction-2025`,
+  starved of its §70103 chunk by the floor/cap). KEY FINDING from the failure: `bonus-depreciation-2025`
+  still leaked "40%" even with retrieval reduced to ONLY the correct 100% node — so that figure is
+  **parametric recall (training), not a retrieval artifact.** In-memory passes it *only because* its keyword
+  search accidentally surfaces the superseded "40% is the OLD answer" probe chunk; the graph's correct
+  year-filter removes that warning. Reframed fix: this is a **faithfulness-gate gap** (catch a stale figure
+  that contradicts the retrieved CURRENT authority — confident-wrong is the worst failure mode), plus
+  optionally surfacing superseded nodes as LABELED negative context via the graph's supersession edges.
+  Retrieval tuning alone cannot close it.
