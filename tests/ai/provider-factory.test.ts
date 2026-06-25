@@ -7,45 +7,42 @@ import { AnthropicProvider } from "../../lib/ai/anthropic";
 // Codex-proxy provider is reachable ONLY under PETAL_DEV_INFERENCE=codex-sub in non-prod, and a
 // hard guard throws if that flag is ever present in production.
 
-// NODE_ENV is typed as a readonly literal union; assign through a mutable view so tsc stays clean.
+// Env vars are typed loosely; assign through a mutable view so tsc stays clean.
 const env = process.env as Record<string, string | undefined>;
-const saved = {
-  NODE_ENV: process.env.NODE_ENV,
-  PETAL_DEV_INFERENCE: process.env.PETAL_DEV_INFERENCE,
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-};
+const saved = { ...process.env };
 afterEach(() => {
-  env.NODE_ENV = saved.NODE_ENV;
-  if (saved.PETAL_DEV_INFERENCE === undefined) delete process.env.PETAL_DEV_INFERENCE;
-  else process.env.PETAL_DEV_INFERENCE = saved.PETAL_DEV_INFERENCE;
-  if (saved.ANTHROPIC_API_KEY === undefined) delete process.env.ANTHROPIC_API_KEY;
-  else process.env.ANTHROPIC_API_KEY = saved.ANTHROPIC_API_KEY;
+  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "ANTHROPIC_API_KEY"]) {
+    if (saved[k] === undefined) delete env[k];
+    else env[k] = saved[k];
+  }
 });
+// Local eval = not deployed.
+const local = () => { delete env.VERCEL; delete env.PETAL_DEPLOYED; };
 
-describe("getProvider — dev Codex routing + prod guard", () => {
-  it("routes to the OpenAI dev provider when PETAL_DEV_INFERENCE=codex-sub in non-prod", () => {
-    env.NODE_ENV = "development";
+describe("getProvider — Codex eval routing + deployed guard", () => {
+  it("routes to the OpenAI provider when PETAL_DEV_INFERENCE=codex-sub and NOT deployed", () => {
+    local();
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
     expect(usingDevCodexProvider()).toBe(true);
     expect(getProvider("claude-sonnet-4-6")).toBeInstanceOf(OpenAIProvider);
   });
 
   it("defaults to the Anthropic provider when the flag is unset", () => {
-    env.NODE_ENV = "development";
+    local();
     delete process.env.PETAL_DEV_INFERENCE;
     process.env.ANTHROPIC_API_KEY = "test-key";
     expect(usingDevCodexProvider()).toBe(false);
     expect(getProvider("claude-sonnet-4-6")).toBeInstanceOf(AnthropicProvider);
   });
 
-  it("HARD GUARD: throws if the dev flag is ever set in production", () => {
-    env.NODE_ENV = "production";
+  it("HARD GUARD: throws if the flag is present on the deployed server (VERCEL)", () => {
+    env.VERCEL = "1";
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
-    expect(() => getProvider()).toThrow(/DEV-ONLY flag and must never be set in production/);
+    expect(() => getProvider()).toThrow(/never run on the deployed/);
   });
 
-  it("production with the flag unset is plain Anthropic (no dev leak)", () => {
-    env.NODE_ENV = "production";
+  it("deployed with the flag unset is plain Anthropic (no leak)", () => {
+    env.VERCEL = "1";
     delete process.env.PETAL_DEV_INFERENCE;
     process.env.ANTHROPIC_API_KEY = "test-key";
     expect(usingDevCodexProvider()).toBe(false);

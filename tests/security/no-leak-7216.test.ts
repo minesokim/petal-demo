@@ -20,39 +20,46 @@ const setNodeEnv = (v: string) => { env.NODE_ENV = v; };
 
 const saved = { ...process.env };
 afterEach(() => {
-  for (const k of ["NODE_ENV", "PETAL_DEV_INFERENCE", "PETAL_7216_CLEARED", "ANTHROPIC_API_KEY"]) {
+  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "PETAL_7216_CLEARED", "ANTHROPIC_API_KEY"]) {
     if (saved[k] === undefined) delete env[k];
     else env[k] = saved[k];
   }
 });
 
-describe("§7216 wall 1 — the non-ZDR consumer path cannot exist in production", () => {
-  it("getProvider THROWS if the Codex flag is ever set in production", () => {
-    setNodeEnv("production");
+describe("§7216 wall 1 — the non-ZDR consumer path cannot exist on the DEPLOYED server", () => {
+  it("getProvider THROWS if the Codex flag is present on the deployed server (VERCEL set)", () => {
+    env.VERCEL = "1";
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
-    expect(() => getProvider()).toThrow(/never be set in production/);
+    expect(() => getProvider()).toThrow(/never run on the deployed/);
   });
 
-  it("OpenAIProvider itself THROWS if constructed in production (defense in depth, factory bypassed)", () => {
-    setNodeEnv("production");
-    expect(() => new OpenAIProvider()).toThrow(/never be constructed in production/);
+  it("OpenAIProvider itself THROWS if constructed on the deployed server (defense in depth)", () => {
+    env.VERCEL = "1";
+    expect(() => new OpenAIProvider()).toThrow(/never be constructed on the deployed/);
   });
 
-  it("production with the flag unset is the Anthropic (ZDR) provider — no dev leak", () => {
-    setNodeEnv("production");
+  it("deployed with the flag unset is the Anthropic (ZDR) provider — no leak", () => {
+    env.VERCEL = "1";
     delete process.env.PETAL_DEV_INFERENCE;
     process.env.ANTHROPIC_API_KEY = "test-key";
     expect(usingDevCodexProvider()).toBe(false);
     expect(getProvider()).toBeInstanceOf(AnthropicProvider);
   });
 
-  it("the dev Codex path requires BOTH the explicit flag AND a non-prod env", () => {
-    setNodeEnv("development");
-    delete process.env.PETAL_DEV_INFERENCE;
-    expect(usingDevCodexProvider()).toBe(false); // flag alone-absent -> off
+  it("LOCAL (not deployed) with the flag → the Codex eval path is allowed, even in a prod build", () => {
+    delete env.VERCEL;
+    delete env.PETAL_DEPLOYED;
+    setNodeEnv("production"); // a local `next build && next start` is production but NOT deployed
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
     expect(usingDevCodexProvider()).toBe(true);
     expect(getProvider()).toBeInstanceOf(OpenAIProvider);
+  });
+
+  it("PETAL_DEPLOYED=1 forces the block even without VERCEL", () => {
+    delete env.VERCEL;
+    process.env.PETAL_DEPLOYED = "1";
+    process.env.PETAL_DEV_INFERENCE = "codex-sub";
+    expect(() => getProvider()).toThrow(/never run on the deployed/);
   });
 });
 

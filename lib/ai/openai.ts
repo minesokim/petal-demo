@@ -23,13 +23,13 @@ export class OpenAIProvider implements AIProvider {
     private defaultModel = process.env.PETAL_DEV_OPENAI_MODEL ?? "gpt-5.5",
     private reasoningEffort = process.env.PETAL_DEV_OPENAI_REASONING ?? "high",
   ) {
-    // §7216 defense in depth: this is a non-ZDR consumer endpoint, so it must NEVER exist in
-    // production — independent of the provider factory's guard. Real taxpayer data only lives in
-    // production, so a provider that cannot be constructed there cannot leak it.
-    if (process.env.NODE_ENV === "production") {
+    // §7216 defense in depth: this is a non-ZDR consumer endpoint, so it must NEVER exist on the
+    // DEPLOYED server (where real client data lives) — independent of the provider factory's guard.
+    // Allowed locally (incl. a local production build) for synthetic-data evaluation only.
+    if (!!process.env.VERCEL || process.env.PETAL_DEPLOYED === "1") {
       throw new Error(
-        "OpenAIProvider is a DEV-ONLY non-ZDR provider and must never be constructed in production " +
-          "(§7216: no taxpayer data to a non-ZDR/uncleared path).",
+        "OpenAIProvider is a non-ZDR eval provider and must never be constructed on the deployed " +
+          "server (§7216: no taxpayer data to a non-ZDR/uncleared path). It is allowed only locally.",
       );
     }
     // The proxy holds the real auth (a Codex OAuth token); the SDK still needs a non-empty key.
