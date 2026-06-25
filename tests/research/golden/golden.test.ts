@@ -60,6 +60,28 @@ describe("golden case set — structural invariants", () => {
   });
 });
 
+// EVAL-INTEGRITY GATE (benchmark→CI): the moat is a MEASURED error rate, so the eval set itself must
+// not be silently weakened — shrunk, or padded with toothless cases — to make a release "pass". These
+// are CI-enforced invariants on the SHAPE of the set; the live measured rate + threshold live in
+// docs/RESEARCH_BENCHMARK.md and are re-measured periodically (a live model can't run deterministically
+// in CI). A change that drops below the floor or adds an answer-case with no required authority FAILS.
+describe("golden eval-integrity gate", () => {
+  it("the set cannot silently shrink below its committed floor (38)", () => {
+    expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(38);
+  });
+
+  it("every ANSWER case pins a required authority (mustCiteAuthorityLike) — no toothless answer-cases", () => {
+    const toothless = GOLDEN_CASES.filter((c) => c.expectedBucket === "answer" && !c.mustCiteAuthorityLike);
+    expect(toothless.map((c) => c.id), "answer-case without mustCiteAuthorityLike").toEqual([]);
+  });
+
+  it("every fabrication probe (coverage_gap) pins a forbidden invented claim (mustNotClaim)", () => {
+    const fab = GOLDEN_CASES.filter((c) => c.id.startsWith("fab-"));
+    expect(fab.length).toBeGreaterThanOrEqual(3);
+    expect(fab.every((c) => c.expectedBucket === "coverage_gap" && !!c.mustNotClaim)).toBe(true);
+  });
+});
+
 describe("grader (1): bucket match", () => {
   const salt = byId("salt-cap-2026");
 
