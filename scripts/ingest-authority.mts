@@ -33,6 +33,14 @@ const TARGETS: Target[] = [
   { cite: "IRC §25D", url: lii("25D"), type: "statute", taxYear: [2025, 2026], note: "residential clean energy credit — OBBBA ends it for expenditures after Dec 31, 2025 (installation-completion keyed)" },
   { cite: "IRC §6050W", url: lii("6050W"), type: "statute", taxYear: [2025, 2026], note: "1099-K / third-party settlement reporting — OBBBA restores the $20,000-and-200-transaction threshold" },
   { cite: "IRC §174A", url: lii("174A"), type: "statute", taxYear: [2025, 2026], note: "domestic R&D — OBBBA restores current expensing for tax years beginning after Dec 31, 2024" },
+  // IRC §1202 (QSBS) — DISABLED pending a fix. The figure-grounded chunk is correct on the tiers
+  // but the LII operative text refers to "the applicable date" WITHOUT pinning it to a calendar date,
+  // and the "OBBBA enacted July 4, 2025" fact lives in a chunk a QSBS query doesn't co-retrieve. Result:
+  // the model can't place a pre-July-2025 acquisition and CONFIDENTLY MISCLASSIFIES it (gave 75% where
+  // the answer is $0 for a 4-yr hold on March-2025 stock). A confident wrong answer is worse than the
+  // honest abstain, so this stays out until the applicable-date definition (= OBBBA enactment, 7/4/2025)
+  // is grounded INTO this chunk and/or co-retrieved. See ask-once.mts to reproduce.
+  // { cite: "IRC §1202", url: lii("1202"), type: "statute", taxYear: [2025, 2026], note: "QSBS gain exclusion — capture the applicable-date DEFINITION (= date of enactment of OBBBA / P.L. 119-21) explicitly, not just the term." },
 ];
 
 // A figure's NUMERIC CORE (digits only) — so "3.8%", "3.8 percent", and "$3.8" all compare equal,
