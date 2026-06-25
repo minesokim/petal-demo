@@ -8,12 +8,14 @@
 
 import type { Jurisdiction } from "../types";
 import { FEDERAL_2025, type FederalFigureSet } from "./federal-2025";
+import { FEDERAL_2026 } from "./federal-2026";
 import { CALIFORNIA_2025, type CaliforniaFigureSet } from "./california-2025";
 
 type AnyFigureSet = FederalFigureSet | CaliforniaFigureSet;
 
 const REGISTRY: Record<string, AnyFigureSet> = {
   "federal:2025": FEDERAL_2025,
+  "federal:2026": FEDERAL_2026,
   "CA:2025": CALIFORNIA_2025,
 };
 
