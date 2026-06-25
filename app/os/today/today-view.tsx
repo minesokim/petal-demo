@@ -14,7 +14,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { AskComposer } from "@/components/os/ask-composer";
-import { WeeklyDigestLink } from "@/components/os/roi-strip";
+import { DailyBriefLink } from "@/components/os/roi-strip";
 import { FeatureCallout } from "@/components/os/callout";
 import { SkillPetal } from "@/components/os/primitives";
 import { TodaysCall } from "@/components/os/todays-call";
@@ -88,7 +88,7 @@ export function TodayView() {
             <div className="relative px-7 py-8">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-white/70">
                 {DEMO_DATE_LABEL}
-                <WeeklyDigestLink tone="light" className="-my-1 ml-auto" />
+                <DailyBriefLink tone="light" className="-my-1 ml-auto" />
               </div>
               <h2 className="os-display text-[22px] font-semibold leading-tight text-white">Good morning, {firstName}</h2>
               <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/85">
@@ -150,7 +150,7 @@ export function TodayView() {
           />
           )}
 
-          {/* ── Today's brief (the newspaper - situational awareness, modal per item) ── */}
+          {/* ── Weekly digest (the news - IRS & practice developments, inline-expand per item) ── */}
           <TodayBrief />
 
           {/* ── Today's calls (hidden when the firm has no scheduled call) ── */}

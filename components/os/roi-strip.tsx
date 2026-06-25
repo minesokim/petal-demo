@@ -1,31 +1,31 @@
 "use client";
 
-// WeeklyDigestLink - the ROI story lives as a sentence in the Today hero (Ferndesk's
-// stats-as-a-sentence); this is the quiet trigger for the weekly digest. The modal mirrors
-// the Knowledge page's reading language: a Petal context banner + a key-numbers table.
-// Numbers derive from roiWeek().
+// DailyBriefLink — the banner's "Daily brief" trigger. Opens a short, TODAY-focused brief: what
+// needs YOU today (your review queue + at-risk clients) plus the day's firm + season items from the
+// REAL derived brief (review queue, blocked docs, deadlines). It is NOT the weekly ROI story — the
+// "hours returned" line lives in the banner greeting + the activity log. The news desks (IRS /
+// practice) live in the Weekly digest below. (File name is historical — was the ROI "digest" link.)
 
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { useDerive, useFirmData } from "@/lib/client/firm-context";
+import { useDerive } from "@/lib/client/firm-context";
+import { useBrief } from "@/lib/client/brief-context";
 import { PetalMark } from "@/components/petal-mark";
 import { Icon, I } from "@/components/os/icon";
+import { briefToneDot } from "@/lib/fixtures/firm";
+import { DEMO_DATE_LABEL } from "@/lib/fixtures/vocab";
 
-const WEEK_LABEL = "Jun 22 – 25, 2026";
-
-export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" | "dark"; className?: string }) {
-  const roi = useDerive().roiWeek();
-  const firmName = useFirmData().firm.name;
+export function DailyBriefLink({ tone = "dark", className }: { tone?: "light" | "dark"; className?: string }) {
+  const { needsYouTasks, healthCounts } = useDerive();
+  const brief = useBrief();
   const [open, setOpen] = useState(false);
 
-  const rows: [string, string | number][] = [
-    ["Actions run", roi.actions],
-    ["Documents collected & filed", roi.docsCollected],
-    ["Returns e-filed", roi.returnsFiled],
-    ["Notice responses drafted", roi.noticesDrafted],
-  ];
+  const needsYou = needsYouTasks().length;
+  const atRisk = healthCounts().at_risk;
+  // "Your day" = the firm + season desks of the real brief (review queue, blocked docs, deadlines).
+  const dayItems = brief.filter((b) => b.desk === "firm" || b.desk === "season");
 
   return (
     <>
@@ -39,7 +39,7 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
           className,
         )}
       >
-        <PetalMark className="size-3.5 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-[72deg]" /> Weekly digest
+        <PetalMark className="size-3.5 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-[72deg]" /> Daily brief
       </button>
 
       <AnimatePresence>
@@ -53,14 +53,14 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
               initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               onClick={e => e.stopPropagation()}
-              role="dialog" aria-modal="true" aria-label="Weekly digest"
+              role="dialog" aria-modal="true" aria-label="Daily brief"
               className="w-full max-w-[440px] overflow-hidden rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] shadow-xl"
             >
-              {/* header (Knowledge reading-meta language) */}
+              {/* header */}
               <div className="flex items-start justify-between gap-3 border-b border-[var(--os-border)] px-5 py-3.5">
                 <div>
-                  <div className="text-[11px] text-[var(--os-ink-subtle)]">{WEEK_LABEL}</div>
-                  <h3 className="os-display text-[16px] font-semibold leading-tight text-[var(--os-ink)]">Weekly digest</h3>
+                  <div className="text-[11px] text-[var(--os-ink-subtle)]">{DEMO_DATE_LABEL}</div>
+                  <h3 className="os-display text-[16px] font-semibold leading-tight text-[var(--os-ink)]">Daily brief</h3>
                 </div>
                 <button
                   aria-label="Close"
@@ -72,36 +72,59 @@ export function WeeklyDigestLink({ tone = "dark", className }: { tone?: "light" 
               </div>
 
               <div className="px-5 py-4">
-                {/* Petal context banner (Knowledge "injected into every run" banner) */}
+                {/* Petal line — what needs you today (NOT the weekly ROI story) */}
                 <div className="flex items-center gap-2.5 rounded-lg bg-[var(--os-bg-subtle)] px-3.5 py-2.5">
                   <span className="grid size-7 shrink-0 place-items-center rounded-md bg-[var(--os-primary)] text-[var(--os-primary-fg)]">
                     <PetalMark className="size-4" />
                   </span>
                   <div className="text-[12px] text-[var(--os-ink-muted)]">
-                    <span className="font-medium text-[var(--os-ink)]">Petal returned about {roi.hoursReturned} hours</span> this week at {firmName} - every return pre-approved by you.
+                    {needsYou > 0 ? (
+                      <>
+                        <span className="font-medium text-[var(--os-ink)]">{needsYou} item{needsYou === 1 ? "" : "s"} need you today</span>
+                        {atRisk > 0 ? `, and ${atRisk} client${atRisk === 1 ? " is" : "s are"} at risk.` : "."}
+                      </>
+                    ) : (
+                      <span className="font-medium text-[var(--os-ink)]">Nothing urgent needs you today — you&apos;re clear.</span>
+                    )}
                   </div>
                 </div>
 
-                {/* key numbers — soft stat tiles, number-forward */}
-                <div className="os-label mb-2 mt-5">This week</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {rows.map(([label, value]) => (
-                    <div key={label} className="rounded-xl bg-[var(--os-bg-subtle)] px-4 py-3.5 transition-colors hover:bg-[var(--os-hover)]">
-                      <div className="os-display text-[24px] font-semibold leading-none tabular-nums text-[var(--os-ink)]">{value}</div>
-                      <div className="mt-2 text-[12px] leading-snug text-[var(--os-ink-muted)]">{label}</div>
+                {/* your day — the firm + season desks of the real brief */}
+                {dayItems.length > 0 && (
+                  <>
+                    <div className="os-label mb-2 mt-5">Today</div>
+                    <div className="space-y-1.5">
+                      {dayItems.map((it) => (
+                        <div key={it.id} className="flex gap-2.5 rounded-xl border border-[var(--os-border)] bg-[var(--os-card)] px-3.5 py-3">
+                          <span className={cn("mt-[6px] size-1.5 shrink-0 rounded-full", briefToneDot[it.tone])} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[12.5px] font-medium leading-snug text-[var(--os-ink)]">{it.headline}</div>
+                            <div className="mt-0.5 text-[12px] leading-snug text-[var(--os-ink-muted)]">{it.detail}</div>
+                            {it.action && (
+                              <Link
+                                href={it.action.href}
+                                onClick={() => setOpen(false)}
+                                className="mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--os-ink-muted)] transition-colors hover:text-[var(--os-ink)]"
+                              >
+                                {it.action.label} <Icon icon={I.chevronRight} size={12} />
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
 
-              {/* footer (Knowledge SourceModal language) */}
+              {/* footer */}
               <div className="flex items-center justify-between border-t border-[var(--os-border)] px-5 py-3">
                 <Link
-                  href="/os/activity"
+                  href="/os/review"
                   onClick={() => setOpen(false)}
                   className="flex h-8 items-center gap-1.5 rounded-md px-2 text-[12px] font-medium text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"
                 >
-                  <Icon icon={I.history} size={14} /> View activity log
+                  <PetalMark className="size-3.5" /> Open review queue
                 </Link>
                 <button
                   onClick={() => setOpen(false)}

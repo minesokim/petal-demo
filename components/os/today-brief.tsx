@@ -1,9 +1,9 @@
 "use client";
 
-// Today's brief - situational awareness, not a task mirror. A newspaper grouped by
-// "desk" (IRS & regulatory · Your firm · Season · Practice). Each item expands inline
-// with an animation: the briefing (what changed, why it matters, optional action)
-// unfolds in place rather than opening a modal.
+// Weekly digest - the news. A newspaper of regulatory + practice developments (IRS &
+// regulatory · Practice desks). Your-day items (review queue, deadlines, at-risk) live in
+// the banner's Daily brief, not here. Each item expands inline with an animation: the
+// briefing (what changed, why it matters, optional action) unfolds in place.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -80,15 +80,17 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
 export function TodayBrief() {
   const brief = useBrief();
   const [openId, setOpenId] = useState<string | null>(null);
+  // The Weekly digest is the NEWS: only the regulatory + practice desks. The firm + season desks
+  // (your day) are surfaced in the banner's Daily brief instead, so they don't appear twice.
   const desks = BRIEF_DESK_ORDER
     .map(d => ({ desk: d, items: brief.filter(b => b.desk === d) }))
-    .filter(g => g.items.length > 0);
+    .filter(g => g.items.length > 0 && (g.desk === "irs" || g.desk === "practice"));
 
   return (
     <div className="flex flex-col rounded-xl border border-[var(--os-border-strong)] bg-[var(--os-card)] p-5 transition-colors duration-200 hover:border-[var(--os-border-hover)]">
       <div className="mb-4 flex items-center gap-2">
         <PetalMark className="size-4 text-[var(--os-ink-muted)]" />
-        <h3 className="os-display text-[15px] text-[var(--os-ink)]">Today&apos;s brief</h3>
+        <h3 className="os-display text-[15px] text-[var(--os-ink)]">Weekly digest</h3>
       </div>
 
       <div className="space-y-7">
