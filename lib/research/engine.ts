@@ -296,8 +296,13 @@ function verifyCite(
 // number). Years and bare counts are excluded (the freshness judge owns year currency, and those
 // are rarely memory-leaked). Matching is by NUMERIC VALUE with unit expansion ($40k == $40,000,
 // $15M == $15,000,000) so a formatting difference never causes a false drop.
-const MONEY_RE = /\$\s?\d[\d,]*(?:\.\d+)?\s?(?:k|m|b|million|billion)?/gi;
-const PERCENT_RE = /\d[\d,]*(?:\.\d+)?\s?%|\d[\d,]*(?:\.\d+)?\s*percent\b/gi;
+// Thousands grouping is `\d+(?:,\d{3})*` (not `[\d,]*`) so a trailing comma is NEVER captured —
+// "$505,000, but" yields "$505,000", not "$505,000, b". The unit suffix carries a trailing `\b` so a
+// single letter (k/m/b) only matches a real standalone unit ("$40k", "$15 million"), not the leading
+// letter of a following word ("$40,000 because" → "$40,000", not "$40,000 b"). Both bugs together had
+// mis-read a grounded figure as 505 BILLION and dropped a valid position → over-abstention.
+const MONEY_RE = /\$\s?\d+(?:,\d{3})*(?:\.\d+)?(?:\s?(?:k|m|b|million|billion)\b)?/gi;
+const PERCENT_RE = /\d+(?:,\d{3})*(?:\.\d+)?\s?%|\d+(?:,\d{3})*(?:\.\d+)?\s*percent\b/gi;
 
 export function figureValue(raw: string): number | null {
   const m = raw.toLowerCase().replace(/[\s,$]/g, "").match(/^(\d+(?:\.\d+)?)(k|m|b|million|billion|%|percent)?$/);

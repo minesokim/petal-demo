@@ -278,6 +278,17 @@ describe("ungroundedFigures — every stated figure must appear in the cited aut
   it("ignores claims with no monetary/percentage figure (years, counts pass through)", () => {
     expect(ungroundedFigures("This turns on the facts and circumstances for 2026.", "")).toEqual([]);
   });
+
+  it("does NOT false-flag a grounded figure followed by ', word' or a unit-letter word (the $505,000-'but' bug)", () => {
+    // Regression: "$505,000, but" was mis-extracted as "$505,000, b" → figureValue read it as 505 BILLION
+    // → no match in authority → a fully-grounded position was dropped → over-abstention (salt-cap-2026).
+    expect(ungroundedFigures(
+      "The 2026 threshold is $505,000, but the reduction cannot push the cap below $10,000.",
+      "the 2026 threshold amount of $505,000; the reduction can never push the cap below $10,000",
+    )).toEqual([]);
+    // a money figure immediately followed by a word starting with a unit letter (b/m/k) still grounds.
+    expect(ungroundedFigures("Reduced by $40,000 because of the phase-down.", "the limitation is $40,000")).toEqual([]);
+  });
 });
 
 // ── INV-1 COMPUTE-HANDOFF (the engine-derived figure, exempt from the numeric gate) ──────────
