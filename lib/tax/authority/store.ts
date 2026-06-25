@@ -191,5 +191,38 @@ export function retrieveLifecycle(
   return { chunk: top.c, boundaryYear: top.c.sunsetAfter!, firstYear: Math.min(...top.c.taxYear) };
 }
 
+// FABRICATION GUARD (named forms). A question that asks to DESCRIBE a specifically-named form/schedule
+// ("what goes on the new Schedule TIP?", "what's on Form 1099-OBBBA?") must be grounded in authority that
+// actually NAMES that form. Semantically-adjacent authority — e.g. the tips-DEDUCTION statute (§224) for
+// a "Schedule TIP" query — does NOT establish a FORM, and narrating boxes onto it is fabrication, the
+// single worst failure for a cited-and-abstaining engine (measured: graph dense recall does this ~40% of
+// the time on the Schedule-TIP probe). Returns the unestablished form name to DECLINE on (force a
+// coverage_gap), or null. The name is checked against the retrieved AUTHORITY text ONLY — never the
+// question, which is where the suspect name comes from. Common real forms are allowlisted so ordinary
+// "what goes on Form 1040 / Schedule C" questions still answer.
+const FORM_NAME_RE = /\b(?:Schedule|Form)\s+[0-9A-Z][0-9A-Za-z-]*\b/g;
+const FORM_DESCRIBE_INTENT = /what\s+(?:information|data|boxes|line)|how\s+(?:do|to)\b[^.?]*\bfill|the\s+new\s+(?:schedule|form)\b/i;
+const KNOWN_REAL_FORMS = new Set([
+  "form 1040", "form 1040-sr", "form 1040-x", "form 1040-es", "form 1040-nr",
+  "schedule a", "schedule b", "schedule c", "schedule d", "schedule e", "schedule f", "schedule se",
+  "schedule 1", "schedule 2", "schedule 3", "schedule 8812",
+  "form w-2", "form w-4", "form w-9", "form 1098", "form 1116", "form 2441", "form 4562", "form 4797",
+  "form 1099", "form 1099-misc", "form 1099-nec", "form 1099-int", "form 1099-div", "form 1099-r",
+  "form 1099-g", "form 1099-k", "form 1099-b", "form 1099-s", "form 8949", "form 8863", "form 8889",
+  "form 8995", "form 8995-a", "form 6251", "form 8275",
+]);
+export function unestablishedNamedForm(question: string, retrieved: { text: string }[]): string | null {
+  if (!FORM_DESCRIBE_INTENT.test(question)) return null;
+  const names = question.match(FORM_NAME_RE);
+  if (!names) return null;
+  const haystack = retrieved.map((c) => c.text.toLowerCase()).join("\n");
+  for (const name of names) {
+    const lc = name.toLowerCase().replace(/\s+/g, " ");
+    if (KNOWN_REAL_FORMS.has(lc)) continue; // a real form — not a fabrication candidate
+    if (!haystack.includes(lc)) return name; // a named form no retrieved authority establishes → decline
+  }
+  return null;
+}
+
 export { CORPUS_2025 } from "./corpus-2025";
 export { CORPUS_OBBBA } from "../../research/corpus-obbba";

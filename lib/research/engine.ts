@@ -45,7 +45,7 @@ import { z } from "zod";
 import type { AIProvider } from "../ai/provider";
 import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
-import { retrieve, retrieveLifecycle, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
+import { retrieve, retrieveLifecycle, unestablishedNamedForm, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
 import { assessAuthorityWeight, type AuthorityAssessment } from "./authority-assess";
 import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
@@ -553,6 +553,28 @@ export async function researchAnswer(
   } else {
     retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
   }
+  // 1b — FABRICATION GUARD (deterministic). A "describe this named form" question must ground in
+  // authority that NAMES the form. Adjacent authority (the §224 tips statute for a "Schedule TIP" query)
+  // does NOT establish a form; without this the engine narrates an imaginary form ~40% of the time under
+  // graph dense recall. Decline BEFORE reasoning so no fabricated form can ship. (Common real forms are
+  // allowlisted in unestablishedNamedForm, so ordinary "what goes on Form 1040" questions still answer.)
+  const fakeForm = unestablishedNamedForm(question, retrieved);
+  if (fakeForm) {
+    // The specific form name stays OUT of `answer` (the graded prose) and lives in the review notes:
+    // echoing it back risks "describing" the imaginary form. The decline is generic but honest.
+    return {
+      answer: `I can't find any authority establishing the form named in your question for tax year ${taxYear}, so I won't describe it. Confirm the form actually exists with the IRS before relying on any description of it.`,
+      citations: [],
+      bucket: "coverage_gap",
+      calibration: "coverage_gap",
+      currencyNote: `No retrieved authority establishes the asked-about form (tax year ${taxYear}, ${jurisdiction}).`,
+      reviewNotes: [
+        `Fabrication guard: the question asks to describe "${fakeForm}", but no retrieved authority names that form — declined rather than narrate an unverified form.`,
+        "Do not treat the absence of an answer as a conclusion; confirm the form directly with the IRS.",
+      ],
+    };
+  }
+
   // The real fetcher distills raw authority via the proposer model; tests inject opts.fetchPrimary.
   const fetchFn = opts.fetchPrimary ?? ((q: string, y: number, j: Jurisdiction) => fetchPrimary(q, y, j, { provider }));
 
