@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { actionProposals } from "@/lib/db/schema";
 import { resolveProposal, claimProposal, decryptProposalPayload } from "@/lib/repository/agent";
 import { writeAudit } from "@/lib/repository/audit";
-import { runTool, isToolEnabled, TOOL_BY_NAME, ALL_SCOPES } from "./registry";
+import { runTool, isToolEnabled, TOOL_BY_NAME, scopesForRole } from "./registry";
 import { canApprove } from "@/lib/auth/roles";
 import type { Db, Ctx } from "@/lib/repository/types";
 
@@ -105,9 +105,10 @@ export async function resolveProposalCore(
     executionResult = { deferred: true, reason: "external connector not enabled in v1" };
   } else {
     try {
-      // MEDIUM-2: pass ALL_SCOPES — v1 posture: every active firm member holds all firm
-      // scopes (per-role narrowing is a follow-up once a role->scope model exists).
-      const out = await runTool(proposal.toolName, args, ALL_SCOPES, { allowWrite: true });
+      // Least-privilege: execute with the APPROVER's role-scoped grant, not a blanket ALL_SCOPES.
+      // High-stakes external submits (olt:write/xero:write) are owner/admin only — a reviewer who
+      // approves in-app work cannot, through that approval, fire an external money/record write.
+      const out = await runTool(proposal.toolName, args, scopesForRole(ctx.role), { allowWrite: true });
       executionResult = { executed: true, output: (out ?? null) as unknown };
     } catch (e) {
       executionResult = { executed: false, error: e instanceof Error ? e.name : "failed" };

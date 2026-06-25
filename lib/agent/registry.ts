@@ -70,6 +70,28 @@ export const ALL_SCOPES: string[] = [
   ...new Set(ALL_TOOLS.flatMap((t) => t.requiredScopes)),
 ];
 
+// HIGH-STAKES EXTERNAL scopes: filing OLT, posting Xero — money/official-record writes. Per the
+// risk-gate policy these are owner/admin only (and even then DRAFT-ONLY — the human does the final
+// submit). Reviewers approve in-app work but do not hold the external-submit scopes.
+const HIGH_STAKES_SCOPES: ReadonlySet<string> = new Set(["olt:write", "xero:write"]);
+
+// SCOPES_BY_ROLE — least-privilege grant per firm role (replaces v1's everyone-holds-ALL_SCOPES).
+// `Role` is imported as a type only (no runtime cycle; lib/auth/roles stays dependency-free).
+export const SCOPES_BY_ROLE: Record<import("@/lib/auth/roles").Role, string[]> = {
+  owner: ALL_SCOPES,
+  admin: ALL_SCOPES,
+  // Reviewer: full reads + every in-app write, but NOT the high-stakes external connector submits.
+  reviewer: ALL_SCOPES.filter((s) => !HIGH_STAKES_SCOPES.has(s)),
+  // Preparer: drafts/stages only — never reaches the approval-execution gate (canApprove blocks it),
+  // so granted reads + the low-stakes in-app writes a preparer legitimately initiates.
+  preparer: ALL_SCOPES.filter((s) => s.endsWith(":read") || s === "tasks:write" || s === "documents:write"),
+};
+
+/** Least-privilege scope set for the acting role; a missing role floors to preparer (least privilege). */
+export function scopesForRole(role: import("@/lib/auth/roles").Role | undefined | null): string[] {
+  return role ? (SCOPES_BY_ROLE[role] ?? SCOPES_BY_ROLE.preparer) : SCOPES_BY_ROLE.preparer;
+}
+
 // Write tools whose underlying connector is LIVE in v1 (the in-app core writes, which
 // wrap existing audited server actions). The approval gate executes one of these on
 // approve; a write tool NOT in this set is an external connector that is Phase 3 — the
