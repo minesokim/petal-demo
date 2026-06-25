@@ -24,13 +24,17 @@ describe("coverage manifest — derived from the real corpus", () => {
     if (salt.covered) expect(salt.entry.sourceCount).toBeGreaterThan(0);
   });
 
-  it("reports the diagnostic's GAPS as honestly not_loaded (the confident-wrong root cause)", () => {
-    // These four provisions have ZERO chunks in the corpus and each produced a wrong/hedged answer:
-    for (const gap of ["OBBBA §70432", "OBBBA §70433", "IRC §30D", "IRC §25D"]) {
+  it("reports the still-open diagnostic GAPS as honestly not_loaded (the confident-wrong root cause)", () => {
+    // Genuinely not in the corpus (the 1099-K rule §6050W was ingested to close that one):
+    for (const gap of ["IRC §30D", "IRC §25D", "IRC §6041"]) {
       const s = coverageFor(gap, 2026, "federal");
       expect(s.covered, `${gap} should be not_loaded`).toBe(false);
       if (!s.covered) expect(s.reason).toBe("not_loaded");
     }
+  });
+
+  it("a gap CLOSED by ingest (1099-K / IRC §6050W) now reports covered", () => {
+    expect(coverageFor("IRC §6050W", 2026, "federal").covered).toBe(true);
   });
 
   it("distinguishes 'loaded but not this year' (wrong_year) from 'not loaded at all'", () => {
@@ -50,13 +54,13 @@ describe("coverage manifest — derived from the real corpus", () => {
 });
 
 describe("identifyProvisions + namedCoverageGaps — naming a gap from a question", () => {
-  it("maps a 1099-K question to OBBBA §70432 and flags it as a not-loaded gap", () => {
+  it("maps a 1099-K question to IRC §6050W — now ingested, so NOT flagged as a gap", () => {
     const q = "Will my client get a 1099-K for $9,000 across 15 transactions?";
-    expect(identifyProvisions(q)).toContain("OBBBA §70432");
-    expect(namedCoverageGaps(q, 2026, "federal")).toContain("OBBBA §70432");
+    expect(identifyProvisions(q)).toContain("IRC §6050W");
+    expect(namedCoverageGaps(q, 2026, "federal")).not.toContain("IRC §6050W"); // closed by the ingest
   });
 
-  it("maps an EV clean-vehicle question to IRC §30D (a not-loaded gap)", () => {
+  it("maps an EV clean-vehicle question to IRC §30D (a still-open not-loaded gap)", () => {
     expect(namedCoverageGaps("Walk me through the clean vehicle credit for a new EV", 2026, "federal")).toContain("IRC §30D");
   });
 

@@ -35,11 +35,11 @@ function groundingProposer(claim: string, chunkIds: string[]) {
 }
 
 describe("calibration reason-codes", () => {
-  it("a not-loaded provision -> coverage_gap that NAMES the missing section (the 1099-K case)", async () => {
-    const r = await researchAnswer(abstaining, undefined, "Will my client receive a 1099-K for $9,000 across 15 PayPal transactions in 2026?", empty);
+  it("a not-loaded provision -> coverage_gap that NAMES the missing section (the EV credit, §30D)", async () => {
+    const r = await researchAnswer(abstaining, undefined, "Walk me through the $7,500 clean vehicle credit for a new EV bought in 2026.", empty);
     expect(r.bucket).toBe("coverage_gap");
     expect(r.calibration).toBe("coverage_gap");
-    expect(`${r.answer} ${r.currencyNote} ${r.reviewNotes.join(" ")}`).toMatch(/70432/);
+    expect(`${r.answer} ${r.currencyNote} ${r.reviewNotes.join(" ")}`).toMatch(/30D/);
   });
 
   it("NO false 'unsettled' on empty retrieval — a 'circuit split' question is an honest coverage_gap", async () => {

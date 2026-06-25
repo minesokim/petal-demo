@@ -402,5 +402,67 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "confidentiality",
       "return preparation"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-6050w",
+    "authorityType": "statute",
+    "citation": "IRC §6050W",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2025,
+      2026
+    ],
+    "effectiveDate": "2025-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6050W",
+    "ingestedAt": "2026-06-25T02:33:05.866Z",
+    "text": "Under IRC §6050W, every payment settlement entity must file an annual information return reporting the name, address, TIN, and gross amount of reportable payment transactions for each participating payee. Merchant acquiring entities must report all payment card transactions with no de minimis threshold. Third party settlement organizations, however, are required to report third party network transactions for a participating payee only if (1) the gross amount of those transactions exceeds $20,000 and (2) the aggregate number of such transactions exceeds 200; if either threshold is not met, no reporting is required. The 2025 amendment (Pub. L. 119–21, §70432) restored these dual $20,000/200-transaction thresholds, effective as if included in the American Rescue Plan Act of 2021. A written payee statement must be furnished on or before January 31 of the year following the calendar year for which the return was required.",
+    "keywords": [
+      "6050w",
+      "1099-k",
+      "third party settlement organization",
+      "payment card transaction",
+      "merchant acquiring entity",
+      "de minimis threshold",
+      "$20,000",
+      "200 transactions",
+      "gross amount",
+      "reportable payment transaction",
+      "third party network transaction",
+      "obbba",
+      "participating payee",
+      "information return",
+      "payment settlement entity"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-174a",
+    "authorityType": "statute",
+    "citation": "IRC §174A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2025,
+      2026
+    ],
+    "effectiveDate": "2025-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/174A",
+    "ingestedAt": "2026-06-25T02:33:15.429Z",
+    "text": "Under IRC §174A, a taxpayer may deduct domestic research or experimental expenditures—those paid or incurred in connection with a trade or business and not attributable to foreign research within the meaning of §41(d)(4)(F)—in full in the taxable year paid or incurred, notwithstanding §263. Software development costs are treated as research or experimental expenditures for this purpose. As an alternative, the taxpayer may elect to capitalize such expenditures and amortize them ratably over a period of not less than 60 months, beginning with the month benefits are first realized; once made, that election and the chosen period bind all subsequent taxable years unless the Secretary approves a change. The section does not apply to land acquisition or improvement, depreciable or depletable property used in research, or mineral/oil-and-gas exploration expenditures. This provision applies to amounts paid or incurred in taxable years beginning after December 31, 2024, with a transition election available for certain small businesses to apply it retroactively to taxable years beginning after December 31, 2021.",
+    "keywords": [
+      "irc §174a",
+      "section 174a",
+      "domestic research expenditures",
+      "experimental expenditures",
+      "current expensing",
+      "r&d deduction",
+      "amortization election",
+      "60-month amortization",
+      "software development",
+      "foreign research exclusion",
+      "obbba",
+      "taxable years beginning after december 31 2024",
+      "small business retroactive election",
+      "unamortized amounts",
+      "trade or business"
+    ]
   }
 ];

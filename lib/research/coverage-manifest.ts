@@ -92,8 +92,8 @@ export function coverageFor(
 // retrieval can name WHICH provision is missing. This is a small topic→section index, NOT a
 // coverage claim (coverage always comes from the derived manifest). Extend as the corpus grows.
 const TOPIC_ANCHORS: { re: RegExp; section: string }[] = [
-  { re: /1099-?k\b|third.?party settlement|tpso/i, section: "OBBBA §70432" },
-  { re: /1099-?nec\b|1099-?misc\b|nonemployee comp/i, section: "OBBBA §70433" },
+  { re: /1099-?k\b|third.?party settlement|tpso/i, section: "IRC §6050W" }, // OBBBA §70432 amends §6050W (now ingested)
+  { re: /1099-?nec\b|1099-?misc\b|nonemployee comp/i, section: "IRC §6041" }, // OBBBA §70433 amends §6041
   { re: /clean vehicle|\bev\b credit|electric vehicle credit|\b30d\b/i, section: "IRC §30D" },
   { re: /residential clean energy|rooftop solar|solar credit|\b25d\b/i, section: "IRC §25D" },
   { re: /salt cap|state and local tax/i, section: "IRC §164" },
