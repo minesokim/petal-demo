@@ -4,15 +4,18 @@
 //
 // Public authority only (no taxpayer data → §7216-clean). Run:
 //   node --env-file=.env.local --import tsx scripts/research-benchmark.mts [--no-judge]
-import { AnthropicProvider } from "../lib/ai/anthropic";
+import { getProvider } from "../lib/ai/provider-factory";
 import { researchAnswer } from "../lib/research/engine";
 import { GOLDEN_CASES } from "../tests/research/golden/cases";
 import { gradeAll, type GradableAnswer } from "../tests/research/golden/grade";
 
 async function main() {
   const noJudge = process.argv.includes("--no-judge");
-  const proposer = new AnthropicProvider(process.env.ANTHROPIC_API_KEY, "claude-sonnet-4-6");
-  const judge = noJudge ? undefined : new AnthropicProvider(process.env.ANTHROPIC_API_KEY, "claude-opus-4-8");
+  // Provider-aware: with PETAL_DEV_INFERENCE=codex-sub the whole eval runs on GPT-5.5 (via the local
+  // proxy); otherwise it's the Anthropic baseline (Sonnet proposer, Opus judge). Same golden set,
+  // same grader → an apples-to-apples Claude vs GPT-5.5 measured error rate.
+  const proposer = getProvider("claude-sonnet-4-6");
+  const judge = noJudge ? undefined : getProvider("claude-opus-4-8");
 
   const answers: Record<string, GradableAnswer> = {};
   for (const c of GOLDEN_CASES) {
