@@ -26,7 +26,7 @@ import { researchAnswer } from "@/lib/research/engine";
 import { compute, ComputeRequest } from "@/lib/tax-ai/compute";
 import { lookupParameter, type ParameterProvision } from "@/lib/tax/figures/params";
 import { getProvider } from "@/lib/ai/provider-factory";
-import type { Jurisdiction } from "@/lib/tax/types";
+import { type Jurisdiction, jurisdictionSchema } from "@/lib/tax/types";
 
 async function firm() {
   return loadFirmData();
@@ -131,7 +131,7 @@ const INTENT_TOOLS: AgentTool[] = [
     schema: z.object({
       question: z.string().min(1),
       taxYear: z.number().int().min(2020).max(2030).optional(),
-      jurisdiction: z.enum(["federal", "CA"]).optional(),
+      jurisdiction: jurisdictionSchema.optional(),
     }),
     run: async (a) => {
       const proposer = getProvider("claude-sonnet-4-6");

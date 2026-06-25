@@ -5,7 +5,45 @@
 import { z } from "zod";
 
 export type FilingStatus = "single" | "mfj" | "mfs" | "hoh" | "qss";
-export type Jurisdiction = "federal" | "CA";
+
+// Jurisdiction widens from "federal"|"CA" to all 50 states + DC so the engine can REPRESENT a
+// question for any state and honestly answer "out of scope" (the coverage manifest + getFigures
+// throwing on an unregistered jurisdiction) rather than the TYPE forbidding it. Widening the type is
+// the keystone that UNBLOCKS multistate — formalized coverage is still gated by STATE_PROFILES + the
+// figure registry; it is NOT a claim that 50 states are covered.
+export const STATE_CODES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS",
+  "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC",
+  "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+] as const;
+export type StateCode = (typeof STATE_CODES)[number];
+export type Jurisdiction = "federal" | StateCode;
+export const jurisdictionSchema = z.enum(["federal", ...STATE_CODES]);
+
+// How a state conforms to the IRC — the per-state, per-provision tangle that makes state tax hard.
+// `static` freezes to a specific IRC date (post-date federal changes like OBBBA do NOT flow through
+// without state legislation); `rolling` tracks current IRC; `selective` adopts piecemeal.
+export type ConformityMethod = "rolling" | "static" | "selective" | "none";
+export type StateProfile = {
+  code: StateCode;
+  name: string;
+  hasIncomeTax: boolean;
+  conformityMethod: ConformityMethod;
+  conformityDate?: string; // for static conformity: the frozen IRC date
+  decoupledSections: string[]; // IRC sections the state does NOT follow (e.g. "168(k)" bonus)
+};
+// Populated only where coverage is REAL; absent ⇒ out-of-scope (surfaced honestly, never guessed).
+// CA first per the beachhead plan. Expand state-by-state as the corpus + figures land.
+export const STATE_PROFILES: Partial<Record<StateCode, StateProfile>> = {
+  CA: {
+    code: "CA",
+    name: "California",
+    hasIncomeTax: true,
+    conformityMethod: "static",
+    conformityDate: "2025-01-01", // SB 711 froze CA to the IRC as of 1/1/2025 (pre-OBBBA)
+    decoupledSections: ["168(k)"], // CA does not allow federal bonus depreciation
+  },
+};
 
 // A resolvable pointer to primary authority. `cite` is the legal string a preparer
 // would write on a workpaper; `sourceUrl` resolves to the official text.
@@ -64,7 +102,7 @@ export function figureSchema<T extends z.ZodTypeAny>(value: T) {
   return z.object({
     value,
     taxYear: z.number().int(),
-    jurisdiction: z.enum(["federal", "CA"]),
+    jurisdiction: jurisdictionSchema,
     citation: citationSchema,
     verified: z.boolean(),
     effectiveFrom: z.string().optional(),

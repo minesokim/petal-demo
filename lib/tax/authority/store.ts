@@ -11,7 +11,7 @@
 // Model-free by construction: nothing here imports from lib/ai/*. Pure functions only.
 
 import { z } from "zod";
-import type { Jurisdiction } from "../types";
+import { type Jurisdiction, jurisdictionSchema } from "../types";
 import { CORPUS_2025 } from "./corpus-2025";
 import { CORPUS_OBBBA } from "../../research/corpus-obbba";
 import { CORPUS_INGESTED } from "../../research/corpus-ingested";
@@ -55,7 +55,7 @@ export const authorityChunkSchema = z.object({
   chunkId: z.string().min(1),
   authorityType: z.enum(["statute", "regulation", "irs_guidance", "case", "form_instruction"]),
   citation: z.string().min(1),
-  jurisdiction: z.enum(["federal", "CA"]),
+  jurisdiction: jurisdictionSchema,
   taxYear: z.array(z.number().int()).min(1, "a chunk must apply to at least one tax year"),
   effectiveDate: z.string().min(1),
   supersededBy: z.string().optional(),
