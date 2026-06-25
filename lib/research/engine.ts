@@ -362,6 +362,16 @@ function verifyPositions(
   const groundedPositions: ReasoningOutput["positions"] = [];
 
   for (const p of out.positions) {
+    // BIND THE FAITHFULNESS GATE (Phase-0): deriveTier (in reasonAndScore) floors a position to
+    // "abstain" when its claims are NOT grounded in the cited sources (faithfulnessScore < 0.5),
+    // structural verification failed, or there is no on-point authority. That signal was computed
+    // then discarded — a live false-confidence path. Honor it: an abstain-tier position never ships,
+    // even if it carries a syntactically valid citation.
+    if (p.tier === "abstain") {
+      const note = "claim not grounded in its cited authority (faithfulness gate)";
+      if (!ungrounded.includes(note)) ungrounded.push(note);
+      continue;
+    }
     let positionOk = p.citations.length > 0; // no citation, no claim
     const positionChunks: AuthorityChunk[] = [];
     for (const ref of p.citations) {
