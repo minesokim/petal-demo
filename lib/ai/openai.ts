@@ -41,12 +41,22 @@ export class OpenAIProvider implements AIProvider {
     return { reasoning_effort: this.reasoningEffort, ...extra } as never;
   }
 
+  // GPT-5.x REASONING tokens are billed against max_completion_tokens, so a small visible-output
+  // budget (the distill step asks for only 600) can be entirely consumed by hidden reasoning →
+  // empty/truncated content → a dropped chunk or a silent abstain. (Diagnosed: this is the codex-
+  // specific amplifier of research over-abstention.) Add a reasoning RESERVE sized by effort so the
+  // caller's requested OUTPUT budget is actually available for visible tokens on top of reasoning.
+  private withReserve(maxTokens: number): number {
+    const reserve = this.reasoningEffort === "high" ? 9000 : this.reasoningEffort === "medium" ? 5000 : 2000;
+    return maxTokens + reserve;
+  }
+
   async generateObject<T>(args: GenerateArgs<T>) {
     const model = args.model ?? this.defaultModel;
     const parameters = zodToJsonSchema(args.schema, { target: "openApi3" }) as Record<string, unknown>;
     const res = await this.client.chat.completions.create(this.params({
       model,
-      max_completion_tokens: args.maxTokens ?? 1024,
+      max_completion_tokens: this.withReserve(args.maxTokens ?? 1024),
       messages: [
         { role: "system", content: redactText(args.system) },
         { role: "user", content: redactText(args.prompt) },
@@ -70,7 +80,7 @@ export class OpenAIProvider implements AIProvider {
     const history = (args.history ?? []).map((m) => ({ role: m.role, content: redactText(m.content) }));
     const res = await this.client.chat.completions.create(this.params({
       model,
-      max_completion_tokens: args.maxTokens ?? 1024,
+      max_completion_tokens: this.withReserve(args.maxTokens ?? 1024),
       messages: [
         { role: "system", content: redactText(args.system) },
         ...history,
@@ -89,7 +99,7 @@ export class OpenAIProvider implements AIProvider {
     }
     const res = await this.client.chat.completions.create(this.params({
       model,
-      max_completion_tokens: args.maxTokens ?? 1500,
+      max_completion_tokens: this.withReserve(args.maxTokens ?? 1500),
       messages: [
         { role: "system", content: redactText(args.system) },
         {
