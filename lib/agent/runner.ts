@@ -15,6 +15,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { anthropicClient } from "@/lib/ai/anthropic-client";
+import type { CalibrationReason } from "@/lib/research/engine";
 import { redactText, redactValue } from "@/lib/ai/redact";
 import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
@@ -42,6 +43,11 @@ export type AgentTurn = { role: "user" | "assistant"; content: string };
 // Public authority only (no PII), captured from tax_research / tax_compute so the UI can render
 // clickable sources beside the answer (cheap verification: the preparer checks the cite itself).
 export type AgentCitation = { cite: string; sourceUrl: string; authority?: string };
+
+// The research calibration surfaced to the UI: the MOST CAUTIONARY reason-code across the turn's
+// tax_research calls, so the chat can flag "unsettled law" / "coverage gap" next to the answer.
+export type AgentCalibration = CalibrationReason;
+const CAL_RANK: Record<AgentCalibration, number> = { grounded: 0, indeterminate: 1, ungrounded: 2, coverage_gap: 3, unsettled: 4 };
 
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
@@ -122,7 +128,7 @@ export async function runAgent(
   message: string,
   history: AgentTurn[] = [],
   opts: { scope?: DataScope; model?: ModelSeam; onEvent?: (e: AgentEvent) => void } = {},
-): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[] }> {
+): Promise<{ reply: string; proposedActions: ProposedAction[]; citations: AgentCitation[]; calibration?: AgentCalibration }> {
   assertZdrModel(AGENT_MODEL);
   assertCleared(opts.scope ?? "real"); // operating over real firm data; gated by PETAL_7216_CLEARED
 
@@ -164,6 +170,7 @@ export async function runAgent(
 
   const proposedActions: ProposedAction[] = [];
   const citations: AgentCitation[] = []; // accumulated from tax_research / tax_compute (deduped)
+  let calibration: AgentCalibration | undefined; // most cautionary tax_research calibration this turn
   let reply = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -215,6 +222,12 @@ export async function runAgent(
                 }
               }
             }
+            // Keep the MOST CAUTIONARY calibration so the UI can flag unsettled law / coverage gaps.
+            const cal = (out as { calibration?: unknown }).calibration;
+            if (typeof cal === "string" && cal in CAL_RANK) {
+              const c = cal as AgentCalibration;
+              if (calibration === undefined || CAL_RANK[c] > CAL_RANK[calibration]) calibration = c;
+            }
           }
           // HIGH-5: redact read-tool output BEFORE it re-enters the model context (client
           // records / SSN-shaped strings must not re-enter the live model — §7216/INV-4).
@@ -244,5 +257,5 @@ export async function runAgent(
     }
   }
 
-  return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions, citations };
+  return { reply: reply || (proposedActions.length ? "I've staged those for your confirmation." : "Done."), proposedActions, citations, calibration };
 }

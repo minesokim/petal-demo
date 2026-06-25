@@ -47,6 +47,8 @@ export interface ChatAnswer {
   sources?: string[];
   /** cited legal authority for a research answer — each links to its official primary source. */
   citations?: { cite: string; url?: string; authority?: string }[];
+  /** research calibration reason-code when it's a caution worth flagging (unsettled law, coverage gap, …). */
+  calibration?: string;
   links?: { label: string; href: string }[];
   /** the "Do" card - turns the answer into a run */
   action?: { title: string; desc: string; button: string; category: SkillCategory; href?: string };

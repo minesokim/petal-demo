@@ -47,7 +47,15 @@ function answerFromReply(reply: string): ChatAnswer {
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
 
-type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[] };
+type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[]; calibration?: string };
+
+// Friendly, action-pointing labels for the research calibration reason-codes (grounded is never shown).
+const CAL_LABEL: Record<string, string> = {
+  unsettled: "Unsettled law — weigh §6662 substantial authority and Form 8275",
+  coverage_gap: "Coverage gap — no authority found; check the primary source",
+  ungrounded: "Not grounded — review the retrieved authority directly",
+  indeterminate: "Fact-dependent — apply the governing multi-factor test",
+};
 
 /** Friendly inline message for an error frame (so the bubble never goes raw). */
 function friendlyAgentError(code: string): string {
@@ -101,7 +109,7 @@ async function streamAgent({
       if (typeof label === "string" && label.trim()) pushStep(label);
     } else if (event === "done") {
       const d = data as AgentResult;
-      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations };
+      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration };
     } else if (event === "error") {
       errored = (data as { error?: unknown }).error as string ?? "agent_error";
     }
@@ -219,12 +227,14 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
     // stream errors (network failure or an `error` frame).
     streamAgent({ message, history, pushStep })
-      .then(({ reply, proposedActions, citations }) => {
+      .then(({ reply, proposedActions, citations, calibration }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
         if (proposedActions?.length) ans.confirmActions = proposedActions;
         // Surface the research engine's cited authority as clickable sources beside the answer.
         if (citations?.length) ans.citations = citations.map(c => ({ cite: c.cite, url: c.sourceUrl, authority: c.authority }));
+        // Surface the calibration reason-code (only when it's a caution worth showing).
+        if (calibration && calibration !== "grounded") ans.calibration = calibration;
         settle(ans, text);
         persist("assistant", text);
       })
@@ -653,6 +663,18 @@ export function PetalAnswerView({
               </span>
             );
           })}
+        </div>
+      )}
+
+      {/* Calibration caution — the research honesty signal: tells the preparer WHY the answer is not
+          a flat assertion (unsettled law -> disclosure analysis, vs a coverage gap, vs fact-driven).
+          Monochrome pill, consistent with the frozen design. Only shown when there's a caution. */}
+      {allDone && answer.calibration && (
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--os-border)] bg-[var(--os-surface)] px-2 py-1 text-[11px] text-[var(--os-ink-muted)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--os-ink-subtle)]" />
+            {CAL_LABEL[answer.calibration] ?? answer.calibration}
+          </span>
         </div>
       )}
 
