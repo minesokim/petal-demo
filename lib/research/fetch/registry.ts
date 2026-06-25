@@ -5,7 +5,7 @@
 
 import { assertPublicLawQuery } from "./guard";
 import { searchGovInfo, fetchGovInfoText, stripHtml, type GovInfoResult } from "./govinfo";
-import { searchTaxCourt, taxCourtDownloadUrl } from "./tax-court";
+import { searchTaxCourt, taxCourtDownloadUrl, fetchTaxCourtText } from "./tax-court";
 import { searchIrb } from "./irs-irb";
 import { searchFederalRegister } from "./federal-register";
 
@@ -47,9 +47,10 @@ const govinfoStatute: FetchSource = {
   },
 };
 
-// ── US Tax Court (DAWSON): case law. Search works today; full-text PDF extraction is a follow-up,
-// so getText fails closed for now → a case-law fetch abstains honestly rather than returning text it
-// hasn't actually read. ──
+// ── US Tax Court (DAWSON): case law — the courts axis. Search + full-text PDF extraction are wired
+// (fetchTaxCourtText: download-url → presigned PDF → unpdf text), so a holding can actually GROUND an
+// answer; too-short/failed extraction still fails closed → honest abstain. precedential=false (Summary
+// Opinions, IRC §7463(b)) is carried so the engine never cites one as precedent. ──
 const taxCourt: FetchSource = {
   id: "tax-court",
   label: "U.S. Tax Court (DAWSON)",
@@ -65,7 +66,9 @@ const taxCourt: FetchSource = {
       authorityTier: 3,
       precedential: o.precedential,
       getText: async () => {
-        throw new Error("tax-court full-text extraction not yet wired (PDF) — fail closed → abstain");
+        const text = await fetchTaxCourtText(taxCourtDownloadUrl(o.docketNumber, o.docketEntryId), { signal: opts?.signal });
+        if (text.length < 200) throw new Error("tax-court opinion text too short to ground → abstain"); // honest
+        return text;
       },
     }));
   },

@@ -9,6 +9,8 @@
 // Public US-government data only — queries are topic keywords / docket numbers, never taxpayer PII,
 // so this is §7216-clean (public scope). No API key required.
 
+import { extractText, getDocumentProxy } from "unpdf";
+
 const DAWSON_API = "https://public-api.dawson.ustaxcourt.gov/public-api/opinion-search";
 const DAWSON_BASE = "https://public-api.dawson.ustaxcourt.gov/public-api";
 
@@ -104,6 +106,37 @@ export async function searchTaxCourt(
 // ground in. Docket number / entry id are public identifiers — no PII.
 export function taxCourtDownloadUrl(docketNumber: string, docketEntryId: string): string {
   return `${DAWSON_BASE}/${encodeURIComponent(docketNumber)}/${encodeURIComponent(docketEntryId)}/public-document-download-url`;
+}
+
+/**
+ * Fetch + extract the FULL TEXT of a Tax Court opinion so a holding can actually GROUND an answer
+ * (closes the "case law searches but always abstains" gap). Two public DAWSON hops: GET the
+ * download-url endpoint → the short-lived presigned PDF URL → the PDF bytes → text via unpdf/pdfjs.
+ * All public US-government data (docket ids, not PII) → §7216-clean. `fetchImpl`/`extractImpl` are
+ * injectable so tests round-trip a generated PDF with no network.
+ */
+export async function fetchTaxCourtText(
+  downloadUrlEndpoint: string,
+  opts: { signal?: AbortSignal; fetchImpl?: typeof fetch; extractImpl?: (bytes: Uint8Array) => Promise<string> } = {},
+): Promise<string> {
+  const f = opts.fetchImpl ?? fetch;
+  const ua = { "user-agent": "PetalResearch/1.0 (tax-research)" };
+  // 1) resolve the presigned URL (DAWSON returns { url })
+  const meta = await f(downloadUrlEndpoint, { signal: opts.signal, headers: { accept: "application/json", ...ua } });
+  if (!meta.ok) throw new Error(`DAWSON download-url ${meta.status}`);
+  const j = (await meta.json()) as { url?: string };
+  const pdfUrl = typeof j.url === "string" ? j.url : "";
+  if (!pdfUrl) throw new Error("DAWSON download-url returned no presigned url");
+  // 2) fetch the PDF bytes
+  const pdfRes = await f(pdfUrl, { signal: opts.signal, headers: ua });
+  if (!pdfRes.ok) throw new Error(`DAWSON PDF ${pdfRes.status}`);
+  const bytes = new Uint8Array(await pdfRes.arrayBuffer());
+  // 3) extract text (real text layer — DAWSON opinions are digitally generated, not scans)
+  if (opts.extractImpl) return (await opts.extractImpl(bytes)).trim();
+  const pdf = await getDocumentProxy(bytes);
+  const { text } = await extractText(pdf, { mergePages: true });
+  const joined = typeof text === "string" ? text : (text as string[]).join("\n");
+  return joined.trim();
 }
 
 // True when an opinion may be cited as precedent. Summary Opinions cannot be (IRC §7463(b)); the
