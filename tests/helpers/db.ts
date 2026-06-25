@@ -16,6 +16,10 @@ export async function makeTestDb(): Promise<PGlite> {
     // Skip Supabase-managed `storage` schema migrations — PGlite has no storage schema
     // (Storage is verified against the cloud, not in these app-RLS tests).
     if (/\bstorage\.(buckets|objects)\b/.test(sql)) continue;
+    // Skip the pgvector-dependent authority-graph migrations — PGlite ships no `vector` extension or
+    // HNSW. The authority graph is PUBLIC reference data (no firm_id, no tenant RLS to exercise here),
+    // verified against the cloud Supabase, not these app-RLS tests (same rationale as storage above).
+    if (/\bcreate extension if not exists vector\b/i.test(sql) || /\bauthority_(nodes|versions|edges|embedding)\b/i.test(sql)) continue;
     await db.exec(sql);
   }
   return db;

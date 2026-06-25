@@ -19,6 +19,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { assertZdrModel, assertCleared, type DataScope } from "@/lib/ai/guard";
 import { redactText, redactValue } from "@/lib/ai/redact";
+import { recordUsage } from "@/lib/ai/usage-ledger";
 import type { AgentTool } from "./registry";
 import { runTool } from "./registry";
 import { classifyRisk, type RiskAssessment } from "./risk";
@@ -89,6 +90,19 @@ export class AnthropicToolModel implements ToolModel {
         return null;
       })
       .filter((b): b is ModelContentBlock => b !== null);
+    // Cost meter — the AGENTIC OS lane (the cost wildcard). One record per agent turn, with the
+    // precise cached/uncached split so prompt-cache savings on the (large, static) agent system + tools
+    // prefix are reflected in the bill.
+    recordUsage({
+      operation: "agent:turn",
+      model: args.model,
+      usage: {
+        inputTokens: res.usage?.input_tokens ?? 0,
+        outputTokens: res.usage?.output_tokens ?? 0,
+        cacheReadTokens: res.usage?.cache_read_input_tokens ?? 0,
+        cacheWriteTokens: res.usage?.cache_creation_input_tokens ?? 0,
+      },
+    });
     return {
       content,
       stopReason: res.stop_reason ?? "end_turn",

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { ModelSeam } from "./runner";
+import { recordUsage } from "@/lib/ai/usage-ledger";
 
 // DEV-ONLY agent-loop seam: runs Petal's model-driven tool loop on an OpenAI-compatible endpoint
 // (the local GPT-5.5 Codex proxy) instead of Anthropic, so localhost can evaluate "the codex
@@ -100,12 +101,22 @@ export function codexSeam(system: string): ModelSeam {
     let text = "";
     // tool_calls assembled by streaming index (deltas arrive fragmented: id, then name, then args).
     const calls = new Map<number, { id: string; name: string; args: string }>();
+    // Real token usage for the cost meter (the agent-OS lane). prompt_tokens is cache-inclusive.
+    let usageInput = 0, usageOutput = 0, usageCached = 0;
+    const capture = (u?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } } | null) => {
+      if (!u) return;
+      usageCached = u.prompt_tokens_details?.cached_tokens ?? 0;
+      usageInput = Math.max(0, (u.prompt_tokens ?? 0) - usageCached);
+      usageOutput = u.completion_tokens ?? 0;
+    };
 
     if (onTextDelta) {
-      const stream = (await client.chat.completions.create({ ...params, stream: true } as never)) as unknown as AsyncIterable<{
+      const stream = (await client.chat.completions.create({ ...params, stream: true, stream_options: { include_usage: true } } as never)) as unknown as AsyncIterable<{
         choices?: { delta?: { content?: string | null; tool_calls?: { index: number; id?: string; function?: { name?: string; arguments?: string } }[] } }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } } | null;
       }>;
       for await (const chunk of stream) {
+        if (chunk.usage) capture(chunk.usage); // final chunk carries usage (include_usage)
         const d = chunk.choices?.[0]?.delta;
         if (!d) continue;
         if (typeof d.content === "string" && d.content) {
@@ -122,6 +133,7 @@ export function codexSeam(system: string): ModelSeam {
       }
     } else {
       const res = (await client.chat.completions.create(params as never)) as OpenAI.Chat.ChatCompletion;
+      capture(res.usage as never);
       const msg = res.choices[0]?.message;
       text = msg?.content ?? "";
       (msg?.tool_calls ?? []).forEach((tc, i) => {
@@ -137,6 +149,10 @@ export function codexSeam(system: string): ModelSeam {
     }
     const stop_reason = content.some((b) => b.type === "tool_use") ? "tool_use" : "end_turn";
 
+    // Cost meter — the agent-OS lane on the codex dev path. Real token counts (no longer hardcoded 0),
+    // so the lane shows up in the ledger and reprices to prod Opus like every other call.
+    recordUsage({ operation: "agent:turn", model, usage: { inputTokens: usageInput, outputTokens: usageOutput, cacheReadTokens: usageCached } });
+
     // Minimal Anthropic.Message: the loop reads only `.content` and `.stop_reason`.
     return {
       id: "codex",
@@ -146,7 +162,7 @@ export function codexSeam(system: string): ModelSeam {
       content,
       stop_reason,
       stop_sequence: null,
-      usage: { input_tokens: 0, output_tokens: 0 },
+      usage: { input_tokens: usageInput, output_tokens: usageOutput },
     } as unknown as Anthropic.Message;
   };
 }
