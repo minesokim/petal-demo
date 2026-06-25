@@ -149,3 +149,15 @@ corpus depth — not just retrieval mechanics.
   the cheap-win plateau on the DEFAULT path is reached; remaining in-memory lifts are real engineering —
   post-sunset reasoning (tips-sunset), compound-question stitching (tips-se-tax-2025), and corpus ingestion
   (Circ 230 §10.34(d); §168(k) Jan-10 boundary). The figure-gate fix (13.2%→10.5%) was the last cheap win.
+- **2026-06-25 — Circ 230 ingestion re-measured: in-memory 36/38 (94.7%), ERROR RATE 13.2% → 5.3% this session.**
+  Verify-first caught a SECOND wrong golden case: `circ230-reliance-on-others` demanded §10.34(d) (client-info
+  reliance) for a question about relying on a COLLEAGUE's work product, which is §10.22(b) (verified vs eCFR /
+  Cornell LII / IRS). Ingested BOTH reliance rules (faithful public-domain paraphrases) + reframed the case as
+  a discrimination test → now passes. Cumulative session climb: 86.8% → 94.7% (in-memory). Only 2 in-memory
+  failures remain, both real engine features: `tips-deduction-sunset-2029` (post-expiration reasoning — §70201
+  is in-corpus but the engine hedges instead of answering "expired after 2028") and `tips-se-tax-2025` (compound
+  SE-tax stitching). Graph ALSO 36/38 but STILL DO NOT FLIP: it regressed `fab-schedule-tip-2025` from a correct
+  decline to a HALLUCINATION (confidently answered a fake-form probe) — a strictly worse trade for a cited-and-
+  abstaining engine, even at equal headline rate. Two patterns banked: (1) 2 of this session's "failures" were
+  flawed TESTS, not the engine — the benchmark needs the same scrutiny as the model; (2) the graph's dense recall
+  can induce fabrication, the one failure class that disqualifies a flip regardless of pass rate.
