@@ -582,3 +582,58 @@ export const artifacts = pgTable("artifacts", {
   index("artifacts_task_idx").on(t.taskId),
   index("artifacts_firm_client_idx").on(t.firmId, t.clientId),
 ]);
+
+// ───────────────────────── ④ Authority graph — the research-AI spine ─────────────────────────
+// PUBLIC reference data (statutes/regs/cases/rulings shared across ALL firms) → NO firm_id; these
+// are not tenant tables. RLS (0036) is read-to-all-authenticated, write-service-only. Point-in-time
+// VERSIONED: a node is a stable identity across versions; a version is a time-slice with
+// [valid_from, valid_to) + the tax_years it governs; edges form the citation graph. A hand-written
+// migration adds the generated tsvector column + GIN index (sparse search) and pgvector later.
+// Spec: docs/superpowers/specs/2026-06-25-authority-graph-spine.md.
+export const authorityKindEnum = pgEnum("authority_kind", [
+  "statute", "regulation", "case", "ruling", "procedure", "notice", "form_instruction", "state",
+]);
+export const delegationBasisEnum = pgEnum("delegation_basis", ["express", "general_7805", "skidmore"]);
+export const courtLevelEnum = pgEnum("court_level", ["tax", "district", "circuit", "supreme"]);
+export const authorityEdgeTypeEnum = pgEnum("authority_edge_type", [
+  "cites", "cited_by", "superseded_by", "supersedes", "amends", "amended_by", "implements", "invalidates", "interprets", "relies_on",
+]);
+export const edgeSourceEnum = pgEnum("authority_edge_source", ["structural", "extracted", "llm_verified"]);
+
+export const authorityNodes = pgTable("authority_nodes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: authorityKindEnum("kind").notNull(),
+  citation: text("citation").notNull(), // canonical, e.g. "IRC §199A"
+  jurisdiction: text("jurisdiction").notNull(), // "federal" | <StateCode>
+  courtLevel: courtLevelEnum("court_level"),
+  circuit: text("circuit"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("authority_nodes_citation_juris_uq").on(t.citation, t.jurisdiction)]);
+
+export const authorityVersions = pgTable("authority_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nodeId: uuid("node_id").notNull().references(() => authorityNodes.id, { onDelete: "cascade" }),
+  validFrom: text("valid_from"), // ISO date this version took effect
+  validTo: text("valid_to"), // null = currently in force
+  taxYears: integer("tax_years").array().notNull(),
+  text: text("text").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  rawBlobUrl: text("raw_blob_url"),
+  contentHash: text("content_hash"),
+  authorityClass: integer("authority_class"), // §6662 substantial-authority rank
+  delegationBasis: delegationBasisEnum("delegation_basis"),
+  precedential: boolean("precedential"),
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("authority_versions_node_idx").on(t.nodeId)]);
+
+export const authorityEdges = pgTable("authority_edges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fromVersion: uuid("from_version").notNull().references(() => authorityVersions.id, { onDelete: "cascade" }),
+  toVersion: uuid("to_version").notNull().references(() => authorityVersions.id, { onDelete: "cascade" }),
+  edgeType: authorityEdgeTypeEnum("edge_type").notNull(),
+  source: edgeSourceEnum("source").notNull().default("structural"),
+}, (t) => [
+  unique("authority_edges_uq").on(t.fromVersion, t.toVersion, t.edgeType),
+  index("authority_edges_from_idx").on(t.fromVersion),
+  index("authority_edges_to_idx").on(t.toVersion),
+]);
