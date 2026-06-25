@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { recordUsage, resetLedger, ledgerTotals, repriceAt } from "@/lib/ai/usage-ledger";
+import { recordUsage, resetLedger, ledgerTotals, repriceAt, runWithUsageScope } from "@/lib/ai/usage-ledger";
 
 describe("usage ledger", () => {
   beforeEach(() => resetLedger());
@@ -19,5 +19,27 @@ describe("usage ledger", () => {
     recordUsage({ operation: "research:reason", model: "gpt-5.5", usage: { inputTokens: 1_000_000, outputTokens: 0 } });
     expect(ledgerTotals().total).toBeCloseTo(1.25, 6);
     expect(repriceAt("claude-opus-4-8")).toBeCloseTo(15, 6);
+  });
+
+  it("isolates usage per async scope — concurrent requests never cross-contaminate (multi-tenant safety)", async () => {
+    // Two scopes whose recordUsage calls INTERLEAVE in wall-clock (the setTimeouts force it). Each must
+    // see ONLY its own entries — otherwise firm A's research cost lands on firm B's bill.
+    const [a, b] = await Promise.all([
+      runWithUsageScope(async () => {
+        recordUsage({ operation: "research:reason", model: "claude-opus-4-8", usage: { inputTokens: 1000, outputTokens: 0 } });
+        await new Promise((r) => setTimeout(r, 8));
+        recordUsage({ operation: "research:verify", model: "claude-opus-4-8", usage: { inputTokens: 500, outputTokens: 0 } });
+        return "A";
+      }),
+      runWithUsageScope(async () => {
+        await new Promise((r) => setTimeout(r, 3));
+        recordUsage({ operation: "agent:turn", model: "claude-sonnet-4-6", usage: { inputTokens: 2000, outputTokens: 0 } });
+        return "B";
+      }),
+    ]);
+    expect(a.result).toBe("A");
+    expect(b.result).toBe("B");
+    expect(a.entries.map((e) => e.operation)).toEqual(["research:reason", "research:verify"]);
+    expect(b.entries.map((e) => e.operation)).toEqual(["agent:turn"]);
   });
 });

@@ -18,6 +18,8 @@ import { getProvider } from "@/lib/ai/provider-factory";
 import type { AIProvider } from "@/lib/ai/provider";
 import { getFirmContext } from "@/lib/auth/context";
 import { researchAnswer } from "@/lib/research/engine";
+import { runWithUsageScope } from "@/lib/ai/usage-ledger";
+import { persistUsageForOrg } from "@/lib/ai/usage-store";
 import type { Jurisdiction } from "@/lib/tax/types";
 
 export const runtime = "nodejs";
@@ -72,7 +74,17 @@ export async function POST(req: Request) {
     // engine contract. The internal `abstain` bucket (authority retrieved but nothing groundable)
     // renders to the user exactly like a hedge, so we map it to "hedge" for the chat wire, which
     // models the three OBSERVABLE buckets (answer | hedge | coverage_gap).
-    const result = await researchAnswer(proposer, judge, question, { taxYear, jurisdiction });
+    // Scope the meter to THIS request (AsyncLocalStorage) so concurrent firms' AI cost never mixes,
+    // then persist it to ai_usage best-effort — a cost-accounting failure must NEVER fail the answer
+    // (honest degradation: log the error name only, return the research result regardless).
+    const { result, entries } = await runWithUsageScope(() =>
+      researchAnswer(proposer, judge, question, { taxYear, jurisdiction }),
+    );
+    try {
+      await persistUsageForOrg(ctx.clerkOrgId, entries);
+    } catch (e) {
+      console.error("[/api/research] ai_usage persist failed:", e instanceof Error ? e.name : "unknown");
+    }
     const wireBucket = result.bucket === "abstain" ? "hedge" : result.bucket;
     return NextResponse.json(
       {
