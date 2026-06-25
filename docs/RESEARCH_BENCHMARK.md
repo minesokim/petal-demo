@@ -139,3 +139,13 @@ corpus depth — not just retrieval mechanics.
   `tips-deduction-sunset-2029` (year-filter correctly excludes §70201 for 2029 → unsatisfiable cite demand)
   and `estate-exemption-7m-probe-2026` (demands bill-section "70106" though §2010 is the correct cite the
   sibling case accepts). Shared coverage holes: §168(k) Jan-10 boundary, Circ 230 §10.34(d) (uningested).
+- **2026-06-25 — VERIFIED the two candidate "eval-misspecs"; NEITHER is a cheap fix (do not game the eval).**
+  `estate-7m-probe` is GRAPH-ONLY (in-memory already passes it citing §70106); the graph folds the OBBBA
+  estate amendment into the §2010 node, so it's a graph storage difference, not a default-path miss — fixing
+  it would not move the shipped (in-memory) score. `tips-sunset-2029` is NOT an eval bug: it's a real engine
+  capability gap — the point-in-time filter correctly hides the expired §70201 for 2029, so the engine hedges
+  for lack of governing authority; the correct answer ("expired after 2028, not available in 2029") needs
+  post-sunset reasoning the engine lacks. Loosening the eval to accept the hedge would game it. CONCLUSION:
+  the cheap-win plateau on the DEFAULT path is reached; remaining in-memory lifts are real engineering —
+  post-sunset reasoning (tips-sunset), compound-question stitching (tips-se-tax-2025), and corpus ingestion
+  (Circ 230 §10.34(d); §168(k) Jan-10 boundary). The figure-gate fix (13.2%→10.5%) was the last cheap win.
