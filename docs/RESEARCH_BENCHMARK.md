@@ -33,6 +33,37 @@ release of the research engine until the regression is explained or fixed. Raise
 engine improves; never lower it to make a release pass, and never edit a golden case to dodge a real
 failure (fix the engine).
 
+## Measured A/B (2026-06-25): in-memory corpus vs authority graph (codex `--no-judge`)
+
+Ran the full 38-case golden set twice on the codex (GPT-5.5) path, identical except retrieval, via the
+sharded parallel harness (`--shard k/N --json`, 6 shards/mode, codex concurrency bounded). An
+adversarial synthesis agent read `cases.ts` + `grade.ts` and classified every failure.
+
+| Retrieval | Pass | Error | New regressions vs in-memory |
+|---|---|---|---|
+| In-memory keyword corpus | **33/38 (86.8%)** | 13.2% | — |
+| Authority graph (RRF sparse+dense) | 32/38 (84.2%) | 15.8% | 2 |
+
+**Verdict: do NOT flip the default to the graph.** It is one case worse and adds two regressions
+against one new win (`tips-se-tax-2025`). All 6 graph failures are real engine-gaps (0 codex-flakes,
+0 eval-misspecs per the synthesis agent), so the number is trustworthy without a re-run.
+
+**Precise cause — a retrieval probe, not the failure reasons (which mislead).** The graph is NOT
+missing nodes. For both regressed queries `graphRetrieve` returns the CORRECT authority as the **#1**
+hit: `salt-cap-2026` → `OBBBA §70120 amending §164(b)(6),(7)`; `bonus-depreciation-2025` →
+`OBBBA §168(k) 100%` (and the stale 40% node is correctly year-filtered out, tagged 2023/2024). The
+regression lives in the REST of the retrieved set: the dense layer (all-MiniLM-L6-v2, 384-dim) injects
+topically-adjacent-but-wrong neighbors that tight keyword retrieval never surfaces — §2010 estate +
+§199A QBI for the bonus question; §68 / §70111 itemized-limitation for SALT. That noise makes the
+model hedge/abstain (SALT) or fall back to the parametric "40%" (bonus). **Dense recall dilutes the
+context.** This *falsifies* the earlier naive hypothesis below that "hybrid embeddings + a citation
+graph" would by itself lift the score.
+
+**Fix (Phase 1b tuning, not more data):** gate dense matches by a cosine-similarity floor, lower `k`,
+and add a rerank, so dense recall adds coverage WITHOUT injecting off-topic chunks. The graph earns the
+default only when it ≥ in-memory AND closes the 4 shared corpus-depth gaps below, with no new
+regressions. Re-run this A/B after each retrieval change.
+
 ## Dominant failure mode (the real signal)
 
 The failure SET **varies run-to-run** while the count stays ~stable — the engine hovers right at the
@@ -47,8 +78,10 @@ safety architecture holds; it just declines too often):
 
 **Root cause (per the engine audit):** keyword-overlap retrieval is *lexically brittle* — a question
 whose wording doesn't hit a chunk's keywords retrieves nothing on-topic and the engine honestly
-abstains. The fix is retrieval (hybrid embeddings + a citation graph), not more guardrails. The
-near-zero **wrong-answer** rate is the point: Petal fails SAFE (abstains), it does not hallucinate.
+abstains. The near-zero **wrong-answer** rate is the point: Petal fails SAFE (abstains), it does not
+hallucinate. **Correction (measured 2026-06-25, see the A/B above):** the obvious fix — "hybrid
+embeddings + a citation graph" — did **not** help as built; naive RRF dense recall *added noise* and
+regressed two cases. The actual fix is a *gated* hybrid (similarity floor + rerank), not raw dense.
 
 ## Honest scope of this number
 
@@ -64,3 +97,7 @@ near-zero **wrong-answer** rate is the point: Petal fails SAFE (abstains), it do
 - **2026-06-25** — First published baseline. Golden set 26→38 (authority-grounded). Floor ~84% Claude
   `--no-judge` (~87% adjusting one eval false-positive). Failure mode: over-cautious abstention from
   lexically-brittle retrieval; zero wrong-figure assertions.
+- **2026-06-25** — Sharded A/B (codex `--no-judge`): in-memory **33/38 (86.8%)** vs authority graph
+  **32/38 (84.2%)**. Graph does NOT yet earn the default — naive RRF dense recall injects off-topic
+  chunks (probed: right node is #1, but §2010/§199A/§68 noise rides along) and regresses `salt-cap-2026`
+  + `bonus-depreciation-2025`. Next: gated hybrid (similarity floor + rerank), then re-A/B.
