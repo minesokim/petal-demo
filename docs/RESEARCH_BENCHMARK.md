@@ -127,3 +127,15 @@ corpus depth — not just retrieval mechanics.
   open work: the grounding step on graph chunks (`salt-cap-2026` retrieves §164 #1 but won't commit) + corpus
   depth for the 4 shared gaps. Lesson: a synthesis agent grading from reason-strings mislabeled an eval bug
   as an "engine-gap" — always verify against the model's actual output.
+- **2026-06-25 — FIGURE-GATE FIX re-measured (the moat number MOVED).** Root-caused (systematic debugging)
+  that `salt-cap-2026` abstained despite retrieving §164 #1: MONEY_RE over-captured ("$505,000, but" →
+  "$505,000, b" → parsed 505 BILLION → a GROUNDED figure false-flagged as ungrounded → the position dropped).
+  Fixed the regex (thousands grouping + unit `\b`). Re-A/B (codex `--no-judge`): **in-memory 34/38 (89.5%),
+  up from 33/38 — error rate 13.2% → 10.5%.** (Newly passes the two SALT phase-down cases that hit the same
+  bug; one harder case, qbi-sstb-above-threshold-2026, regressed.) Graph **33/38 (86.8%)** — still behind, and
+  it introduced a SAFETY regression: `fab-schedule-tip-2025` flipped from an honest coverage-gap decline to
+  HALLUCINATING a non-existent "Schedule TIP" form (dense retrieval surfaced tips-adjacent authority the engine
+  over-grounded). Do NOT flip. Two eval-misspecs surfaced for careful (source-verified) correction:
+  `tips-deduction-sunset-2029` (year-filter correctly excludes §70201 for 2029 → unsatisfiable cite demand)
+  and `estate-exemption-7m-probe-2026` (demands bill-section "70106" though §2010 is the correct cite the
+  sibling case accepts). Shared coverage holes: §168(k) Jan-10 boundary, Circ 230 §10.34(d) (uningested).
