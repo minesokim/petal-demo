@@ -476,7 +476,8 @@ export async function researchAnswer(
 
   // 1 — RETRIEVE. Year + jurisdiction filtered; superseded chunks already dropped by the store.
   const retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
-  const fetchFn = opts.fetchPrimary ?? fetchPrimary;
+  // The real fetcher distills raw authority via the proposer model; tests inject opts.fetchPrimary.
+  const fetchFn = opts.fetchPrimary ?? ((q: string, y: number, j: Jurisdiction) => fetchPrimary(q, y, j, { provider }));
 
   // 4a — COVERAGE/CALIBRATION when retrieval is EMPTY. A genuinely INDETERMINATE question (a
   // facts-and-circumstances doctrine — a property of the question, knowable from its wording)

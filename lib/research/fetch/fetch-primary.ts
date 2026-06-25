@@ -1,4 +1,5 @@
 import type { AuthorityChunk } from "@/lib/tax/authority/store";
+import type { AIProvider } from "@/lib/ai/provider";
 import { pickSources, type FetchSource } from "./registry";
 
 // Map a fetch source to the authority KIND for the synthetic chunk (drives display + tiering).
@@ -7,24 +8,71 @@ const TYPE_BY_SOURCE: Record<string, AuthorityChunk["authorityType"]> = {
   "tax-court": "case",
 };
 
+// ── DISTILL: the model abstains over raw statute (dense legalese); it grounds clean PARAPHRASES.
+// So before the engine reasons, boil each fetched primary text down to a concise operative-rule
+// paraphrase RELEVANT to the question — using ONLY facts in the source — and figure-gate it (mirrors
+// the ingest pipeline). A paraphrase that invents a figure not in the source, or that the model marks
+// not-relevant, is dropped. ──
+const DISTILL_SYS =
+  "You distill US tax PRIMARY AUTHORITY for a research engine. You are given a QUESTION and the SOURCE " +
+  "TEXT of ONE statute, regulation, or case. Write a concise operative-rule paraphrase (2-4 plain-English " +
+  "sentences) stating what the source provides ON THE QUESTION'S TOPIC, the way a tax preparer would note " +
+  "it. The source IS relevant whenever it is the Code section / provision the question is about — set " +
+  "relevant:false ONLY if the text is a COMPLETELY UNRELATED provision. Use ONLY facts and figures that " +
+  "appear in the SOURCE TEXT — never add a number, threshold, rate, or year from your own knowledge; if " +
+  "the source states the rule but not a specific figure the question asks for, paraphrase the rule and " +
+  'omit the figure. Output STRICT JSON only: {"relevant": boolean, "text": string}.';
+
+// Every $/%/year figure's numeric core in the paraphrase must appear in the source (same gate as ingest).
+function figureCores(text: string): string[] {
+  return [...text.matchAll(/\$?\d[\d,]*(?:\.\d+)?\s?%?|\b(?:19|20)\d{2}\b/g)]
+    .map((m) => m[0].replace(/[^\d.]/g, ""))
+    .filter((n) => n.length >= 2 && n !== ".");
+}
+const digitsOf = (s: string) => s.replace(/[^\d.]/g, "");
+
+async function distill(provider: AIProvider, question: string, chunks: AuthorityChunk[]): Promise<AuthorityChunk[]> {
+  const out: AuthorityChunk[] = [];
+  for (const c of chunks) {
+    let parsed: { relevant?: unknown; text?: unknown };
+    try {
+      const { text } = await provider.generateText({
+        system: DISTILL_SYS,
+        prompt: `QUESTION: ${question}\n\nSOURCE TEXT (${c.citation}):\n${c.text}`,
+        maxTokens: 600,
+      });
+      parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    } catch {
+      continue; // non-JSON / model failure → skip this chunk honestly
+    }
+    const para = typeof parsed.text === "string" ? parsed.text.trim() : "";
+    if (parsed.relevant === false || para.length < 30) continue;
+    const src = digitsOf(c.text);
+    const leaks = figureCores(para).filter((f) => !src.includes(f));
+    if (leaks.length) continue; // the paraphrase invented a figure not in the source → drop (honest)
+    out.push({ ...c, text: para });
+  }
+  return out;
+}
+
 /**
- * Retrieve-on-demand: fetch PRIMARY authority for a coverage gap and wrap it as AuthorityChunks the
- * engine reasons + grounds over exactly like corpus chunks (so a fetched answer is verified by the
- * same citation/figure gate). §7216 is enforced inside each source's search(); HONEST DEGRADATION —
- * any source or getText failure is swallowed (skip that hit), and an EMPTY return tells the engine to
- * abstain rather than guess. `sources` is injectable for tests (no network).
+ * Retrieve-on-demand: fetch PRIMARY authority for a coverage gap and (when a `provider` is given)
+ * distill it into clean, figure-grounded chunks the engine can reason over — exactly like corpus
+ * chunks, so a fetched answer is verified by the same gates. §7216 is enforced inside each source's
+ * search(); HONEST DEGRADATION — any source/getText/distill failure is swallowed (skip that hit), and
+ * an EMPTY return tells the engine to abstain rather than guess. `sources`/`provider` are injectable.
  */
 export async function fetchPrimary(
   question: string,
   taxYear: number,
   jurisdiction: AuthorityChunk["jurisdiction"],
-  opts: { sources?: FetchSource[]; signal?: AbortSignal; maxChunks?: number; nowIso?: string } = {},
+  opts: { sources?: FetchSource[]; provider?: AIProvider; signal?: AbortSignal; maxChunks?: number; nowIso?: string } = {},
 ): Promise<AuthorityChunk[]> {
   const sources = opts.sources ?? pickSources(question);
   if (!sources.length) return [];
   const max = opts.maxChunks ?? 3;
   const nowIso = opts.nowIso ?? new Date().toISOString();
-  const chunks: AuthorityChunk[] = [];
+  const raw: AuthorityChunk[] = [];
   for (const src of sources) {
     let hits;
     try {
@@ -33,7 +81,7 @@ export async function fetchPrimary(
       continue; // a source failure (network, or a §7216-rejected query) → try the next, never throw out
     }
     for (const hit of hits) {
-      if (chunks.length >= max) break;
+      if (raw.length >= max) break;
       let text: string;
       try {
         text = await hit.getText();
@@ -42,8 +90,8 @@ export async function fetchPrimary(
       }
       const clean = text.trim();
       if (clean.length < 80) continue; // too thin to ground a position in
-      chunks.push({
-        chunkId: `fetched-${hit.source}-${chunks.length}`,
+      raw.push({
+        chunkId: `fetched-${hit.source}-${raw.length}`,
         authorityType: TYPE_BY_SOURCE[hit.source] ?? "statute",
         citation: hit.citation || hit.title,
         jurisdiction,
@@ -55,7 +103,8 @@ export async function fetchPrimary(
         keywords: [],
       });
     }
-    if (chunks.length) break; // grounded from the top-authority source; don't pull lower tiers too
+    if (raw.length) break; // grounded from the top-authority source; don't pull lower tiers too
   }
-  return chunks;
+  // Distill raw authority into clean, grounded paraphrases the engine can actually reason over.
+  return opts.provider ? distill(opts.provider, question, raw) : raw;
 }
