@@ -131,6 +131,30 @@ describe("grader (2): mustNotClaim — stale wrong answer absent", () => {
   });
 });
 
+describe("grader (2b): mustClaim — correct/current figure must be present", () => {
+  const bonus = byId("bonus-depreciation-2025");
+
+  it("passes when the restored 100% is asserted, EVEN IF the legitimate 40% election is mentioned", () => {
+    const correct: GradableAnswer = {
+      bucket: "answer",
+      text: "100% bonus applies under §168(k); a business may instead elect 40% (60% for certain property).",
+      citations: ["OBBBA amending IRC §168(k)"],
+    };
+    expect(gradeAnswer(correct, bonus).pass).toBe(true); // no false-positive on the legitimate 40% election
+  });
+
+  it("fails the stale answer that gives 40% as the rate and omits the restored 100%", () => {
+    const stale: GradableAnswer = {
+      bucket: "answer",
+      text: "Bonus depreciation is 40% for property placed in service in 2025.",
+      citations: ["IRC §168(k)"],
+    };
+    const r = gradeAnswer(stale, bonus);
+    expect(r.pass).toBe(false);
+    expect(r.reasons.some((x) => x.includes("required claim absent"))).toBe(true);
+  });
+});
+
 describe("grader (3): mustCiteAuthorityLike — right answer needs right authority", () => {
   const tips = byId("tips-deduction-exists-2025");
 

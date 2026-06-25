@@ -39,33 +39,41 @@ Ran the full 38-case golden set twice on the codex (GPT-5.5) path, identical exc
 sharded parallel harness (`--shard k/N --json`, 6 shards/mode, codex concurrency bounded). An
 adversarial synthesis agent read `cases.ts` + `grade.ts` and classified every failure.
 
-| Retrieval | Pass | Error | New regressions vs in-memory |
+| Retrieval | As first measured | **Corrected** (grader bug fixed) | Error |
 |---|---|---|---|
-| In-memory keyword corpus | **33/38 (86.8%)** | 13.2% | — |
-| Authority graph (RRF sparse+dense) | 32/38 (84.2%) | 15.8% | 2 |
+| In-memory keyword corpus | 33/38 (86.8%) | **33/38 (86.8%)** | 13.2% |
+| Authority graph (RRF sparse+dense) | 32/38 (84.2%) | **33/38 (86.8%)** | 13.2% |
 
-**Verdict: do NOT flip the default to the graph.** It is one case worse and adds two regressions
-against one new win (`tips-se-tax-2025`). All 6 graph failures are real engine-gaps (0 codex-flakes,
-0 eval-misspecs per the synthesis agent), so the number is trustworthy without a re-run.
+**CORRECTION (verified 2026-06-25): the graph TIES in-memory; it is NOT a case worse.** The "32/38"
+graph number was an **eval false-positive**. `bonus-depreciation-2025` pinned `mustNotClaim: "40%"`, but
+OBBBA added a *legitimate* first-year transition ELECTION to use 40% (60% for long-production / aircraft)
+per IRS Notice 2026-11 — so the model's *more complete, correct* answer (100% default + the 40% election)
+tripped a blanket substring forbid. Verified against Grant Thornton / RSM / BDO alerts; fixed the case to
+require the restored `100%` (a new `mustClaim` check) instead of forbidding `40%`. Re-graded live: graph
+PASSES bonus in both modes → **graph 33/38 = in-memory 33/38**. Lesson: trust the model OUTPUT over a
+synthesis agent's reason-string classification — that agent called this an "engine-gap"; it was an eval
+bug. salt-cap-2026 IS a real graph over-abstention, offset by graph's win on tips-se-tax-2025.
 
-**Precise cause — a retrieval probe, not the failure reasons (which mislead).** The graph is NOT
-missing nodes. For both regressed queries `graphRetrieve` returns the CORRECT authority as the **#1**
-hit: `salt-cap-2026` → `OBBBA §70120 amending §164(b)(6),(7)`; `bonus-depreciation-2025` →
-`OBBBA §168(k) 100%` (and the stale 40% node is correctly year-filtered out, tagged 2023/2024). The
-regression lives in the REST of the retrieved set: the dense layer (all-MiniLM-L6-v2, 384-dim) injects
-topically-adjacent-but-wrong neighbors that tight keyword retrieval never surfaces — §2010 estate +
-§199A QBI for the bonus question; §68 / §70111 itemized-limitation for SALT. That noise makes the
-model hedge/abstain (SALT) or fall back to the parametric "40%" (bonus). **Dense recall dilutes the
-context.** This *falsifies* the earlier naive hypothesis below that "hybrid embeddings + a citation
-graph" would by itself lift the score.
+**Verdict: still do NOT flip the default — graph TIES, does not BEAT.** The bar is "beats in-memory + no
+regressions." Graph and in-memory each have one distinct failure (graph: salt-cap-2026; in-memory:
+tips-se-tax-2025) plus 4 shared corpus-depth gaps.
 
-**Fix attempt + reframe (see changelog 2026-06-25):** the obvious gated-hybrid (dense cosine floor 0.50
-+ k cap 6) was tried and **reverted** — it cleared neither target and starved a third case. The failure
-proved `bonus-depreciation-2025` is **parametric** (stale "40%" survives even a single-correct-node
-context), so the real fix is a **faithfulness gate** that rejects a stale figure contradicting the
-retrieved current authority (confident-wrong is the worst failure mode), not retrieval tuning. The graph
-earns the default only when it ≥ in-memory AND closes the 4 shared corpus-depth gaps below, with no new
-regressions. Re-run this A/B after each change.
+**The one real graph-specific issue — `salt-cap-2026` over-abstention.** `graphRetrieve` returns the
+CORRECT authority as its **#1** hit (`OBBBA §70120 amending §164(b)(6),(7)`), yet the engine abstains
+("found potentially relevant authority but could not ground a definite position") while in-memory
+grounds and answers. So the §164 node is retrieved but the reason/ground step doesn't commit on it. A
+suspected contributor is dense noise — for this query the graph set also carries §68 / §70111
+itemized-limitation chunks (cosine ~0.46-0.51) that the tight keyword path never surfaces — but the
+gated-hybrid fix below did NOT clear it, so noise is not the whole story; the grounding step itself is
+graph-shape-sensitive. Open.
+
+**Gated-hybrid fix ATTEMPTED + reverted (changelog 2026-06-25).** Dense cosine floor 0.50 + final k cap
+6 cleared neither `salt-cap-2026` nor a then-misdiagnosed `bonus` (the bonus "fail" turned out to be the
+eval bug above, not retrieval), and it **starved** `senior-6k-deduction-2025` of its §70103 chunk — a
+real new regression. Reverted. Retrieval tuning alone has not moved the graph past in-memory; the next
+levers are the grounding/reason step on graph chunks (why §164 doesn't commit) and corpus depth for the
+4 shared gaps. Graph earns the default only when it BEATS in-memory with no regressions. Re-run this A/B
+after each change.
 
 ## Dominant failure mode (the real signal)
 
@@ -82,9 +90,11 @@ safety architecture holds; it just declines too often):
 **Root cause (per the engine audit):** keyword-overlap retrieval is *lexically brittle* — a question
 whose wording doesn't hit a chunk's keywords retrieves nothing on-topic and the engine honestly
 abstains. The near-zero **wrong-answer** rate is the point: Petal fails SAFE (abstains), it does not
-hallucinate. **Correction (measured 2026-06-25, see the A/B above):** the obvious fix — "hybrid
-embeddings + a citation graph" — did **not** help as built; naive RRF dense recall *added noise* and
-regressed two cases. The actual fix is a *gated* hybrid (similarity floor + rerank), not raw dense.
+hallucinate. **Update (measured 2026-06-25, see the A/B above):** the obvious fix — "hybrid embeddings +
+a citation graph" — TIED in-memory, it did not beat it; a gated-hybrid tweak (floor+k-cap) was tried and
+reverted (no gain, one regression). The graph retrieves the right node #1 yet the engine still won't
+*ground* on it (`salt-cap-2026`), so the next lever is the reason/ground step on graph chunks, plus
+corpus depth — not just retrieval mechanics.
 
 ## Honest scope of this number
 
@@ -104,13 +114,16 @@ regressed two cases. The actual fix is a *gated* hybrid (similarity floor + rera
   **32/38 (84.2%)**. Graph does NOT yet earn the default — naive RRF dense recall injects off-topic
   chunks (probed: right node is #1, but §2010/§199A/§68 noise rides along) and regresses `salt-cap-2026`
   + `bonus-depreciation-2025`. Next: gated hybrid (similarity floor + rerank), then re-A/B.
-- **2026-06-25** — Gated-hybrid fix ATTEMPTED (dense cosine floor 0.50 + final k cap 6) and **reverted**.
-  Re-measured graph: still **32/38** — neither target cleared, and a NEW regression (`senior-6k-deduction-2025`,
-  starved of its §70103 chunk by the floor/cap). KEY FINDING from the failure: `bonus-depreciation-2025`
-  still leaked "40%" even with retrieval reduced to ONLY the correct 100% node — so that figure is
-  **parametric recall (training), not a retrieval artifact.** In-memory passes it *only because* its keyword
-  search accidentally surfaces the superseded "40% is the OLD answer" probe chunk; the graph's correct
-  year-filter removes that warning. Reframed fix: this is a **faithfulness-gate gap** (catch a stale figure
-  that contradicts the retrieved CURRENT authority — confident-wrong is the worst failure mode), plus
-  optionally surfacing superseded nodes as LABELED negative context via the graph's supersession edges.
-  Retrieval tuning alone cannot close it.
+- **2026-06-25** — Gated-hybrid fix ATTEMPTED (dense cosine floor 0.50 + final k cap 6) and **reverted**:
+  cleared no target and starved `senior-6k-deduction-2025` of its §70103 chunk (a real new regression).
+- **2026-06-25 (CORRECTION — supersedes the two entries above).** Eyeballing the actual model OUTPUT (not
+  reason-strings) overturned the "graph is worse" + "parametric 40%" conclusions. `bonus-depreciation-2025`
+  was an **eval false-positive**: the case forbade the substring "40%", but OBBBA's first-year transition
+  ELECTION legitimately uses 40%/60% (IRS Notice 2026-11, verified vs Grant Thornton/RSM/BDO). The model's
+  answer was grounded and *more complete* (100% default + the election). Fixed the eval: added a `mustClaim`
+  check, set the case to require `100%` instead of forbidding `40%`. Re-graded live: **graph 33/38 =
+  in-memory 33/38 — a TIE** (each has one distinct failure: graph `salt-cap-2026`, in-memory `tips-se-tax-2025`,
+  + 4 shared corpus-depth gaps). Graph still does not BEAT in-memory, so the default stays in-memory. Real
+  open work: the grounding step on graph chunks (`salt-cap-2026` retrieves §164 #1 but won't commit) + corpus
+  depth for the 4 shared gaps. Lesson: a synthesis agent grading from reason-strings mislabeled an eval bug
+  as an "engine-gap" — always verify against the model's actual output.

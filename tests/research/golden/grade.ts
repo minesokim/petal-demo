@@ -84,6 +84,16 @@ export function gradeAnswer(answer: GradableAnswer, testCase: GoldenCase): Grade
     }
   }
 
+  // (2b) mustClaim PRESENT in the answer text (case-insensitive substring) — the positive counterpart
+  // of mustNotClaim, enforced only when the engine ANSWERED (an honest decline carries no figure and
+  // must not be punished for that). Catches a stale engine that omits the correct/current figure
+  // without false-positiving on a legitimately-mentioned-but-stale-elsewhere number.
+  if (testCase.mustClaim && testCase.expectedBucket === "answer") {
+    if (!norm(answer.text).includes(norm(testCase.mustClaim))) {
+      reasons.push(`required claim absent from text: "${testCase.mustClaim}"`);
+    }
+  }
+
   // (3) mustCiteAuthorityLike — only enforced when the engine actually ANSWERED. An honest
   // coverage_gap or hedge legitimately carries no citation; requiring one there would reward
   // fabrication. We only demand the cite when expectedBucket === "answer" (a settled, in-corpus

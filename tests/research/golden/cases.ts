@@ -47,6 +47,11 @@ export type GoldenCase = {
   // A substring at least ONE citation must contain when the engine answers (e.g. "119-21",
   // "OBBBA", "164"). Only meaningful for expectedBucket === "answer".
   mustCiteAuthorityLike?: string;
+  // A substring the answer text MUST contain when the engine answers (the positive counterpart of
+  // mustNotClaim — e.g. the restored "100%" rate). Use this instead of a blanket mustNotClaim when a
+  // figure is correct in one sense but stale in another (a forbidden-substring would false-positive on
+  // the correct answer). Only enforced for expectedBucket === "answer".
+  mustClaim?: string;
   notes: string;
 };
 
@@ -200,12 +205,18 @@ export const GOLDEN_CASES: GoldenCase[] = [
     taxYear: 2025,
     jurisdiction: "federal",
     expectedBucket: "answer",
-    // The trap: the TCJA phase-down had bonus at 40% for 2025. OBBBA §70301 restored 100%
-    // bonus depreciation permanently for property acquired/placed in service after 1/19/2025.
-    mustNotClaim: "40%",
+    // The currency trap: a STALE engine answers "40%" (the pre-OBBBA TCJA phase-down rate) and misses
+    // that OBBBA restored 100% bonus for property acquired/placed in service after 1/19/2025. The
+    // distinguishing signal is asserting the restored 100% — so require "100%" rather than FORBID "40%".
+    // (Why not mustNotClaim "40%": OBBBA also added a legitimate first-year transition ELECTION to use
+    // 40% — 60% for long-production-period property / certain aircraft — for property placed in service
+    // in the first tax year ending after 1/19/2025, per IRS Notice 2026-11. So a correct, complete
+    // answer may mention 40% as the election; forbidding the substring false-positived on it. Verified
+    // 2026-06-25 against Grant Thornton / RSM / BDO alerts on Notice 2026-11.)
+    mustClaim: "100%",
     mustCiteAuthorityLike: "168",
     notes:
-      "OBBBA §70301 amended IRC §168(k): 100% bonus restored permanently for property placed in service after Jan 19, 2025. The '40% for 2025' phase-down figure is the stale pre-OBBBA answer.",
+      "OBBBA §70301 amended IRC §168(k): 100% bonus restored permanently for property acquired & placed in service after Jan 19, 2025; the 40%/60% first-year transition election (Notice 2026-11) is also correct. The stale answer is '40% phase-down applies' WITHOUT the 100% restoration.",
   },
 
   // ───────────────────────── Currency traps: QBI ─────────────────────────
