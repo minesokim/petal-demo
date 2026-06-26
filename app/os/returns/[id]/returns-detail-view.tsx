@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
+import { useAutogrow } from "@/lib/os/use-autogrow";
 import { StageTag, StatusPill, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { TaskDetail } from "@/components/os/task-detail";
@@ -186,6 +187,7 @@ function ReturnRecordInner({ id }: { id: string }) {
   const [openingReady, setOpeningReady] = useState(false);
   useEffect(() => { setOpeningReady(false); }, [e?.id]);
   const [chatInput, setChatInput] = useState("");
+  const chatTaRef = useAutogrow(chatInput, 220);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [chat.messages]);
   const sendChat = (text?: string) => { const q = (text ?? chatInput).trim(); if (!q) return; chat.send(q); setChatInput(""); };
@@ -643,12 +645,13 @@ function ReturnRecordInner({ id }: { id: string }) {
               <div className="px-3 pb-3">
                 <div className="rounded-2xl border border-[var(--os-border)] bg-[var(--os-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-colors focus-within:border-[var(--os-border-strong)]">
                   <textarea
+                    ref={chatTaRef}
                     value={chatInput}
                     onChange={ev => setChatInput(ev.target.value)}
                     onKeyDown={ev => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); sendChat(); } }}
                     rows={1}
                     placeholder="Ask Petal…"
-                    className="max-h-28 w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
+                    className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
                   />
                   <div className="mt-1 flex items-center gap-1">
                     <button className={cn("grid size-7 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={15} /></button>

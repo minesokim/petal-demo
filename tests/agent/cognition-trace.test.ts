@@ -69,7 +69,7 @@ describe("cognition trace — structured research steps", () => {
     expect(reading?.chips).toEqual(expect.arrayContaining(["§164(b)(6)", "§1.164-1"]));
 
     // the research pulse fired in the analyzing phase, and the trace is grouped (phase set on steps)
-    expect(steps.some((s) => s.label === "Reviewing tax authority" && s.phase === "analyzing")).toBe(true);
+    expect(steps.some((s) => s.label === "Searching the tax code, regulations, and rulings" && s.phase === "analyzing")).toBe(true);
   });
 
   it("a non-research turn emits no chip steps (a plain lookup stays a plain step)", async () => {

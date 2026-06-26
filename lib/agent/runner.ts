@@ -253,8 +253,8 @@ export async function runAgent(
   let reply = "";
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    // A generic first step before the first model call: the model is reasoning about the request.
-    if (turn === 0) emit({ type: "step", label: "Thinking" });
+    // A descriptive first step before the first model call: the model is reasoning about the request.
+    if (turn === 0) emit({ type: "step", label: "Understanding the question" });
     // Stream the model's text deltas live (real token streaming). `turn` lets the client reset its
     // streamed preview at each turn boundary, so a tool-call preamble never sticks to the final prose.
     const res = await seam(messages, tools, (delta) => emit({ type: "text", delta, turn }));
@@ -276,7 +276,7 @@ export async function runAgent(
       // pulse, then replace it with the structured "Researching" (authority chips) + "Reading" (citation
       // chips) steps once the result lands, so the trace reads like the design.
       const fireLabel = tu.name === "tax_research"
-        ? "Reviewing tax authority"
+        ? "Searching the tax code, regulations, and rulings"
         : labelFor(tu.name, (tu.input ?? {}) as Record<string, unknown>, nameFor);
       emit({ type: "step", label: fireLabel, phase: phaseFor(tu.name) });
       const tool = TOOL_BY_NAME.get(tu.name);

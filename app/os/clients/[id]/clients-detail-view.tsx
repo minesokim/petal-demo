@@ -17,6 +17,7 @@ import { ClientMemory } from "@/components/os/client-memory";
 import { IntakeRecord } from "@/components/os/intake-record";
 import { memoryStore, useMemory } from "@/lib/memory-store";
 import { Icon, I } from "@/components/os/icon";
+import { useAutogrow } from "@/lib/os/use-autogrow";
 import { StatusPill, StageTag, DeadlineChip, SkillPetal, TrustTierTag, MemberAvatar, BookmarkFlag, FileGlyph, Segmented } from "@/components/os/primitives";
 import { ProvenancePanel } from "@/components/os/provenance";
 import { Tip } from "@/components/os/tooltip";
@@ -352,6 +353,7 @@ function ClientRecordInner({ id }: { id: string }) {
   const [openingReady, setOpeningReady] = useState(false);
   useEffect(() => { setOpeningReady(false); }, [h?.id]);
   const [chatInput, setChatInput] = useState("");
+  const chatTaRef = useAutogrow(chatInput, 220);
   const [attachments, setAttachments] = useState<string[]>([]);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1305,12 +1307,13 @@ function ClientRecordInner({ id }: { id: string }) {
                       </div>
                     )}
                     <textarea
+                      ref={chatTaRef}
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
                       rows={1}
                       placeholder={attachments.length ? "Add a message, or send to have Petal review…" : "Ask Petal…"}
-                      className="max-h-28 w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
+                      className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--os-ink)] outline-none placeholder:text-[var(--os-ink-subtle)]"
                     />
                     <div className="mt-1 flex items-center gap-1">
                       <button className={cn("grid size-7 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]", FOCUS)} aria-label="Attach"><Icon icon={I.attach} size={15} /></button>

@@ -77,9 +77,9 @@ describe("runAgent onEvent — the streamed thinking trace", () => {
     );
 
     const labels = events.filter((e) => e.type === "step").map((e) => e.label);
-    // First: the generic pre-model "Thinking" step. Then the human label for each tool as it
+    // First: the descriptive pre-model step. Then the human label for each tool as it
     // fires — find_client → "Looking up …", send_sms → "Preparing a text to …". Never tool names.
-    expect(labels[0]).toBe("Thinking");
+    expect(labels[0]).toBe("Understanding the question");
     expect(labels[1]).toBe("Looking up Haokun");
     expect(labels[2]).toMatch(/^Preparing a text to /);
     expect(labels).not.toContain("find_client");

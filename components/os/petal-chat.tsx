@@ -448,7 +448,7 @@ const THINKING_PHRASES = [
 // COGNITION TRACE — the live "what Petal is doing" checklist (reassurance, Claude/Harvey-style).
 // Each real streamed step stacks as it fires: completed steps get a check, the current one pulses.
 // Once the answer starts streaming (`settling`), every step reads as done.
-const PHASE_LABEL: Record<string, string> = { analyzing: "Analyzing", reasoning: "Reasoning" };
+const PHASE_LABEL: Record<string, string> = { analyzing: "Analyzing the question", reasoning: "Reasoning through the answer" };
 
 // A small branch/node glyph for the authority + citation chips (the pill icon in the design).
 function BranchGlyph({ className }: { className?: string }) {
@@ -524,7 +524,6 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
         className="group flex w-full items-center gap-2 text-left"
         aria-expanded={open}
       >
-        <Icon icon={I.sparkle} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
         <span className={cn("min-w-0 flex-1 truncate text-[13px] leading-snug text-[var(--os-ink-muted)]", !settling && "os-think-pulse")}>
           {header}
         </span>
@@ -566,7 +565,7 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
                       <span className="flex size-3.5 shrink-0 items-center justify-center">
                         <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
                       </span>
-                      <span className={cn("text-[12.5px] leading-snug", current ? "os-think-pulse text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                      <span className={cn("text-[12.5px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
                         {s.label}
                       </span>
                     </div>

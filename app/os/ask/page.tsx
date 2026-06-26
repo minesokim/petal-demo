@@ -20,21 +20,25 @@ import { skills, households, householdById } from "@/lib/fixtures/firm";
 import { connectionStore, useConnections } from "@/lib/connection-store";
 import { SkillPetal } from "@/components/os/primitives";
 import { Tip } from "@/components/os/tooltip";
+import { useAutogrow } from "@/lib/os/use-autogrow";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
 function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void }) {
   const [skillsOpen, setSkillsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // claude.ai-style composer: grows from one line up to ~17 lines as you type / shift+enter, then scrolls.
+  const taRef = useAutogrow(value);
   return (
     <div className="rounded-2xl border border-[var(--os-border-strong)] bg-[var(--os-surface)] px-3.5 py-3 shadow-[0_1px_2px_rgba(17,17,26,0.04)] transition-shadow focus-within:shadow-[0_2px_10px_-2px_rgba(17,17,26,0.10)]">
       <textarea
+        ref={taRef}
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }}
         rows={1}
         autoFocus={autoFocus}
         placeholder="Ask Petal anything, or describe work to run…"
-        className={cn("max-h-40 w-full resize-none bg-transparent leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none", big ? "text-[15px]" : "text-[14px]")}
+        className={cn("w-full resize-none bg-transparent leading-relaxed text-[var(--os-ink)] placeholder:text-[var(--os-ink-subtle)] focus:outline-none", big ? "text-[15px]" : "text-[14px]")}
       />
       <div className="mt-2.5 flex items-center gap-1.5">
         <Tip label="Attach files" side="top"><button type="button" onClick={() => fileRef.current?.click()} aria-label="Attach" className="grid size-8 shrink-0 place-items-center rounded-full border border-[var(--os-border)] text-[var(--os-ink-muted)] transition-colors hover:bg-[var(--os-hover)]"><Icon icon={I.plus} size={16} /></button></Tip>
