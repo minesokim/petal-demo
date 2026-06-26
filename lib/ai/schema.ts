@@ -58,13 +58,16 @@ export const VerifierOutput = z.object({
 export type VerifierOutput = z.infer<typeof VerifierOutput>;
 
 /** Faithfulness decomposer (§3) — grounding only; faithfulness != correctness. */
+// faithfulnessScore is FIRST so the model emits it before the (potentially long) per-claim breakdown:
+// otherwise a dense source set can truncate the JSON at maxTokens before the score is written, failing
+// validation and forcing a spurious service-error abstention on a question the corpus actually answers.
 export const FaithfulnessOutput = z.object({
+  faithfulnessScore: z.number().min(0).max(1),
   claims: z.array(z.object({
     claim: z.string(),
     label: z.enum(["SUPPORTED", "UNSUPPORTED", "CONTRADICTED"]),
     chunkId: z.string().nullable(),
   })),
-  faithfulnessScore: z.number().min(0).max(1),
 });
 export type FaithfulnessOutput = z.infer<typeof FaithfulnessOutput>;
 

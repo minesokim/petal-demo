@@ -21,7 +21,10 @@ export async function checkFaithfulness(
     system: FAITHFULNESS_SYSTEM,
     prompt,
     schema: FaithfulnessOutput,
-    maxTokens: 1000,
+    // Headroom so a dense source set (a long, detailed authority chunk) does not truncate the JSON before
+    // the per-claim breakdown completes. faithfulnessScore is emitted first (see schema) so the score
+    // itself is captured even under pressure, but 1000 was tight enough to drop the whole object.
+    maxTokens: 1600,
   });
   return object;
 }
