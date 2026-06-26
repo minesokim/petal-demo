@@ -21,7 +21,7 @@ import { connectionStore, useConnections } from "@/lib/connection-store";
 import { SkillPetal } from "@/components/os/primitives";
 import { Tip } from "@/components/os/tooltip";
 import { useAutogrow } from "@/lib/os/use-autogrow";
-import { useFirmData } from "@/lib/client/firm-context";
+import { useUser } from "@clerk/nextjs";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
 function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void }) {
@@ -125,7 +125,7 @@ function AskPetalInner() {
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
   const [scopeOpen, setScopeOpen] = useState(false);
   const { messages, send, reset, openThread, analyze } = usePetalChat(scopeId);
-  const firstName = useFirmData().viewer.firstName; // the signed-in preparer's real name, not the demo owner
+  const firstName = useUser().user?.firstName ?? "there"; // the signed-in preparer's real name (Clerk); /os/ask has no FirmDataProvider
   useConnections(); // re-render the grounding rail when a source is (dis)connected
   const [dragOver, setDragOver] = useState(false);
   const onDropFile = (e: React.DragEvent) => {
