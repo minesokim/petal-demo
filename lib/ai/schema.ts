@@ -29,11 +29,21 @@ export const Position = z.object({
   citations: z.array(CitationRef),
   computedValueRefs: z.array(z.string()), // tool-result ids for any filed figure
   confidenceSignals: ConfidenceSignals,
-  reviewNotes: z.object({
-    verify: z.array(z.string()), // what the preparer must check before adopting
-    factAssumptions: z.array(z.string()),
-    disclosureFlag: z.boolean(), // Form 8275 candidate (flag, don't decide)
-  }),
+  // SELF-HEALING: the model occasionally emits reviewNotes as a bare array of strings (or drops a field).
+  // Coerce to the object shape with defaults so one position's shape-drift never fails the whole reasoning
+  // object (which previously forced a retry and, on the second miss, a spurious abstention).
+  reviewNotes: z.preprocess(
+    (v) => {
+      if (Array.isArray(v)) return { verify: v.filter((x) => typeof x === "string"), factAssumptions: [], disclosureFlag: false };
+      if (v && typeof v === "object") return v;
+      return { verify: [], factAssumptions: [], disclosureFlag: false };
+    },
+    z.object({
+      verify: z.array(z.string()).default([]), // what the preparer must check before adopting
+      factAssumptions: z.array(z.string()).default([]),
+      disclosureFlag: z.boolean().default(false), // Form 8275 candidate (flag, don't decide)
+    }),
+  ),
   // Set by the conformal-calibration code, then narrated by the model. Never model-chosen.
   tier: z.enum(["high", "medium", "low", "abstain"]).optional(),
 });
@@ -61,14 +71,30 @@ export type VerifierOutput = z.infer<typeof VerifierOutput>;
 // faithfulnessScore is FIRST so the model emits it before the (potentially long) per-claim breakdown:
 // otherwise a dense source set can truncate the JSON at maxTokens before the score is written, failing
 // validation and forcing a spurious service-error abstention on a question the corpus actually answers.
-export const FaithfulnessOutput = z.object({
-  faithfulnessScore: z.number().min(0).max(1),
-  claims: z.array(z.object({
-    claim: z.string(),
-    label: z.enum(["SUPPORTED", "UNSUPPORTED", "CONTRADICTED"]),
-    chunkId: z.string().nullable(),
-  })),
-});
+export const FaithfulnessOutput = z.preprocess(
+  (v) => {
+    // SELF-HEALING: if the model returns the per-claim breakdown but omits the top-level score, DERIVE it
+    // from the claim labels (supported / total) rather than failing validation — the score is a function
+    // of the claims anyway. This turned a recoverable shape-drift into a spurious "service error" abstain.
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      const o = v as Record<string, unknown>;
+      if (typeof o.faithfulnessScore !== "number" && Array.isArray(o.claims)) {
+        const claims = o.claims as { label?: unknown }[];
+        const supported = claims.filter((c) => c?.label === "SUPPORTED").length;
+        o.faithfulnessScore = claims.length ? supported / claims.length : 0;
+      }
+    }
+    return v;
+  },
+  z.object({
+    faithfulnessScore: z.number().min(0).max(1),
+    claims: z.array(z.object({
+      claim: z.string(),
+      label: z.enum(["SUPPORTED", "UNSUPPORTED", "CONTRADICTED"]),
+      chunkId: z.string().nullable(),
+    })),
+  }),
+);
 export type FaithfulnessOutput = z.infer<typeof FaithfulnessOutput>;
 
 export const DOC_TYPES = [

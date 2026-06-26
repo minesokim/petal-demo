@@ -26,5 +26,7 @@ export async function checkFaithfulness(
     // itself is captured even under pressure, but 1000 was tight enough to drop the whole object.
     maxTokens: 1600,
   });
-  return object;
+  // generateObject validated against the (preprocessed) schema at runtime; the ZodEffects wrapper widens
+  // its inferred return to unknown, so assert the validated output type.
+  return object as FO;
 }
