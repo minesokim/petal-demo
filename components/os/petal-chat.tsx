@@ -71,7 +71,7 @@ function restoreAnswer(content: string, metadata?: Record<string, unknown>): Cha
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
 
-type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[]; calibration?: string; ungroundedFigures?: string[] };
+type AgentResult = { reply: string; proposedActions?: AgentConfirmAction[]; citations?: { cite: string; sourceUrl?: string; authority?: string }[]; calibration?: string; ungroundedFigures?: string[]; runPersisted?: boolean };
 
 // Friendly, action-pointing labels for the research calibration reason-codes (grounded is never shown).
 const CAL_LABEL: Record<string, string> = {
@@ -100,18 +100,22 @@ function friendlyAgentError(code: string): string {
 async function streamAgent({
   message,
   history,
+  threadId,
   pushStep,
   pushText,
 }: {
   message: string;
   history: { role: "user" | "assistant"; content: string }[];
+  threadId?: string | null;
   pushStep: (step: TraceStep) => void;
   pushText: (delta: string, turn: number) => void;
 }): Promise<AgentResult> {
   const res = await fetch("/api/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, history }),
+    // threadId activates DURABLE server-side persistence: the run survives navigation / tab close and
+    // reconnects on reopen. Omitted ⇒ the server doesn't persist and the client persists on settle (below).
+    body: JSON.stringify({ message, history, threadId: threadId ?? undefined }),
   });
   if (!res.ok || !res.body) throw new Error(`agent failed: ${res.status}`);
 
@@ -146,7 +150,7 @@ async function streamAgent({
       if (typeof d.delta === "string") pushText(d.delta, typeof d.turn === "number" ? d.turn : 0);
     } else if (event === "done") {
       const d = data as AgentResult;
-      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration, ungroundedFigures: d.ungroundedFigures };
+      result = { reply: d.reply ?? "", proposedActions: d.proposedActions, citations: d.citations, calibration: d.calibration, ungroundedFigures: d.ungroundedFigures, runPersisted: d.runPersisted };
     } else if (event === "error") {
       errored = (data as { error?: unknown }).error as string ?? "agent_error";
     }
@@ -275,8 +279,11 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // clicks. `step` frames stream into liveSteps as each phase/tool fires; the terminal `done`
     // frame settles the answer (ChatAnswer + ConfirmCards). /api/ask is the fallback ONLY if the
     // stream errors (network failure or an `error` frame).
-    streamAgent({ message, history, pushStep, pushText })
-      .then(({ reply, proposedActions, citations, calibration, ungroundedFigures }) => {
+    // Resolve the thread id first so the run is persisted SERVER-SIDE (durable: survives navigation / tab
+    // close, reconnects on reopen). threadRef was set just above (new thread) or by openThread (existing).
+    Promise.resolve(threadRef.current)
+      .then(tid => streamAgent({ message, history, threadId: tid, pushStep, pushText }))
+      .then(({ reply, proposedActions, citations, calibration, ungroundedFigures, runPersisted }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
         if (proposedActions?.length) ans.confirmActions = proposedActions;
@@ -287,9 +294,9 @@ export function usePetalChat(scopeHouseholdId?: string) {
         // Ground-or-refuse: figures Petal stated that no authority grounded — flag them loudly.
         if (ungroundedFigures?.length) ans.ungroundedFigures = ungroundedFigures;
         settle(ans, text);
-        // Persist the rich answer fields (sources/calibration/flags) so reopening this chat restores the
-        // real answer with its sources, not a plain-text rebuild.
-        persist("assistant", text, restorableAnswerMeta(ans));
+        // The server already persisted this turn as a durable run ⇒ don't double-write. Otherwise (no
+        // thread / not signed in) persist client-side so reopening still restores the real answer.
+        if (!runPersisted) persist("assistant", text, restorableAnswerMeta(ans));
       })
       .catch((err: unknown) => {
         // A §7216 gate is an honest, terminal answer — show it inline, don't paper over it with
@@ -359,11 +366,18 @@ export function usePetalChat(scopeHouseholdId?: string) {
       .filter(t => t.role === "user" || t.role === "assistant")
       .map(t => ({ role: t.role as "user" | "assistant", content: t.content }));
     setMessages(
-      turns.map(t =>
-        t.role === "user"
-          ? { id: ++msgSeq, role: "user", text: t.content }
-          : { id: ++msgSeq, role: "petal", answer: restoreAnswer(t.content, t.metadata) },
-      ),
+      turns.map(t => {
+        if (t.role === "user") return { id: ++msgSeq, role: "user", text: t.content };
+        const meta = (t.metadata ?? {}) as Record<string, unknown>;
+        if (meta.status === "running") {
+          // RECONNECT a server-side run that was still going when the tab closed: show its live trace +
+          // partial text exactly where it left off (the persisted snapshot), instead of an empty bubble.
+          const trace = Array.isArray(meta.trace) ? (meta.trace as TraceStep[]) : [];
+          const partial = typeof meta.partialText === "string" ? meta.partialText : "";
+          return { id: ++msgSeq, role: "petal", answer: { paragraphs: [] }, thinking: true, liveSteps: trace, streamingText: partial || undefined };
+        }
+        return { id: ++msgSeq, role: "petal", answer: restoreAnswer(t.content, t.metadata) };
+      }),
     );
   }, []);
 

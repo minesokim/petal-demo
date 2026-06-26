@@ -94,9 +94,12 @@ export async function POST(req: Request) {
           },
         });
         // FINALIZE the durable run: the settled answer + status=final, so a reconnect shows it complete.
+        // Citations are mapped to the SAME { cite, url, authority } shape restoreAnswer reads, so a reopened
+        // server-persisted turn restores its clickable sources exactly like a client-persisted one.
         if (runMsgId) {
           try {
-            await withFirm((db, c) => updateMessage(db, c, { messageId: runMsgId!, content: reply, metadata: { status: "final", citations, calibration, ungroundedFigures } }));
+            const restorable = (citations ?? []).map((x) => ({ cite: x.cite, url: x.sourceUrl, authority: x.authority }));
+            await withFirm((db, c) => updateMessage(db, c, { messageId: runMsgId!, content: reply, metadata: { status: "final", citations: restorable, calibration, ungroundedFigures } }));
           } catch { /* best-effort */ }
         }
         // DRAFT-EVERYTHING / HUMAN-COMMITS: persist any staged write into the durable, approvable
@@ -115,7 +118,7 @@ export async function POST(req: Request) {
             console.error("[/api/agent] proposal persistence failed:", e instanceof Error ? e.name : "unknown");
           }
         }
-        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures, stagedProposals, proposalsPersisted }));
+        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures, stagedProposals, proposalsPersisted, runPersisted: !!runMsgId }));
       } catch (err) {
         const name = err instanceof Error ? err.name : "unknown";
         const msg = err instanceof Error ? err.message : "";
