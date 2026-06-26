@@ -161,3 +161,12 @@ corpus depth — not just retrieval mechanics.
   abstaining engine, even at equal headline rate. Two patterns banked: (1) 2 of this session's "failures" were
   flawed TESTS, not the engine — the benchmark needs the same scrutiny as the model; (2) the graph's dense recall
   can induce fabrication, the one failure class that disqualifies a flip regardless of pass rate.
+- **2026-06-25 — Fabrication guard shipped; graph EARNS the default flip (codex A/B).** The deterministic
+  named-form guard (unestablishedNamedForm) eliminated the Schedule-TIP hallucination (was ~40%/run). Re-A/B:
+  in-memory **37/38 (97.4%)** (sole miss: tips-se-tax-2025, an OBBBA SE-tax abstain), graph **38/38 (100%)** —
+  the graph is now a STRICT SUPERSET (grounds the OBBBA §70201 case in-memory abstains on; zero regressions,
+  zero fabrications). The bar I committed to ("graph beats in-memory with no fab regressions") is MET → flip
+  candidate. CAVEATS: (a) this is the CODEX/GPT-5.5 eval, not the production Claude path; the relative result
+  (graph > in-memory) is model-independent but the absolute 100% is not a prod claim; (b) graph adds a runtime
+  dependency (DATABASE_URL + transformers.js embeddings) — keep the honest-degradation fallback-to-in-memory on
+  graph error + add a startup health check before/at cutover.
