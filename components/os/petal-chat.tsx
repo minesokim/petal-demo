@@ -462,26 +462,17 @@ function BranchGlyph({ className }: { className?: string }) {
   );
 }
 
-// The authority/citation pills under a "Researching" / "Reading" step. Caps the visible chips and rolls the
-// rest into a "+N more" pill so a long source list never blows out the trace.
-function TraceChips({ chips, kind }: { chips: string[]; kind?: "authority" | "citation" }) {
-  const MAX = 4;
-  const shown = chips.slice(0, MAX);
-  const extra = chips.length - shown.length;
-  const noun = kind === "citation" ? (extra === 1 ? "citation" : "citations") : extra === 1 ? "authority" : "authorities";
+// The authority/citation pills under a "Researching" / "Reading" step. Shows ALL sources (no "+N more"
+// cap, per David) so every authority Petal touched is visible in the trace; they wrap to multiple rows.
+function TraceChips({ chips }: { chips: string[] }) {
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[22px]">
-      {shown.map((c, i) => (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[18px]">
+      {chips.map((c, i) => (
         <span key={`${c}-${i}`} className="inline-flex items-center gap-1.5 rounded-full bg-[var(--os-hover)] px-2.5 py-1 text-[12px] text-[var(--os-ink-muted)]">
           <BranchGlyph className="size-3 shrink-0 text-[var(--os-ink-subtle)]" />
           <span className="max-w-[200px] truncate">{c}</span>
         </span>
       ))}
-      {extra > 0 && (
-        <span className="inline-flex items-center rounded-full bg-[var(--os-hover)] px-2.5 py-1 text-[12px] text-[var(--os-ink-subtle)]">
-          +{extra} more {noun}
-        </span>
-      )}
     </div>
   );
 }
@@ -509,33 +500,46 @@ function titleFromMessage(message: string): string {
   return `${verb} ${short.charAt(0).toLowerCase()}${short.slice(1)}`;
 }
 
-// A small FILLED check-circle — the completed-step marker (small circle, white check knocked out).
-function FilledCheck({ className }: { className?: string }) {
+// A small FILLED check-circle — the completed-step marker. The circle springs in and the tick DRAWS on
+// (pathLength 0→1) for a smooth "check" animation rather than a hard pop. Fills its container (size-full),
+// so the caller controls the size.
+function FilledCheck() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+    <motion.svg
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+      className="size-full text-[var(--os-ink-subtle)]"
+      initial={{ scale: 0.4, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+    >
       <circle cx="8" cy="8" r="7.5" fill="currentColor" />
-      <path d="M4.7 8.2l2.2 2.2 4.4-4.6" stroke="var(--os-surface)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+      <motion.path
+        d="M4.7 8.2l2.2 2.2 4.4-4.6"
+        stroke="var(--os-surface)"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.28, ease: "easeOut", delay: 0.06 }}
+      />
+    </motion.svg>
   );
 }
 
-// Step status marker: a spinning loader WHILE the step runs, swapped for a smooth spring pop-in filled
-// check the moment it completes. A step is "done" once it is no longer the live one (the next step
-// starting, or the answer streaming, marks the prior step complete).
+// Step status marker: a spinning loader WHILE the step runs, swapped for the draw-on filled check the
+// moment it completes. A step is "done" once it is no longer the live one (the next step starting, or
+// the answer streaming, marks the prior step complete). All markers are size-3 (12px) so the spinner,
+// the check, and the phase globe read as one consistent small circle.
 function StepDot({ done }: { done: boolean }) {
   return (
-    <span className="flex size-4 shrink-0 items-center justify-center">
+    <span className="flex size-3 shrink-0 items-center justify-center">
       {done ? (
-        <motion.span
-          initial={{ scale: 0.3, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 520, damping: 24 }}
-          className="flex"
-        >
-          <FilledCheck className="size-[15px] text-[var(--os-ink-subtle)]" />
-        </motion.span>
+        <FilledCheck />
       ) : (
-        <span className="size-3.5 animate-spin rounded-full border-[1.5px] border-[var(--os-border-strong)] border-t-[var(--os-ink-muted)]" />
+        <span className="size-3 animate-spin rounded-full border-[1.5px] border-[var(--os-border-strong)] border-t-[var(--os-ink-muted)]" />
       )}
     </span>
   );
@@ -583,13 +587,15 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
                 return (
                   <motion.div
                     key={`${i}-${s.label}`}
-                    initial={{ opacity: 0, y: 4 }}
+                    initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.24, ease: "easeOut" }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   >
                     {showPhase && (
                       <div className="mb-1 mt-0.5 flex items-center gap-2 text-[13px] text-[var(--os-ink-muted)]">
-                        <Icon icon={I.globe} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                        <span className="flex size-3 shrink-0 items-center justify-center">
+                          <Icon icon={I.globe} size={12} className="text-[var(--os-ink-subtle)]" />
+                        </span>
                         <span>{PHASE_LABEL[s.phase!]}</span>
                       </div>
                     )}
@@ -599,7 +605,7 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
                         {s.label}
                       </span>
                     </div>
-                    {hasChips && <TraceChips chips={s.chips!} kind={s.chipKind} />}
+                    {hasChips && <TraceChips chips={s.chips!} />}
                   </motion.div>
                 );
               })}
