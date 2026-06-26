@@ -13,6 +13,7 @@ import { getFirmContext } from "@/lib/auth/context";
 import { withFirm } from "@/lib/auth/tenant";
 import { runAgent, type AgentTurn } from "@/lib/agent/runner";
 import { stageConversationalProposals } from "@/lib/agent/stage-proposals";
+import { appendMessage, updateMessage } from "@/lib/repository/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,12 @@ export async function POST(req: Request) {
 
   const history = sanitizeHistory((body as { history?: unknown }).history);
   const text = message; // narrowed string
+  // DURABLE RUNS (opt-in): when the client passes its threadId, the run is persisted SERVER-SIDE as it
+  // streams, so it survives a navigation / tab close (the server keeps executing after the client
+  // disconnects) and reconnects to where it is. Absent ⇒ unchanged behavior. All persistence below is
+  // best-effort and wrapped: it can NEVER break the SSE stream.
+  const rawThread = (body as { threadId?: unknown }).threadId;
+  const threadId = typeof rawThread === "string" && rawThread.trim() ? rawThread.trim() : null;
 
   // Stream the run as SSE: `step` frames as the agent reasons/dispatches tools, then a terminal
   // `done` (or `error`) frame. The agent loop's safety contract is unchanged — reads auto-run,
@@ -52,17 +59,46 @@ export async function POST(req: Request) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Durable-run state (server-side, opt-in via threadId). Created lazily; every persist is best-effort.
+      let runMsgId: string | null = null;
+      const traceSteps: Array<{ label: string; phase?: string; chips?: string[]; chipKind?: string }> = [];
+      let partialText = "";
+      let lastPersist = 0;
+      let persistInFlight = false;
+      const persistProgress = () => {
+        if (!runMsgId || persistInFlight || Date.now() - lastPersist < 1500) return;
+        lastPersist = Date.now();
+        persistInFlight = true;
+        void withFirm((db, c) => updateMessage(db, c, { messageId: runMsgId!, metadata: { status: "running", trace: traceSteps, partialText } }))
+          .catch(() => {})
+          .finally(() => { persistInFlight = false; });
+      };
       try {
+        if (threadId) {
+          try {
+            runMsgId = (await withFirm((db, c) => appendMessage(db, c, { threadId, role: "assistant", content: "", metadata: { status: "running", trace: [] } }))) ?? null;
+          } catch { runMsgId = null; }
+        }
         const { reply, proposedActions, citations, calibration, ungroundedFigures } = await runAgent(text, history, {
           scope: "real",
           onEvent: (e) => {
             // Best-effort: if the client already disconnected, enqueue throws — swallow it.
             try {
-              if (e.type === "text") controller.enqueue(frame("text", { delta: e.delta, turn: e.turn }));
-              else controller.enqueue(frame("step", { label: e.label, phase: e.phase, chips: e.chips, chipKind: e.chipKind }));
+              if (e.type === "text") { partialText += e.delta; controller.enqueue(frame("text", { delta: e.delta, turn: e.turn })); }
+              else {
+                traceSteps.push({ label: e.label, phase: e.phase, chips: e.chips, chipKind: e.chipKind });
+                controller.enqueue(frame("step", { label: e.label, phase: e.phase, chips: e.chips, chipKind: e.chipKind }));
+                persistProgress();
+              }
             } catch { /* closed */ }
           },
         });
+        // FINALIZE the durable run: the settled answer + status=final, so a reconnect shows it complete.
+        if (runMsgId) {
+          try {
+            await withFirm((db, c) => updateMessage(db, c, { messageId: runMsgId!, content: reply, metadata: { status: "final", citations, calibration, ungroundedFigures } }));
+          } catch { /* best-effort */ }
+        }
         // DRAFT-EVERYTHING / HUMAN-COMMITS: persist any staged write into the durable, approvable
         // queue (action_proposals) so it does not vanish with the stream (RULE 1). It becomes resolvable
         // via resolveProposalAction with all its guards. HONEST DEGRADATION: a persistence failure is
@@ -85,6 +121,10 @@ export async function POST(req: Request) {
         const msg = err instanceof Error ? err.message : "";
         const error = /§7216|7216 gate/.test(msg) ? "gated_7216" : name;
         if (error !== "gated_7216") console.error("[/api/agent] failed:", name);
+        // Mark a persisted run errored (not forever "running") so a reconnect shows the failure. Best-effort.
+        if (runMsgId) {
+          try { await withFirm((db, c) => updateMessage(db, c, { messageId: runMsgId!, content: "", metadata: { status: "error", error } })); } catch { /* best-effort */ }
+        }
         try { controller.enqueue(frame("error", { error })); } catch { /* closed */ }
       } finally {
         controller.close();

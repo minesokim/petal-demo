@@ -4,7 +4,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { makeTestDb, type Claims } from "./helpers/db";
 import * as schema from "../lib/db/schema";
 import type { Ctx } from "../lib/repository/types";
-import { createThread, appendMessage, getThreadMessages } from "../lib/repository/chat";
+import { createThread, appendMessage, getThreadMessages, updateMessage, getActiveRun } from "../lib/repository/chat";
 
 // Reopening a saved chat must restore the REAL answer with its cited sources, not a plain-text rebuild.
 // The sources ride along as chat_message.metadata; this proves the persist -> read round-trip preserves them.
@@ -56,6 +56,35 @@ describe("chat message metadata — sources survive a reopen", () => {
       await appendMessage(db as never, CTX, { threadId, role: "user", content: "hello" });
       const [msg] = await getThreadMessages(db as never, threadId);
       expect(msg.metadata).toEqual({});
+    });
+  });
+});
+
+describe("durable runs — server-side run state survives a reload + reconnects", () => {
+  it("persists a running trace, then finalizes; getActiveRun reflects the lifecycle", async () => {
+    await asTenant(CLAIMS, async (db) => {
+      const threadId = await createThread(db as never, CTX, { title: "QBI?" });
+      // run starts: an assistant message marked running with an empty trace
+      const msgId = await appendMessage(db as never, CTX, { threadId, role: "assistant", content: "", metadata: { status: "running", trace: [] } });
+      // mid-run: persist the live trace (what reconnect shows)
+      await updateMessage(db as never, CTX, { messageId: msgId, metadata: { status: "running", trace: [{ label: "Understanding the question" }], partialText: "QBI is" } });
+      const active = await getActiveRun(db as never, threadId);
+      expect(active?.id).toBe(msgId);
+      expect((active!.metadata as { trace: unknown[] }).trace).toHaveLength(1);
+      // finalize: the settled answer + status final → no longer an active run
+      await updateMessage(db as never, CTX, { messageId: msgId, content: "The QBI deduction is 20%.", metadata: { status: "final", calibration: "grounded" } });
+      expect(await getActiveRun(db as never, threadId)).toBeNull();
+      const [msg] = await getThreadMessages(db as never, threadId);
+      expect(msg.content).toBe("The QBI deduction is 20%.");
+      expect((msg.metadata as { status: string }).status).toBe("final");
+    });
+  });
+
+  it("refuses to update a message the firm cannot see (RLS guard)", async () => {
+    await asTenant(CLAIMS, async (db) => {
+      await expect(
+        updateMessage(db as never, CTX, { messageId: "99999999-9999-9999-9999-999999999999", content: "x" }),
+      ).rejects.toThrow(/not found in firm/);
     });
   });
 });

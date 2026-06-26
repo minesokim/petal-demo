@@ -106,3 +106,45 @@ export async function getThreadMessages(
     .orderBy(asc(chatMessages.createdAt));
   return rows.map((r) => ({ ...r, metadata: (r.metadata as Record<string, unknown>) ?? {} }));
 }
+
+// ⑨b DURABLE RUNS — persist a chat run's live state SERVER-SIDE so it survives a navigation / reload /
+// tab close and reconnects to where it is (Claude-style), instead of vanishing with the browser. The
+// run is recorded as an assistant message marked metadata.status='running' with its streamed trace; the
+// server (which keeps executing after the client disconnects) updates it as it streams and finalizes it
+// on done. No new table — reuses chat_messages + its metadata jsonb. RLS-scoped like every write here.
+
+// Update a message's content/metadata in place (the streaming trace, then the settled answer). RLS:
+// the message must belong to a thread in the caller's firm (the firm-scoped read returns nothing for a
+// foreign message, so a cross-tenant update is refused).
+export async function updateMessage(
+  db: Db,
+  ctx: Ctx,
+  input: { messageId: string; content?: string; metadata?: Record<string, unknown> },
+): Promise<void> {
+  void ctx;
+  const [own] = await db.select({ id: chatMessages.id }).from(chatMessages).where(eq(chatMessages.id, input.messageId));
+  if (!own) throw new Error("message not found in firm");
+  const set: Record<string, unknown> = {};
+  if (input.content !== undefined) set.content = input.content;
+  if (input.metadata !== undefined) set.metadata = input.metadata;
+  if (Object.keys(set).length === 0) return;
+  await db.update(chatMessages).set(set).where(eq(chatMessages.id, input.messageId));
+}
+
+// The thread's in-flight run, if any: the most-recent assistant message still marked running. On reopen
+// the client hydrates the live trace from this so a run reconnects rather than disappearing. RLS-scoped.
+export async function getActiveRun(
+  db: Db,
+  threadId: string,
+): Promise<{ id: string; content: string; metadata: Record<string, unknown> } | null> {
+  const rows = await db
+    .select({ id: chatMessages.id, content: chatMessages.content, metadata: chatMessages.metadata })
+    .from(chatMessages)
+    .where(eq(chatMessages.threadId, threadId))
+    .orderBy(desc(chatMessages.createdAt));
+  for (const r of rows) {
+    const m = (r.metadata as Record<string, unknown>) ?? {};
+    if (m.status === "running") return { id: r.id, content: r.content, metadata: m };
+  }
+  return null;
+}
