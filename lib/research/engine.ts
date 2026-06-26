@@ -52,6 +52,7 @@ import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
 import { isCaConformityQuestion } from "./fetch/ca-conformity";
+import { verifyCitations } from "./fetch/courtlistener";
 import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
 import { compute } from "../tax-ai/compute";
@@ -850,6 +851,22 @@ async function researchAnswerImpl(
     reviewNotes.push(
       `Authority weight: ${weightOfAuthority.standard} — Form 8275 disclosure recommended. ${weightOfAuthority.rationale}`,
     );
+  }
+
+  // CITE VERIFICATION (hallucination guard): with a CourtListener token, confirm every CASE citation in
+  // the answer resolves to a real opinion. A not-found cite is flagged in reviewNotes so the preparer
+  // catches a fabrication. Best-effort + env-gated (no token ⇒ verifyCitations returns []): a verify
+  // failure must never break the grounded answer. Gated on opts.fetch so offline paths stay untouched.
+  if (opts.fetch) {
+    try {
+      for (const v of await verifyCitations(answer)) {
+        if (v.status === "not-found") {
+          reviewNotes.push(`Unverified citation: "${v.cite}" did not resolve to a known court opinion (CourtListener) — verify it before relying on it.`);
+        }
+      }
+    } catch {
+      /* best-effort: a verification failure must never break the grounded answer */
+    }
   }
 
   return {
