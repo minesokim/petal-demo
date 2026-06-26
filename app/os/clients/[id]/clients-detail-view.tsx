@@ -1248,6 +1248,7 @@ function ClientRecordInner({ id }: { id: string }) {
                           thinking={m.thinking}
                           liveSteps={m.liveSteps}
                           streamingText={m.streamingText}
+                          traceTitle={m.traceTitle}
                           compact
                           stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id}
                           onSuggest={q => sendChat(q)}

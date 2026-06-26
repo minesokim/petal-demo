@@ -109,7 +109,7 @@ function PetalBubble({ msg, isLatest, onSuggest }: { msg: Extract<ChatMsg, { rol
         className="mt-0.5 size-6 shrink-0 text-[var(--os-primary)]"
       />
       <div className="min-w-0 flex-1 pt-1">
-        <PetalAnswerView answer={msg.answer} thinking={msg.thinking} liveSteps={msg.liveSteps} streamingText={msg.streamingText} stream={isLatest} onSuggest={onSuggest} />
+        <PetalAnswerView answer={msg.answer} thinking={msg.thinking} liveSteps={msg.liveSteps} streamingText={msg.streamingText} traceTitle={msg.traceTitle} stream={isLatest} onSuggest={onSuggest} />
       </div>
     </div>
   );

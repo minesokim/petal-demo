@@ -621,7 +621,7 @@ function ReturnRecordInner({ id }: { id: string }) {
                   ) : (
                     <div key={m.id}>
                       <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--os-ink-muted)]"><PetalLogo key={m.thinking ? "load" : "done"} loading={m.thinking} className="size-3.5 shrink-0 text-[var(--os-primary)]" /> Petal</div>
-                      <PetalAnswerView answer={m.answer} thinking={m.thinking} liveSteps={m.liveSteps} streamingText={m.streamingText} compact stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id} onSuggest={q => sendChat(q)} />
+                      <PetalAnswerView answer={m.answer} thinking={m.thinking} liveSteps={m.liveSteps} streamingText={m.streamingText} traceTitle={m.traceTitle} compact stream={m.id === [...chat.messages].reverse().find(x => x.role === "petal")?.id} onSuggest={q => sendChat(q)} />
                     </div>
                   ),
                 )}

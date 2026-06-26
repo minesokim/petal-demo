@@ -32,7 +32,7 @@ export type TraceStep = { label: string; phase?: "analyzing" | "reasoning"; chip
 
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
-  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: TraceStep[]; streamingText?: string; streamTurn?: number };
+  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: TraceStep[]; streamingText?: string; streamTurn?: number; traceTitle?: string };
 
 let msgSeq = 1;
 
@@ -199,7 +199,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     setMessages(m => [
       ...m,
       { id: userId, role: "user", text: q, attachments },
-      { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true, liveSteps: [] },
+      { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true, liveSteps: [], traceTitle: titleFromMessage(message) },
     ]);
 
     const history = historyRef.current.slice();
@@ -486,49 +486,98 @@ function TraceChips({ chips, kind }: { chips: string[]; kind?: "authority" | "ci
   );
 }
 
-// COGNITION TRACE — the live "what Petal is doing" trace. Steps stream in and stack: each carries an optional
-// PHASE (a globe-headed "Analyzing" / "Reasoning" group) and optional authority/citation CHIPS. A completed
-// step shows a check; the live one (no chips, last) pulses. Once the answer streams (`settling`) all read done.
-function CognitionTrace({ steps, settling }: { steps: TraceStep[]; settling?: boolean }) {
+// A descriptive gerund title for the cognition-trace header (claude.ai-style "what Petal is doing"),
+// derived from the question so the thinking state reads richer than a bare "Analyzing". The verb is
+// chosen from the intent; the question framing is stripped so it reads as a phrase, not a question.
+function titleFromMessage(message: string): string {
+  const raw = message.trim().replace(/\s+/g, " ");
+  const lc = raw.toLowerCase();
+  const verb =
+    /\b(draft|write|compose|email|reply|message|letter|memo)\b/.test(lc) ? "Drafting" :
+    /\b(compute|calculate|estimate|figure out|how much|what's the (tax|amount|total))\b/.test(lc) ? "Computing" :
+    /\b(summari[sz]e|recap|tl;?dr|overview)\b/.test(lc) ? "Summarizing" :
+    /\b(compare|versus|\bvs\.?\b|difference between)\b/.test(lc) ? "Comparing" :
+    /\b(tax|deduct|credit|irc|§|section|return|filing|qbi|salt|basis|exempt|penalt|ruling|\breg\b|depreciat|1031|liability|withhold|estate|gift|nexus|s[- ]?corp)\b/.test(lc) ? "Researching" :
+    "Working through";
+  let body = raw
+    .replace(/\?+\s*$/g, "")
+    .replace(/^(please\s+|hey,?\s+|can you\s+|could you\s+|i need (you )?to\s+|help me\s+|tell me\s+|give me\s+)/i, "")
+    .replace(/^(what (is|are|was|were|'?s)|how (do|does|can|should|much|many)|when (is|do|does|will|can)|which|who|why|where|is there|are there|explain|describe|walk me through)\s+/i, "")
+    .trim();
+  if (!body) body = "your request";
+  const short = body.length > 72 ? body.slice(0, 71).replace(/\s+\S*$/, "") + "…" : body;
+  return `${verb} ${short.charAt(0).toLowerCase()}${short.slice(1)}`;
+}
+
+// COGNITION TRACE — the live "what Petal is doing" trace, claude.ai-style. A descriptive TITLE header
+// (the active line's text shimmers, no dot) with a chevron folds the detail; the body stacks the streamed
+// steps, each carrying an optional PHASE group and authority/citation CHIPS. Open by default so the live
+// trace is visible; one click collapses to just the title. Once the answer streams (`settling`) it reads done.
+function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settling?: boolean; title?: string }) {
+  const [open, setOpen] = useState(true);
+  const header = title || steps[steps.length - 1]?.label || "Thinking";
   return (
-    <div className="space-y-1.5">
-      {steps.map((s, i) => {
-        const hasChips = !!s.chips && s.chips.length > 0;
-        const current = !settling && i === steps.length - 1 && !hasChips;
-        const showPhase = !!s.phase && s.phase !== (i > 0 ? steps[i - 1].phase : undefined);
-        return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="group flex w-full items-center gap-2 text-left"
+        aria-expanded={open}
+      >
+        <Icon icon={I.sparkle} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
+        <span className={cn("min-w-0 flex-1 truncate text-[13px] leading-snug text-[var(--os-ink-muted)]", !settling && "os-think-pulse")}>
+          {header}
+        </span>
+        <Icon
+          icon={I.chevronDown}
+          size={14}
+          className={cn("shrink-0 text-[var(--os-ink-subtle)] transition-transform duration-200 group-hover:text-[var(--os-ink-muted)]", !open && "-rotate-90")}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
           <motion.div
-            key={`${i}-${s.label}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
           >
-            {showPhase && (
-              <div className="mb-1 mt-0.5 flex items-center gap-2 text-[13px] text-[var(--os-ink-muted)]">
-                <Icon icon={I.globe} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
-                <span>{PHASE_LABEL[s.phase!]}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="flex size-3.5 shrink-0 items-center justify-center">
-                {current ? (
-                  <motion.span
-                    className="size-[7px] rounded-full bg-[var(--os-primary)]"
-                    animate={{ opacity: [0.35, 1, 0.35] }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                ) : (
-                  <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
-                )}
-              </span>
-              <span className={cn("text-[12.5px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
-                {s.label}
-              </span>
+            <div className="ml-[7px] space-y-1.5 border-l border-[var(--os-border)] pl-3.5">
+              {steps.map((s, i) => {
+                const hasChips = !!s.chips && s.chips.length > 0;
+                const current = !settling && i === steps.length - 1 && !hasChips;
+                const showPhase = !!s.phase && s.phase !== (i > 0 ? steps[i - 1].phase : undefined);
+                return (
+                  <motion.div
+                    key={`${i}-${s.label}`}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.24, ease: "easeOut" }}
+                  >
+                    {showPhase && (
+                      <div className="mb-1 mt-0.5 flex items-center gap-2 text-[13px] text-[var(--os-ink-muted)]">
+                        <Icon icon={I.globe} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                        <span>{PHASE_LABEL[s.phase!]}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-3.5 shrink-0 items-center justify-center">
+                        <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
+                      </span>
+                      <span className={cn("text-[12.5px] leading-snug", current ? "os-think-pulse text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {hasChips && <TraceChips chips={s.chips!} kind={s.chipKind} />}
+                  </motion.div>
+                );
+              })}
             </div>
-            {hasChips && <TraceChips chips={s.chips!} kind={s.chipKind} />}
           </motion.div>
-        );
-      })}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -712,6 +761,7 @@ export function PetalAnswerView({
   thinking,
   liveSteps,
   streamingText,
+  traceTitle,
   stream = true,
   compact = false,
   onSuggest,
@@ -722,6 +772,8 @@ export function PetalAnswerView({
   liveSteps?: TraceStep[];
   /** REAL token-streamed answer text for the in-flight bubble (true generation streaming) */
   streamingText?: string;
+  /** descriptive header for the cognition trace (claude.ai-style "what Petal is doing") */
+  traceTitle?: string;
   /** stream the reveal (latest message) vs render instantly (history) */
   stream?: boolean;
   /** tighter type + spacing for the record rail */
@@ -746,7 +798,7 @@ export function PetalAnswerView({
       );
     }
     const hasTrace = (liveSteps?.length ?? 0) > 0;
-    return hasTrace ? <CognitionTrace steps={liveSteps!} /> : <Thinking steps={liveSteps} />;
+    return hasTrace ? <CognitionTrace steps={liveSteps!} title={traceTitle} /> : <Thinking steps={liveSteps} />;
   }
 
   return (

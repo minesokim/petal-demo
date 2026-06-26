@@ -139,6 +139,14 @@
 .os-rail-in { animation: os-rail-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .os-rail-in { animation: none; } }
 
+/* Cognition-trace live indicator: the active line's TEXT shimmers (replaces the old pulsing dot). */
+@keyframes os-think-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+.os-think-pulse { animation: os-think-pulse 1.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .os-think-pulse { animation: none; opacity: 1; } }
+
 /* sentence-case section label */
 .os-label {
   font-size: 11px;
