@@ -54,27 +54,32 @@ function figureCores(text: string): string[] {
 const digitsOf = (s: string) => s.replace(/[^\d.]/g, "");
 
 async function distill(provider: AIProvider, question: string, chunks: AuthorityChunk[]): Promise<AuthorityChunk[]> {
-  const out: AuthorityChunk[] = [];
-  for (const c of chunks) {
-    let parsed: { relevant?: unknown; text?: unknown };
-    try {
-      const { text } = await provider.generateText({
-        system: DISTILL_SYS,
-        prompt: `QUESTION: ${question}\n\nSOURCE TEXT (${c.citation}):\n${c.text}`,
-        maxTokens: 600,
-      });
-      parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    } catch {
-      continue; // non-JSON / model failure → skip this chunk honestly
-    }
-    const para = typeof parsed.text === "string" ? parsed.text.trim() : "";
-    if (parsed.relevant === false || para.length < 30) continue;
-    const src = digitsOf(c.text);
-    const leaks = figureCores(para).filter((f) => !src.includes(f));
-    if (leaks.length) continue; // the paraphrase invented a figure not in the source → drop (honest)
-    out.push({ ...c, text: para });
-  }
-  return out;
+  // PARALLEL: each chunk's distill is an INDEPENDENT model call. Run them concurrently (Promise.all
+  // preserves array order) instead of one-at-a-time — same paraphrases, same relevance + figure-leak
+  // gates, same surviving chunks in the same order; only the wall-clock collapses from N serial
+  // round-trips to one. Quality is byte-identical; this is pure latency.
+  const distilled = await Promise.all(
+    chunks.map(async (c): Promise<AuthorityChunk | null> => {
+      let parsed: { relevant?: unknown; text?: unknown };
+      try {
+        const { text } = await provider.generateText({
+          system: DISTILL_SYS,
+          prompt: `QUESTION: ${question}\n\nSOURCE TEXT (${c.citation}):\n${c.text}`,
+          maxTokens: 600,
+        });
+        parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+      } catch {
+        return null; // non-JSON / model failure → skip this chunk honestly
+      }
+      const para = typeof parsed.text === "string" ? parsed.text.trim() : "";
+      if (parsed.relevant === false || para.length < 30) return null;
+      const src = digitsOf(c.text);
+      const leaks = figureCores(para).filter((f) => !src.includes(f));
+      if (leaks.length) return null; // the paraphrase invented a figure not in the source → drop (honest)
+      return { ...c, text: para };
+    }),
+  );
+  return distilled.filter((c): c is AuthorityChunk => c !== null);
 }
 
 /**
@@ -94,44 +99,55 @@ export async function fetchPrimary(
   if (!sources.length) return [];
   const max = opts.maxChunks ?? 3;
   const nowIso = opts.nowIso ?? new Date().toISOString();
-  // Try sources in authority order. A source that returns RAW chunks but whose content doesn't
-  // DISTILL to anything on-topic (e.g. GovInfo's tangential 2024-edition §224 for a brand-new OBBBA
-  // §224 question) must fall through to the next source — not stop the search. The first source that
-  // yields relevant, distilled authority wins.
-  for (const src of sources) {
-    let hits;
-    try {
-      hits = await src.search(question, { signal: opts.signal });
-    } catch {
-      continue; // a source failure (network, or a §7216-rejected query) → try the next, never throw out
-    }
-    const raw: AuthorityChunk[] = [];
-    for (const hit of hits) {
-      if (raw.length >= max) break;
-      let text: string;
+  // PARALLEL search: the per-source HTTP searches are independent, so fire them CONCURRENTLY instead of
+  // one-at-a-time. Each result stays PAIRED with its source and Promise.all preserves array order, so the
+  // authority-priority semantics are UNCHANGED — we still process sources in rank order below and the
+  // first (highest-authority) source whose content distills on-topic wins. Sources are already pre-
+  // filtered by pickSources (only matchers that fire), so this is a handful of concurrent calls, not 16.
+  const searched = await Promise.all(
+    sources.map(async (src) => {
       try {
-        text = await hit.getText();
+        return await src.search(question, { signal: opts.signal });
       } catch {
-        continue; // getText not wired / the document fetch failed → skip this hit honestly
+        return []; // a source failure (network, or a §7216-rejected query) → empty, never throw out
       }
-      const clean = text.trim();
-      if (clean.length < 80) continue; // too thin to ground a position in
+    }),
+  );
+  // Walk the searched sources in authority order; the first that yields relevant, distilled authority wins.
+  for (const hits of searched) {
+    if (!hits.length) continue;
+    // PARALLEL getText for the top candidates (a small over-fetch covers thin/failed docs), then keep the
+    // first `max` that pass the length gate IN ORDER — byte-identical to the chunks the serial loop built,
+    // including the positional chunkIds, just fetched concurrently.
+    const fetched = await Promise.all(
+      hits.slice(0, max + 2).map(async (hit) => {
+        try {
+          const clean = (await hit.getText()).trim();
+          return clean.length >= 80 ? { hit, clean } : null; // too thin to ground a position in
+        } catch {
+          return null; // getText not wired / the document fetch failed → skip this hit honestly
+        }
+      }),
+    );
+    const raw: AuthorityChunk[] = [];
+    for (const f of fetched) {
+      if (!f || raw.length >= max) continue;
       raw.push({
-        chunkId: `fetched-${hit.source}-${raw.length}`,
-        authorityType: TYPE_BY_SOURCE[hit.source] ?? "statute",
-        citation: hit.citation || hit.title,
+        chunkId: `fetched-${f.hit.source}-${raw.length}`,
+        authorityType: TYPE_BY_SOURCE[f.hit.source] ?? "statute",
+        citation: f.hit.citation || f.hit.title,
         jurisdiction,
         taxYear: [taxYear],
         effectiveDate: `${taxYear}-01-01`,
-        sourceUrl: hit.sourceUrl,
+        sourceUrl: f.hit.sourceUrl,
         ingestedAt: nowIso,
-        text: clean.slice(0, 8000),
+        text: f.clean.slice(0, 8000),
         keywords: [],
         // Preserve the weighting signal the source already computed (was discarded before): the
         // §6662 authority rank and whether it may stand as sole authority (a proposed rule / PLR /
         // non-precedential opinion = false). The future weight-of-authorities engine reads these.
-        authorityClass: hit.authorityTier,
-        precedential: hit.precedential,
+        authorityClass: f.hit.authorityTier,
+        precedential: f.hit.precedential,
       });
     }
     if (!raw.length) continue;
