@@ -18,6 +18,7 @@ import { matchesCapCaselaw, searchCapCaselaw } from "./cap-caselaw";
 import { matchesSecEdgar, searchSecEdgar } from "./sec-edgar";
 import { matchesIrsWd, uilQuery, searchIrsWd, fetchWrittenDeterminationText, writtenDeterminationCitation } from "./irs-wd";
 import { matchesOpenStates, searchOpenStates } from "./openstates";
+import { matchesTreaty, searchTreaty } from "./treaty";
 import { searchFederalRegister } from "./federal-register";
 
 export type FetchHit = {
@@ -301,15 +302,18 @@ const irsWdSource: FetchSource = {
 // no OPENSTATES_API_KEY, so it stays fully dormant until the key is added (then it activates live). An
 // enacted bill is state session law; a pending bill is flagged context-only (never grounds a position).
 const openStatesSource: FetchSource = { id: "openstates", label: "OpenStates (state bills + status)", matches: matchesOpenStates, search: async (q, o) => searchOpenStates(assertPublicLawQuery(q), o) };
+// US bilateral income tax TREATIES (GovInfo CDOC). Tier-1 (treaty on par with statute, §7852(d)). The
+// module's title-filter returns the RIGHT country's treaty or nothing — never a different country's.
+const treatySource: FetchSource = { id: "treaty", label: "US bilateral tax treaties (GovInfo CDOC)", matches: matchesTreaty, search: async (q, o) => searchTreaty(assertPublicLawQuery(q), o) };
 
-const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsWdSource, irsPubSource, irmSource, openStatesSource, secEdgarSource];
+const SOURCES: FetchSource[] = [caConformity, treatySource, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsWdSource, irsPubSource, irmSource, openStatesSource, secEdgarSource];
 
 // ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
 // CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
 // REG cite ("§1.199A-5" must pull codified reg text, not be mis-reduced to "26 USC 1"). A bare statute
 // cite ("§1202", no dot, no California) matches neither and still routes to GovInfo first.
 const TIER_ORDER: Record<string, number> = {
-  "ca-conformity": 0, ecfr: 1, govinfo: 2, "congress-gov": 3, "federal-register": 4,
+  "ca-conformity": 0, treaty: 1, ecfr: 1, govinfo: 2, "congress-gov": 3, "federal-register": 4,
   courtlistener: 5, "cap-caselaw": 6, "tax-court": 7,
   "irs-irb": 8, "irs-drop": 9, "irs-wd": 10, "irs-pub": 11, irm: 12, openstates: 13, "sec-edgar": 14,
 };
