@@ -51,6 +51,7 @@ import { findContraAuthorities } from "./contra-finder";
 import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
+import { isCaConformityQuestion } from "./fetch/ca-conformity";
 import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
 import { compute } from "../tax-ai/compute";
@@ -659,6 +660,16 @@ async function researchAnswerImpl(
         "Do not treat the absence of an answer as a conclusion; consult primary authority directly.",
       ],
     };
+  }
+
+  // STATE-CONFORMITY: a "does California conform to §X" question cannot be answered from the FEDERAL
+  // corpus (which holds the federal provision, not California's treatment). Even when federal authority
+  // WAS retrieved, fetch the STATE authority (R&TC conformity statutes + FTB Pub 1001) and ground the
+  // conformity answer in IT — so the CA claim is GROUNDED in state authority, not asserted alongside a
+  // federal cite. §7216-guarded (public state law, no PII); falls through to corpus reasoning on a miss.
+  if (opts.fetch && isCaConformityQuestion(question)) {
+    const stateGround = await tryFetchGround(provider, question, taxYear, jurisdiction, fetchFn);
+    if (stateGround) return stateGround;
   }
 
   // 2 — REASON, grounded. The model may cite ONLY the retrieved chunkIds (enforced in
