@@ -17,6 +17,7 @@ import { matchesIrm, searchIrm } from "./irm";
 import { matchesCapCaselaw, searchCapCaselaw } from "./cap-caselaw";
 import { matchesSecEdgar, searchSecEdgar } from "./sec-edgar";
 import { matchesIrsWd, uilQuery, searchIrsWd, fetchWrittenDeterminationText, writtenDeterminationCitation } from "./irs-wd";
+import { matchesOpenStates, searchOpenStates } from "./openstates";
 import { searchFederalRegister } from "./federal-register";
 
 export type FetchHit = {
@@ -296,7 +297,12 @@ const irsWdSource: FetchSource = {
   },
 };
 
-const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsWdSource, irsPubSource, irmSource, secEdgarSource];
+// OpenStates: state LEGISLATION tracking (50 states). KEY-GATED — matchesOpenStates returns false with
+// no OPENSTATES_API_KEY, so it stays fully dormant until the key is added (then it activates live). An
+// enacted bill is state session law; a pending bill is flagged context-only (never grounds a position).
+const openStatesSource: FetchSource = { id: "openstates", label: "OpenStates (state bills + status)", matches: matchesOpenStates, search: async (q, o) => searchOpenStates(assertPublicLawQuery(q), o) };
+
+const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsWdSource, irsPubSource, irmSource, openStatesSource, secEdgarSource];
 
 // ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
 // CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
@@ -305,7 +311,7 @@ const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSour
 const TIER_ORDER: Record<string, number> = {
   "ca-conformity": 0, ecfr: 1, govinfo: 2, "congress-gov": 3, "federal-register": 4,
   courtlistener: 5, "cap-caselaw": 6, "tax-court": 7,
-  "irs-irb": 8, "irs-drop": 9, "irs-wd": 10, "irs-pub": 11, irm: 12, "sec-edgar": 14,
+  "irs-irb": 8, "irs-drop": 9, "irs-wd": 10, "irs-pub": 11, irm: 12, openstates: 13, "sec-edgar": 14,
 };
 
 /**
