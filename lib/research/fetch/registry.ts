@@ -5,6 +5,7 @@
 
 import { assertPublicLawQuery } from "./guard";
 import { searchGovInfo, fetchGovInfoText, stripHtml, statuteQuery, type GovInfoResult } from "./govinfo";
+import { searchEcfr, cfrRefsFromQuery, fetchEcfrSection } from "./ecfr";
 import { searchTaxCourt, taxCourtDownloadUrl, fetchTaxCourtText } from "./tax-court";
 import { searchIrb } from "./irs-irb";
 import { searchFederalRegister } from "./federal-register";
@@ -48,6 +49,52 @@ const govinfoStatute: FetchSource = {
         sourceUrl: r.granuleUrl ?? r.textUrl,
         authorityTier: 1, // statute is the top axis
         getText: () => fetchGovInfoText(r.textUrl, { signal: opts?.signal }),
+      }));
+  },
+};
+
+// ── eCFR: the CURRENT codified regulation TEXT (Treasury Title 26 + any CFR title). Two paths: a
+// SPECIFIC cite (§1.199A-5) is pulled in FULL via the Versioner API — this is cite-VERIFICATION, so a
+// model reg citation grounds in the real section text and stops reading "not grounded"; a topic
+// question full-text-searches the CFR. A RESERVED section ⇒ precedential=false (open placeholder, not
+// binding rule). Tier-2 authority (a final reg). ──
+const ecfr: FetchSource = {
+  id: "ecfr",
+  label: "eCFR (Code of Federal Regulations, current)",
+  matches: (q) => cfrRefsFromQuery(q).length > 0 || /\b(treas\.?\s*reg|c\.?\s?f\.?\s?r|regulation|final reg|proposed reg|reg\.?\s*§)\b/i.test(q),
+  search: async (q, opts) => {
+    const safe = assertPublicLawQuery(q);
+    const refs = cfrRefsFromQuery(safe).slice(0, 4);
+    if (refs.length) {
+      // Specific cite(s): fetch the FULL section text via the Versioner (verifies + grounds the cite).
+      return refs.map((ref) => ({
+        source: "ecfr",
+        title: `${ref.title} CFR §${ref.section}`,
+        citation: `${ref.title} CFR §${ref.section}`,
+        sourceUrl: `https://www.ecfr.gov/current/title-${ref.title}/section-${ref.section}`,
+        authorityTier: 2,
+        precedential: true,
+        getText: async () => (await fetchEcfrSection(ref, { signal: opts?.signal })).text,
+      }));
+    }
+    // No explicit cite: topic full-text search across the CFR; pull the full section when we can.
+    const hits = await searchEcfr(statuteQuery(safe), { perPage: 5, signal: opts?.signal });
+    return hits
+      .filter((h) => h.section)
+      .map((h) => ({
+        source: "ecfr",
+        title: h.heading || `§ ${h.section}`,
+        citation: `26 CFR §${h.section}`,
+        sourceUrl: h.sourceUrl,
+        authorityTier: 2,
+        precedential: !h.reserved, // a RESERVED section is an open placeholder, not binding rule text
+        getText: async () => {
+          try {
+            return (await fetchEcfrSection({ title: 26, part: h.section.split(".")[0], section: h.section }, { signal: opts?.signal })).text;
+          } catch {
+            return h.excerpt; // fall back to the search snippet
+          }
+        },
       }));
   },
 };
@@ -142,9 +189,12 @@ const federalRegister: FetchSource = {
   },
 };
 
-const SOURCES: FetchSource[] = [govinfoStatute, federalRegister, taxCourt, irsIrb];
+const SOURCES: FetchSource[] = [govinfoStatute, ecfr, federalRegister, taxCourt, irsIrb];
 
-const TIER_ORDER: Record<string, number> = { govinfo: 0, "federal-register": 1, "tax-court": 2, "irs-irb": 3 };
+// eCFR ranks ahead of GovInfo for a REG question: a "§1.199A-5" cite must pull the codified reg TEXT,
+// not be mis-reduced to "26 USC 1" by the statute search. A bare statute cite ("§1202", no dot) does
+// not match eCFR, so it still routes to GovInfo first.
+const TIER_ORDER: Record<string, number> = { ecfr: 0, govinfo: 1, "federal-register": 2, "tax-court": 3, "irs-irb": 4 };
 
 /**
  * Sources that fit the question, highest-authority first. LIVE-FETCH-ONLY policy (owner decision):
