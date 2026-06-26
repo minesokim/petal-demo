@@ -196,3 +196,14 @@ corpus depth — not just retrieval mechanics.
   text (e.g. it answered tips-se-tax BACKWARDS — "not subject to SE tax" — for lack of the SE-tax enrichment).
   Re-running scripts/backfill-authority-graph.mts will bring the graph to in-memory parity; deferred since
   in-memory is the shipped default. Real shipped grade: 97.4% / 2.6% error on production Claude.
+- **2026-06-25 — CASE-LAW corpus layer added (the brutal grade's hardest gate, "zero case law", closed).**
+  6 foundational federal doctrines — Gregory (economic substance), Glenshaw Glass (gross income), Welch
+  (ordinary & necessary), Cohan (estimate rule, a 2d-Cir holding), Crane (nonrecourse basis), INDOPCO
+  (capitalization) — each citation + holding WEB-VERIFIED and adversarially fact-checked (Cornell LII /
+  Justia) via the caselaw-ingest-verify workflow; nothing from memory. Authored 6 matching golden cases
+  (golden set 38→44) so the depth is MEASURED. Verified on production Claude: **6/6 pass** (each answers +
+  cites the right case). Combined with the OBBBA set (37/38) the engine is ~43/44 (~97.7%) on the expanded
+  set. Impact on the scorecard: authority-weighting (the §6662 in-circuit-controlling-holding invariant now
+  has a REAL Supreme + circuit holding to weigh, not synthetic) and coverage (first real case law) both
+  advance. Backfilled + embedded into the graph too. Next coverage lifts: more case law (a circuit SPLIT to
+  fully exercise the in-circuit logic), entity (S-corp/partnership) depth, multistate.
