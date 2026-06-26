@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { courtListenerMatches, caseQuery, searchCourtListener, caseGroundText } from "@/lib/research/fetch/courtlistener";
+import { describe, it, expect, afterEach } from "vitest";
+import { courtListenerMatches, caseQuery, searchCourtListener, caseGroundText, verifyCitations, citationLookupEnabled } from "@/lib/research/fetch/courtlistener";
 
 // CourtListener grounds case law across all courts and verifies a model case cite (resolves to a real
 // opinion ⇒ verified; no match ⇒ likely fabricated), carrying the court/precedential tags.
@@ -59,5 +59,32 @@ describe("searchCourtListener + caseGroundText", () => {
     };
     const [c] = await searchCourtListener("X v. Y", { fetchImpl: mockFetch(results) });
     expect(c.precedential).toBe(false);
+  });
+});
+
+describe("verifyCitations (Citation-Lookup hallucination guard)", () => {
+  const prev = process.env.COURTLISTENER_API_TOKEN;
+  afterEach(() => {
+    if (prev === undefined) delete process.env.COURTLISTENER_API_TOKEN;
+    else process.env.COURTLISTENER_API_TOKEN = prev;
+  });
+
+  it("is a graceful no-op without a token", async () => {
+    delete process.env.COURTLISTENER_API_TOKEN;
+    expect(citationLookupEnabled()).toBe(false);
+    expect(await verifyCitations("Rauenhorst v. Commissioner, 119 T.C. 157", { fetchImpl: mockFetch([]) })).toEqual([]);
+  });
+
+  it("with a token, marks a resolving cite verified and a 404 cite not-found", async () => {
+    process.env.COURTLISTENER_API_TOKEN = "test-token";
+    expect(citationLookupEnabled()).toBe(true);
+    const payload = [
+      { citation: "119 T.C. 157", status: 200, clusters: [{ case_name: "Rauenhorst v. Comm'r", absolute_url: "/opinion/x/" }] },
+      { citation: "999 T.C. 999", status: 404, clusters: [] },
+    ];
+    const out = await verifyCitations("body text with cites", { fetchImpl: mockFetch(payload) });
+    expect(out[0]).toMatchObject({ cite: "119 T.C. 157", status: "verified", caseName: "Rauenhorst v. Comm'r" });
+    expect(out[0].sourceUrl).toBe("https://www.courtlistener.com/opinion/x/");
+    expect(out[1]).toMatchObject({ cite: "999 T.C. 999", status: "not-found" });
   });
 });

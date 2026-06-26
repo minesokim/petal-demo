@@ -61,6 +61,14 @@ function normalize(r: Record<string, unknown>): CourtListenerCase {
   };
 }
 
+// Request headers, with the optional COURTLISTENER_API_TOKEN (a free token → higher rate limits and the
+// Citation-Lookup endpoint). Absent ⇒ anonymous (still works for search), so this is graceful: the code
+// runs today and auto-upgrades the moment the token lands in .env.local.
+function clHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = process.env.COURTLISTENER_API_TOKEN;
+  return { accept: "application/json", "user-agent": "PetalResearch/1.0", ...(token ? { Authorization: `Token ${token}` } : {}), ...extra };
+}
+
 export async function searchCourtListener(
   query: string,
   opts: { limit?: number; signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
@@ -69,7 +77,7 @@ export async function searchCourtListener(
   const params = new URLSearchParams({ q: query, type: "o", order_by: "score desc" });
   const res = await f(`${CL_BASE}/search/?${params.toString()}`, {
     signal: opts.signal,
-    headers: { accept: "application/json", "user-agent": "PetalResearch/1.0" },
+    headers: clHeaders(),
   });
   if (!res.ok) throw new Error(`CourtListener search HTTP ${res.status}`);
   const data = (await res.json()) as { results?: Record<string, unknown>[] };
@@ -85,7 +93,7 @@ export async function fetchOpinionText(
   const f = opts.fetchImpl ?? fetch;
   const res = await f(`${CL_BASE}/opinions/${opinionId}/`, {
     signal: opts.signal,
-    headers: { accept: "application/json", "user-agent": "PetalResearch/1.0" },
+    headers: clHeaders(),
   });
   if (!res.ok) throw new Error(`CourtListener opinion ${opinionId} HTTP ${res.status}`);
   const o = (await res.json()) as Record<string, string>;
@@ -108,4 +116,43 @@ export async function caseGroundText(c: CourtListenerCase, opts: { signal?: Abor
   }
   const meta = `${c.caseName}, ${c.citations.join(", ")}. ${c.court} (${c.dateFiled}). ${c.precedential ? "Published (precedential)" : "Unpublished (non-precedential)"}.`;
   return c.snippet ? `${meta} ${c.snippet}` : meta;
+}
+
+// ── HALLUCINATION GUARD: batch cite verification via the Citation-Lookup endpoint ─────────────────
+// Needs COURTLISTENER_API_TOKEN (a free token). Pass an ANSWER's text; CourtListener finds every reporter
+// citation in it and reports whether each resolves to a REAL opinion. A "not-found" cite is a likely
+// fabrication the gate should strip; a "verified" cite carries the real case name + URL to ground on.
+// Without a token this returns [] (graceful): the per-cite anonymous search path still verifies one at a
+// time, this just makes it a single precise batch call.
+export type CiteVerdict = { cite: string; status: "verified" | "not-found" | "ambiguous" | "error"; caseName?: string; sourceUrl?: string };
+
+export function citationLookupEnabled(): boolean {
+  return !!process.env.COURTLISTENER_API_TOKEN;
+}
+
+export async function verifyCitations(
+  text: string,
+  opts: { signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
+): Promise<CiteVerdict[]> {
+  if (!process.env.COURTLISTENER_API_TOKEN) return []; // graceful: no token ⇒ no batch verify
+  const f = opts.fetchImpl ?? fetch;
+  const res = await f(`${CL_BASE}/citation-lookup/`, {
+    method: "POST",
+    signal: opts.signal,
+    headers: clHeaders({ "content-type": "application/json" }),
+    body: JSON.stringify({ text: text.slice(0, 64000) }),
+  });
+  if (!res.ok) throw new Error(`CourtListener citation-lookup HTTP ${res.status}`);
+  const data = (await res.json()) as { citation?: string; status?: number; clusters?: { case_name?: string; absolute_url?: string }[] }[];
+  return (Array.isArray(data) ? data : []).map((d) => {
+    const cluster = d.clusters?.[0];
+    const status: CiteVerdict["status"] =
+      d.status === 200 && cluster ? "verified" : d.status === 404 ? "not-found" : d.status === 300 ? "ambiguous" : "error";
+    return {
+      cite: String(d.citation ?? ""),
+      status,
+      caseName: cluster?.case_name,
+      sourceUrl: cluster?.absolute_url ? `https://www.courtlistener.com${cluster.absolute_url}` : undefined,
+    };
+  });
 }
