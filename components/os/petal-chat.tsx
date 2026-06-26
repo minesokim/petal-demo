@@ -43,6 +43,26 @@ function answerFromReply(reply: string): ChatAnswer {
   return { paragraphs: paragraphs.length ? paragraphs : [reply.trim()] };
 }
 
+// The answer fields that can't be rebuilt from the message text — persisted as chat_message metadata so
+// reopening a saved chat restores the real answer (its cited sources, calibration, ungrounded-figure flags),
+// not a lossy text-only rebuild.
+function restorableAnswerMeta(a: ChatAnswer): Record<string, unknown> {
+  const m: Record<string, unknown> = {};
+  if (a.citations?.length) m.citations = a.citations;
+  if (a.calibration) m.calibration = a.calibration;
+  if (a.ungroundedFigures?.length) m.ungroundedFigures = a.ungroundedFigures;
+  return m;
+}
+
+function restoreAnswer(content: string, metadata?: Record<string, unknown>): ChatAnswer {
+  const a = answerFromReply(content);
+  const m = metadata ?? {};
+  if (Array.isArray(m.citations)) a.citations = m.citations as ChatAnswer["citations"];
+  if (typeof m.calibration === "string") a.calibration = m.calibration as ChatAnswer["calibration"];
+  if (Array.isArray(m.ungroundedFigures)) a.ungroundedFigures = m.ungroundedFigures as string[];
+  return a;
+}
+
 // The agent's confirm-card wire shape: a staged write the model proposed. Rendered as the
 // existing ConfirmCard the preparer clicks to execute (confirmAgentAction).
 type AgentConfirmAction = { tool: string; args: Record<string, unknown>; title: string };
@@ -151,11 +171,11 @@ export function usePetalChat(scopeHouseholdId?: string) {
 
   // Append one persisted turn to the active thread. RLS-scoped + audited server-
   // side; best-effort (a persistence failure must never break the live reply).
-  const persist = useCallback((role: "user" | "assistant", content: string) => {
+  const persist = useCallback((role: "user" | "assistant", content: string, metadata?: Record<string, unknown>) => {
     const c = content.trim();
     if (!c || !threadRef.current) return;
     threadRef.current
-      .then(id => { if (id) return appendMessageAction(id, role, c); })
+      .then(id => { if (id) return appendMessageAction(id, role, c, metadata); })
       .catch(() => {});
   }, []);
 
@@ -254,7 +274,9 @@ export function usePetalChat(scopeHouseholdId?: string) {
         // Ground-or-refuse: figures Petal stated that no authority grounded — flag them loudly.
         if (ungroundedFigures?.length) ans.ungroundedFigures = ungroundedFigures;
         settle(ans, text);
-        persist("assistant", text);
+        // Persist the rich answer fields (sources/calibration/flags) so reopening this chat restores the
+        // real answer with its sources, not a plain-text rebuild.
+        persist("assistant", text, restorableAnswerMeta(ans));
       })
       .catch((err: unknown) => {
         // A §7216 gate is an honest, terminal answer — show it inline, don't paper over it with
@@ -327,7 +349,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
       turns.map(t =>
         t.role === "user"
           ? { id: ++msgSeq, role: "user", text: t.content }
-          : { id: ++msgSeq, role: "petal", answer: answerFromReply(t.content) },
+          : { id: ++msgSeq, role: "petal", answer: restoreAnswer(t.content, t.metadata) },
       ),
     );
   }, []);

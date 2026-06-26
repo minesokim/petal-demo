@@ -409,6 +409,9 @@ export const chatMessages = pgTable("chat_messages", {
   firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // user | assistant
   content: text("content").notNull(),
+  // Rich answer fields (cited sources, calibration, ungrounded-figure flags) so reopening a saved chat
+  // restores the real answer + its sources, not a lossy text-only rebuild (0040).
+  metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

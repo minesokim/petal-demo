@@ -31,10 +31,11 @@ export async function appendMessageAction(
   threadId: string,
   role: "user" | "assistant",
   content: string,
+  metadata?: Record<string, unknown>,
 ): Promise<{ ok: boolean }> {
   if (!threadId || !content.trim()) return { ok: false };
   const res = await withFirm(async (db, ctx) => {
-    await appendMessage(db, ctx, { threadId, role, content });
+    await appendMessage(db, ctx, { threadId, role, content, metadata });
     return { ok: true };
   });
   return res ?? { ok: false };
@@ -56,8 +57,8 @@ export async function listThreadsAction(): Promise<
 // One thread's full transcript oldest-first, to reopen it in the chat surface.
 export async function getThreadAction(
   threadId: string,
-): Promise<{ id: string; role: string; content: string }[]> {
+): Promise<{ id: string; role: string; content: string; metadata: Record<string, unknown> }[]> {
   if (!threadId) return [];
   const rows = await withFirm((db) => getThreadMessages(db, threadId));
-  return (rows ?? []).map((r) => ({ id: r.id, role: r.role, content: r.content }));
+  return (rows ?? []).map((r) => ({ id: r.id, role: r.role, content: r.content, metadata: r.metadata }));
 }

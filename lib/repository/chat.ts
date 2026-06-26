@@ -31,7 +31,7 @@ export async function createThread(db: Db, ctx: Ctx, input: CreateThreadInput): 
   return id;
 }
 
-export type AppendMessageInput = { threadId: string; role: "user" | "assistant"; content: string };
+export type AppendMessageInput = { threadId: string; role: "user" | "assistant"; content: string; metadata?: Record<string, unknown> };
 
 // Append a message to a thread and bump the thread's updated_at so it sorts to the
 // top of Recent. RLS-scoped (a firm can only write to its own threads). The thread
@@ -49,6 +49,7 @@ export async function appendMessage(db: Db, ctx: Ctx, input: AppendMessageInput)
     firmId: ctx.firmId,
     role: input.role,
     content: input.content,
+    metadata: input.metadata ?? {},
   });
   await db
     .update(chatThreads)
@@ -91,15 +92,17 @@ export async function listThreads(
 export async function getThreadMessages(
   db: Db,
   threadId: string,
-): Promise<{ id: string; role: string; content: string; createdAt: Date }[]> {
-  return db
+): Promise<{ id: string; role: string; content: string; metadata: Record<string, unknown>; createdAt: Date }[]> {
+  const rows = await db
     .select({
       id: chatMessages.id,
       role: chatMessages.role,
       content: chatMessages.content,
+      metadata: chatMessages.metadata,
       createdAt: chatMessages.createdAt,
     })
     .from(chatMessages)
     .where(eq(chatMessages.threadId, threadId))
     .orderBy(asc(chatMessages.createdAt));
+  return rows.map((r) => ({ ...r, metadata: (r.metadata as Record<string, unknown>) ?? {} }));
 }
