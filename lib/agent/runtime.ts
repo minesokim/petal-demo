@@ -22,7 +22,18 @@ import { redactText, redactValue } from "@/lib/ai/redact";
 import { recordUsage } from "@/lib/ai/usage-ledger";
 import type { AgentTool } from "./registry";
 import { runTool } from "./registry";
-import { classifyRisk, type RiskAssessment } from "./risk";
+import { classifyRisk, type RiskAssessment, type RiskSignals } from "./risk";
+
+// A research/recon tool result carries a calibration bucket; map it to risk signals so a HEDGING or
+// ABSTAINING upstream answer demotes a downstream tier-3 write from one-click confirm to mandatory
+// review (risk.ts:lowConfidence). Safe-by-direction: low confidence only ever RAISES review, and an
+// unrelated write at worst gets extra human eyes. Returns undefined for non-research outputs.
+function researchSignalsFrom(out: unknown): RiskSignals | undefined {
+  const bucket = (out as { bucket?: unknown })?.bucket;
+  if (bucket !== "answer" && bucket !== "hedge" && bucket !== "coverage_gap" && bucket !== "abstain") return undefined;
+  const confidence = bucket === "answer" ? 0.9 : bucket === "hedge" ? 0.5 : 0.2; // hedge (0.5) trips the <0.6 gate
+  return { researchBucket: bucket, confidence };
+}
 import { artifactFromOltPlan, artifactGeneric, type ReviewArtifact } from "./review-artifact";
 import type { OltStagePlan } from "@/lib/integrations/olt";
 import {
@@ -186,6 +197,9 @@ export async function runSubAgent<T>(
   const messages: ModelMessage[] = [{ role: "user", content: redactText(args.input) }];
   const proposals: StagedProposal[] = [];
   let reply = "";
+  // Most recent research/recon confidence seen this run; threaded into the risk gate for staged writes
+  // so a weak upstream answer can't auto-stage a high-stakes write at one-click confirm.
+  let lastResearchSignals: RiskSignals | undefined;
   let inputTokens = 0;
   let outputTokens = 0;
   let turns = 0;
@@ -231,6 +245,9 @@ export async function runSubAgent<T>(
         // tier 1/2 read — auto-execute. runTool re-checks scope at dispatch (INV-4).
         try {
           const out = await runTool(tu.name, toolArgs, args.callerScopes);
+          // Capture research/recon confidence so a later staged write inherits it at the gate.
+          const rs = researchSignalsFrom(out);
+          if (rs) lastResearchSignals = rs;
           // HIGH-5: redact read-tool output BEFORE it re-enters the model context. Read
           // results carry client records; redactValue is best-effort data-minimization —
           // it masks STRUCTURED PII patterns (SSN/EIN/account/phone shapes), NOT arbitrary
@@ -244,14 +261,15 @@ export async function runSubAgent<T>(
       } else {
         // WRITE (tier>=3) — STAGE it, never execute inside the loop. Classify its risk lane
         // and build the evidenced artifact NOW, where the tool + args are in scope, so the
-        // proposal is born gate-ready. (Live confidence signals are threaded in a follow-up.)
+        // proposal is born gate-ready. The latest research/recon confidence is threaded in, so a
+        // hedging/abstaining upstream answer demotes a one-click confirm to mandatory review.
         const title = tool.describe(toolArgs);
         proposals.push({
           toolName: tu.name,
           args: toolArgs,
           title,
           tier: tool.tier,
-          risk: classifyRisk(tool, toolArgs),
+          risk: classifyRisk(tool, toolArgs, lastResearchSignals),
           reviewArtifact: buildArtifact(tool, toolArgs, title),
         });
         results.push({ type: "tool_result", tool_use_id: tu.id, content: `STAGED pending human approval: ${tool.describe(toolArgs)}. It is NOT done yet.` });
