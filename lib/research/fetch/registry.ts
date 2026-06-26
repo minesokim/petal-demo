@@ -7,6 +7,7 @@ import { assertPublicLawQuery } from "./guard";
 import { searchGovInfo, fetchGovInfoText, stripHtml, statuteQuery, type GovInfoResult } from "./govinfo";
 import { searchEcfr, cfrRefsFromQuery, fetchEcfrSection } from "./ecfr";
 import { isCaConformityQuestion, fetchRtcSection, fetchFtbPub1001, rtcUrl, ftbPub1001Url, RTC_CONFORMITY_SECTIONS } from "./ca-conformity";
+import { courtListenerMatches, searchCourtListener, caseGroundText, caseQuery } from "./courtlistener";
 import { searchTaxCourt, taxCourtDownloadUrl, fetchTaxCourtText } from "./tax-court";
 import { searchIrb } from "./irs-irb";
 import { searchFederalRegister } from "./federal-register";
@@ -229,13 +230,36 @@ const federalRegister: FetchSource = {
   },
 };
 
-const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, federalRegister, taxCourt, irsIrb];
+// ── CourtListener: case law across ALL courts (the non-Tax-Court axis: District, Court of Federal
+// Claims, Courts of Appeals by circuit, Supreme Court). Confirms a case cite is real and carries its
+// court/precedential tags; grounds on the full opinion when the API has it, else the verified metadata +
+// snippet. Tier-3 (case). Unpublished ⇒ precedential=false. DAWSON stays wired alongside for Tax Court. ──
+const courtListener: FetchSource = {
+  id: "courtlistener",
+  label: "CourtListener (federal + state case law)",
+  matches: (q) => courtListenerMatches(q),
+  search: async (q, opts) => {
+    const safe = assertPublicLawQuery(q);
+    const cases = await searchCourtListener(caseQuery(safe), { limit: 4, signal: opts?.signal });
+    return cases.map((c) => ({
+      source: "courtlistener",
+      title: c.caseName,
+      citation: c.citations.length ? `${c.caseName}, ${c.citations.find((x) => /\d/.test(x)) ?? c.citations[0]}` : c.caseName,
+      sourceUrl: c.absoluteUrl,
+      authorityTier: 3,
+      precedential: c.precedential, // Unpublished ⇒ never cite as precedent
+      getText: async () => caseGroundText(c, { signal: opts?.signal }),
+    }));
+  },
+};
+
+const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, federalRegister, courtListener, taxCourt, irsIrb];
 
 // ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
 // CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
 // REG cite ("§1.199A-5" must pull codified reg text, not be mis-reduced to "26 USC 1"). A bare statute
 // cite ("§1202", no dot, no California) matches neither and still routes to GovInfo first.
-const TIER_ORDER: Record<string, number> = { "ca-conformity": 0, ecfr: 1, govinfo: 2, "federal-register": 3, "tax-court": 4, "irs-irb": 5 };
+const TIER_ORDER: Record<string, number> = { "ca-conformity": 0, ecfr: 1, govinfo: 2, "federal-register": 3, courtlistener: 4, "tax-court": 5, "irs-irb": 6 };
 
 /**
  * Sources that fit the question, highest-authority first. LIVE-FETCH-ONLY policy (owner decision):
