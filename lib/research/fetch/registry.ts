@@ -111,7 +111,11 @@ const caConformity: FetchSource = {
 const ecfr: FetchSource = {
   id: "ecfr",
   label: "eCFR (Code of Federal Regulations, current)",
-  matches: (q) => cfrRefsFromQuery(q).length > 0 || /\b(treas\.?\s*reg|c\.?\s?f\.?\s?r|regulation|final reg|proposed reg|reg\.?\s*§)\b/i.test(q),
+  // Fires on a reg cite, a reg keyword, OR any statute §-cite — because the operative detail for many
+  // statutes lives in the implementing reg (an SSTB question's three categories are in §1.199A-5, not
+  // §199A). currentLawFirst keeps eCFR as a FALLBACK after the statute for a bare §-cite, so this never
+  // mis-ranks the reg ahead of the statute.
+  matches: (q) => cfrRefsFromQuery(q).length > 0 || /§\s*\d|\bsection\s+\d|\b(treas\.?\s*reg|c\.?\s?f\.?\s?r|regulation|final reg|proposed reg|reg\.?\s*§)\b/i.test(q),
   search: async (q, opts) => {
     const safe = assertPublicLawQuery(q);
     const refs = cfrRefsFromQuery(safe).slice(0, 4);
@@ -340,7 +344,12 @@ const TAX_SHAPE =
 // current OBBBA-era sources (IRB, Federal Register) so a superseded figure is never tried first.
 function currentLawFirst(sources: FetchSource[], question: string): FetchSource[] {
   const post2025 = /\b(202[6-9]|20[3-9]\d|obbba|one big beautiful)\b/i.test(question);
-  const rank = (id: string) => (TIER_ORDER[id] ?? 9) + (post2025 && id === "govinfo" ? 10 : 0);
+  // A bare STATUTE cite (no "part.section" reg cite) tries the statute (GovInfo) before the implementing
+  // reg (eCFR), with eCFR as the FALLBACK when the statute alone does not ground. A reg cite keeps eCFR
+  // first (its cite-verification path). A post-2025 question still demotes the stale 2024 USCODE statute.
+  const noRegCite = cfrRefsFromQuery(question).length === 0;
+  const rank = (id: string) =>
+    (TIER_ORDER[id] ?? 9) + (post2025 && id === "govinfo" ? 10 : 0) + (noRegCite && id === "ecfr" ? 3 : 0);
   return [...sources].sort((a, b) => rank(a.id) - rank(b.id));
 }
 
