@@ -509,6 +509,38 @@ function titleFromMessage(message: string): string {
   return `${verb} ${short.charAt(0).toLowerCase()}${short.slice(1)}`;
 }
 
+// A small FILLED check-circle — the completed-step marker (small circle, white check knocked out).
+function FilledCheck({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <circle cx="8" cy="8" r="7.5" fill="currentColor" />
+      <path d="M4.7 8.2l2.2 2.2 4.4-4.6" stroke="var(--os-surface)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Step status marker: a spinning loader WHILE the step runs, swapped for a smooth spring pop-in filled
+// check the moment it completes. A step is "done" once it is no longer the live one (the next step
+// starting, or the answer streaming, marks the prior step complete).
+function StepDot({ done }: { done: boolean }) {
+  return (
+    <span className="flex size-4 shrink-0 items-center justify-center">
+      {done ? (
+        <motion.span
+          initial={{ scale: 0.3, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 520, damping: 24 }}
+          className="flex"
+        >
+          <FilledCheck className="size-[15px] text-[var(--os-ink-subtle)]" />
+        </motion.span>
+      ) : (
+        <span className="size-3.5 animate-spin rounded-full border-[1.5px] border-[var(--os-border-strong)] border-t-[var(--os-ink-muted)]" />
+      )}
+    </span>
+  );
+}
+
 // COGNITION TRACE — the live "what Petal is doing" trace, claude.ai-style. A descriptive TITLE header
 // (the active line's text shimmers, no dot) with a chevron folds the detail; the body stacks the streamed
 // steps, each carrying an optional PHASE group and authority/citation CHIPS. Open by default so the live
@@ -562,9 +594,7 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <span className="flex size-3.5 shrink-0 items-center justify-center">
-                        <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
-                      </span>
+                      <StepDot done={!current} />
                       <span className={cn("text-[12.5px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
                         {s.label}
                       </span>
