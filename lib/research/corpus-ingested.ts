@@ -348,12 +348,17 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
     "jurisdiction": "federal",
     "taxYear": [
       2024,
-      2025
+      2025,
+      2026,
+      2027,
+      2028,
+      2029,
+      2030
     ],
     "effectiveDate": "2016-01-01",
     "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6694",
     "ingestedAt": "2026-06-24T09:21:18.524Z",
-    "text": "A tax return preparer who prepares a return or refund claim containing an understatement of liability due to an unreasonable position (one lacking substantial authority, or lacking a reasonable basis if disclosed, or failing the more-likely-than-not standard for tax shelters and section 6662A reportable transactions) and who knew or should have known of that position must pay a penalty equal to the greater of $1,000 or 50 percent of the income derived from that return or claim, unless reasonable cause and good faith are shown. If the understatement results from willful or reckless conduct—including a willful attempt to understate tax or reckless/intentional disregard of rules—the penalty rises to the greater of $5,000 or 75 percent of the income derived, reduced by any amount already paid under the unreasonable-position penalty. A preparer may suspend collection of the full penalty by paying at least 15 percent within 30 days of notice and demand and filing a refund claim, then timely bringing suit in U.S. district court. If a final administrative or judicial determination establishes there was no understatement, any assessed penalty is abated and amounts paid are refunded.",
+    "text": "A tax return preparer who prepares a return or refund claim containing an understatement of liability due to an unreasonable position (one lacking substantial authority, or lacking a reasonable basis if disclosed, or failing the more-likely-than-not standard for tax shelters and section 6662A reportable transactions) and who knew or should have known of that position must pay a penalty equal to the greater of $1,000 or 50 percent of the income derived from that return or claim, unless reasonable cause and good faith are shown. If the understatement results from willful or reckless conduct—including a willful attempt to understate tax or reckless/intentional disregard of rules—the penalty rises to the greater of $5,000 or 75 percent of the income derived, reduced by any amount already paid under the unreasonable-position penalty. A preparer may suspend collection of the full penalty by paying at least 15 percent within 30 days of notice and demand and filing a refund claim, then timely bringing suit in U.S. district court. If a final administrative or judicial determination establishes there was no understatement, any assessed penalty is abated and amounts paid are refunded. For an UNDISCLOSED non-tax-shelter position the preparer needs SUBSTANTIAL AUTHORITY (the same standard, roughly a 40% likelihood, that supports the taxpayer's §6662 substantial-understatement defense); a position is DISCLOSED by attaching Form 8275 (or Form 8275-R if contrary to a regulation), which lowers the required standard to REASONABLE BASIS for both the §6694 preparer penalty and the taxpayer's §6662 penalty. So a position with reasonable basis but not substantial authority (e.g. roughly a 35% chance of winning) is protected for both preparer and client by disclosing it on Form 8275.",
     "keywords": [
       "irc 6694",
       "section 6694",
@@ -368,6 +373,12 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "more likely than not",
       "reasonable basis",
       "disclosed position",
+      "undisclosed",
+      "form 8275",
+      "adequate disclosure",
+      "preparer",
+      "taxpayer",
+      "exposure",
       "understatement of liability",
       "6662a"
     ]
