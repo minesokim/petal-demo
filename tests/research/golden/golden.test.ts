@@ -66,8 +66,8 @@ describe("golden case set — structural invariants", () => {
 // docs/RESEARCH_BENCHMARK.md and are re-measured periodically (a live model can't run deterministically
 // in CI). A change that drops below the floor or adds an answer-case with no required authority FAILS.
 describe("golden eval-integrity gate", () => {
-  it("the set cannot silently shrink below its committed floor (44)", () => {
-    expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(44);
+  it("the set cannot silently shrink below its committed floor (50)", () => {
+    expect(GOLDEN_CASES.length).toBeGreaterThanOrEqual(50);
   });
 
   it("every ANSWER case pins a required authority (mustCiteAuthorityLike) — no toothless answer-cases", () => {
