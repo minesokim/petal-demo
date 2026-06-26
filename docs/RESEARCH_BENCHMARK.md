@@ -207,3 +207,13 @@ corpus depth — not just retrieval mechanics.
   has a REAL Supreme + circuit holding to weigh, not synthetic) and coverage (first real case law) both
   advance. Backfilled + embedded into the graph too. Next coverage lifts: more case law (a circuit SPLIT to
   fully exercise the in-circuit logic), entity (S-corp/partnership) depth, multistate.
+- **2026-06-25 — Case-law batch 2 (golden set 44→50); 12/12 case-law cases pass on Claude.** Added Lucas
+  v. Earl + Helvering v. Horst (assignment of income), Old Colony Trust (employer-paid taxes = income),
+  James v. US (illegal income), Duberstein (gift standard), North American Oil (claim of right) — all
+  web-verified + adversarially checked. Caught + fixed a keyword over-trigger (generic "control" matched
+  "controlled-foreign-corporation," breaking the Subpart-F coverage-gap test) by curating case keywords to
+  distinctive doctrine terms. CUMULATIVE on production Claude: OBBBA 37/38 + case-law 12/12 = ~49/50 (~98%)
+  on the expanded 50-case set. Two of the brutal-grade gates moving: coverage (zero→12 real cases across
+  foundational doctrines) and authority-weighting (the §6662 in-circuit invariant now has real Supreme +
+  circuit holdings). Still a START on coverage BREADTH, not the finish — true domain-A needs sustained
+  ingestion (more case law incl. a circuit SPLIT, entity/partnership depth, multistate).
