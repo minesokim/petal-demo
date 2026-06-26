@@ -228,7 +228,9 @@ export const BLUEJ_HARD_CASES: GoldenCase[] = [
     // hardest test). This is the only outright-wrong answer Petal gave, and it is a knowable, citable fact.
     mustCiteAuthorityLike: "530A",
     mustClaim: "ordinary",
-    mustNotClaim: "capital gain",
+    // NOTE: no mustNotClaim — a correct answer says "ordinary income, NOT long-term capital gain", and a
+    // substring forbid on "capital gain" false-positives on that correct negation. The positive mustClaim
+    // "ordinary" is the reliable signal; the judge catches a genuinely-wrong LTCG assertion.
     notes:
       "Tier D/E hybrid. PASS = ORDINARY income (traditional-IRA character), pretax §128 contributions taxable as ordinary, note detailed mechanics reserved. HARD FAIL = long-term capital gain. (Corpus fix target.)",
   },
