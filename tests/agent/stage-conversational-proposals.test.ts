@@ -6,7 +6,7 @@ import { makeTestDb, type Claims } from "../helpers/db";
 import * as schema from "../../lib/db/schema";
 import { actionProposals, agentTasks } from "../../lib/db/schema";
 import type { Ctx } from "../../lib/repository/types";
-import { listProposals } from "../../lib/repository/agent";
+import { listProposals, decryptProposalPayload } from "../../lib/repository/agent";
 import { stageConversationalProposals } from "../../lib/agent/stage-proposals";
 import { classifyRisk } from "../../lib/agent/risk";
 import type { ProposedAction } from "../../lib/agent/runner";
@@ -71,6 +71,14 @@ describe("stageConversationalProposals — chat-staged writes become durable, ap
 
       const pending = await listProposals(db as never, "pending");
       expect(pending.some((p) => p.id === out.proposals[0].id)).toBe(true);
+
+      // CHEAP VERIFICATION: a field->source review artifact rides along (encrypted), so a reviewer
+      // verifies in seconds. Each staged arg becomes an evidenced field.
+      const payload = decryptProposalPayload(row);
+      expect(payload.reviewArtifact).toBeTruthy();
+      const artifact = payload.reviewArtifact as { fields: { label: string; source: { kind: string } }[] };
+      expect(artifact.fields.length).toBeGreaterThan(0);
+      expect(artifact.fields.some((f) => f.label === "title")).toBe(true);
     });
   });
 

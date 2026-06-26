@@ -1,5 +1,6 @@
 import type { Db, Ctx } from "@/lib/repository/types";
 import { createTask, createProposal } from "@/lib/repository/agent";
+import { artifactGeneric } from "./review-artifact";
 import type { ProposedAction } from "./runner";
 
 // Bridge the LIVE conversational agent (runAgent / the /api/agent AI-mode entry point) to the durable
@@ -49,6 +50,10 @@ export async function stageConversationalProposals(
       evidence: pa.evidence ?? undefined,
       confidence: pa.risk?.confidence ?? undefined,
       risk: pa.risk,
+      // CHEAP VERIFICATION: ship a field->source review artifact so a reviewer verifies the staged
+      // write in seconds instead of redoing it. artifactGeneric maps each arg to its source (matching
+      // the durable Task runtime's buildArtifact for non-OLT tools); encrypted into payload_enc.
+      reviewArtifact: artifactGeneric(pa.tool, pa.title, pa.args),
     });
     proposals.push({ id: row.id, toolName: pa.tool, title: pa.title, riskLane: row.riskLane });
   }
