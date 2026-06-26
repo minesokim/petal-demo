@@ -15,6 +15,7 @@ import { matchesIrsDrop, searchIrsDrop } from "./irs-drop";
 import { matchesIrsPub, searchIrsPub } from "./irs-pub";
 import { matchesIrm, searchIrm } from "./irm";
 import { matchesCapCaselaw, searchCapCaselaw } from "./cap-caselaw";
+import { matchesSecEdgar, searchSecEdgar } from "./sec-edgar";
 import { searchFederalRegister } from "./federal-register";
 
 export type FetchHit = {
@@ -267,8 +268,11 @@ const irsDropSource: FetchSource = { id: "irs-drop", label: "IRS guidance (Rev. 
 const irsPubSource: FetchSource = { id: "irs-pub", label: "IRS Publications + Form Instructions", matches: matchesIrsPub, search: async (q, o) => searchIrsPub(assertPublicLawQuery(q), o) };
 const irmSource: FetchSource = { id: "irm", label: "Internal Revenue Manual", matches: matchesIrm, search: async (q, o) => searchIrm(assertPublicLawQuery(q), o) };
 const capCaselawSource: FetchSource = { id: "cap-caselaw", label: "Caselaw Access Project (historical case law)", matches: matchesCapCaselaw, search: async (q, o) => searchCapCaselaw(assertPublicLawQuery(q), o) };
+// SEC EDGAR = company disclosure under GAAP/SEC rules — accounting-standard CONTEXT (ASC 740 / book-tax),
+// NOT tax authority. Ranked last so it never outranks a real tax source; the model treats it as context.
+const secEdgarSource: FetchSource = { id: "sec-edgar", label: "SEC EDGAR (company filings, accounting context)", matches: matchesSecEdgar, search: async (q, o) => searchSecEdgar(assertPublicLawQuery(q), o) };
 
-const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsPubSource, irmSource];
+const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsPubSource, irmSource, secEdgarSource];
 
 // ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
 // CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
@@ -277,7 +281,7 @@ const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSour
 const TIER_ORDER: Record<string, number> = {
   "ca-conformity": 0, ecfr: 1, govinfo: 2, "congress-gov": 3, "federal-register": 4,
   courtlistener: 5, "cap-caselaw": 6, "tax-court": 7,
-  "irs-irb": 8, "irs-drop": 9, "irs-pub": 10, irm: 11,
+  "irs-irb": 8, "irs-drop": 9, "irs-pub": 10, irm: 11, "sec-edgar": 14,
 };
 
 /**
