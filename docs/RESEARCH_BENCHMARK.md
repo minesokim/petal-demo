@@ -170,3 +170,18 @@ corpus depth — not just retrieval mechanics.
   (graph > in-memory) is model-independent but the absolute 100% is not a prod claim; (b) graph adds a runtime
   dependency (DATABASE_URL + transformers.js embeddings) — keep the honest-degradation fallback-to-in-memory on
   graph error + add a startup health check before/at cutover.
+- **2026-06-25 — REAL number measured on PRODUCTION CLAUDE (not the codex proxy): 86.8% (33/38), both engines.**
+  The codex proxy (37/38 in-memory, 38/38 graph) was inflated ~10 pts — its "perfect" graph run returned
+  over-fitted citations, not true grounding. Honest grade is **86.8%, ~13% error**. 4 of 5 failures were the
+  spec's named anti-pattern: ABSTAINING on settled OBBBA law it has ("a coverage gap wearing a calibration
+  costume"). ROOT CAUSE (diagnosed): the model states a DERIVED figure (MFS half, ×2 spouses, indexed per-year)
+  and the figure gate correctly drops it — the chunks carry the RULE but not the pre-computed FIGURES.
+  FIXED + verified live on Claude before the cap: salt-cap-2026 + salt-cap-2025-control (explicit MFS figures
+  $20,000/$20,200 in the §70120 chunk), tips-se-tax-2025 (§224 chunk now states it does NOT reduce SE tax),
+  estate-exemption-7m-probe-2026 (3rd brittle-mustNotClaim eval bug → require $15M). REMAINING: senior-deduction-
+  both-spouses (the model HAS the $12,000 but over-hedges on the phase-out — genuine calibration over-abstention,
+  a reasoning-layer fix, NOT corpus). Also fixed: reasoning service-errors now SURFACE (were silently swallowed
+  into false abstentions — that swallow is what made the over-concurrent Claude A/B crater to a bogus 31.6%).
+  BLOCKER: the Anthropic key hit its usage limit ("regain access 2026-07-01"); a full Claude re-measure to
+  CONFIRM the post-fix number is pending the key reset or a raised limit. Do NOT run the heavy parallel A/B on
+  the production key again without headroom — it exhausts the quota.
