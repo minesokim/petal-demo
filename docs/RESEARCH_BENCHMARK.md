@@ -220,3 +220,16 @@ corpus depth — not just retrieval mechanics.
   foundational doctrines) and authority-weighting (the §6662 in-circuit invariant now has real Supreme +
   circuit holdings). Still a START on coverage BREADTH, not the finish — true domain-A needs sustained
   ingestion (more case law incl. a circuit SPLIT, entity/partnership depth, multistate).
+- **2026-06-26 — HONEST broad measurement recorded (`lib/research/measured-baseline.ts`).** The 97.4%/98%
+  above is the GOLDEN (currency/plumbing) set — the easy tier. This session measured the harder, more honest
+  sets on the live engine (judge-graded, `--fetch`, both models) and recorded them machine-readably:
+  **VERIFIED settled bright-line law = 5/8 (62.5%)** on BOTH Claude and GPT-5.5 (identical failures ⇒ engine-
+  bound: §1202 statute-collision, §163(j) buried-subsection — concrete fetch gaps, not reasoning), lifted
+  from 1/8 this session by fixing real fetch-routing bugs (Title-26 collision, Public-Law pollution, statute-
+  lookup precision). **BLUEJ hard/unsettled = 7/15 (47%) Claude vs 6/15 (40%) GPT-5.5** — Claude held
+  calibrated hedges where GPT-5.5 over-answered 2 hedge-required cases (the calibration edge that IS the
+  moat). **GOLDEN currency = 47/50 (94%) GPT-5.5.** These — not the flattering 97.4% — are the real
+  correctness picture; the engine's own abstention philosophy forbids hiding from the measurement. Release-
+  gate floors now live in `RELEASE_GATE` (measured-baseline.ts), guarded by `tests/research/measured-
+  baseline.test.ts` (the floor can never be set above what was measured). Next: close the §1202/§163(j) fetch
+  gaps to lift the settled-law floor, then corpus BREADTH (entity/multistate/circuit-split) per the C→A roadmap.
