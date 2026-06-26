@@ -6,6 +6,7 @@
 import { assertPublicLawQuery } from "./guard";
 import { searchGovInfo, fetchGovInfoText, stripHtml, statuteQuery, type GovInfoResult } from "./govinfo";
 import { searchEcfr, cfrRefsFromQuery, fetchEcfrSection } from "./ecfr";
+import { isCaConformityQuestion, fetchRtcSection, fetchFtbPub1001, rtcUrl, ftbPub1001Url, RTC_CONFORMITY_SECTIONS } from "./ca-conformity";
 import { searchTaxCourt, taxCourtDownloadUrl, fetchTaxCourtText } from "./tax-court";
 import { searchIrb } from "./irs-irb";
 import { searchFederalRegister } from "./federal-register";
@@ -50,6 +51,45 @@ const govinfoStatute: FetchSource = {
         authorityTier: 1, // statute is the top axis
         getText: () => fetchGovInfoText(r.textUrl, { signal: opts?.signal }),
       }));
+  },
+};
+
+// ── California conformity: the state-authority source for "does CA conform to federal §X" (the
+// highest-dollar gap — the §1202 QSBS / §199A nonconformity the capstone faulted). Grounds in the two
+// R&TC conformity statutes (§17024.5 PIT + §23051.5 CT, the fixed-date conformity mechanism) plus FTB
+// Pub. 1001 windowed to the question's topic (the enumerated item-level nonconformity). State research
+// → §7216-clean. Pub 1001 is a finding-aid (precedential=false); the R&TC sections are binding. ──
+function pub1001Year(question: string): number {
+  const m = question.match(/\b(20\d{2})\b/);
+  const y = m ? Number(m[1]) : 2025;
+  return Math.min(Math.max(y, 2020), 2025); // FTB Pub 1001 confirmed published through 2025
+}
+const caConformity: FetchSource = {
+  id: "ca-conformity",
+  label: "California conformity (R&TC + FTB Pub. 1001)",
+  matches: (q) => isCaConformityQuestion(q),
+  search: async (q, opts) => {
+    const safe = assertPublicLawQuery(q);
+    const hits: FetchHit[] = RTC_CONFORMITY_SECTIONS.map((sec) => ({
+      source: "ca-conformity",
+      title: `Cal. R&TC §${sec}`,
+      citation: `Cal. R&TC §${sec}`,
+      sourceUrl: rtcUrl(sec),
+      authorityTier: 1, // binding state statute (the conformity mechanism + date)
+      precedential: true,
+      getText: async () => (await fetchRtcSection(sec, { signal: opts?.signal })).text,
+    }));
+    const year = pub1001Year(safe);
+    hits.push({
+      source: "ca-conformity",
+      title: `FTB Pub. 1001 (${year})`,
+      citation: `FTB Pub. 1001 (${year})`,
+      sourceUrl: ftbPub1001Url(year),
+      authorityTier: 4, // state sub-regulatory finding-aid (enumerates the adjustments)
+      precedential: false,
+      getText: async () => (await fetchFtbPub1001(safe, year, { signal: opts?.signal })).text,
+    });
+    return hits;
   },
 };
 
@@ -189,12 +229,13 @@ const federalRegister: FetchSource = {
   },
 };
 
-const SOURCES: FetchSource[] = [govinfoStatute, ecfr, federalRegister, taxCourt, irsIrb];
+const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, federalRegister, taxCourt, irsIrb];
 
-// eCFR ranks ahead of GovInfo for a REG question: a "§1.199A-5" cite must pull the codified reg TEXT,
-// not be mis-reduced to "26 USC 1" by the statute search. A bare statute cite ("§1202", no dot) does
-// not match eCFR, so it still routes to GovInfo first.
-const TIER_ORDER: Record<string, number> = { ecfr: 0, govinfo: 1, "federal-register": 2, "tax-court": 3, "irs-irb": 4 };
+// ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
+// CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
+// REG cite ("§1.199A-5" must pull codified reg text, not be mis-reduced to "26 USC 1"). A bare statute
+// cite ("§1202", no dot, no California) matches neither and still routes to GovInfo first.
+const TIER_ORDER: Record<string, number> = { "ca-conformity": 0, ecfr: 1, govinfo: 2, "federal-register": 3, "tax-court": 4, "irs-irb": 5 };
 
 /**
  * Sources that fit the question, highest-authority first. LIVE-FETCH-ONLY policy (owner decision):
