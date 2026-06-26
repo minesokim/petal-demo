@@ -26,9 +26,13 @@ import {
 } from "@/app/os/ask/chat-actions";
 import { confirmAgentAction } from "@/app/os/ask/agent-actions";
 
+// One entry in the live cognition trace. `phase` groups entries (analyzing vs reasoning); `chips` render as
+// pills — authority families ("IRC", "CFR") or citations ("§402"). A bare {label} renders as a plain step.
+export type TraceStep = { label: string; phase?: "analyzing" | "reasoning"; chips?: string[]; chipKind?: "authority" | "citation" };
+
 export type ChatMsg =
   | { id: number; role: "user"; text: string; attachments?: string[] }
-  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: string[]; streamingText?: string; streamTurn?: number };
+  | { id: number; role: "petal"; answer: ChatAnswer; thinking?: boolean; liveSteps?: TraceStep[]; streamingText?: string; streamTurn?: number };
 
 let msgSeq = 1;
 
@@ -101,7 +105,7 @@ async function streamAgent({
 }: {
   message: string;
   history: { role: "user" | "assistant"; content: string }[];
-  pushStep: (label: string) => void;
+  pushStep: (step: TraceStep) => void;
   pushText: (delta: string, turn: number) => void;
 }): Promise<AgentResult> {
   const res = await fetch("/api/agent", {
@@ -128,8 +132,15 @@ async function streamAgent({
     let data: unknown;
     try { data = JSON.parse(dataLines.join("\n")); } catch { return; }
     if (event === "step") {
-      const label = (data as { label?: unknown }).label;
-      if (typeof label === "string" && label.trim()) pushStep(label);
+      const d = data as { label?: unknown; phase?: unknown; chips?: unknown; chipKind?: unknown };
+      if (typeof d.label === "string" && d.label.trim()) {
+        pushStep({
+          label: d.label,
+          phase: d.phase === "analyzing" || d.phase === "reasoning" ? d.phase : undefined,
+          chips: Array.isArray(d.chips) ? d.chips.filter((c): c is string => typeof c === "string") : undefined,
+          chipKind: d.chipKind === "authority" || d.chipKind === "citation" ? d.chipKind : undefined,
+        });
+      }
     } else if (event === "text") {
       const d = data as { delta?: unknown; turn?: unknown };
       if (typeof d.delta === "string") pushText(d.delta, typeof d.turn === "number" ? d.turn : 0);
@@ -207,13 +218,15 @@ export function usePetalChat(scopeHouseholdId?: string) {
     };
 
     // Append a streamed thinking step to the in-flight bubble (Claude-style live trace).
-    const pushStep = (label: string) => {
+    const pushStep = (step: TraceStep) => {
       setMessages(m => m.map(msg => {
         if (msg.id !== thinkingId || msg.role !== "petal") return msg;
         const prev = msg.liveSteps ?? [];
-        // De-dupe an identical consecutive label (a retried turn shouldn't double a line).
-        if (prev[prev.length - 1] === label) return msg;
-        return { ...msg, liveSteps: [...prev, label] };
+        const last = prev[prev.length - 1];
+        // De-dupe an identical consecutive PLAIN label (a retried turn shouldn't double a line). A
+        // chip-bearing step always appends — it carries new authority/citation data.
+        if (last && last.label === step.label && !step.chips && !last.chips) return msg;
+        return { ...msg, liveSteps: [...prev, step] };
       }));
     };
 
@@ -435,33 +448,84 @@ const THINKING_PHRASES = [
 // COGNITION TRACE — the live "what Petal is doing" checklist (reassurance, Claude/Harvey-style).
 // Each real streamed step stacks as it fires: completed steps get a check, the current one pulses.
 // Once the answer starts streaming (`settling`), every step reads as done.
-function CognitionTrace({ steps, settling }: { steps: string[]; settling?: boolean }) {
+const PHASE_LABEL: Record<string, string> = { analyzing: "Analyzing", reasoning: "Reasoning" };
+
+// A small branch/node glyph for the authority + citation chips (the pill icon in the design).
+function BranchGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
+      <circle cx="4" cy="4" r="1.7" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="4" cy="12" r="1.7" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="12" cy="8" r="1.7" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 5.7v4.6M5.6 4.4c3.2 0 4 1.6 5.1 2.9M5.6 11.6c3.2 0 4-1.6 5.1-2.9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// The authority/citation pills under a "Researching" / "Reading" step. Caps the visible chips and rolls the
+// rest into a "+N more" pill so a long source list never blows out the trace.
+function TraceChips({ chips, kind }: { chips: string[]; kind?: "authority" | "citation" }) {
+  const MAX = 4;
+  const shown = chips.slice(0, MAX);
+  const extra = chips.length - shown.length;
+  const noun = kind === "citation" ? (extra === 1 ? "citation" : "citations") : extra === 1 ? "authority" : "authorities";
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[22px]">
+      {shown.map((c, i) => (
+        <span key={`${c}-${i}`} className="inline-flex items-center gap-1.5 rounded-full bg-[var(--os-hover)] px-2.5 py-1 text-[12px] text-[var(--os-ink-muted)]">
+          <BranchGlyph className="size-3 shrink-0 text-[var(--os-ink-subtle)]" />
+          <span className="max-w-[200px] truncate">{c}</span>
+        </span>
+      ))}
+      {extra > 0 && (
+        <span className="inline-flex items-center rounded-full bg-[var(--os-hover)] px-2.5 py-1 text-[12px] text-[var(--os-ink-subtle)]">
+          +{extra} more {noun}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// COGNITION TRACE — the live "what Petal is doing" trace. Steps stream in and stack: each carries an optional
+// PHASE (a globe-headed "Analyzing" / "Reasoning" group) and optional authority/citation CHIPS. A completed
+// step shows a check; the live one (no chips, last) pulses. Once the answer streams (`settling`) all read done.
+function CognitionTrace({ steps, settling }: { steps: TraceStep[]; settling?: boolean }) {
   return (
     <div className="space-y-1.5">
       {steps.map((s, i) => {
-        const current = !settling && i === steps.length - 1;
+        const hasChips = !!s.chips && s.chips.length > 0;
+        const current = !settling && i === steps.length - 1 && !hasChips;
+        const showPhase = !!s.phase && s.phase !== (i > 0 ? steps[i - 1].phase : undefined);
         return (
           <motion.div
-            key={`${i}-${s}`}
+            key={`${i}-${s.label}`}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.24, ease: "easeOut" }}
-            className="flex items-center gap-2"
           >
-            <span className="flex size-3.5 shrink-0 items-center justify-center">
-              {current ? (
-                <motion.span
-                  className="size-[7px] rounded-full bg-[var(--os-primary)]"
-                  animate={{ opacity: [0.35, 1, 0.35] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                />
-              ) : (
-                <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
-              )}
-            </span>
-            <span className={cn("text-[12px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-subtle)]")}>
-              {s}
-            </span>
+            {showPhase && (
+              <div className="mb-1 mt-0.5 flex items-center gap-2 text-[13px] text-[var(--os-ink-muted)]">
+                <Icon icon={I.globe} size={15} className="shrink-0 text-[var(--os-ink-subtle)]" />
+                <span>{PHASE_LABEL[s.phase!]}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="flex size-3.5 shrink-0 items-center justify-center">
+                {current ? (
+                  <motion.span
+                    className="size-[7px] rounded-full bg-[var(--os-primary)]"
+                    animate={{ opacity: [0.35, 1, 0.35] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                ) : (
+                  <Icon icon={I.check} size={13} className="text-[var(--os-ink-subtle)]" />
+                )}
+              </span>
+              <span className={cn("text-[12.5px] leading-snug", current ? "text-[var(--os-ink)]" : "text-[var(--os-ink-muted)]")}>
+                {s.label}
+              </span>
+            </div>
+            {hasChips && <TraceChips chips={s.chips!} kind={s.chipKind} />}
           </motion.div>
         );
       })}
@@ -472,7 +536,7 @@ function CognitionTrace({ steps, settling }: { steps: string[]; settling?: boole
 // The single thinking indicator. When the agent streams REAL step labels (Thinking → Looking up
 // Haokun → Preparing the text), it shows the live action; with no steps (the /api/ask fallback or
 // document analyze) it rotates the existing phrases. Same animation either way — one component.
-function Thinking({ steps }: { steps?: string[] }) {
+function Thinking({ steps }: { steps?: TraceStep[] }) {
   const [i, setI] = useState(0);
   const live = !!steps && steps.length > 0;
   useEffect(() => {
@@ -480,7 +544,7 @@ function Thinking({ steps }: { steps?: string[] }) {
     const t = window.setInterval(() => setI(x => Math.min(x + 1, THINKING_PHRASES.length - 1)), 780);
     return () => window.clearInterval(t);
   }, [live]);
-  const label = live ? steps![steps!.length - 1] : THINKING_PHRASES[i];
+  const label = live ? steps![steps!.length - 1].label : THINKING_PHRASES[i];
   return (
     <span className="relative inline-flex h-[18px] items-center overflow-hidden text-[12px] text-[var(--os-ink-subtle)]">
       <AnimatePresence mode="wait">
@@ -655,7 +719,7 @@ export function PetalAnswerView({
   answer: ChatAnswer;
   thinking?: boolean;
   /** streamed reasoning steps for the in-flight bubble (Claude-style live trace) */
-  liveSteps?: string[];
+  liveSteps?: TraceStep[];
   /** REAL token-streamed answer text for the in-flight bubble (true generation streaming) */
   streamingText?: string;
   /** stream the reveal (latest message) vs render instantly (history) */

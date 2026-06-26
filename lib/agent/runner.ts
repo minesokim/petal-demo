@@ -76,9 +76,43 @@ function signalsFromCalibration(cal: AgentCalibration | undefined): RiskSignals 
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
 // thinking trace. `label` is a short, present-tense, HUMAN action — never a raw tool name.
+export type TracePhase = "analyzing" | "reasoning";
 export type AgentEvent =
-  | { type: "step"; label: string }
+  // A step in the live cognition trace. `phase` groups steps (analyzing vs reasoning); `chips` are the
+  // authority families ("IRC", "CFR", …) or citations ("§402", …) the trace renders as pills.
+  | { type: "step"; label: string; phase?: TracePhase; chips?: string[]; chipKind?: "authority" | "citation" }
   | { type: "text"; delta: string; turn: number };
+
+// The trace PHASE a tool belongs to — research/lookups are "analyzing", compute/draft/writes are "reasoning".
+function phaseFor(tool: string): TracePhase {
+  return tool === "tax_research" || tool === "tax_param" || tool.startsWith("find_") || tool.startsWith("get_") || tool.startsWith("list_")
+    ? "analyzing"
+    : "reasoning";
+}
+
+// Authority FAMILY of a legal cite (the "Researching" chips). Parses the cite, falling back to the
+// structured authority tag — distinct, short labels matching how a preparer groups sources.
+function citationFamily(cite: string, authority?: unknown): string {
+  const s = cite.toLowerCase();
+  if (/\b(rev\.?\s?rul|rev\.?\s?proc|notice|plr|t\.?a\.?m|i\.?r\.?b|announcement)\b/.test(s)) return "IRS";
+  if (/(c\.?f\.?r|treas\.?\s?reg|§\s?1\.|prop\.?\s?reg|temp\.?\s?reg)/.test(s)) return "CFR";
+  if (/\b(gaap|asc|fasb)\b/.test(s)) return "GAAP";
+  if (/\bv\.\s|\bf\.\s?\dd\b|\bt\.?c\.\b|\bcir\.\b|supreme court/.test(s)) return "Case law";
+  if (/(u\.?s\.?c|irc|§\s?\d|i\.?r\.?c|internal revenue code)/.test(s)) return "IRC";
+  const a = typeof authority === "string" ? authority.toLowerCase() : "";
+  if (a.includes("case")) return "Case law";
+  if (a.includes("rul") || a.includes("agency")) return "IRS";
+  if (a.includes("reg")) return "CFR";
+  if (a.includes("statute")) return "IRC";
+  return "Authority";
+}
+
+// Shorten a cite for a "Reading" chip — keep the section, drop the family prefix ("IRC §402" -> "§402").
+function shortCite(cite: string): string {
+  const m = cite.match(/§+\s?[\d.A-Za-z()\-]+/);
+  if (m) return m[0].replace(/\s+/g, " ").trim();
+  return cite.length > 24 ? cite.slice(0, 23) + "…" : cite;
+}
 
 // labelFor — map a tool + its args to the human, present-tense step label in the EVENT CONTRACT.
 // `nameFor` resolves a householdId in args to the client's NAME when firm data is loaded (so the
@@ -238,7 +272,13 @@ export async function runAgent(
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
       // Emit the human, present-tense step as this tool fires (best-effort; never throws).
-      emit({ type: "step", label: labelFor(tu.name, (tu.input ?? {}) as Record<string, unknown>, nameFor) });
+      // The live pulse as the tool fires. For tax_research we show a neutral "Reviewing tax authority"
+      // pulse, then replace it with the structured "Researching" (authority chips) + "Reading" (citation
+      // chips) steps once the result lands, so the trace reads like the design.
+      const fireLabel = tu.name === "tax_research"
+        ? "Reviewing tax authority"
+        : labelFor(tu.name, (tu.input ?? {}) as Record<string, unknown>, nameFor);
+      emit({ type: "step", label: fireLabel, phase: phaseFor(tu.name) });
       const tool = TOOL_BY_NAME.get(tu.name);
       if (!tool) {
         results.push({ type: "tool_result", tool_use_id: tu.id, content: "unknown tool", is_error: true });
@@ -268,6 +308,23 @@ export async function runAgent(
                   citations.push({ cite, sourceUrl, authority: typeof authority === "string" ? authority : undefined });
                 }
               }
+            }
+            // Stream the research TRACE chips (the authority families consulted + the citations read) so
+            // the live cognition trace shows what Petal looked at — the same public authority that becomes
+            // the answer's Sources. tax_research only (tax_compute/tax_param feed figures, not the trace).
+            if (tu.name === "tax_research" && Array.isArray(cs) && cs.length) {
+              const fams = new Set<string>();
+              const reads: string[] = [];
+              for (const c of cs) {
+                if (!c || typeof c !== "object") continue;
+                const cite = String((c as { cite?: unknown }).cite ?? "").trim();
+                if (!cite) continue;
+                fams.add(citationFamily(cite, (c as { authority?: unknown }).authority));
+                const sc = shortCite(cite);
+                if (!reads.includes(sc)) reads.push(sc);
+              }
+              if (fams.size) emit({ type: "step", label: "Researching", phase: "analyzing", chips: [...fams], chipKind: "authority" });
+              if (reads.length) emit({ type: "step", label: "Reading", phase: "analyzing", chips: reads, chipKind: "citation" });
             }
             // Keep the MOST CAUTIONARY calibration so the UI can flag unsettled law / coverage gaps.
             const cal = (out as { calibration?: unknown }).calibration;

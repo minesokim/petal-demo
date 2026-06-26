@@ -59,7 +59,7 @@ export async function POST(req: Request) {
             // Best-effort: if the client already disconnected, enqueue throws — swallow it.
             try {
               if (e.type === "text") controller.enqueue(frame("text", { delta: e.delta, turn: e.turn }));
-              else controller.enqueue(frame("step", { label: e.label }));
+              else controller.enqueue(frame("step", { label: e.label, phase: e.phase, chips: e.chips, chipKind: e.chipKind }));
             } catch { /* closed */ }
           },
         });
