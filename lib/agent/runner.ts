@@ -22,6 +22,7 @@ import { ALL_TOOLS as TOOLS, TOOL_BY_NAME } from "./registry";
 import { loadFirmData } from "@/lib/server/firm-data";
 import { usingDevCodexProvider } from "@/lib/ai/provider-factory";
 import { codexSeam } from "./codex-seam";
+import { classifyRisk, type RiskAssessment, type RiskSignals } from "./risk";
 
 const AGENT_MODEL = "claude-opus-4-8"; // ZDR-eligible (Opus approved for the agent loop)
 // Raised to 8 so a lookup → act chain (find_client → get_client_detail → stage a write) has
@@ -43,7 +44,7 @@ const AGENT_SYSTEM = `You are Petal, an AI-native assistant for a tax firm. From
 // `evidence` = the EVIDENCED REVIEW ARTIFACT (goal: every staged action ships its sources for a
 // 30-second check, not a redo). When a write is staged in a turn that did grounded research, the
 // research citations ride along so the reviewer sees WHY — the research→execution link, in data.
-export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string; evidence?: AgentCitation[] };
+export type ProposedAction = { tool: string; args: Record<string, unknown>; title: string; evidence?: AgentCitation[]; risk?: RiskAssessment };
 export type AgentTurn = { role: "user" | "assistant"; content: string };
 // A surfaced source for the answer — the legal cite + a link to the official primary source.
 // Public authority only (no PII), captured from tax_research / tax_compute so the UI can render
@@ -54,6 +55,23 @@ export type AgentCitation = { cite: string; sourceUrl: string; authority?: strin
 // tax_research calls, so the chat can flag "unsettled law" / "coverage gap" next to the answer.
 export type AgentCalibration = CalibrationReason;
 const CAL_RANK: Record<AgentCalibration, number> = { grounded: 0, fetched: 1, indeterminate: 2, ungrounded: 3, coverage_gap: 4, unsettled: 5 };
+
+// Map the turn's most-cautionary research calibration → risk-gate signals, so the LIVE agent path
+// (runAgent) demotes a staged write to mandatory line-by-line review when the upstream answer is weak
+// — the same confidence input the durable runtime threads via researchSignalsFrom. A grounded/fetched
+// answer keeps a one-click confirm; indeterminate/ungrounded/unsettled/coverage_gap (< 0.6) trips the
+// gate. No research this turn → undefined (the gate classifies on tool metadata alone; never downgrades).
+function signalsFromCalibration(cal: AgentCalibration | undefined): RiskSignals | undefined {
+  switch (cal) {
+    case undefined: return undefined;
+    case "grounded": return { confidence: 0.9 };
+    case "fetched": return { confidence: 0.85 };
+    case "indeterminate": return { confidence: 0.5 };
+    case "ungrounded": return { confidence: 0.4 };
+    case "unsettled": return { confidence: 0.3 };
+    case "coverage_gap": return { researchBucket: "coverage_gap", confidence: 0.2 };
+  }
+}
 
 // A streamed reasoning event. The runner emits one of these before the first model call
 // ("Thinking") and as each tool_use is dispatched, so the UI can show a live, Claude-style
@@ -269,9 +287,15 @@ export async function runAgent(
           results.push({ type: "tool_result", tool_use_id: tu.id, content: `error: ${e instanceof Error ? e.name : "unknown"}`, is_error: true });
         }
       } else {
-        // WRITE — stage it, do NOT execute.
-        proposedActions.push({ tool: tu.name, args, title: tool.describe(args), evidence: citations.length ? [...citations] : undefined });
-        results.push({ type: "tool_result", tool_use_id: tu.id, content: `STAGED pending the preparer's confirmation: ${tool.describe(args)}. It is NOT done yet.` });
+        // WRITE — classify it through the risk gate (the §7216 determination, in code) and STAGE it;
+        // never execute here. The turn's most-cautionary research calibration feeds the gate so a weak
+        // upstream answer demotes a one-click confirm to mandatory line-by-line review.
+        const risk = classifyRisk(tool, args, signalsFromCalibration(calibration));
+        proposedActions.push({ tool: tu.name, args, title: tool.describe(args), evidence: citations.length ? [...citations] : undefined, risk });
+        const note = risk.lane === "review"
+          ? "STAGED — needs your line-by-line review before it can run"
+          : "STAGED — needs your confirmation";
+        results.push({ type: "tool_result", tool_use_id: tu.id, content: `${note}: ${tool.describe(args)}. It is NOT done yet.` });
       }
     }
     messages.push({ role: "user", content: results });
