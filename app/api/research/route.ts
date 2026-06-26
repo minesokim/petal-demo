@@ -78,10 +78,13 @@ export async function POST(req: Request) {
     // then persist it to ai_usage best-effort — a cost-accounting failure must NEVER fail the answer
     // (honest degradation: log the error name only, return the research result regardless).
     const { result, entries } = await runWithUsageScope(() =>
-      // contraSearch: run a real contrary-authority search so the §6662 weight-of-authorities standard
-      // is honestly weighed (and can exceed the substantial-authority cap when warranted), not capped by
-      // default. The live product weighs authority; the offline benchmark leaves it off to stay fast.
-      researchAnswer(proposer, judge, question, { taxYear, jurisdiction, contraSearch: true }),
+      // contraSearch: a real contrary-authority search so the §6662 weight-of-authorities standard is
+      // honestly weighed. fetch: on a corpus MISS, fetch primary authority LIVE (GovInfo / Federal Register
+      // / US Tax Court / IRS Bulletin) behind the §7216 query guard and ground in it through the same gates,
+      // rather than abstaining — the difference between "comparable on reasoning" and "comparable, period."
+      // (The offline benchmark leaves both off to stay deterministic.) GovInfo statute coverage needs the
+      // free GOVINFO_API_KEY; Federal Register + IRB are keyless and work without it.
+      researchAnswer(proposer, judge, question, { taxYear, jurisdiction, contraSearch: true, fetch: true }),
     );
     try {
       await persistUsageForOrg(ctx.clerkOrgId, entries);
