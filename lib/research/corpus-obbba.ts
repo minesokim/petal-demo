@@ -324,7 +324,7 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
     verified: true,
     text:
       "OBBBA made the IRC §199A qualified-business-income deduction PERMANENT — it is NOT repealed and does NOT sunset after 2025. The core 20%-of-QBI deduction (plus 20% of qualified REIT dividends and PTP income) continues. For tax years beginning after December 31, 2025, OBBBA also widened the taxable-income phase-in range of the W-2-wage / SSTB limitations from $50,000 to $75,000 (single) and from $100,000 to $150,000 (joint), and added a minimum $400 deduction for a taxpayer with at least $1,000 of QBI from an active qualified trade or business (both amounts inflation-indexed after 2026). §199A is also exempted from the new §68 itemized-deduction limitation.",
-    keywords: ["qbi", "199a", "qualified business income", "permanent", "20 percent", "obbba", "sstb", "400 minimum", "75000"],
+    keywords: ["qbi", "199a", "qualified business income", "qbi deduction", "qbi computation", "sole proprietor", "self-employed health insurance", "schedule c", "minimum floor", "20 percent", "sstb", "400 minimum", "75000"],
   },
   {
     chunkId: "irc-199A-sunset-pre-obbba-superseded",
