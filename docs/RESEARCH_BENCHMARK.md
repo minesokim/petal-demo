@@ -185,3 +185,14 @@ corpus depth — not just retrieval mechanics.
   BLOCKER: the Anthropic key hit its usage limit ("regain access 2026-07-01"); a full Claude re-measure to
   CONFIRM the post-fix number is pending the key reset or a raised limit. Do NOT run the heavy parallel A/B on
   the production key again without headroom — it exhausts the quota.
+- **2026-06-25 — CONFIRMED on production Claude (sequential, no rate-limiting): SHIPPED engine 37/38 = 97.4%,
+  error rate 2.6%** — up from the pre-fix 86.8%. The targeted corpus enrichment (explicit figures the model
+  was illegally computing) + the 3 eval-bug fixes delivered an honest ~10-point climb on the real model. The
+  ONE remaining in-memory failure is `tips-deduction-exists-2025`, a borderline over-abstention (it answers on
+  spot-checks; the engine sits right at the answer/abstain margin) — the calibration-layer fix (faithfulness
+  gate flooring caveated answers), tested carefully, is the last lift. NOTE — the GRAPH path measured 33/38
+  (86.8%) but that is STALE, not a regression: the corpus edits live in lib/research/corpus-obbba.ts (in-memory)
+  and were NOT re-backfilled into the authority_versions DB the graph reads, so the graph used the OLD chunk
+  text (e.g. it answered tips-se-tax BACKWARDS — "not subject to SE tax" — for lack of the SE-tax enrichment).
+  Re-running scripts/backfill-authority-graph.mts will bring the graph to in-memory parity; deferred since
+  in-memory is the shipped default. Real shipped grade: 97.4% / 2.6% error on production Claude.
