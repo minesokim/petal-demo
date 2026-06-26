@@ -10,7 +10,9 @@
 
 import { NextResponse } from "next/server";
 import { getFirmContext } from "@/lib/auth/context";
+import { withFirm } from "@/lib/auth/tenant";
 import { runAgent, type AgentTurn } from "@/lib/agent/runner";
+import { stageConversationalProposals } from "@/lib/agent/stage-proposals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +63,23 @@ export async function POST(req: Request) {
             } catch { /* closed */ }
           },
         });
-        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures }));
+        // DRAFT-EVERYTHING / HUMAN-COMMITS: persist any staged write into the durable, approvable
+        // queue (action_proposals) so it does not vanish with the stream (RULE 1). It becomes resolvable
+        // via resolveProposalAction with all its guards. HONEST DEGRADATION: a persistence failure is
+        // surfaced as proposalsPersisted:false — never silently dropped.
+        let stagedProposals: { id: string; toolName: string; title: string; riskLane: string | null }[] = [];
+        let proposalsPersisted = true;
+        if (proposedActions.length > 0) {
+          try {
+            const staged = await withFirm((db, ctx) => stageConversationalProposals(db, ctx, { message: text, proposedActions }));
+            if (staged) stagedProposals = staged.proposals;
+            else proposalsPersisted = false; // not signed in (ctx was checked above; defensive)
+          } catch (e) {
+            proposalsPersisted = false;
+            console.error("[/api/agent] proposal persistence failed:", e instanceof Error ? e.name : "unknown");
+          }
+        }
+        controller.enqueue(frame("done", { reply, proposedActions, citations, calibration, ungroundedFigures, stagedProposals, proposalsPersisted }));
       } catch (err) {
         const name = err instanceof Error ? err.name : "unknown";
         const msg = err instanceof Error ? err.message : "";
