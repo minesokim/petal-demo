@@ -47,6 +47,7 @@ import { assertCleared, type DataScope } from "../ai/guard";
 import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, retrieveLifecycle, unestablishedNamedForm, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
 import { assessAuthorityWeight, type AuthorityAssessment } from "./authority-assess";
+import { findContraAuthorities } from "./contra-finder";
 import { graphRetrieve } from "./retrieval/graph-retrieve";
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
@@ -228,6 +229,10 @@ export type ResearchOpts = {
   // Phase 1b cutover: use the RRF-fused authority-GRAPH retrieval (Supabase) instead of the in-memory
   // keyword corpus. Defaults to the PETAL_GRAPH_RETRIEVAL env flag; a graph error degrades to in-memory.
   useGraph?: boolean;
+  // Run a real CONTRARY-authority search before the §6662 weighting (one extra model call per grounded
+  // answer). Enables contraSearched → the weight-of-authorities standard can rise above the substantial-
+  // authority cap when warranted. Off by default (tests/benchmark stay fast); ON in the live /api/research.
+  contraSearch?: boolean;
 };
 
 // Conservative default heuristic for indeterminacy: only the doctrines/predictions that are
@@ -817,10 +822,19 @@ async function researchAnswerImpl(
     }
   }
 
-  // §6662 WEIGHT-OF-AUTHORITIES (live): weigh the grounded supporting authority deterministically.
-  // Corpus-scoped + capped at substantial-authority (no automated contra search yet). Surface the
-  // genuinely-defensible signal: a Form 8275 disclosure recommendation when support is non-precedential.
-  const weightOfAuthority = assessAuthorityWeight(groundedChunks);
+  // §6662 WEIGHT-OF-AUTHORITIES (live). Weigh the grounded SUPPORTING authority against any CONTRARY
+  // authority. When opts.contraSearch is on, run a real contrary-authority search (findContraAuthorities)
+  // first — its having run is what honestly lifts the substantial-authority cap toward MLTN when support
+  // strongly outweighs and no controlling contra exists. A failed search keeps the cap (searched=false).
+  let contra: AuthorityChunk[] = [];
+  let contraSearched = false;
+  if (opts.contraSearch && groundedChunks.length > 0) {
+    const claim = groundedPositions[0]?.claim ?? question;
+    const r = await findContraAuthorities(provider, question, claim, groundedChunks, { taxYear, jurisdiction, corpus });
+    contra = r.contra;
+    contraSearched = r.searched;
+  }
+  const weightOfAuthority = assessAuthorityWeight(groundedChunks, contra, { contraSearched });
   if (weightOfAuthority.disclosureRecommended) {
     reviewNotes.push(
       `Authority weight: ${weightOfAuthority.standard} — Form 8275 disclosure recommended. ${weightOfAuthority.rationale}`,

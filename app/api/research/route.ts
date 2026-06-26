@@ -78,7 +78,10 @@ export async function POST(req: Request) {
     // then persist it to ai_usage best-effort — a cost-accounting failure must NEVER fail the answer
     // (honest degradation: log the error name only, return the research result regardless).
     const { result, entries } = await runWithUsageScope(() =>
-      researchAnswer(proposer, judge, question, { taxYear, jurisdiction }),
+      // contraSearch: run a real contrary-authority search so the §6662 weight-of-authorities standard
+      // is honestly weighed (and can exceed the substantial-authority cap when warranted), not capped by
+      // default. The live product weighs authority; the offline benchmark leaves it off to stay fast.
+      researchAnswer(proposer, judge, question, { taxYear, jurisdiction, contraSearch: true }),
     );
     try {
       await persistUsageForOrg(ctx.clerkOrgId, entries);
