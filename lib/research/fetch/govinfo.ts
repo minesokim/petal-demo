@@ -7,6 +7,30 @@
 
 const GOVINFO_SEARCH = "https://api.govinfo.gov/search";
 
+// GovInfo's search is relevancy/keyword-based: a full natural-language question ("What are the like-kind
+// exchange requirements under IRC section 1031 for real property?") returns ZERO hits, while the targeted
+// terms ("section 1031 like-kind exchange real property") return the right granule. So reduce a question to
+// statute search terms before querying: pull out the Code section refs, keep the content nouns, drop the
+// question framing + stopwords. Verified live: the reduced form returns the §1031 granule; the raw question
+// returns nothing.
+const QUERY_STOP = new Set(
+  ("what whats is are was were the a an how does do did for of to in on under over with and or explain describe " +
+    "define when which who whom that this these those my our your their its client clients taxpayer please tell me " +
+    "requirement requirements rule rules provide provides apply applies treatment about regarding concerning under")
+    .split(/\s+/),
+);
+export function statuteQuery(question: string): string {
+  const secs = [...question.matchAll(/(?:§+\s*|\bsection\s+|\birc\s+|\b26\s+u\.?\s?s\.?\s?c\.?\s*)(\d+[A-Za-z]?)/gi)]
+    .map((m) => `section ${m[1]}`);
+  const words = question
+    .toLowerCase()
+    .replace(/[^a-z0-9§\s-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !QUERY_STOP.has(w) && !/^\d+$/.test(w));
+  const terms = [...new Set([...secs, ...words])];
+  return terms.length ? terms.slice(0, 8).join(" ") : question;
+}
+
 export type GovInfoResult = {
   title: string;
   collection: string; // USCODE | PLAW | CFR | FR | ...

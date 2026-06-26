@@ -4,7 +4,7 @@
 // source whose getText isn't wired yet (or fails) throws → the engine abstains, never guesses.
 
 import { assertPublicLawQuery } from "./guard";
-import { searchGovInfo, fetchGovInfoText, stripHtml, type GovInfoResult } from "./govinfo";
+import { searchGovInfo, fetchGovInfoText, stripHtml, statuteQuery, type GovInfoResult } from "./govinfo";
 import { searchTaxCourt, taxCourtDownloadUrl, fetchTaxCourtText } from "./tax-court";
 import { searchIrb } from "./irs-irb";
 import { searchFederalRegister } from "./federal-register";
@@ -33,7 +33,9 @@ const govinfoStatute: FetchSource = {
   matches: (q) => /\b(section|§|irc|u\.?\s?s\.?\s?c|public law|pub\.?\s?l|statute|enacted|act of|obbba|one big beautiful)\b/i.test(q),
   search: async (q, opts) => {
     const safe = assertPublicLawQuery(q);
-    const results = await searchGovInfo(safe, { collections: ["USCODE", "PLAW"], pageSize: 5, signal: opts?.signal });
+    // Reduce the question to targeted statute terms — GovInfo's keyword search returns nothing for a full
+    // natural-language question but the right granule for "section 1031 like-kind exchange".
+    const results = await searchGovInfo(statuteQuery(safe), { collections: ["USCODE", "PLAW"], pageSize: 5, signal: opts?.signal });
     return results
       .filter((r): r is GovInfoResult & { textUrl: string } => !!r.textUrl)
       .map((r) => ({
