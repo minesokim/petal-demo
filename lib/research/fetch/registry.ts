@@ -50,9 +50,14 @@ const govinfoStatute: FetchSource = {
     const safe = assertPublicLawQuery(q);
     // Reduce the question to targeted statute terms — GovInfo's keyword search returns nothing for a full
     // natural-language question but the right granule for "section 1031 like-kind exchange".
-    const results = await searchGovInfo(statuteQuery(safe), { collections: ["USCODE", "PLAW"], pageSize: 5, signal: opts?.signal });
+    const results = await searchGovInfo(statuteQuery(safe), { collections: ["USCODE", "PLAW"], pageSize: 8, signal: opts?.signal });
     return results
       .filter((r): r is GovInfoResult & { textUrl: string } => !!r.textUrl)
+      // The IRC is Title 26. GovInfo's "section N" search collides across ALL USC titles and often ranks
+      // a wrong-title section first (a bare "section 121" returns 35 U.S.C. 121 patents above 26 U.S.C.
+      // 121; "section 1031" returns Title 29/7 above Title 26). Drop non-Title-26 USCODE results so the
+      // engine never grounds a tax answer on a patent/labor section. PLAW (public laws) carry no title.
+      .filter((r) => r.collection !== "USCODE" || /title26/i.test(r.packageId))
       .map((r) => ({
         source: "govinfo",
         title: r.title,
