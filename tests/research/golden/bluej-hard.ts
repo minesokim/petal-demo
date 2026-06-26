@@ -226,7 +226,7 @@ export const BLUEJ_HARD_CASES: GoldenCase[] = [
     // contributions are taxable as ordinary income on withdrawal. Only the DETAILED distribution mechanics
     // are reserved (Notice 2025-68). FAIL = "earnings are long-term capital gain" (the exact error in the
     // hardest test). This is the only outright-wrong answer Petal gave, and it is a knowable, citable fact.
-    mustCiteAuthorityLike: "408",
+    mustCiteAuthorityLike: "530A",
     mustClaim: "ordinary",
     mustNotClaim: "capital gain",
     notes:

@@ -41,10 +41,15 @@ async function main() {
   const sorted = [...CASE_SET].sort((a, b) => a.id.localeCompare(b.id));
   const cases = shard ? sorted.filter((_, i) => i % shard.n === shard.k) : sorted;
 
+  // --fetch measures the REAL product config (live primary-authority fetch on a corpus miss + the §6662
+  // contra search), as the live /api/research runs. Off by default so the golden-set gate stays offline +
+  // deterministic; ON for a representative hard-set baseline.
+  const liveConfig = process.argv.includes("--fetch");
+
   const answers: Record<string, GradableAnswer> = {};
   for (const c of cases) {
     try {
-      const r = await researchAnswer(proposer, judge, c.question, { taxYear: c.taxYear, jurisdiction: c.jurisdiction });
+      const r = await researchAnswer(proposer, judge, c.question, { taxYear: c.taxYear, jurisdiction: c.jurisdiction, fetch: liveConfig, contraSearch: liveConfig });
       // Map SourcedAnswer -> GradableAnswer. Pass the RAW bucket (the grader handles "abstain" for
       // coverage_gap probes directly); the engine already strips fabricated cites, so none survive.
       answers[c.id] = { bucket: r.bucket, text: r.answer, citations: r.citations.map((x) => x.cite), fabricatedCitations: [] };
