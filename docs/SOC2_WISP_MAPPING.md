@@ -87,7 +87,7 @@ The IRS-required WISP (Pub. 5708) sections, mapped to the controls above.
 | Audit / logging | IMPLEMENTED | Append-only `audit_log` (section A CC7) |
 | Incident-response plan | GAP (operator) | Policy doc — not a code control |
 | Service-provider oversight (subprocessors) | PARTIAL | Anthropic (ZDR), Clerk, Supabase, the fetch sources (public data only); a subprocessor register is owed |
-| Vendor/upload hardening (MIME + AV) | GAP | Upload MIME validation + antivirus scanning on document upload is not yet built (slice 3) |
+| Vendor/upload hardening (MIME + AV) | PARTIAL | Size cap + MIME allowlist + magic-byte validation enforced before storage (`lib/storage/upload-guard.ts`, wired into `uploadFirmFile`; `tests/storage/upload-guard.test.ts` — a disguised executable claiming application/pdf is rejected). AV scanning is the remaining (credential-dependent) half |
 | Employee training | GAP (operator) | Policy/process — not a code control |
 
 ---
@@ -96,7 +96,7 @@ The IRS-required WISP (Pub. 5708) sections, mapped to the controls above.
 
 1. **`/os/*` auth redirect** — re-implement at the layout level (Next-16-safe), verified against a running server.
 2. **Encrypt remaining workflow-text PII** — `expected_docs.note`, `notices.note`, `tasks.title`/`why`, `agent_tasks.input` (task `task_c7a71e89`).
-3. **Upload hardening** — MIME validation + AV scan on document upload (slice 3).
+3. **Upload hardening** — MIME + magic-byte + size validation is now enforced (`lib/storage/upload-guard.ts`); the remaining half is AV scanning (ClamAV / an external scanner — credential-dependent).
 4. **§7216 legal sign-off** — counsel opinion or documented accepted-risk before real taxpayer data flows in production.
 5. **Activate the measured-error-rate gate** — add the `ANTHROPIC_API_KEY` CI secret; set the Blue J floor from the first judge-graded baseline.
 6. **Operator/policy docs** — security coordinator, incident response, subprocessor register, training (WISP non-code sections).

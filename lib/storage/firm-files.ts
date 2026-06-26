@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { validateUpload } from "./upload-guard";
 
 // Server-only Supabase Storage client for the firm's file library. Uses the
 // service-role key (never shipped to the browser) so we control firm-scoping at
@@ -41,6 +42,11 @@ export async function uploadFirmFile(firmId: string, file: File): Promise<Upload
   const storagePath = `${firmId}/${globalThis.crypto.randomUUID()}-${safeName}`;
   const mimeType = file.type || "application/octet-stream";
   const bytes = new Uint8Array(await file.arrayBuffer());
+
+  // UPLOAD HARDENING: validate size + declared MIME (allowlist) + magic bytes BEFORE storing, so an
+  // oversized file, a disallowed type, or a disguised executable claiming application/pdf is rejected.
+  const check = validateUpload(bytes, mimeType);
+  if (!check.ok) throw new Error(`upload rejected: ${check.reason}`);
 
   const { error } = await client()
     .storage.from(BUCKET)
