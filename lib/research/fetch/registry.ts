@@ -48,18 +48,16 @@ const govinfoStatute: FetchSource = {
   matches: (q) => /§\s*\d|\b(section|irc|u\.?\s?s\.?\s?c|public law|pub\.?\s?l|statute|enacted|act of|obbba|one big beautiful)\b/i.test(q),
   search: async (q, opts) => {
     const safe = assertPublicLawQuery(q);
-    // Reduce the question to targeted statute terms — GovInfo's keyword search returns nothing for a full
-    // natural-language question but the right granule for "section 1031 like-kind exchange".
-    const results = await searchGovInfo(statuteQuery(safe), { collections: ["USCODE", "PLAW"], pageSize: 8, signal: opts?.signal });
-    // A CODE-SECTION question wants the codified statute (USCODE Title 26), not a tangential Public Law.
-    // GovInfo's relevance ranked the welfare-reform PLAW ABOVE 26 U.S.C. §121 for a "§121" query, so the
-    // §121 statute fell outside the top chunks the engine distills → it reasoned over noise and abstained
-    // on settled law. Put codified Title-26 statute FIRST here. A public-law question (OBBBA, "Pub. L.")
-    // keeps GovInfo's order so the enacted PLAW still surfaces.
     const wantsPublicLaw = /\b(obbba|one big beautiful|public law|pub\.?\s?l|p\.l\.|enacted|act of)\b/i.test(safe);
-    // The exact Code section(s) the question cites — the §121 granule must win over §1 ("Tax imposed"),
-    // which GovInfo's content relevance ranks higher when the question mentions "married filing jointly".
+    // The exact Code section(s) the question cites.
     const citedSecs = [...safe.matchAll(/(?:§+\s*|\bsection\s+|\birc\s+|\b26\s+u\.?\s?s\.?\s?c\.?\s*)(\d+[A-Za-z]?)/gi)].map((m) => m[1].toLowerCase());
+    // For a §-cite question, search GovInfo by the SECTION (plus minimal disambiguation), NOT the full
+    // question's content nouns — those distract GovInfo's relevance so badly the real statute drops out
+    // entirely (a "§1031 ... TCJA property" query returned §1 / Public Laws and never §1031). The bare
+    // "section N" reliably returns the right granule (verified for §1031/§163/§7703); a topic question
+    // (no cited section) still uses statuteQuery.
+    const govQuery = citedSecs.length && !wantsPublicLaw ? citedSecs.map((s) => `section ${s}`).join(" ") : statuteQuery(safe);
+    const results = await searchGovInfo(govQuery, { collections: ["USCODE", "PLAW"], pageSize: 10, signal: opts?.signal });
     return results
       .filter((r): r is GovInfoResult & { textUrl: string } => !!r.textUrl)
       // The IRC is Title 26. GovInfo's "section N" search collides across ALL USC titles and often ranks
