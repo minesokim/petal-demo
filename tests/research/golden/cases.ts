@@ -163,10 +163,14 @@ export const GOLDEN_CASES: GoldenCase[] = [
     taxYear: 2026,
     jurisdiction: "federal",
     expectedBucket: "answer",
-    mustNotClaim: "$7 million",
+    // The question is phrased AROUND "$7 million", so a correct refutation ("no, it does NOT drop to
+    // $7 million; OBBBA §70106 made $15M permanent") unavoidably echoes that substring — forbidding it
+    // false-positives on the right answer (same brittle-mustNotClaim trap fixed for bonus-depreciation-2025
+    // and tips-cap-amount). Require the CORRECT figure ($15M) instead. Verified 2026-06-25 (Claude A/B).
+    mustClaim: "$15",
     mustCiteAuthorityLike: "70106",
     notes:
-      "Direct probe of the reversion myth. Correct answer: no, OBBBA made $15M permanent; the scheduled TCJA reversion was repealed before it took effect.",
+      "Direct probe of the reversion myth. Correct answer: no, OBBBA §70106 made the ~$15M exclusion permanent; the scheduled TCJA reversion to ~$7M was repealed before it took effect.",
   },
 
   // ───────────────────────── Currency traps: gambling ─────────────────────────
