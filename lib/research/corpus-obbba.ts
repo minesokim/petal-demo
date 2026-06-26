@@ -510,6 +510,85 @@ export const OBBBA_FEDERAL_CHUNKS: ObbbaAuthorityChunk[] = [
       "Circular 230 §10.34(d) (31 C.F.R. §10.34(d)): a practitioner advising a client to take a position on, or preparing or signing, a tax return, document, affidavit, or other paper submitted to the IRS GENERALLY MAY RELY IN GOOD FAITH WITHOUT VERIFICATION upon information furnished by the client. The practitioner may NOT, however, ignore the implications of information furnished to or actually known by the practitioner, and MUST MAKE REASONABLE INQUIRIES if the information as furnished appears to be incorrect, inconsistent with an important fact or another factual assumption, or incomplete. Applied to substantiation (e.g. a claimed cash charitable contribution): the preparer may rely on the client's representation of the gift, but must make reasonable inquiries where the amount or documentation appears incorrect, inconsistent, or incomplete rather than accept it blindly.",
     keywords: ["circular 230", "10.34", "10.34(d)", "reliance", "rely in good faith", "client representations", "reasonable inquiries", "information furnished by the client", "substantiation", "charitable contribution", "practitioner", "due diligence"],
   },
+
+  // ── Blue J-tier corpus gaps closed (web-verified 2026-06-25; see docs/RESEARCH_BENCHMARK.md). These six
+  // provisions were missing and produced the only outright error (Trump Account) and the "couldn't ground
+  // the figure" punts ($512K EBL, $15M QSBS cap, §4475 funding test) in the hardest test run. ──
+  {
+    chunkId: "obbba-70204-trump-account-530a",
+    authorityType: "statute",
+    citation: "OBBBA §70204 (P.L. 119-21) — IRC §530A 'Trump account'; IRS Notice 2025-68",
+    jurisdiction: "federal",
+    taxYear: [2026, 2027, 2028, 2029, 2030],
+    effectiveDate: "2026-01-01", // §530A applies to tax years beginning after Dec 31, 2025
+    supersededBy: undefined,
+    sourceUrl: "https://www.irs.gov/pub/irs-drop/n-25-68.pdf",
+    ingestedAt: INGESTED,
+    verified: true,
+    text:
+      "A 'Trump account' (IRC §530A, enacted by OBBBA) is treated as a TRADITIONAL IRA under §408(a) (§530A(a); IRS Notice 2025-68 Q&A A-2). It is NOT a capital-gains vehicle. On distribution (first allowed January 1 of the year the beneficiary turns 18), the portion exceeding the account's basis is included in gross income under §408(d)(1) in the manner provided by §72 and is taxed as ORDINARY INCOME at the beneficiary's marginal rate — there is NO long-term-capital-gain rate and NO basis step-up. A distribution before age 59½ is subject to the §72(t) 10% additional tax unless an exception applies. BASIS: only after-tax contributions from the taxpayer/family create basis and come out tax-free (capped, with §128 contributions, at $5,000/year aggregate, indexed). The $1,000 federal pilot/seed contribution (children born 2025-2028), qualified general (state/charity) contributions, and §128 employer contributions ($2,500/year, excluded from the employee's income) do NOT create basis and are FULLY TAXABLE as ordinary income on withdrawal, along with all earnings. Kiddie-tax (§1(g)) exposure can apply to a large taxable distribution. The detailed distribution mechanics are reserved in the March 2026 proposed regulations, but the ordinary-income CHARACTER is fixed by §530A(a) → §408(d)(1) → §72.",
+    keywords: ["trump account", "530a", "child savings", "newborn", "distribution", "408", "traditional ira", "ordinary income", "128", "turns 18"],
+  },
+  {
+    chunkId: "obbba-461l-ebl-threshold",
+    authorityType: "statute",
+    citation: "IRC §461(l)(3)(A)(ii)(II) — excess business loss threshold; Rev. Proc. 2025-32 §.31",
+    jurisdiction: "federal",
+    taxYear: [2025, 2026, 2027, 2028, 2029, 2030],
+    effectiveDate: "2025-01-01",
+    supersededBy: undefined,
+    sourceUrl: "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+    ingestedAt: INGESTED,
+    verified: true,
+    text:
+      "The IRC §461(l) excess-business-loss (EBL) limitation for noncorporate taxpayers is PERMANENT after OBBBA (the TCJA sunset was struck) and applies for 2025 and 2026. The inflation-adjusted threshold under §461(l)(3)(A)(ii)(II): for tax years beginning in 2026 it is $256,000 ($512,000 for a joint return) per Rev. Proc. 2025-32 §.31 — a DECREASE from the 2025 amounts of $313,000 ($626,000 joint) (Rev. Proc. 2024-40). A disallowed excess business loss is NOT lost: it carries forward as a regular §172 net operating loss and is NOT retested under §461(l) in the carryforward year (the House per-year-retest proposal did not become law). The carryforward NOL is subject to the 80%-of-taxable-income §172 limitation. Computed on Form 461; only business income/loss counts — W-2 wages and capital gains are not business items for this limitation, and the EBL is applied LAST, after the basis, §465 at-risk, and §469 passive limitations.",
+    keywords: ["461", "excess business loss", "ebl", "512,000", "256,000", "rev. proc. 2025-32", "carryforward", "no retest", "461(l)"],
+  },
+  {
+    chunkId: "obbba-70431-qsbs-1202",
+    authorityType: "statute",
+    citation: "OBBBA §70431 (P.L. 119-21) amending IRC §1202 — QSBS tiered exclusion + $15M cap",
+    jurisdiction: "federal",
+    taxYear: [2025, 2026, 2027, 2028, 2029, 2030],
+    effectiveDate: "2025-07-05", // QSBS acquired after July 4, 2025
+    supersededBy: undefined,
+    sourceUrl: "https://www.law.cornell.edu/uscode/text/26/1202",
+    ingestedAt: INGESTED,
+    verified: true,
+    text:
+      "For qualified small business stock (QSBS) ACQUIRED AFTER JULY 4, 2025, OBBBA amended IRC §1202 to provide a TIERED gain exclusion: 50% if held at least 3 years, 75% if held at least 4 years, 100% if held at least 5 years (prior law gave 100% only at a 5-year hold). The per-issuer gain limitation under §1202(b) is the GREATER OF (A) $15,000,000 (raised from $10,000,000), reduced by eligible gain excluded for that issuer in prior years, or (B) 10 times the taxpayer's aggregate adjusted basis in the issuer's QSBS disposed of during the year (the 10x-basis prong is unchanged; only the dollar figure rose from $10M to $15M). The $15,000,000 is indexed under §1(f)(3) for years after 2026. The corporation's aggregate-gross-assets ceiling rose from $50,000,000 to $75,000,000. ELIGIBILITY TURNS ON THE STOCK'S ACQUISITION DATE: stock issued on or before July 4, 2025 stays under the OLD regime (100% only at 5 years, $10M/10x cap, $50M asset test). For 100%-exclusion stock acquired after Sept 27, 2010 there is NO AMT preference on the excluded gain. NOTE: many states (e.g. California) do not conform to §1202, taxing the gain in full.",
+    keywords: ["qsbs", "1202", "qualified small business stock", "15,000,000", "10x basis", "tiered", "founder", "75,000,000", "acquired after july", "qualified trade or business"],
+  },
+  {
+    chunkId: "obbba-70604-remittance-4475",
+    authorityType: "statute",
+    citation: "OBBBA §70604 (P.L. 119-21) — IRC §4475 remittance-transfer excise tax (1%)",
+    jurisdiction: "federal",
+    taxYear: [2026, 2027, 2028, 2029, 2030],
+    effectiveDate: "2026-01-01", // transfers made after Dec 31, 2025
+    supersededBy: undefined,
+    sourceUrl: URL.pl119_21,
+    ingestedAt: INGESTED,
+    verified: true,
+    text:
+      "IRC §4475 (added by OBBBA) imposes a 1% excise tax on the amount of a remittance transfer. CRITICAL SCOPE — the FUNDING TEST in §4475(c): the tax applies ONLY to a remittance transfer for which the SENDER PROVIDES CASH, A MONEY ORDER, A CASHIER'S CHECK, OR ANY OTHER SIMILAR PHYSICAL INSTRUMENT (as determined by the Secretary; the proposed regs add traveler's checks) to the remittance transfer provider. Transfers funded from an account or by a U.S.-issued debit or credit card are OUT of scope. The flat 1% rate applies (an earlier 5%/sender-citizenship version did NOT become law). The sender bears the tax; the provider collects and remits quarterly on Form 720. Effective for transfers made after December 31, 2025. A digital-asset / stablecoin transfer (e.g. USDC) is not funded with a physical instrument, which is the strongest argument it falls OUTSIDE §4475 — though the provision is new and untested and Treasury could read 'similar instrument' more broadly.",
+    keywords: ["remittance", "4475", "physical instrument", "money order", "cashier's check", "stablecoin", "usdc", "send", "abroad", "1 percent"],
+  },
+  {
+    chunkId: "obbba-70307-168n-qpp",
+    authorityType: "statute",
+    citation: "OBBBA §70307 (P.L. 119-21) — IRC §168(n) qualified production property; IRS Notice 2026-16",
+    jurisdiction: "federal",
+    taxYear: [2025, 2026, 2027, 2028, 2029, 2030],
+    effectiveDate: "2025-01-20", // construction begun after Jan 19, 2025
+    supersededBy: undefined,
+    sourceUrl: "https://www.irs.gov/pub/irs-drop/n-26-16.pdf",
+    ingestedAt: INGESTED,
+    verified: true,
+    text:
+      "IRC §168(n) (added by OBBBA) lets a taxpayer ELECT 100% expensing for 'qualified production property' — the portion of nonresidential real property used as an integral part of a qualified production activity (manufacturing, production, or refining of tangible personal property), where construction began after January 19, 2025 and the property is placed in service before January 1, 2031. 'Production' requires the activity to result in a SUBSTANTIAL TRANSFORMATION of the property comprising the qualified product. That term is DEFINED — NOT reserved — by IRS Notice 2026-16 §5.02(9): a substantial transformation produces a final, complete, and distinct item fundamentally different in form, function, or character from the inputs (with examples, and a packaging/repackaging counter-example that does NOT qualify). Office, administrative, R&D, lodging, and parking space is excluded; a mixed-use facility (e.g. a semiconductor fab) is allocated, with clean-room/production areas the strong candidates, requiring documentation of space use and placed-in-service dating.",
+    keywords: ["168", "qualified production property", "qpp", "substantial transformation", "100% expensing", "manufacturing", "fab", "notice 2026-16", "production"],
+  },
 ];
 
 // ── CALIFORNIA CONFORMITY CHUNK ───────────────────────────────────────────────────────────

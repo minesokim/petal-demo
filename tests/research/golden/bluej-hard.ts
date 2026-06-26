@@ -196,19 +196,22 @@ export const BLUEJ_HARD_CASES: GoldenCase[] = [
       "Tier E (unsettled). PASS = identify the open conflict (acquired-after-date vs §1223 continuation) and weigh both; FAIL = a confident yes/no.",
   },
   {
-    id: "bluej-e2-168n-substantial-transformation-reserved",
+    id: "bluej-e2-168n-substantial-transformation",
     question:
       "Is a semiconductor fabrication facility 'qualified production property' eligible for 100% expensing under §168(n)?",
     taxYear: 2026,
     jurisdiction: "federal",
-    expectedBucket: "hedge",
-    // UNSETTLED. §168(n) requires manufacturing/production/refining effecting a SUBSTANTIAL TRANSFORMATION,
-    // and Notice 2026-16 expressly RESERVED the definition of substantial transformation. PASS = ground the
-    // statute + the interim notice, state the controlling term is undefined/reserved, decline a clean yes.
-    // The sharpest point is NAMING "substantial transformation" as the reserved term.
+    expectedBucket: "answer",
+    // CORRECTED KEY (adversarial verification 2026-06-25): "substantial transformation" is DEFINED, NOT
+    // reserved — IRS Notice 2026-16 §5.02(9) defines it as a final, complete, distinct item fundamentally
+    // different from the inputs. So this is answerable as a space-ALLOCATION call: clean-room/production
+    // areas are strong candidates, office/admin/R&D excluded, with documentation + placed-in-service dating.
+    // PASS = ground the §168(n) statute + the Notice 2026-16 definition and reason the allocation; a
+    // conditioned hedge is acceptable. FAIL = asserting the definition is "reserved" (a factual error).
     mustCiteAuthorityLike: "168",
+    mustClaim: "substantial transformation",
     notes:
-      "Tier E (unsettled). PASS = name 'substantial transformation' as reserved in Notice 2026-16, decline a clean yes. Partial: space-allocation analysis without naming the reserved term.",
+      "Tier D (was mis-keyed as unsettled). The controlling term IS defined in Notice 2026-16 §5.02(9). PASS = ground the definition + the production-vs-admin allocation. Trap: calling the definition reserved.",
   },
   {
     id: "bluej-e3-trump-account-distribution-character",
