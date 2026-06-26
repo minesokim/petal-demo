@@ -593,8 +593,8 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
                   >
                     {showPhase && (
                       <div className="mb-1 mt-0.5 flex items-center gap-2 text-[13px] text-[var(--os-ink-muted)]">
-                        <span className="flex size-3 shrink-0 items-center justify-center">
-                          <Icon icon={I.globe} size={12} className="text-[var(--os-ink-subtle)]" />
+                        <span className="flex size-3.5 shrink-0 items-center justify-center">
+                          <Icon icon={I.globe} size={14} className="text-[var(--os-ink-subtle)]" />
                         </span>
                         <span>{PHASE_LABEL[s.phase!]}</span>
                       </div>
