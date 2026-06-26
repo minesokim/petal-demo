@@ -680,6 +680,22 @@ async function researchAnswerImpl(
   //     on it (a reasoning/on-point gap), surfaced to the user as a hedge but marked distinctly
   //     so an operator can tell it from a clean coverage gap.
   if (reasoned.abstained || groundedPositions.length === 0) {
+    // HONEST DEGRADATION: if a reasoning-model CALL failed (transport/parse/429) rather than the model
+    // cleanly declining, surface it as a SERVICE ERROR. An outage must NEVER masquerade as "no authority"
+    // (a false calibrated abstention) — that is both dishonest and what corrupted the parallel benchmark.
+    if (reasoned.serviceError) {
+      return {
+        answer: "I could not complete the analysis because the reasoning service was temporarily unavailable (a transient error such as rate limiting). This is NOT a conclusion that no authority exists, and not a calibrated decline. Please retry.",
+        citations: [],
+        bucket: "abstain",
+        calibration: "ungrounded",
+        currencyNote: "Service error during reasoning (degraded); retry before relying on this.",
+        reviewNotes: [
+          "DEGRADED — the reasoning model call failed (transport / rate-limit / malformed response), so no position could be produced. This is a service error, NOT a coverage gap or a calibrated abstention.",
+          "Retry the question; if it persists, the model endpoint is likely rate-limited or down.",
+        ],
+      };
+    }
     // LIFECYCLE first (same precedence as the empty-retrieval branch): a determinable sunset/effective-
     // range answer beats both an indeterminate hedge and an abstain.
     const lifeB = lifecycleFallback(question, taxYear, jurisdiction, corpus);
