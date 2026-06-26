@@ -24,6 +24,12 @@ try {
       returning id`;
     const nodeId = node[0].id as string;
     nodeUpserts++;
+    // REFRESH: a chunk's current text is the node's one current version. Drop any STALE prior versions
+    // for this node (older corpus text) so an edit to corpus-obbba.ts propagates into the graph instead
+    // of leaving the old text to compete in retrieval. Safe: historical/superseded law is modeled as a
+    // SEPARATE node (distinct citation), so this only ever removes this citation's own outdated text. The
+    // authority_embedding FK cascades, so re-run embed-authority-graph.mts after to embed the new version.
+    await sql`delete from authority_versions where node_id = ${nodeId} and content_hash != ${hash}`;
     const exists = await sql`select 1 from authority_versions where node_id = ${nodeId} and content_hash = ${hash} limit 1`;
     if (exists.length) { skipped++; continue; }
     const validTo = c.supersededFrom ? `${c.supersededFrom}-01-01` : null;
