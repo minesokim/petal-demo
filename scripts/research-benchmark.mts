@@ -8,6 +8,7 @@ import { getProvider } from "../lib/ai/provider-factory";
 import { researchAnswer } from "../lib/research/engine";
 import { GOLDEN_CASES } from "../tests/research/golden/cases";
 import { BLUEJ_HARD_CASES } from "../tests/research/golden/bluej-hard";
+import { VERIFIED_CASES } from "../tests/research/golden/verified";
 import { gradeAll, type GradableAnswer } from "../tests/research/golden/grade";
 
 // --shard k/N → grade only the cases whose index (in id-sorted order) ≡ k (mod N). Lets the A/B fan
@@ -37,7 +38,9 @@ async function main() {
   // answer there is graded a fail), so run with --judge for a meaningful read.
   const setIdx = process.argv.indexOf("--set");
   const setName = setIdx >= 0 ? process.argv[setIdx + 1] : "golden";
-  const CASE_SET = setName === "bluej" ? BLUEJ_HARD_CASES : GOLDEN_CASES;
+  // `--set verified` runs the SOURCE-VERIFIED set (every answer key confirmed literally in the cited
+  // primary source) — settled bright-line law, an unambiguous gate that complements the unsettled Blue J set.
+  const CASE_SET = setName === "bluej" ? BLUEJ_HARD_CASES : setName === "verified" ? VERIFIED_CASES : GOLDEN_CASES;
   const sorted = [...CASE_SET].sort((a, b) => a.id.localeCompare(b.id));
   const cases = shard ? sorted.filter((_, i) => i % shard.n === shard.k) : sorted;
 
