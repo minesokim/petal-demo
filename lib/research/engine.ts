@@ -525,11 +525,33 @@ async function tryFetchGround(
 }
 
 // ── The pipeline ─────────────────────────────────────────────────────────────────────────────
+// HONEST DEGRADATION (spec: no silent fallbacks). If the authority graph is requested but fails and we
+// fall back to the in-memory corpus, that is a DEGRADED answer — surface it (a review note + the
+// calibration is unchanged but the preparer is told the primary source was unavailable), never hide it.
 export async function researchAnswer(
   provider: AIProvider,
   judge: AIProvider | undefined,
   question: string,
   opts: ResearchOpts,
+): Promise<SourcedAnswer> {
+  const degraded = { v: false };
+  const ans = await researchAnswerImpl(provider, judge, question, opts, degraded);
+  if (!degraded.v) return ans;
+  return {
+    ...ans,
+    reviewNotes: [
+      "Degraded retrieval: the authority graph was unavailable, so this was answered from the local corpus only. Treat coverage as reduced and verify against primary authority before relying on it.",
+      ...ans.reviewNotes,
+    ],
+  };
+}
+
+async function researchAnswerImpl(
+  provider: AIProvider,
+  judge: AIProvider | undefined,
+  question: string,
+  opts: ResearchOpts,
+  degraded: { v: boolean },
 ): Promise<SourcedAnswer> {
   // §7216 HARD GATE — public authority only. Real taxpayer data must flip scope to "real".
   assertCleared(opts.scope ?? "synthetic");
@@ -547,7 +569,10 @@ export async function researchAnswer(
   if (useGraph) {
     try {
       retrieved = await graphRetrieve(question, { taxYear, jurisdiction, k });
-    } catch {
+    } catch (e) {
+      // HONEST DEGRADATION: log + flag the graph→corpus fallback so it surfaces on the answer, never silent.
+      console.warn(`[research] authority graph unavailable, degrading to in-memory corpus: ${e instanceof Error ? e.message : e}`);
+      degraded.v = true;
       retrieved = retrieve(question, { taxYear, jurisdiction, k }, corpus);
     }
   } else {
