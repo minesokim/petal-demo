@@ -154,9 +154,23 @@ export const skills = pgTable("skills", {
   escalation: text("escalation"),
   variants: jsonb("variants"),
   graduation: jsonb("graduation"),
+  version: integer("version").notNull().default(1), // latest published version (see skill_versions)
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// VERSIONED SKILLS (0039): an immutable snapshot of a skill's definition per published version, so a
+// skill_run is traceable to the EXACT playbook it ran and editing a skill never rewrites history. Inherits
+// the skill's scope (firm_id NULL = global product skill); RLS reads global-or-firm, writes firm-only.
+export const skillVersions = pgTable("skill_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
+  firmId: uuid("firm_id").references(() => firms.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  definition: jsonb("definition").notNull(),
+  publishedByUserId: text("published_by_user_id"),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("skill_versions_skill_idx").on(t.skillId)]);
 
 export const notices = pgTable("notices", {
   id: text("id").primaryKey(),
@@ -227,6 +241,7 @@ export const skillRuns = pgTable("skill_runs", {
   id: text("id").primaryKey(),
   firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
   skillId: text("skill_id"),
+  skillVersion: integer("skill_version"), // which published skill version this run executed (traceability)
   householdId: text("household_id").notNull().references(() => households.id, { onDelete: "cascade" }),
   engagementId: text("engagement_id"),
   startedAt: text("started_at"),
