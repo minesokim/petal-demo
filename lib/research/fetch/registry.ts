@@ -58,14 +58,22 @@ const govinfoStatute: FetchSource = {
       // 121; "section 1031" returns Title 29/7 above Title 26). Drop non-Title-26 USCODE results so the
       // engine never grounds a tax answer on a patent/labor section. PLAW (public laws) carry no title.
       .filter((r) => r.collection !== "USCODE" || /title26/i.test(r.packageId))
-      .map((r) => ({
-        source: "govinfo",
-        title: r.title,
-        citation: r.title,
-        sourceUrl: r.granuleUrl ?? r.textUrl,
-        authorityTier: 1, // statute is the top axis
-        getText: () => fetchGovInfoText(r.textUrl, { signal: opts?.signal }),
-      }));
+      .map((r) => {
+        // CITE WITH THE SECTION NUMBER. GovInfo's `title` is the section HEADING ("Gross income defined"),
+        // not the cite — so an answer carried "Gross income defined" instead of "26 U.S.C. §61", which is
+        // unverifiable and fails a §-number check. Recover the section from the granule id (".../sec61/").
+        const secM = (r.granuleUrl ?? r.packageId).match(/[-/]sec([0-9]+[A-Za-z]?(?:-[0-9]+)?)/i);
+        const titleM = r.packageId.match(/title(\d+)/i);
+        const citation = secM ? `${titleM ? titleM[1] : "26"} U.S.C. §${secM[1]}${r.title ? ` — ${r.title}` : ""}` : r.title;
+        return {
+          source: "govinfo",
+          title: r.title,
+          citation,
+          sourceUrl: r.granuleUrl ?? r.textUrl,
+          authorityTier: 1, // statute is the top axis
+          getText: () => fetchGovInfoText(r.textUrl, { signal: opts?.signal }),
+        };
+      });
   },
 };
 
