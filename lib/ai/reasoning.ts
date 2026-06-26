@@ -36,14 +36,16 @@ export async function reason(provider: AIProvider, question: string, chunks: Aut
   // fall back to a SAFE DECLINE. A safe decline ({ positions: [], abstained: true }) is the
   // correct floor: an abstention is always a valid answer, a 500 never is.
   const attempt = async () =>
+    // generateObject validates against the (self-healing) schema at runtime; the ZodEffects wrapper on
+    // Position.reviewNotes widens its inferred return, so assert the validated output type.
     (await provider.generateObject({
       system: REASONING_SYSTEM,
       prompt,
       schema: ReasoningOutput,
       maxTokens: 3000,
-    })).object;
+    })).object as RO;
 
-  let object: Awaited<ReturnType<typeof attempt>> | null = null;
+  let object: RO | null = null;
   let callFailed = false;
   for (let i = 0; i < 2 && object === null; i++) {
     try {
