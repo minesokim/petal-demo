@@ -452,11 +452,14 @@ export function StreamedText({ text, className, onDone }: { text: string; classN
   return <p className={className}><Rich text={words.slice(0, count).join(" ")} /></p>;
 }
 
+// The brief placeholder shown for the split second before the REAL streamed trace arrives. These mirror
+// the actual stages of the run (understand → search authority → read → reason), never canned firm-data
+// chatter. Kept short (a few words each) so it reads as a real status, not filler.
 const THINKING_PHRASES = [
-  "Reading the firm's records…",
-  "Checking deadlines and balances…",
-  "Pulling the latest from your tools…",
-  "Drafting your response…",
+  "Understanding your question",
+  "Searching the tax authority",
+  "Reading the sources",
+  "Reasoning through the answer",
 ];
 
 // COGNITION TRACE — the live "what Petal is doing" checklist (reassurance, Claude/Harvey-style).
