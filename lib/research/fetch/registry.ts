@@ -51,6 +51,15 @@ const govinfoStatute: FetchSource = {
     // Reduce the question to targeted statute terms — GovInfo's keyword search returns nothing for a full
     // natural-language question but the right granule for "section 1031 like-kind exchange".
     const results = await searchGovInfo(statuteQuery(safe), { collections: ["USCODE", "PLAW"], pageSize: 8, signal: opts?.signal });
+    // A CODE-SECTION question wants the codified statute (USCODE Title 26), not a tangential Public Law.
+    // GovInfo's relevance ranked the welfare-reform PLAW ABOVE 26 U.S.C. §121 for a "§121" query, so the
+    // §121 statute fell outside the top chunks the engine distills → it reasoned over noise and abstained
+    // on settled law. Put codified Title-26 statute FIRST here. A public-law question (OBBBA, "Pub. L.")
+    // keeps GovInfo's order so the enacted PLAW still surfaces.
+    const wantsPublicLaw = /\b(obbba|one big beautiful|public law|pub\.?\s?l|p\.l\.|enacted|act of)\b/i.test(safe);
+    // The exact Code section(s) the question cites — the §121 granule must win over §1 ("Tax imposed"),
+    // which GovInfo's content relevance ranks higher when the question mentions "married filing jointly".
+    const citedSecs = [...safe.matchAll(/(?:§+\s*|\bsection\s+|\birc\s+|\b26\s+u\.?\s?s\.?\s?c\.?\s*)(\d+[A-Za-z]?)/gi)].map((m) => m[1].toLowerCase());
     return results
       .filter((r): r is GovInfoResult & { textUrl: string } => !!r.textUrl)
       // The IRC is Title 26. GovInfo's "section N" search collides across ALL USC titles and often ranks
@@ -58,6 +67,15 @@ const govinfoStatute: FetchSource = {
       // 121; "section 1031" returns Title 29/7 above Title 26). Drop non-Title-26 USCODE results so the
       // engine never grounds a tax answer on a patent/labor section. PLAW (public laws) carry no title.
       .filter((r) => r.collection !== "USCODE" || /title26/i.test(r.packageId))
+      // Rank: the EXACT cited section first, then any codified Title-26 statute, then the rest. Fixes the
+      // settled-law over-abstention where a tangential Public Law (welfare reform) or a content-relevant
+      // wrong section (§1) crowded the real §121 statute out of the chunks the engine distills.
+      .sort((a, b) => {
+        if (wantsPublicLaw) return 0;
+        const secHit = (x: GovInfoResult) => (citedSecs.some((s) => new RegExp(`[-/]sec${s}(?:[-/]|$)`, "i").test(x.granuleUrl ?? "")) ? 0 : 1);
+        const uscode = (x: GovInfoResult) => (x.collection === "USCODE" ? 0 : 1);
+        return secHit(a) - secHit(b) || uscode(a) - uscode(b);
+      })
       .map((r) => {
         // CITE WITH THE SECTION NUMBER. GovInfo's `title` is the section HEADING ("Gross income defined"),
         // not the cite — so an answer carried "Gross income defined" instead of "26 U.S.C. §61", which is
