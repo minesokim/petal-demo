@@ -34,6 +34,12 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
             <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-subtle)]">{item.dateline}</span>
           </span>
           <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{item.detail}</span>
+          {item.source && (
+            <span className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--os-hover)] px-2 py-0.5 text-[10.5px] text-[var(--os-ink-subtle)]">
+              <Icon icon={I.file} size={10} className="shrink-0" />
+              <span className="truncate">{item.source}</span>
+            </span>
+          )}
         </span>
         <Icon icon={I.chevronDown} size={14} className={cn("mt-1 shrink-0 self-start text-[var(--os-ink-subtle)] transition-transform duration-200", open && "rotate-180")} />
       </button>

@@ -135,24 +135,25 @@ function AskPetalInner() {
   const scopeLabel = scopeId ? householdById(scopeId)?.name ?? "All clients" : "All clients";
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const ranParam = useRef(false);
+  const handledParam = useRef<string | null>(null);
 
   const hasConvo = messages.length > 0;
 
-  // Arrival handoff: ?thread= reopens a persisted conversation (sidebar Recent /
-  // history overlay); ?q= runs a fresh question (the Today composer). One-shot.
+  // Arrival handoff: ?thread= reopens a persisted conversation (sidebar Recent / history overlay); ?q=
+  // runs a fresh question (the Today composer); a bare /os/ask after a thread = New chat. React to the
+  // param CHANGING (not a one-shot): clicking a different history chat, or New chat, must re-open/reset
+  // WITHOUT a manual reload. handledParam tracks the last key so the same one never re-runs.
   useEffect(() => {
-    if (ranParam.current) return;
     const thread = params.get("thread");
     const q = params.get("q");
-    if (thread) {
-      ranParam.current = true;
-      void openThread(thread);
-    } else if (q) {
-      ranParam.current = true;
-      send(q);
-    }
-  }, [params, send, openThread]);
+    const key = thread ? `t:${thread}` : q ? `q:${q}` : "new";
+    if (handledParam.current === key) return;
+    const first = handledParam.current === null;
+    handledParam.current = key;
+    if (thread) void openThread(thread);
+    else if (q) send(q);
+    else if (!first) reset(); // navigated to a fresh /os/ask after a thread → new chat
+  }, [params, send, openThread, reset]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
