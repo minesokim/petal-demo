@@ -21,6 +21,7 @@ import { connectionStore, useConnections } from "@/lib/connection-store";
 import { SkillPetal } from "@/components/os/primitives";
 import { Tip } from "@/components/os/tooltip";
 import { useAutogrow } from "@/lib/os/use-autogrow";
+import { useFirmData } from "@/lib/client/firm-context";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
 function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void }) {
@@ -124,6 +125,7 @@ function AskPetalInner() {
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
   const [scopeOpen, setScopeOpen] = useState(false);
   const { messages, send, reset, openThread, analyze } = usePetalChat(scopeId);
+  const firstName = useFirmData().viewer.firstName; // the signed-in preparer's real name, not the demo owner
   useConnections(); // re-render the grounding rail when a source is (dis)connected
   const [dragOver, setDragOver] = useState(false);
   const onDropFile = (e: React.DragEvent) => {
@@ -239,7 +241,7 @@ function AskPetalInner() {
               <div className="mx-auto flex h-full w-full max-w-[680px] flex-col px-6 pb-6">
                 <div className="flex-1" />
                 <PetalLogo className="mb-3 size-7 text-[var(--os-primary)]" />
-                <h2 className="text-[26px] font-semibold leading-tight os-display text-[var(--os-ink)]">What can I help you with, Antonio?</h2>
+                <h2 className="text-[26px] font-semibold leading-tight os-display text-[var(--os-ink)]">What can I help you with, {firstName}?</h2>
 
                 <div className="mt-5 space-y-0.5">
                   {STARTERS.map(s => (

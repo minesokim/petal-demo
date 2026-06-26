@@ -19,13 +19,58 @@ import { useBrief } from "@/lib/client/brief-context";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
+// Map a brief source LABEL to a canonical, authoritative official-domain URL so a reader can open it and
+// verify it themselves. We never link a model-written URL (hallucination risk) — we route the label to the
+// real agency page it names. No match → no link (the chip stays a plain label). Only the NEWS desk (irs)
+// carries a source; practice/ops items don't get one.
+function briefSourceUrl(source: string): string | null {
+  const s = source.toLowerCase();
+  if (/fincen|boi\b|beneficial owner|\bcta\b/.test(s)) return "https://www.fincen.gov/boi";
+  if (/federal register/.test(s)) return "https://www.federalregister.gov/agencies/internal-revenue-service";
+  if (/treasur/.test(s)) return "https://home.treasury.gov/policy-issues/tax-policy";
+  if (/estimated|1040-?es|voucher/.test(s)) return "https://www.irs.gov/businesses/small-businesses-self-employed/estimated-taxes";
+  if (/calendar|deadline|due date/.test(s)) return "https://www.irs.gov/businesses/small-businesses-self-employed/online-tax-calendar";
+  if (/\birs\b|notice|rev\.?\s?proc|revenue procedure|bulletin|\birb\b|guidance|regulation|inflation|199a|qbi/.test(s)) return "https://www.irs.gov/newsroom";
+  return null;
+}
+
+// The source as a single chip — a real new-tab link when we can route it to an official page, a plain
+// label otherwise. stopPropagation so clicking the source doesn't also toggle the row open/closed.
+function SourceChip({ source }: { source: string }) {
+  const url = briefSourceUrl(source);
+  const cls = "mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--os-hover)] px-2 py-0.5 text-[10.5px] text-[var(--os-ink-subtle)]";
+  const inner = (
+    <>
+      <Icon icon={I.file} size={10} className="shrink-0" />
+      <span className="truncate">{source}</span>
+    </>
+  );
+  return url ? (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      title="Open source in a new tab"
+      className={cn(cls, "transition-colors hover:text-[var(--os-ink-muted)] hover:underline")}
+    >
+      {inner}
+    </a>
+  ) : (
+    <span className={cls}>{inner}</span>
+  );
+}
+
 function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; onToggle: () => void }) {
   return (
     <div className={cn("-mx-2 rounded-lg transition-colors", open && "bg-[var(--os-hover)]")}>
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
         aria-expanded={open}
-        className={cn("group/brief flex w-full gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors", !open && "hover:bg-[var(--os-hover)]", focusRing)}
+        className={cn("group/brief flex w-full cursor-pointer gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors", !open && "hover:bg-[var(--os-hover)]", focusRing)}
       >
         <span className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", briefToneDot[item.tone])} />
         <span className="min-w-0 flex-1">
@@ -34,15 +79,12 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
             <span className="shrink-0 text-[10.5px] tabular-nums text-[var(--os-ink-subtle)]">{item.dateline}</span>
           </span>
           <span className="mt-0.5 block text-[12px] leading-snug text-[var(--os-ink-muted)]">{item.detail}</span>
-          {item.source && (
-            <span className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--os-hover)] px-2 py-0.5 text-[10.5px] text-[var(--os-ink-subtle)]">
-              <Icon icon={I.file} size={10} className="shrink-0" />
-              <span className="truncate">{item.source}</span>
-            </span>
-          )}
+          {/* Source only on the NEWS desk (irs), shown ONCE here (the expanded view no longer repeats it),
+              clickable to the official page when we can route it. Practice/ops items carry no source. */}
+          {item.desk === "irs" && item.source && <SourceChip source={item.source} />}
         </span>
         <Icon icon={I.chevronDown} size={14} className={cn("mt-1 shrink-0 self-start text-[var(--os-ink-subtle)] transition-transform duration-200", open && "rotate-180")} />
-      </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {open && (
@@ -55,7 +97,6 @@ function BriefRow({ item, open, onToggle }: { item: BriefItem; open: boolean; on
             className="overflow-hidden"
           >
             <div className="px-2 pb-3 pl-[26px] pt-0.5">
-              <div className="mb-2 text-[10.5px] text-[var(--os-ink-subtle)]">{item.source} · {item.dateline}</div>
               <p className="text-[12.5px] leading-relaxed text-[var(--os-ink-muted)]">{item.body}</p>
 
               {item.whyItMatters && (
