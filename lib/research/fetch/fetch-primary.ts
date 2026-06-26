@@ -2,10 +2,32 @@ import type { AuthorityChunk } from "@/lib/tax/authority/store";
 import type { AIProvider } from "@/lib/ai/provider";
 import { pickSources, type FetchSource } from "./registry";
 
-// Map a fetch source to the authority KIND for the synthetic chunk (drives display + tiering).
+// Map a fetch source to the authority KIND for the synthetic chunk. This drives the §6662 weighting's
+// kind-specific logic: a "case" gets the court-level + contrary-controlling-in-circuit-holding invariant;
+// a "regulation" gets the post-Loper-Bright delegation factor; "irs_guidance" weighs below statute/reg/
+// case. Mislabeling everything "statute" (the old default) silently overweighted regs, cases, and PLRs.
 const TYPE_BY_SOURCE: Record<string, AuthorityChunk["authorityType"]> = {
+  // statute (+ treaty, on par with statute under §7852(d); + enacted state law)
   govinfo: "statute",
+  "congress-gov": "statute",
+  treaty: "statute",
+  openstates: "statute",
+  "ca-conformity": "statute",
+  // regulations
+  ecfr: "regulation",
+  "federal-register": "regulation",
+  // courts — MUST be "case" so the contrary-controlling-in-circuit-holding invariant + court-level apply
+  courtlistener: "case",
+  "cap-caselaw": "case",
   "tax-court": "case",
+  // IRS agency guidance (weighs below statute/reg/case; PLR/TAM carry precedential=false → never sole authority)
+  "irs-irb": "irs_guidance",
+  "irs-drop": "irs_guidance",
+  "irs-wd": "irs_guidance",
+  "irs-pub": "irs_guidance",
+  irm: "irs_guidance",
+  // accounting CONTEXT, not tax authority — weakest kind so it can never outrank a real tax source
+  "sec-edgar": "form_instruction",
 };
 
 // ── DISTILL: the model abstains over raw statute (dense legalese); it grounds clean PARAPHRASES.

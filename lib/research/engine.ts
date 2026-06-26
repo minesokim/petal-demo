@@ -514,10 +514,19 @@ async function tryFetchGround(
   const fetched = await fetchFn(question, taxYear, jurisdiction).catch(() => [] as AuthorityChunk[]);
   if (fetched.length === 0) return null;
   const reasoned = await reasonAndScore(provider, question, fetched);
-  const { groundedPositions, citations } = verifyPositions(reasoned, fetched, fetched, taxYear, question);
+  const { groundedPositions, citations, groundedChunks } = verifyPositions(reasoned, fetched, fetched, taxYear, question);
   if (reasoned.abstained || groundedPositions.length === 0) return null; // fetched, but nothing grounded → abstain
   const reviewNotes: string[] = [];
   for (const p of groundedPositions) reviewNotes.push(...p.reviewNotes.verify);
+  // §6662 WEIGHT-OF-AUTHORITIES on the FETCH path too (was corpus-only). No contra search here → capped at
+  // substantial authority. Enforces the spec invariant for fetched answers: support that is
+  // non-precedential-only (a PLR/TAM or a Tax Court Summary Opinion) recommends Form 8275 disclosure
+  // rather than passing as substantial authority. Now meaningful because the fetch→chunk bridge tags the
+  // real authority KIND (case/regulation/guidance) and precedential flag.
+  const weight = assessAuthorityWeight(groundedChunks);
+  if (weight.disclosureRecommended) {
+    reviewNotes.push(`Authority weight: ${weight.standard} — Form 8275 disclosure recommended. ${weight.rationale}`);
+  }
   reviewNotes.push(
     "Answered from a LIVE FETCH of primary authority (not the vetted corpus) — verify the cite and that it is current for the tax year before relying on it.",
   );
