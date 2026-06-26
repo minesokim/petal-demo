@@ -46,14 +46,22 @@ export function stateInQuestion(q: string): string | null {
   return null;
 }
 
-// Reduce a question to OpenStates search terms (drop the state name + framing, keep the tax topic).
+// Reduce a question to OpenStates search terms. The v3 `q` is full-text AND-matching, so extra/framing
+// words (or a redundant parenthetical acronym like "(PTET)") drop the result count to zero — keep it to
+// the few clean topic nouns. Strip parentheticals first, then framing words, cap tight.
 export function openStatesQuery(question: string, state: string): string {
   const stop = new Set(
-    (state.toLowerCase().split(/\s+/).join(" ") + " what whats is are the a an does do how bill bills legislation " +
-      "legislative law laws state did has have any pending enacted about regarding for of to in on").split(/\s+/),
+    (state.toLowerCase().split(/\s+/).join(" ") + " what whats is are was were the a an does do did how there here " +
+      "this that any some recent recently latest new newest bill bills legislation legislative law laws statute state " +
+      "states did has have had pending enacted introduced proposed about regarding concerning for of to in on with").split(/\s+/),
   );
-  const terms = question.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && !stop.has(w));
-  return [...new Set(terms)].slice(0, 6).join(" ");
+  const terms = question
+    .replace(/\([^)]*\)/g, " ") // drop parenthetical acronyms ("(PTET)") — redundant + over-constrains AND search
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !stop.has(w));
+  return [...new Set(terms)].slice(0, 5).join(" ");
 }
 
 // Fire only when a key is present AND the question is about a state's LEGISLATION (a state name + a
