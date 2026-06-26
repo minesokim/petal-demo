@@ -16,6 +16,7 @@ import { matchesIrsPub, searchIrsPub } from "./irs-pub";
 import { matchesIrm, searchIrm } from "./irm";
 import { matchesCapCaselaw, searchCapCaselaw } from "./cap-caselaw";
 import { matchesSecEdgar, searchSecEdgar } from "./sec-edgar";
+import { matchesIrsWd, uilQuery, searchIrsWd, fetchWrittenDeterminationText, writtenDeterminationCitation } from "./irs-wd";
 import { searchFederalRegister } from "./federal-register";
 
 export type FetchHit = {
@@ -271,8 +272,31 @@ const capCaselawSource: FetchSource = { id: "cap-caselaw", label: "Caselaw Acces
 // SEC EDGAR = company disclosure under GAAP/SEC rules — accounting-standard CONTEXT (ASC 740 / book-tax),
 // NOT tax authority. Ranked last so it never outranks a real tax source; the model treats it as context.
 const secEdgarSource: FetchSource = { id: "sec-edgar", label: "SEC EDGAR (company filings, accounting context)", matches: matchesSecEdgar, search: async (q, o) => searchSecEdgar(assertPublicLawQuery(q), o) };
+// IRS Written Determinations (PLR/TAM/CCA/FSA). The open /pub/irs-wd/{docnum}.pdf is the reliable path
+// (verified live), so a cited doc number fetches direct; a topic query falls back to the (best-effort)
+// index. precedential=false ALWAYS — §6110(k)(3) bars citing these as precedent (a spec HARD invariant).
+const irsWdSource: FetchSource = {
+  id: "irs-wd",
+  label: "IRS Written Determinations (PLR/TAM/CCA — not precedent)",
+  matches: matchesIrsWd,
+  search: async (q, opts) => {
+    const safe = assertPublicLawQuery(q);
+    const keys = uilQuery(safe);
+    const docNum = keys.find((k) => /^\d{9}$/.test(k));
+    const dets = await searchIrsWd(docNum ?? keys[0] ?? safe, opts);
+    return dets.map((wd) => ({
+      source: "irs-wd",
+      title: writtenDeterminationCitation(wd),
+      citation: writtenDeterminationCitation(wd),
+      sourceUrl: wd.pdfUrl,
+      authorityTier: 4,
+      precedential: false, // §6110(k)(3): NEVER cite a written determination as precedent
+      getText: () => fetchWrittenDeterminationText(wd.docNumber, { signal: opts?.signal }),
+    }));
+  },
+};
 
-const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsPubSource, irmSource, secEdgarSource];
+const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSource, federalRegister, courtListener, capCaselawSource, taxCourt, irsIrb, irsDropSource, irsWdSource, irsPubSource, irmSource, secEdgarSource];
 
 // ca-conformity ranks FIRST for a California question (it is the only source with CA authority — a "does
 // CA conform to §1202" question needs the R&TC, not federal §1202). eCFR ranks ahead of GovInfo for a
@@ -281,7 +305,7 @@ const SOURCES: FetchSource[] = [caConformity, govinfoStatute, ecfr, congressSour
 const TIER_ORDER: Record<string, number> = {
   "ca-conformity": 0, ecfr: 1, govinfo: 2, "congress-gov": 3, "federal-register": 4,
   courtlistener: 5, "cap-caselaw": 6, "tax-court": 7,
-  "irs-irb": 8, "irs-drop": 9, "irs-pub": 10, irm: 11, "sec-edgar": 14,
+  "irs-irb": 8, "irs-drop": 9, "irs-wd": 10, "irs-pub": 11, irm: 12, "sec-edgar": 14,
 };
 
 /**
