@@ -74,5 +74,20 @@ async function main() {
     console.log(`\nFailures (the release-gate signal — fix these, never patch the eval):`);
     for (const id of failed) console.log(`  ✗ ${id}: ${results[id].reasons.join(" | ")}`);
   }
+
+  // RELEASE GATE: `--gate <minPass>` makes this the moat's enforcing step — a run that scores below the
+  // committed floor EXITS NON-ZERO so CI (or a release) fails instead of shipping a silent regression.
+  // Use on a FULL run only (not --shard, whose pass count is partial). The floor lives in the CI workflow
+  // + docs/RESEARCH_BENCHMARK.md; never lower it to make a release pass.
+  const gateIdx = process.argv.indexOf("--gate");
+  if (gateIdx >= 0) {
+    const floor = Number(process.argv[gateIdx + 1]);
+    if (!Number.isInteger(floor)) throw new Error(`--gate needs an integer min-pass count (got "${process.argv[gateIdx + 1]}")`);
+    if (passed.length < floor) {
+      console.error(`\nRELEASE GATE FAILED: ${passed.length}/${ids.length} passed, below the committed floor of ${floor}. Blocking.`);
+      process.exit(1);
+    }
+    console.log(`\nRELEASE GATE PASSED: ${passed.length}/${ids.length} ≥ floor ${floor}.`);
+  }
 }
 main().catch((e) => { console.error(e); process.exit(1); });

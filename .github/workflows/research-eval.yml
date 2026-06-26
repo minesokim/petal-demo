@@ -1,0 +1,33 @@
+name: research-eval
+# The MOAT as an ENFORCED gate: the research AI's defensibility is a MEASURED error rate, so a regression
+# must FAIL a build, not ship silently. The full measure needs a live model (slow / costs quota / non-
+# deterministic), so it runs on a SCHEDULE + on demand here — NOT per-PR. The per-PR half (a model-free
+# deterministic recall gate over the golden set) runs in the normal `backend-ci` vitest suite.
+#
+# ACTIVATION: add an `ANTHROPIC_API_KEY` repository secret (a real Anthropic API key with headroom — the
+# run makes ~50 sequential calls). Until the secret is present the job is skipped, not failed.
+on:
+  schedule:
+    - cron: "0 8 * * *" # daily 08:00 UTC
+  workflow_dispatch: {} # manual "Run workflow" button
+
+jobs:
+  measured-error-rate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Research-AI measured error rate on production Claude (gated)
+        # Skip (don't fail) if the key secret isn't configured yet.
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PETAL_DEV_INFERENCE: "" # force the production Anthropic provider (not the codex dev proxy)
+        # FLOOR: 44 of 50 (88%). Conservative vs the ~49/50 (~98%) last measured (docs/RESEARCH_BENCHMARK.md)
+        # so a flaky borderline case or two never red-lights CI, but any real >5-case regression FAILS the
+        # build. Raise the floor as the engine improves; NEVER lower it to make a release pass.
+        run: node --import tsx scripts/research-benchmark.mts --no-judge --gate 44

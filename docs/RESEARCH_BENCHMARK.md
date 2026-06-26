@@ -101,9 +101,12 @@ corpus depth — not just retrieval mechanics.
 - It measures the **corpus path** over a **thin (~58-chunk) corpus**, on OBBBA-currency individual-
   federal questions + fabrication/abstention probes. It is **not** a general tax-research accuracy claim.
 - 38 cases vs Blue J's 350+. Scaling the set (toward hundreds) is a named next step.
-- This is a **manual** baseline. It is **not yet wired into CI** (a live-model CI gate needs API keys +
-  is slow/nondeterministic). Next: a committed baseline JSON + a CI step that runs a deterministic
-  scripted-seam pipeline check, plus a periodic live run that updates this file.
+- **CI gate (wired 2026-06-25), in two halves:** (1) a model-free DETERMINISTIC recall gate runs per-PR in
+  the normal vitest suite (`tests/research/golden/retrieval-gate.test.ts`) — every settled answer-case's
+  required authority MUST be retrievable, so a corpus/keyword edit can never silently drop recall. (2) a
+  scheduled LIVE-model gate (`.github/workflows/research-eval.yml`) runs the full benchmark on production
+  Claude daily + on demand and FAILS below the committed floor (`--gate 44` of 50); activate by adding the
+  `ANTHROPIC_API_KEY` repo secret. The moat is now an enforced gate, not just a number in this file.
 
 ## Changelog
 
