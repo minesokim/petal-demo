@@ -492,6 +492,26 @@ export const agentTasks = pgTable("agent_tasks", {
   index("agent_tasks_status_idx").on(t.firmId, t.status),
 ]);
 
+// SCHEDULER (0038): a firm-scoped recurring template that spawns an agent_task when due. Interval-based
+// recurrence (interval_minutes); next_run_at advances by the interval on each fire. RLS isolates by firm.
+export const agentSchedules = pgTable("agent_schedules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  firmId: uuid("firm_id").notNull().references(() => firms.id, { onDelete: "cascade" }),
+  clientId: text("client_id").references(() => households.id, { onDelete: "set null" }),
+  createdByUserId: text("created_by_user_id"),
+  kind: text("kind").notNull(), // the agent_task kind to spawn
+  tier: integer("tier").notNull(), // INV-3 tier of the spawned task
+  input: jsonb("input").notNull().default(sql`'{}'::jsonb`),
+  intervalMinutes: integer("interval_minutes").notNull(),
+  nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("agent_schedules_firm_idx").on(t.firmId),
+  index("agent_schedules_due_idx").on(t.active, t.nextRunAt),
+]);
+
 // Each LLM turn under a task. parent_run_id models the planner -> sub-agent tree
 // (INV-6). No direct firm_id — RLS scopes it via the parent task's firm.
 export const agentRuns = pgTable("agent_runs", {
