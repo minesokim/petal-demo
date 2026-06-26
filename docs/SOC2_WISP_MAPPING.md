@@ -56,8 +56,8 @@ Last reviewed: 2026-06-25. Test suite at review: 648 passing.
 
 | Control | Status | Implementation | Evidence |
 |---|---|---|---|
-| ZDR-only model allowlist | IMPLEMENTED | `assertZdrModel` rejects any non-ZDR model before a prompt is built; the codex dev proxy is hard-gated to non-deployed | `lib/ai/guard.ts` (`ZDR_MODELS`); `tests/research/.../no-leak-7216.test.ts` (wall 2) |
-| Cleared-scope gate | IMPLEMENTED | `assertCleared` blocks real taxpayer-scope model calls until `PETAL_7216_CLEARED` | `lib/ai/guard.ts`; `tests/.../no-leak-7216.test.ts` (wall 3) |
+| ZDR-only model allowlist | IMPLEMENTED | `assertZdrModel` rejects any non-ZDR model before a prompt is built; the codex dev proxy is hard-gated to non-deployed | `lib/ai/guard.ts` (`ZDR_MODELS`); `tests/security/no-leak-7216.test.ts` (wall 2) |
+| Cleared-scope gate | IMPLEMENTED | `assertCleared` blocks real taxpayer-scope model calls until `PETAL_7216_CLEARED` | `lib/ai/guard.ts`; `tests/security/no-leak-7216.test.ts` (wall 3) |
 | No-leak on the live fetch | IMPLEMENTED | `assertPublicLawQuery` blocks any PII-shaped fetch query before an external request is made (GovInfo/Federal Register/DAWSON/IRB) | `lib/research/fetch/guard.ts`; `tests/research/fetch-no-leak.test.ts` (the spy proves the network is never reached) |
 | §7216 legal determination | GAP | A documented counsel opinion or accepted-risk memo is still required before real taxpayer data flows through any cleared path in production | operator/legal action |
 
