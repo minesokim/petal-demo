@@ -7,6 +7,7 @@
 import { getProvider } from "../lib/ai/provider-factory";
 import { researchAnswer } from "../lib/research/engine";
 import { GOLDEN_CASES } from "../tests/research/golden/cases";
+import { BLUEJ_HARD_CASES } from "../tests/research/golden/bluej-hard";
 import { gradeAll, type GradableAnswer } from "../tests/research/golden/grade";
 
 // --shard k/N → grade only the cases whose index (in id-sorted order) ≡ k (mod N). Lets the A/B fan
@@ -31,7 +32,13 @@ async function main() {
   const proposer = getProvider("claude-sonnet-4-6");
   const judge = noJudge ? undefined : getProvider("claude-opus-4-8");
 
-  const sorted = [...GOLDEN_CASES].sort((a, b) => a.id.localeCompare(b.id));
+  // `--set bluej` runs the held-out Blue J-tier HARD set (15 brutal multi-section / unsettled-edge
+  // questions) instead of the currency/plumbing golden set. Tier-E cases expect a HEDGE (a confident
+  // answer there is graded a fail), so run with --judge for a meaningful read.
+  const setIdx = process.argv.indexOf("--set");
+  const setName = setIdx >= 0 ? process.argv[setIdx + 1] : "golden";
+  const CASE_SET = setName === "bluej" ? BLUEJ_HARD_CASES : GOLDEN_CASES;
+  const sorted = [...CASE_SET].sort((a, b) => a.id.localeCompare(b.id));
   const cases = shard ? sorted.filter((_, i) => i % shard.n === shard.k) : sorted;
 
   const answers: Record<string, GradableAnswer> = {};
