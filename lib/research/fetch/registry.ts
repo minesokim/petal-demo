@@ -30,7 +30,10 @@ export type FetchSource = {
 const govinfoStatute: FetchSource = {
   id: "govinfo",
   label: "GovInfo (U.S. Code / Public Laws)",
-  matches: (q) => /\b(section|§|irc|u\.?\s?s\.?\s?c|public law|pub\.?\s?l|statute|enacted|act of|obbba|one big beautiful)\b/i.test(q),
+  // `§\s*\d` lives OUTSIDE the \b group on purpose: a word boundary can't sit between a space and the
+  // non-word "§", so "§1202" (the glyph form, no "section" word) would otherwise never match and the
+  // question would route to NO source. This is the form taxpayers actually type.
+  matches: (q) => /§\s*\d|\b(section|irc|u\.?\s?s\.?\s?c|public law|pub\.?\s?l|statute|enacted|act of|obbba|one big beautiful)\b/i.test(q),
   search: async (q, opts) => {
     const safe = assertPublicLawQuery(q);
     // Reduce the question to targeted statute terms — GovInfo's keyword search returns nothing for a full
@@ -110,7 +113,11 @@ const federalRegister: FetchSource = {
     /\b(regulation|regulations|t\.?\s?d\.?\s?\d|treasury decision|final rule|proposed rule|rulemaking|notice of proposed|reg[-\s]?\d|remittance|tip(s)? (deduction|regulation|rule)|trump account|no tax on tips|effective date)\b/i.test(q),
   search: async (q, opts) => {
     const safe = assertPublicLawQuery(q);
-    const docs = await searchFederalRegister(safe, { perPage: 5, signal: opts?.signal });
+    // Reduce the question to targeted statute/topic terms — same fix as GovInfo. Searching the raw
+    // natural-language sentence returns NOISE (random agencies' rules matching "final"/"issued"), so a
+    // real "§225 overtime final regs" question grounded on a Homeland Security rule. statuteQuery keeps
+    // the section ref + content nouns and drops the framing.
+    const docs = await searchFederalRegister(statuteQuery(safe), { perPage: 5, signal: opts?.signal });
     return docs.map((d) => {
       const isFinal = /^rule$/i.test(d.type.trim());
       return {
@@ -155,7 +162,7 @@ const TIER_ORDER: Record<string, number> = { govinfo: 0, "federal-register": 1, 
 // Does the question name a tax/law concept at all? Gates the universal fallback so a NON-tax string
 // (e.g. a UI question) still gets no fetch source — preserving the honest "no source ⇒ no fetch".
 const TAX_SHAPE =
-  /\b(tax|deduct\w*|credit|exempt\w*|income|depreciat\w*|expens\w*|amortiz\w*|irs|irc|§|section\s*\d|return|filing|withhold\w*|capital gain|basis|qbi|salt|estate|gift|premium|mortgage|insurance|child|dependent|standard deduction|bracket|threshold|phase[-\s]?out|deadline|penalt\w*)\b/i;
+  /§\s*\d|\b(tax|deduct\w*|credit|exempt\w*|income|depreciat\w*|expens\w*|amortiz\w*|irs|irc|section\s*\d|return|filing|withhold\w*|capital gain|basis|qbi|salt|estate|gift|premium|mortgage|insurance|child|dependent|standard deduction|bracket|threshold|phase[-\s]?out|deadline|penalt\w*)\b/i;
 
 // Post-2025 / OBBBA-era questions: demote the stale 2024-edition statute (GovInfo USCODE) below the
 // current OBBBA-era sources (IRB, Federal Register) so a superseded figure is never tried first.

@@ -22,13 +22,19 @@ export type FederalRegisterDoc = {
 
 export async function searchFederalRegister(
   query: string,
-  opts: { perPage?: number; signal?: AbortSignal; fetchImpl?: typeof fetch } = {},
+  opts: { perPage?: number; signal?: AbortSignal; fetchImpl?: typeof fetch; agencies?: string[] } = {},
 ): Promise<FederalRegisterDoc[]> {
   const f = opts.fetchImpl ?? fetch;
   const params = new URLSearchParams();
   params.set("per_page", String(opts.perPage ?? 5));
   params.set("order", "newest");
   params.append("conditions[term]", query);
+  // Scope to the tax rule-writers (Treasury + IRS). Without this, a tax-reg search returns NOISE — any
+  // agency's "final rule" matching the query terms (Homeland Security, FTC, Transportation, …). A
+  // tax-research engine only wants Treasury/IRS rulemaking from the Federal Register.
+  for (const slug of opts.agencies ?? ["internal-revenue-service", "treasury-department"]) {
+    params.append("conditions[agencies][]", slug);
+  }
   for (const field of ["title", "type", "publication_date", "html_url", "abstract", "agencies"]) {
     params.append("fields[]", field);
   }

@@ -16,7 +16,11 @@ const GOVINFO_SEARCH = "https://api.govinfo.gov/search";
 const QUERY_STOP = new Set(
   ("what whats is are was were the a an how does do did for of to in on under over with and or explain describe " +
     "define when which who whom that this these those my our your their its client clients taxpayer please tell me " +
-    "requirement requirements rule rules provide provides apply applies treatment about regarding concerning under")
+    "requirement requirements rule rules provide provides apply applies treatment about regarding concerning under " +
+    // status/temporal framing — common in "has X been issued / current guidance" questions. Dropping these
+    // keeps the query to the section + topic nouns so it matches, instead of pulling noise on "final"/"issued".
+    "today issued issue final proposed regulation regulations guidance current currently status been have date " +
+    "recent recently latest published updated effective")
     .split(/\s+/),
 );
 export function statuteQuery(question: string): string {
@@ -26,7 +30,7 @@ export function statuteQuery(question: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9§\s-]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length >= 4 && !QUERY_STOP.has(w) && !/^\d+$/.test(w));
+    .filter((w) => w.length >= 4 && !QUERY_STOP.has(w) && !/^\d+$/.test(w) && !w.startsWith("§"));
   const terms = [...new Set([...secs, ...words])];
   return terms.length ? terms.slice(0, 8).join(" ") : question;
 }
