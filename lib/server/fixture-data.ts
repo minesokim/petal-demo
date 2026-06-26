@@ -25,6 +25,10 @@ export type FirmData = {
   // greeting ("Good morning, {firstName}") and "this week at {firm.name}".
   viewer: { firstName: string; fullName: string };
   firm: { name: string };
+  // HONEST DEGRADATION (RULE 1): true when this is the LABELED demo fixture set (no real firm in scope),
+  // false/undefined when it is real RLS-scoped data. A surface may read this to show a "Demo" badge — kept
+  // demo data must be labeled, never passed off as real.
+  demo?: boolean;
 };
 
 export function fixtureFirmData(): FirmData {
@@ -44,6 +48,7 @@ export function fixtureFirmData(): FirmData {
     proposals: [],
     viewer: { firstName: "Antonio", fullName: "Antonio Vazquez" },
     firm: { name: "Vazant EA" },
+    demo: true, // LABELED demo data — never passed off as real (RULE 1)
   };
 }
 

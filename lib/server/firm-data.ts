@@ -60,11 +60,18 @@ export async function loadFirmData(): Promise<FirmData> {
       firm: { name: firmRow?.name ?? "My Firm" },
     };
   });
-  if (!real) return fixtureFirmData();
+  if (!real) {
+    // HONEST DEGRADATION (RULE 1): no SILENT fixture fallback. There is no real firm in scope for the
+    // signed-in user (or the request is unauthenticated) — serve LABELED demo data (FirmData.demo=true) and
+    // SAY SO, rather than passing fixtures off as real. In production proxy.ts already gates /os to signed-in
+    // users; this path is the local/preview screenshot-diff affordance + the authed-but-no-firm case.
+    console.warn("[firm-data] no real firm in scope — serving LABELED demo fixture data (FirmData.demo=true)");
+    return fixtureFirmData();
+  }
 
   // The signed-in preparer's REAL name (Clerk), so the greeting isn't the demo owner.
   const u = await currentUser().catch(() => null);
   const firstName = u?.firstName ?? u?.fullName?.split(" ")[0] ?? "there";
   const fullName = u?.fullName ?? ([u?.firstName, u?.lastName].filter(Boolean).join(" ") || firstName);
-  return { ...real, viewer: { firstName, fullName } } as FirmData;
+  return { ...real, viewer: { firstName, fullName }, demo: false } as FirmData;
 }
