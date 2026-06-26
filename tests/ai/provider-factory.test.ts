@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { getProvider, usingDevCodexProvider } from "../../lib/ai/provider-factory";
+import { codexDeployOverrideAllowed } from "../../lib/ai/guard";
 import { OpenAIProvider } from "../../lib/ai/openai";
 import { AnthropicProvider } from "../../lib/ai/anthropic";
 
@@ -11,7 +12,7 @@ import { AnthropicProvider } from "../../lib/ai/anthropic";
 const env = process.env as Record<string, string | undefined>;
 const saved = { ...process.env };
 afterEach(() => {
-  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "ANTHROPIC_API_KEY"]) {
+  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "ANTHROPIC_API_KEY", "PETAL_ALLOW_CODEX_ON_DEPLOY", "PETAL_7216_CLEARED"]) {
     if (saved[k] === undefined) delete env[k];
     else env[k] = saved[k];
   }
@@ -35,10 +36,10 @@ describe("getProvider — Codex eval routing + deployed guard", () => {
     expect(getProvider("claude-sonnet-4-6")).toBeInstanceOf(AnthropicProvider);
   });
 
-  it("HARD GUARD: throws if the flag is present on the deployed server (VERCEL)", () => {
+  it("HARD GUARD: throws if the flag is present on the deployed server (VERCEL) without the override", () => {
     env.VERCEL = "1";
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
-    expect(() => getProvider()).toThrow(/never run on the deployed/);
+    expect(() => getProvider()).toThrow(/must not run on the deployed server/);
   });
 
   it("deployed with the flag unset is plain Anthropic (no leak)", () => {
@@ -47,5 +48,32 @@ describe("getProvider — Codex eval routing + deployed guard", () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
     expect(usingDevCodexProvider()).toBe(false);
     expect(getProvider()).toBeInstanceOf(AnthropicProvider);
+  });
+});
+
+describe("getProvider — codex-on-deploy DEV OVERRIDE (§7216-safe)", () => {
+  it("override is allowed ONLY when opted in AND the deploy is not cleared for real data", () => {
+    expect(codexDeployOverrideAllowed()).toBe(false); // nothing set
+    env.PETAL_ALLOW_CODEX_ON_DEPLOY = "1";
+    expect(codexDeployOverrideAllowed()).toBe(true);
+    env.PETAL_7216_CLEARED = "true";
+    expect(codexDeployOverrideAllowed()).toBe(false); // real-data clearance REVOKES the override
+  });
+
+  it("codex on a DEMO deploy WITH the override → the codex (OpenAI) provider", () => {
+    env.VERCEL = "1";
+    process.env.PETAL_DEV_INFERENCE = "codex-sub";
+    env.PETAL_ALLOW_CODEX_ON_DEPLOY = "1";
+    expect(usingDevCodexProvider()).toBe(true);
+    expect(getProvider()).toBeInstanceOf(OpenAIProvider);
+  });
+
+  it("SAFETY: the override is refused the instant the deploy is cleared for real taxpayer data", () => {
+    env.VERCEL = "1";
+    process.env.PETAL_DEV_INFERENCE = "codex-sub";
+    env.PETAL_ALLOW_CODEX_ON_DEPLOY = "1";
+    env.PETAL_7216_CLEARED = "true"; // real-data deploy → codex (non-ZDR) must NOT run
+    expect(usingDevCodexProvider()).toBe(false);
+    expect(() => getProvider()).toThrow();
   });
 });

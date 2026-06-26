@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIProvider, GenerateArgs, GenerateTextArgs, AnalyzeDocumentArgs } from "./provider";
+import { codexDeployOverrideAllowed } from "./guard";
 import { redactText } from "./redact";
 import { recordUsage } from "./usage-ledger";
 import type { TokenUsage } from "./pricing";
@@ -40,11 +41,14 @@ export class OpenAIProvider implements AIProvider {
   ) {
     // §7216 defense in depth: this is a non-ZDR consumer endpoint, so it must NEVER exist on the
     // DEPLOYED server (where real client data lives) — independent of the provider factory's guard.
-    // Allowed locally (incl. a local production build) for synthetic-data evaluation only.
-    if (!!process.env.VERCEL || process.env.PETAL_DEPLOYED === "1") {
+    // Allowed locally (incl. a local production build) for synthetic-data evaluation; and on a DEMO deploy
+    // via the §7216-safe override (codexDeployOverrideAllowed) so a remote dev can test the deployed app —
+    // that override is auto-refused once the deploy is cleared for real taxpayer data (PETAL_7216_CLEARED).
+    if ((!!process.env.VERCEL || process.env.PETAL_DEPLOYED === "1") && !codexDeployOverrideAllowed()) {
       throw new Error(
         "OpenAIProvider is a non-ZDR eval provider and must never be constructed on the deployed " +
-          "server (§7216: no taxpayer data to a non-ZDR/uncleared path). It is allowed only locally.",
+          "server (§7216: no taxpayer data to a non-ZDR/uncleared path). For a DEMO deploy with no real " +
+          "taxpayer data, set PETAL_ALLOW_CODEX_ON_DEPLOY=1 (refused once PETAL_7216_CLEARED=true).",
       );
     }
     // The proxy holds the real auth (a Codex OAuth token); the SDK still needs a non-empty key.

@@ -1,6 +1,7 @@
 import type { AIProvider } from "./provider";
 import { AnthropicProvider } from "./anthropic";
 import { OpenAIProvider } from "./openai";
+import { codexDeployOverrideAllowed } from "./guard";
 
 const DEV_CODEX = "codex-sub";
 
@@ -13,9 +14,11 @@ export function isDeployed(): boolean {
   return !!process.env.VERCEL || process.env.PETAL_DEPLOYED === "1";
 }
 
-/** True when the GPT-5.5-via-Codex-proxy path is selected — only when NOT deployed (local eval). */
+/** True when the GPT-5.5-via-Codex-proxy path is selected — locally, OR on a DEMO deploy that has explicitly
+ *  opted in via the §7216-safe override (PETAL_ALLOW_CODEX_ON_DEPLOY=1, and not cleared for real data). */
 export function usingDevCodexProvider(): boolean {
-  return !isDeployed() && process.env.PETAL_DEV_INFERENCE === DEV_CODEX;
+  if (process.env.PETAL_DEV_INFERENCE !== DEV_CODEX) return false;
+  return !isDeployed() || codexDeployOverrideAllowed();
 }
 
 /**
@@ -29,12 +32,24 @@ export function usingDevCodexProvider(): boolean {
  *   2. an explicit throw if the flag is ever present on a deployed server.
  */
 export function getProvider(model?: string): AIProvider {
-  if (process.env.PETAL_DEV_INFERENCE === DEV_CODEX && isDeployed()) {
+  // Codex requested on a DEPLOY without the demo override → hard refuse with the exact fix. The override
+  // (PETAL_ALLOW_CODEX_ON_DEPLOY=1, demo deploy only) lets a remote dev test the deployed app on codex.
+  if (process.env.PETAL_DEV_INFERENCE === DEV_CODEX && isDeployed() && !codexDeployOverrideAllowed()) {
     throw new Error(
-      "PETAL_DEV_INFERENCE=codex-sub is a local-eval-only flag and must never run on the deployed " +
-        "server (non-ZDR consumer endpoint, no ZDR/BAA — §7216). Refusing to route deployed inference through it.",
+      "PETAL_DEV_INFERENCE=codex-sub must not run on the deployed server (non-ZDR consumer endpoint, no " +
+        "ZDR/BAA — §7216). For a DEMO deploy with NO real taxpayer data, set PETAL_ALLOW_CODEX_ON_DEPLOY=1 " +
+        "(auto-refused once PETAL_7216_CLEARED=true) and point PETAL_DEV_OPENAI_BASE_URL at a reachable " +
+        "endpoint (a public tunnel to your codex proxy, or https://api.openai.com/v1 with PETAL_DEV_OPENAI_KEY).",
     );
   }
-  if (usingDevCodexProvider()) return new OpenAIProvider();
+  if (usingDevCodexProvider()) {
+    if (isDeployed()) {
+      console.warn(
+        "[provider] DEV OVERRIDE ACTIVE — codex/GPT-5.5 on a DEPLOYED server (PETAL_ALLOW_CODEX_ON_DEPLOY=1). " +
+          "DEMO DATA ONLY; this is a non-ZDR endpoint. NEVER set PETAL_7216_CLEARED=true while this is on.",
+      );
+    }
+    return new OpenAIProvider();
+  }
   return new AnthropicProvider(undefined, model ?? "claude-opus-4-8");
 }

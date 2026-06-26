@@ -57,3 +57,12 @@ export function assertCleared(scope: DataScope): void {
       "is in hand. Until then, run on synthetic/public data (assertCleared('synthetic')).",
   );
 }
+
+// DEV OVERRIDE (§7216-SAFE): may the non-ZDR codex/GPT-5.5 endpoint run on a DEPLOYED server? Only for a
+// DEMO deploy that has NOT been cleared for real taxpayer data — so a REMOTE developer can test the deployed
+// app on the cheap codex path without an Anthropic key. The §7216 invariant is PRESERVED: the override is
+// auto-refused the instant the deploy is cleared for real data (PETAL_7216_CLEARED=true), so real taxpayer
+// data can never reach a non-ZDR endpoint. Requires an explicit opt-in env flag, never on by default.
+export function codexDeployOverrideAllowed(): boolean {
+  return process.env.PETAL_ALLOW_CODEX_ON_DEPLOY === "1" && process.env.PETAL_7216_CLEARED !== "true";
+}
