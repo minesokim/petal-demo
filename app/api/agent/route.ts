@@ -17,10 +17,10 @@ import { appendMessage, updateMessage } from "@/lib/repository/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Give the streamed research run the widest function window the plan allows (Hobby caps at 60s; raise to 300
-// on Pro). A slow codex-via-tunnel answer can still exceed this — the stream just ends; the durable run
-// persists server-side and reconnects on reopen.
-export const maxDuration = 60;
+// Give the streamed research run the widest function window the plan allows. Hobby's hard max is 300s (5 min)
+// and is also its default; Pro can raise this to 800s ("max") via this same line. A slower answer just ends
+// the stream — the durable run persists server-side and reconnects on reopen. (Bump to 800 after a Pro upgrade.)
+export const maxDuration = 300;
 
 function sanitizeHistory(raw: unknown): AgentTurn[] {
   if (!Array.isArray(raw)) return [];
@@ -84,7 +84,14 @@ export async function POST(req: Request) {
           } catch { runMsgId = null; }
         }
         const { reply, proposedActions, citations, calibration, ungroundedFigures } = await runAgent(text, history, {
-          scope: "real",
+          // §7216 SCOPE. Hardcoding "real" gated EVERY agent turn — incl. pure PUBLIC tax research — on any
+          // deploy not cleared for real taxpayer data (the demo), so questions fell to the §7216 message. The
+          // honest scope is the deploy's clearance: until counsel clears real-data AI (PETAL_7216_CLEARED=
+          // true) the system runs ONLY synthetic/demo data, so "synthetic" is correct and public research
+          // answers; the moment it is cleared, scope tightens back to "real" and the hard gate re-engages.
+          // Defense-in-depth is unchanged: firm-data reads are RLS-scoped and redactValue-redacted before
+          // re-entering the model (runner.ts), so taxpayer PII still cannot reach the model on either path.
+          scope: process.env.PETAL_7216_CLEARED === "true" ? "real" : "synthetic",
           onEvent: (e) => {
             // Best-effort: if the client already disconnected, enqueue throws — swallow it.
             try {

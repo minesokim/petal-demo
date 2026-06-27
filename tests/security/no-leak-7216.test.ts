@@ -20,7 +20,7 @@ const setNodeEnv = (v: string) => { env.NODE_ENV = v; };
 
 const saved = { ...process.env };
 afterEach(() => {
-  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "PETAL_7216_CLEARED", "ANTHROPIC_API_KEY"]) {
+  for (const k of ["NODE_ENV", "VERCEL", "PETAL_DEPLOYED", "PETAL_DEV_INFERENCE", "PETAL_ALLOW_CODEX_ON_DEPLOY", "PETAL_7216_CLEARED", "ANTHROPIC_API_KEY"]) {
     if (saved[k] === undefined) delete env[k];
     else env[k] = saved[k];
   }
@@ -30,7 +30,7 @@ describe("§7216 wall 1 — the non-ZDR consumer path cannot exist on the DEPLOY
   it("getProvider THROWS if the Codex flag is present on the deployed server (VERCEL set)", () => {
     env.VERCEL = "1";
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
-    expect(() => getProvider()).toThrow(/never run on the deployed/);
+    expect(() => getProvider()).toThrow(/must not run on the deployed/);
   });
 
   it("OpenAIProvider itself THROWS if constructed on the deployed server (defense in depth)", () => {
@@ -59,7 +59,7 @@ describe("§7216 wall 1 — the non-ZDR consumer path cannot exist on the DEPLOY
     delete env.VERCEL;
     process.env.PETAL_DEPLOYED = "1";
     process.env.PETAL_DEV_INFERENCE = "codex-sub";
-    expect(() => getProvider()).toThrow(/never run on the deployed/);
+    expect(() => getProvider()).toThrow(/must not run on the deployed/);
   });
 });
 
