@@ -100,3 +100,15 @@ describe("entity law — Subchapter K core (partnerships; audit gap #1 continued
     });
   }
 });
+
+describe("entity law — Subchapter C core (C corporations; audit gap #1 continued)", () => {
+  // C corporations were 100% UNGROUNDED before this batch — distributions (§301/311/316) and incorporation
+  // (§351/357). Model-free presence guards so the C-corp corpus can't silently regress.
+  for (const sec of ["IRC §301", "IRC §311", "IRC §316", "IRC §351", "IRC §357"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Subchapter C ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

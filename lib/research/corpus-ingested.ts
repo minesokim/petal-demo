@@ -804,5 +804,157 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "revocation",
       "secretary regulations"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-301",
+    "authorityType": "statute",
+    "citation": "IRC §301",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/301",
+    "ingestedAt": "2026-06-27T01:52:49.182Z",
+    "text": "Except as otherwise provided in chapter 1, a corporation’s distribution of property, as defined in section 317(a), to a shareholder with respect to its stock is taxed under section 301(c). The amount distributed is the money received plus the fair market value of other property received, valued on the distribution date, reduced but not below zero by specified liabilities assumed by the shareholder or attached to the property. The portion that is a dividend under section 316 is included in gross income; the nondividend portion reduces the shareholder’s adjusted stock basis, and any remaining nondividend excess over basis is treated as gain from the sale or exchange of property, except for the stated pre-March 1, 1913 increase-in-value exception. The basis of property received in the distribution is its fair market value.",
+    "keywords": [
+      "irc 301",
+      "section 301",
+      "distributions of property",
+      "corporate distribution",
+      "shareholder",
+      "dividend",
+      "section 316",
+      "earnings and profits",
+      "stock basis",
+      "return of capital",
+      "gain from sale",
+      "fair market value",
+      "liabilities",
+      "section 317"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-311",
+    "authorityType": "statute",
+    "citation": "IRC §311",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/311",
+    "ingestedAt": "2026-06-27T01:53:16.657Z",
+    "text": "Except for the appreciated-property rule, a corporation recognizes no gain or loss on a distribution, not in complete liquidation, with respect to its stock of its own stock, rights to acquire its stock, or property. If a corporation distributes property other than its own obligation to a shareholder in a distribution to which subpart A applies, and the property’s fair market value exceeds its adjusted basis in the distributing corporation’s hands, the corporation recognizes gain as if it sold the property to the distributee at fair market value. Similar rules to section 336(b) apply for liabilities, and regulations may disregard certain losses in computing gain on distributions of partnership or trust interests.",
+    "keywords": [
+      "irc 311",
+      "section 311",
+      "corporate distributions",
+      "appreciated property",
+      "gain recognition",
+      "loss disallowance",
+      "fair market value",
+      "adjusted basis",
+      "shareholder distribution",
+      "complete liquidation",
+      "liabilities",
+      "partnership interests",
+      "trust interests"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-316",
+    "authorityType": "statute",
+    "citation": "IRC §316",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2011-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/316",
+    "ingestedAt": "2026-06-27T01:53:50.267Z",
+    "text": "For purposes of Subtitle A, a dividend is any distribution of property a corporation makes to its shareholders out of earnings and profits accumulated after February 28, 1913, or out of earnings and profits of the taxable year, computed at year-end without reduction for distributions made during that year. Except as otherwise provided, distributions are treated as made out of earnings and profits to the extent available, starting with the most recently accumulated earnings and profits. A distribution treated under Subchapter C as a section 301 distribution of property is treated as a distribution of property for this definition, while special rules apply for specified insurance company, personal holding company, regulated investment company, and real estate investment trust distributions.",
+    "keywords": [
+      "irc 316",
+      "section 316",
+      "dividend",
+      "distribution of property",
+      "corporation",
+      "shareholders",
+      "earnings and profits",
+      "accumulated earnings",
+      "current earnings",
+      "section 301",
+      "personal holding company",
+      "regulated investment company",
+      "real estate investment trust"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-351",
+    "authorityType": "statute",
+    "citation": "IRC §351",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/351",
+    "ingestedAt": "2026-06-27T01:54:36.602Z",
+    "text": "Under IRC §351, no gain or loss is recognized when one or more persons transfer property to a corporation solely in exchange for that corporation’s stock and, immediately after the exchange, the transferor or transferors are in control of the corporation as defined in §368(c). If the exchange otherwise qualifies but the recipient also receives money or other property, gain is recognized only up to the money received plus the fair market value of the other property, and no loss is recognized. Stock issued for services, certain transferee-corporation indebtedness, or accrued interest is not treated as issued for property, and §351 does not apply to transfers to an investment company or specified title 11 or similar-case debtor transfers.",
+    "keywords": [
+      "irc 351",
+      "section 351",
+      "transfer to corporation",
+      "controlled corporation",
+      "property transfer",
+      "stock exchange",
+      "nonrecognition",
+      "control",
+      "boot",
+      "money received",
+      "other property",
+      "investment company",
+      "services",
+      "title 11"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-357",
+    "authorityType": "statute",
+    "citation": "IRC §357",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/357",
+    "ingestedAt": "2026-06-27T01:55:05.846Z",
+    "text": "Under IRC §357, when property that could be received tax-free under §351 or §361 is exchanged and another party assumes the taxpayer’s liability as part of the consideration, the liability assumption generally is not treated as money or other property and does not prevent §351 or §361 treatment. If the principal purpose of the liability assumption is Federal income tax avoidance, or the assumption lacks a bona fide business purpose, the full amount of the liability assumed is treated as money received by the taxpayer. For applicable §351 exchanges and specified §361 exchanges, if liabilities assumed exceed the total adjusted basis of the transferred property, the excess is recognized as gain, subject to the stated exceptions and exclusions for certain deductible or §736(a) liabilities.",
+    "keywords": [
+      "irc 357",
+      "section 357",
+      "assumption of liability",
+      "section 351 exchange",
+      "section 361 exchange",
+      "boot",
+      "tax avoidance",
+      "bona fide business purpose",
+      "liabilities exceed basis",
+      "adjusted basis",
+      "recognized gain",
+      "recourse liability",
+      "nonrecourse liability"
+    ]
   }
 ];
