@@ -10,6 +10,7 @@ import { GOLDEN_CASES } from "../tests/research/golden/cases";
 import { BLUEJ_HARD_CASES } from "../tests/research/golden/bluej-hard";
 import { VERIFIED_CASES } from "../tests/research/golden/verified";
 import { ENTITY_CASES } from "../tests/research/golden/entity";
+import { SPEED_CASES } from "../tests/research/golden/speed";
 import { gradeAll, type GradableAnswer } from "../tests/research/golden/grade";
 
 // --shard k/N → grade only the cases whose index (in id-sorted order) ≡ k (mod N). Lets the A/B fan
@@ -43,7 +44,7 @@ async function main() {
   // primary source) — settled bright-line law, an unambiguous gate that complements the unsettled Blue J set.
   // `--set entity` runs the SOURCE-VERIFIED entity + capital-gains set (Subch S/K/C, §1061, the capital-gains
   // spine) — measures whether the 2026-06 business-law ingest is actually grounded, not just present.
-  const CASE_SET = setName === "bluej" ? BLUEJ_HARD_CASES : setName === "verified" ? VERIFIED_CASES : setName === "entity" ? ENTITY_CASES : GOLDEN_CASES;
+  const CASE_SET = setName === "bluej" ? BLUEJ_HARD_CASES : setName === "verified" ? VERIFIED_CASES : setName === "entity" ? ENTITY_CASES : setName === "speed" ? SPEED_CASES : GOLDEN_CASES;
   const sorted = [...CASE_SET].sort((a, b) => a.id.localeCompare(b.id));
   const cases = shard ? sorted.filter((_, i) => i % shard.n === shard.k) : sorted;
 
@@ -53,16 +54,20 @@ async function main() {
   const liveConfig = process.argv.includes("--fetch");
 
   const answers: Record<string, GradableAnswer> = {};
+  const latencyMs: Record<string, number> = {}; // wall-clock per question — does time track DIFFICULTY or overhead?
   for (const c of cases) {
+    const t0 = Date.now();
     try {
       const r = await researchAnswer(proposer, judge, c.question, { taxYear: c.taxYear, jurisdiction: c.jurisdiction, fetch: liveConfig, contraSearch: liveConfig });
+      latencyMs[c.id] = Date.now() - t0;
       // Map SourcedAnswer -> GradableAnswer. Pass the RAW bucket (the grader handles "abstain" for
       // coverage_gap probes directly); the engine already strips fabricated cites, so none survive.
       answers[c.id] = { bucket: r.bucket, text: r.answer, citations: r.citations.map((x) => x.cite), fabricatedCitations: [] };
-      if (!asJson) process.stdout.write(`  ${r.bucket === "answer" ? "·" : "~"} ${c.id} → ${r.bucket}\n`);
+      if (!asJson) process.stdout.write(`  ${r.bucket === "answer" ? "·" : "~"} ${c.id} → ${r.bucket}  (${(latencyMs[c.id] / 1000).toFixed(1)}s)\n`);
     } catch (e) {
+      latencyMs[c.id] = Date.now() - t0;
       answers[c.id] = { bucket: "abstain", text: `ERROR: ${e instanceof Error ? e.message : e}`, citations: [] };
-      if (!asJson) process.stdout.write(`  ! ${c.id} → ERROR\n`);
+      if (!asJson) process.stdout.write(`  ! ${c.id} → ERROR  (${(latencyMs[c.id] / 1000).toFixed(1)}s)\n`);
     }
   }
 
@@ -91,6 +96,21 @@ async function main() {
   if (failed.length) {
     console.log(`\nFailures (the release-gate signal — fix these, never patch the eval):`);
     for (const id of failed) console.log(`  ✗ ${id}: ${results[id].reasons.join(" | ")}`);
+  }
+
+  // LATENCY — wall-clock per question. For the speed set, grouped by difficulty rung so it is obvious whether
+  // time tracks the QUESTION's difficulty (good) or just fixed harness overhead (the "5 minutes for 53% of $5M").
+  const lat = ids.map((id) => latencyMs[id]).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  if (lat.length) {
+    const median = lat[Math.floor(lat.length / 2)];
+    console.log(`\nLATENCY: median ${(median / 1000).toFixed(1)}s | fastest ${(lat[0] / 1000).toFixed(1)}s | slowest ${(lat[lat.length - 1] / 1000).toFixed(1)}s`);
+    const rungOf = (id: string) => (cases.find((c) => c.id === id) as { rung?: string } | undefined)?.rung;
+    if (cases.some((c) => (c as { rung?: string }).rung)) {
+      console.log(`By difficulty rung (time SHOULD rise with real difficulty; flat ⇒ overhead, not thinking):`);
+      for (const id of ids.sort((a, b) => (latencyMs[a] ?? 0) - (latencyMs[b] ?? 0))) {
+        console.log(`  ${String(rungOf(id) ?? "?").padEnd(11)} ${id}: ${((latencyMs[id] ?? 0) / 1000).toFixed(1)}s`);
+      }
+    }
   }
 
   // RELEASE GATE: `--gate <minPass>` makes this the moat's enforcing step — a run that scores below the
