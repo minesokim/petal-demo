@@ -112,3 +112,16 @@ describe("entity law — Subchapter C core (C corporations; audit gap #1 continu
     });
   }
 });
+
+describe("capital gains / property spine (the audit's biggest hole; incl. §1061 carried interest)", () => {
+  // The capital-gains/property regime was the largest gap — foundational to almost every property
+  // transaction. §1061 is the carried-interest rule a PE/hedge-fund question turns on (it was a literal
+  // zero-coverage gap when first asked). Model-free presence guards so this spine can't silently regress.
+  for (const sec of ["IRC §1061", "IRC §1221", "IRC §1222", "IRC §1231", "IRC §1245", "IRC §1250", "IRC §1014", "IRC §1015"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the capital-gains ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

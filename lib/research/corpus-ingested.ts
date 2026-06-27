@@ -956,5 +956,250 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "recourse liability",
       "nonrecourse liability"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-1061",
+    "authorityType": "statute",
+    "citation": "IRC §1061",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1061",
+    "ingestedAt": "2026-06-27T02:40:46.110Z",
+    "text": "If a taxpayer holds one or more applicable partnership interests at any time during the taxable year, the taxpayer’s net long-term capital gain with respect to those interests is recomputed by substituting “3 years” for “1 year” in section 1222(3) and (4), and any excess of the originally computed net long-term capital gain over that recomputed amount is treated as short-term capital gain. Thus, gain with respect to an applicable partnership interest does not receive long-term capital gain treatment under this rule unless the relevant holding period is more than 3 years, notwithstanding section 83 or any section 83(b) election. An applicable partnership interest generally is a partnership interest transferred to or held by the taxpayer, directly or indirectly, in connection with substantial services by the taxpayer or a related person in an applicable trade or business, subject to the stated exclusions for certain corporate-held interests and qualifying capital interests.",
+    "keywords": [
+      "irc §1061",
+      "section 1061",
+      "carried interest",
+      "applicable partnership interest",
+      "three-year holding period",
+      "long-term capital gain",
+      "short-term capital gain",
+      "section 1222",
+      "section 83(b)",
+      "partnership services",
+      "applicable trade or business",
+      "capital interest exception"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1221",
+    "authorityType": "statute",
+    "citation": "IRC §1221",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1221",
+    "ingestedAt": "2026-06-27T02:41:17.885Z",
+    "text": "Under IRC §1221, a capital asset is property held by the taxpayer, whether or not connected with the taxpayer’s trade or business, except for the categories specifically excluded. Excluded property includes stock in trade, inventory-type property, property held primarily for sale to customers, depreciable trade-or-business property, real property used in a trade or business, specified creator-held intellectual or similar property, ordinary-course accounts or notes receivable, certain U.S. Government publications, and business supplies regularly used or consumed. Also excluded are commodities derivative financial instruments held by commodities derivatives dealers unless the statutory nondealer-connection and identification requirements are met, and hedging transactions clearly identified by the required time. A hedging transaction is one entered into in the normal course of the taxpayer’s trade or business primarily to manage specified price, currency, interest-rate, borrowing, obligation, or other prescribed risks.",
+    "keywords": [
+      "irc 1221",
+      "section 1221",
+      "capital asset",
+      "inventory",
+      "stock in trade",
+      "customers",
+      "depreciable property",
+      "real property",
+      "accounts receivable",
+      "self-created property",
+      "copyright",
+      "hedging transaction",
+      "commodities derivatives",
+      "business supplies"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1222",
+    "authorityType": "statute",
+    "citation": "IRC §1222",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2014-12-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1222",
+    "ingestedAt": "2026-06-27T02:41:47.433Z",
+    "text": "For §1222 purposes, gain or loss from the sale or exchange of a capital asset is short-term if the asset was held for not more than 1 year and long-term if held for more than 1 year, with gains counted to the extent included in gross income and losses to the extent included in taxable income. Net short-term capital gain or loss and net long-term capital gain or loss are determined by comparing gains and losses within the corresponding holding-period category for the taxable year. Capital gain net income is the excess of gains from sales or exchanges of capital assets over losses, while net capital loss is the excess of such losses over the amount allowed under §1211, with the stated corporate exclusion for short-term capital losses under §1212(a)(1). Net capital gain is the excess of net long-term capital gain for the taxable year over net short-term capital loss for that year.",
+    "keywords": [
+      "irc 1222",
+      "section 1222",
+      "capital gains",
+      "capital losses",
+      "short-term capital gain",
+      "short-term capital loss",
+      "long-term capital gain",
+      "long-term capital loss",
+      "holding period",
+      "net capital gain",
+      "net capital loss",
+      "capital gain net income",
+      "section 1211",
+      "section 1212"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1231",
+    "authorityType": "statute",
+    "citation": "IRC §1231",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1231",
+    "ingestedAt": "2026-06-27T02:42:20.217Z",
+    "text": "For any taxable year, net section 1231 treatment is determined by comparing section 1231 gains and section 1231 losses: if gains exceed losses, the gains and losses are treated as long-term capital gains and long-term capital losses; if gains do not exceed losses, they are not treated as gains and losses from sales or exchanges of capital assets. Section 1231 generally covers recognized gain or loss from sales, exchanges, or compulsory or involuntary conversions of property used in a trade or business, including qualifying depreciable property and real property held for more than 1 year, subject to the statutory exclusions and special rules. A net section 1231 gain is treated as ordinary income to the extent it does not exceed non-recaptured net section 1231 losses from the 5 most recent preceding taxable years.",
+    "keywords": [
+      "irc 1231",
+      "section 1231",
+      "trade or business property",
+      "involuntary conversion",
+      "long-term capital gain",
+      "long-term capital loss",
+      "ordinary income",
+      "net section 1231 gain",
+      "net section 1231 loss",
+      "non-recaptured losses",
+      "5-year lookback",
+      "depreciable property",
+      "real property"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1245",
+    "authorityType": "statute",
+    "citation": "IRC §1245",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1245",
+    "ingestedAt": "2026-06-27T02:43:27.392Z",
+    "text": "When section 1245 property is disposed of, the ordinary-income amount is the excess of the lesser of the property’s recomputed basis or the amount realized in a sale, exchange, or involuntary conversion (or fair market value in any other disposition) over the property’s adjusted basis; this gain is recognized notwithstanding any other provision of the subtitle. Recomputed basis means adjusted basis increased by depreciation or amortization adjustments allowed or allowable, using the lesser amount actually allowed for a period if the taxpayer proves it by adequate records or other sufficient evidence. Section 1245 property includes depreciable personal property and specified depreciable or amortizable tangible property categories, and the rule does not apply to gifts or transfers at death except as provided for income in respect of a decedent; special limits apply for specified tax-free transfers, like-kind exchanges, involuntary conversions, partnership distributions, tax-exempt organization transfers, timber property, and amortizable section 197 intangibles.",
+    "keywords": [
+      "irc 1245",
+      "section 1245",
+      "depreciation recapture",
+      "ordinary income",
+      "recomputed basis",
+      "adjusted basis",
+      "amount realized",
+      "fair market value",
+      "section 1245 property",
+      "depreciable property",
+      "personal property",
+      "amortization",
+      "like-kind exchange",
+      "involuntary conversion"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1250",
+    "authorityType": "statute",
+    "citation": "IRC §1250",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1964-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1250",
+    "ingestedAt": "2026-06-27T02:43:56.495Z",
+    "text": "On a disposition of section 1250 property, gain is treated as ordinary income to the extent of the applicable percentage of the lower of the property’s additional depreciation or the excess of amount realized, or fair market value for other dispositions, over adjusted basis; this ordinary-income treatment applies notwithstanding other provisions. Section 1250 property is depreciable real property other than section 1245 property. For property held more than one year, “additional depreciation” generally means depreciation adjustments only to the extent they exceed the depreciation that would have resulted under the straight-line method, so straight-line depreciation alone does not create ordinary income recapture under this section. The section does not apply to gifts or transfers at death, and special limitations apply to certain carryover-basis transfers, like-kind exchanges, involuntary conversions, partnership distributions, and transfers involving tax-exempt organizations.",
+    "keywords": [
+      "irc 1250",
+      "section 1250",
+      "depreciable realty",
+      "section 1250 property",
+      "ordinary income",
+      "additional depreciation",
+      "straight-line depreciation",
+      "depreciation recapture",
+      "adjusted basis",
+      "amount realized",
+      "fair market value",
+      "gifts",
+      "transfers at death",
+      "like-kind exchanges",
+      "involuntary conversions"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1014",
+    "authorityType": "statute",
+    "citation": "IRC §1014",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1014",
+    "ingestedAt": "2026-06-27T02:44:46.517Z",
+    "text": "Except as otherwise provided in IRC §1014, a person who acquires property from a decedent, or to whom property passes from a decedent, takes a basis equal to the property’s fair market value on the date of the decedent’s death, provided the person did not sell, exchange, or otherwise dispose of the property before death. If an election under §2032 is made, basis is the value at the applicable valuation date under that section; if an election under §2032A is made, basis is the value determined under that section. This stepped-up or stepped-down basis rule does not apply to property that is a right to receive income in respect of a decedent under §691.",
+    "keywords": [
+      "irc 1014",
+      "section 1014",
+      "basis",
+      "decedent",
+      "fair market value",
+      "date of death",
+      "stepped-up basis",
+      "stepped-down basis",
+      "alternate valuation date",
+      "section 2032",
+      "section 2032a",
+      "income in respect of a decedent",
+      "section 691",
+      "inheritance",
+      "bequest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1015",
+    "authorityType": "statute",
+    "citation": "IRC §1015",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1977-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1015",
+    "ingestedAt": "2026-06-27T02:45:14.555Z",
+    "text": "For property acquired by gift after December 31, 1920, the donee’s basis generally is the same as it would be in the donor’s hands, or in the hands of the last prior owner who did not acquire it by gift, adjusted under section 1016 before the gift. If that carryover basis exceeds the property’s fair market value at the time of the gift, the basis for determining a loss is the fair market value at the time of the gift. For gifts made after December 31, 1976, any basis increase for gift tax paid is limited to an amount, not exceeding the tax paid, based on the ratio of the gift’s net appreciation to the amount of the gift; net appreciation is the excess of fair market value over the donor’s adjusted basis immediately before the gift.",
+    "keywords": [
+      "1015",
+      "gift basis",
+      "carryover basis",
+      "donee",
+      "donor basis",
+      "fair market value",
+      "loss basis",
+      "dual basis",
+      "gift tax paid",
+      "net appreciation",
+      "adjusted basis",
+      "section 1016"
+    ]
   }
 ];
