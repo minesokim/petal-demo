@@ -73,3 +73,17 @@ describe("identifyProvisions + namedCoverageGaps — naming a gap from a questio
     expect(identifyProvisions("the definition of qualified production property under section 168(n)")).toContain("IRC §168");
   });
 });
+
+describe("entity law — Subchapter S core (the audit's #1 binding gap; first batch ingested)", () => {
+  // Subchapter S was 100% UNGROUNDED before this ingest (the re-audit grep-verified zero S/K/C coverage).
+  // These assert the new chunks are present + registered + retrievable by the coverage system, so the entity
+  // corpus cannot silently regress on a PR (model-free). Answer CORRECTNESS is measured by the live
+  // benchmark, not here — the engine probe confirmed it grounds an S-corp answer in §1361.
+  for (const sec of ["IRC §1361", "IRC §1366", "IRC §1367", "IRC §1368", "IRC §1374"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Subchapter S ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

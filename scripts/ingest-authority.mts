@@ -5,7 +5,8 @@
 //   4. writes the survivors to lib/research/corpus-ingested.ts (registered alongside the others).
 // PUBLIC authority only (no taxpayer data → §7216-clean). Run:
 //   node --env-file=.env.local --import tsx scripts/ingest-authority.mts [--write] [section...]
-import { AnthropicProvider } from "../lib/ai/anthropic";
+import { getProvider } from "../lib/ai/provider-factory";
+import type { AIProvider } from "../lib/ai/provider";
 import { authorityChunkSchema, type AuthorityChunk } from "../lib/tax/authority/store";
 
 // ── Targets: Phase-1 federal scope (1040 + the 4 due-diligence credits + gap-closers). Each entry
@@ -33,6 +34,14 @@ const TARGETS: Target[] = [
   { cite: "IRC §25D", url: lii("25D"), type: "statute", taxYear: [2025, 2026], note: "residential clean energy credit — OBBBA ends it for expenditures after Dec 31, 2025 (installation-completion keyed)" },
   { cite: "IRC §6050W", url: lii("6050W"), type: "statute", taxYear: [2025, 2026], note: "1099-K / third-party settlement reporting — OBBBA restores the $20,000-and-200-transaction threshold" },
   { cite: "IRC §174A", url: lii("174A"), type: "statute", taxYear: [2025, 2026], note: "domestic R&D — OBBBA restores current expensing for tax years beginning after Dec 31, 2024" },
+  // ── ENTITY LAW — Subchapter S CORE (the audit's #1 binding constraint: ~half an EA practice, 0% covered).
+  // The most common business return. Stable, non-OBBBA provisions, so taxYear spans current years. Each is
+  // fetched from current USC text and figure-grounded; capture the operative RULE, not a worked example. ──
+  { cite: "IRC §1361", url: lii("1361"), type: "statute", taxYear: [2024, 2025, 2026], note: "S corporation defined — small business corporation: a domestic corporation with no more than 100 shareholders, only eligible shareholders (individuals, estates, certain trusts and exempt orgs — NOT nonresident aliens, partnerships, or C corporations), and only ONE class of stock (differences in voting rights are allowed)" },
+  { cite: "IRC §1366", url: lii("1366"), type: "statute", taxYear: [2024, 2025, 2026], note: "pass-through to shareholders — each shareholder takes into account a pro-rata share of the S corporation's separately stated items and nonseparately computed income/loss; the aggregate loss/deduction a shareholder may take is LIMITED to the shareholder's adjusted basis in stock plus basis in any indebtedness of the S corp to the shareholder, with disallowed losses carried forward" },
+  { cite: "IRC §1367", url: lii("1367"), type: "statute", taxYear: [2024, 2025, 2026], note: "basis adjustments — a shareholder's stock basis is INCREASED by income items (separately stated income and tax-exempt income) and DECREASED (not below zero) by distributions, separately stated loss/deduction items, nondeductible noncapital expenses; the ordering and the stock-then-debt basis mechanics" },
+  { cite: "IRC §1368", url: lii("1368"), type: "statute", taxYear: [2024, 2025, 2026], note: "distributions — for an S corp with NO accumulated earnings and profits, a distribution is tax-free to the extent of stock basis then capital gain; for an S corp WITH accumulated E&P, the accumulated adjustments account (AAA) ordering governs (AAA first as a return of basis, then E&P as a dividend, then remaining basis, then gain)" },
+  { cite: "IRC §1374", url: lii("1374"), type: "statute", taxYear: [2024, 2025, 2026], note: "built-in gains tax — a former C corporation that elects S status owes a corporate-level tax (at the highest §11 rate) on net recognized built-in gain during the recognition period following conversion; capture the recognition-period rule and that the tax is at the corporate rate" },
   // IRC §1202 (QSBS) — DISABLED pending a fix. The figure-grounded chunk is correct on the tiers
   // but the LII operative text refers to "the applicable date" WITHOUT pinning it to a calendar date,
   // and the "OBBBA enacted July 4, 2025" fact lives in a chunk a QSBS query doesn't co-retrieve. Result:
@@ -69,7 +78,7 @@ async function fetchSource(url: string): Promise<string> {
 
 const SYS = `You ingest US tax PRIMARY AUTHORITY into a research corpus. From the provided source text of ONE provision, write a single concise "operative rule" paraphrase a tax preparer could rely on. RULES: use ONLY facts/figures present in the provided text — never add a number, threshold, rate, or year from your own knowledge; if the text doesn't state a figure, don't include it. Public-domain factual paraphrase (statute isn't copyrightable). Output STRICT JSON only: {"text": string (the operative-rule paraphrase, 2-5 sentences), "keywords": string[] (8-15 lowercase retrieval terms incl. the section number and key concepts), "effectiveDate": "YYYY-MM-DD" (when this rule took effect; use the provided text or a conservative Jan 1 of the earliest listed tax year)}.`;
 
-async function buildChunk(t: Target, provider: AnthropicProvider): Promise<AuthorityChunk | null> {
+async function buildChunk(t: Target, provider: AIProvider): Promise<AuthorityChunk | null> {
   const source = await fetchSource(t.url);
   const { text: out } = await provider.generateText({
     system: SYS,
@@ -110,7 +119,9 @@ async function main() {
   // re-paraphrased); with --write and no filter, the whole file is regenerated from all TARGETS.
   const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
   const targets = only.length ? TARGETS.filter((t) => only.some((o) => t.cite.toLowerCase().includes(o.toLowerCase()))) : TARGETS;
-  const provider = new AnthropicProvider(process.env.ANTHROPIC_API_KEY, "claude-sonnet-4-6");
+  // Provider via the FACTORY so ingestion honors PETAL_DEV_INFERENCE=codex-sub (runs on the codex sub, not
+  // the metered Anthropic key). The figure-grounding gate below guards correctness regardless of model.
+  const provider = getProvider("claude-sonnet-4-6");
   const out: AuthorityChunk[] = [];
   for (const t of targets) {
     try { const c = await buildChunk(t, provider); if (c) out.push(c); }

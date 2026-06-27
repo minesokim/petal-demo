@@ -475,5 +475,154 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "unamortized amounts",
       "trade or business"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-1361",
+    "authorityType": "statute",
+    "citation": "IRC §1361",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1361",
+    "ingestedAt": "2026-06-27T01:39:59.516Z",
+    "text": "For IRC §1361, an S corporation is a small business corporation for which a §1362(a) election is in effect for the taxable year; a C corporation is any corporation that is not an S corporation for that year. A small business corporation is a domestic corporation that is not an ineligible corporation and that does not have more than 100 shareholders, an impermissible nonindividual shareholder, a nonresident alien shareholder, or more than 1 class of stock. Permitted nonindividual shareholders include estates, trusts described in §1361(c)(2), and organizations described in §1361(c)(6); differences in voting rights among shares of common stock alone do not create more than 1 class of stock.",
+    "keywords": [
+      "irc 1361",
+      "s corporation",
+      "small business corporation",
+      "1362 election",
+      "domestic corporation",
+      "100 shareholders",
+      "eligible shareholders",
+      "nonresident alien",
+      "one class of stock",
+      "voting rights",
+      "trust shareholder",
+      "estate shareholder",
+      "exempt organization"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1366",
+    "authorityType": "statute",
+    "citation": "IRC §1366",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1983-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1366",
+    "ingestedAt": "2026-06-27T01:40:27.767Z",
+    "text": "Under IRC § 1366, an S corporation shareholder determines tax liability by taking into account the shareholder’s pro rata share of the corporation’s separately stated items of income, tax-exempt income, loss, deduction, or credit that could affect shareholder tax liability, plus nonseparately computed income or loss. The character of each passed-through item is determined as if the shareholder realized it directly from the corporation’s source or incurred it in the same manner as the corporation. A shareholder’s aggregate losses and deductions for a taxable year may not exceed the sum of the adjusted basis of the shareholder’s S corporation stock and the adjusted basis of any S corporation indebtedness to the shareholder; disallowed losses or deductions are treated as incurred by the corporation in the succeeding taxable year with respect to that shareholder.",
+    "keywords": [
+      "irc 1366",
+      "section 1366",
+      "s corporation",
+      "shareholder",
+      "pass-through",
+      "pro rata share",
+      "separately stated items",
+      "nonseparately computed income",
+      "loss limitation",
+      "stock basis",
+      "debt basis",
+      "disallowed losses",
+      "carryover"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1367",
+    "authorityType": "statute",
+    "citation": "IRC §1367",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2015-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1367",
+    "ingestedAt": "2026-06-27T01:40:58.046Z",
+    "text": "For each period, an S corporation shareholder increases stock basis by the shareholder’s income items under section 1366(a)(1)(A), nonseparately computed income, and excess depletion deductions over the basis of the depleted property. The shareholder decreases stock basis, but not below zero, by nonincluded distributions under section 1368, loss and deduction items under section 1366(a)(1)(A), nonseparately computed loss, nondeductible noncapital expenses, and specified oil and gas depletion; for a charitable contribution of property, the decrease is the shareholder’s pro rata share of the property’s adjusted basis. If the loss, deduction, nondeductible expense, and depletion decreases exceed stock basis, the excess reduces, but not below zero, the shareholder’s basis in S corporation indebtedness to the shareholder; later net increases restore that debt-basis reduction before increasing stock basis. Income items count only to the extent included in the shareholder’s gross income on the return, as adjusted by any redetermination.",
+    "keywords": [
+      "1367",
+      "s corporation",
+      "shareholder basis",
+      "stock basis",
+      "debt basis",
+      "basis adjustments",
+      "income items",
+      "loss deductions",
+      "distributions",
+      "nondeductible expenses",
+      "depletion",
+      "charitable contribution",
+      "section 1366",
+      "section 1368"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1368",
+    "authorityType": "statute",
+    "citation": "IRC §1368",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1983-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1368",
+    "ingestedAt": "2026-06-27T01:41:27.817Z",
+    "text": "Under IRC §1368, an S corporation distribution of property with respect to its stock that otherwise would be governed by section 301(c) is taxed under the S corporation distribution rules. If the S corporation has no accumulated earnings and profits, the distribution is excluded from gross income to the extent it does not exceed the shareholder’s adjusted stock basis, and any excess is treated as gain from the sale or exchange of property. If the S corporation has accumulated earnings and profits, the distribution is first applied against the accumulated adjustments account and treated under the stock-basis rule, then treated as a dividend to the extent of accumulated earnings and profits, and any remaining amount is again treated under the stock-basis rule. Stock basis and the accumulated adjustments account are determined with the adjustments specified in sections 1367 and 1368.",
+    "keywords": [
+      "irc 1368",
+      "s corporation",
+      "distributions",
+      "accumulated earnings and profits",
+      "accumulated adjustments account",
+      "stock basis",
+      "gross income exclusion",
+      "dividend",
+      "capital gain",
+      "section 301(c)",
+      "section 1367",
+      "aaa ordering"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1374",
+    "authorityType": "statute",
+    "citation": "IRC §1374",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2015-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1374",
+    "ingestedAt": "2026-06-27T01:41:56.252Z",
+    "text": "IRC §1374 imposes a corporate-level tax when, for a taxable year beginning in the recognition period, an S corporation has net recognized built-in gain. The tax is computed by applying the highest rate of tax specified in section 11(b) to the S corporation’s net recognized built-in gain for the taxable year. The recognition period is the 5-year period beginning with the first day of the first taxable year for which the corporation was an S corporation, and the tax does not apply to a corporation that has had a section 1362(a) S election in effect for each taxable year. For assets acquired from a C corporation with carryover basis, the rule applies to net recognized built-in gain attributable to those assets during a recognition period measured by reference to the asset acquisition day.",
+    "keywords": [
+      "irc 1374",
+      "section 1374",
+      "built-in gains tax",
+      "s corporation",
+      "c corporation",
+      "recognition period",
+      "net recognized built-in gain",
+      "section 11(b)",
+      "corporate rate",
+      "carryover basis",
+      "section 1362 election",
+      "net unrealized built-in gain"
+    ]
   }
 ];
