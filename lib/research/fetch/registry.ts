@@ -57,7 +57,19 @@ const govinfoStatute: FetchSource = {
     // "section N" reliably returns the right granule (verified for §1031/§163/§7703); a topic question
     // (no cited section) still uses statuteQuery.
     const govQuery = citedSecs.length && !wantsPublicLaw ? citedSecs.map((s) => `section ${s}`).join(" ") : statuteQuery(safe);
-    const results = await searchGovInfo(govQuery, { collections: ["USCODE", "PLAW"], pageSize: 10, signal: opts?.signal });
+    let results = await searchGovInfo(govQuery, { collections: ["USCODE", "PLAW"], pageSize: 10, signal: opts?.signal });
+    // §1202-class collision: a bare "section N" can return ZERO Title-26 results (the number collides across
+    // USC titles and the tax section never surfaces — "section 1202" finds nothing, "section 1202 qualified
+    // small business stock" finds 26 U.S.C. §1202). Retry ONCE with the question's topic words to
+    // disambiguate. Only fires when the section-only search yielded NO Title-26 statute, so it never re-
+    // noises the §1031/§163/§7703 lookups that already resolve cleanly section-only.
+    if (citedSecs.length && !wantsPublicLaw && !results.some((r) => r.collection === "USCODE" && /title26/i.test(r.packageId))) {
+      // Tighten to the cited section + ~4 TOPIC NOUNS: GovInfo dilutes past ~5 terms, so "section 1202
+      // qualified small business stock" surfaces §1202 while the longer statuteQuery reduction does not.
+      const topic = statuteQuery(safe).split(/\s+/).filter((w) => w !== "section" && !/^\d+$/.test(w)).slice(0, 4);
+      const disambig = [...citedSecs.map((s) => `section ${s}`), ...topic].join(" ");
+      results = await searchGovInfo(disambig, { collections: ["USCODE", "PLAW"], pageSize: 10, signal: opts?.signal });
+    }
     return results
       .filter((r): r is GovInfoResult & { textUrl: string } => !!r.textUrl)
       // The IRC is Title 26. GovInfo's "section N" search collides across ALL USC titles and often ranks

@@ -20,7 +20,12 @@ const QUERY_STOP = new Set(
     // status/temporal framing — common in "has X been issued / current guidance" questions. Dropping these
     // keeps the query to the section + topic nouns so it matches, instead of pulling noise on "final"/"issued".
     "today issued issue final proposed regulation regulations guidance current currently status been have date " +
-    "recent recently latest published updated effective")
+    "recent recently latest published updated effective " +
+    // question-framing VERBS / quantifiers — never disambiguate a Code section, but their term-count
+    // DILUTES GovInfo relevance ("section 1202 long must hold ..." buried §1202 that "section 1202 qualified
+    // small business stock" surfaces). Drop them so the section + topic nouns dominate the query.
+    "long must hold held holds holding claim claims claimed qualify qualifies determine determined report " +
+    "reported compute computed calculate calculated maximum minimum amount percentage percent base limit")
     .split(/\s+/),
 );
 export function statuteQuery(question: string): string {

@@ -53,6 +53,27 @@ function figureCores(text: string): string[] {
 }
 const digitsOf = (s: string) => s.replace(/[^\d.]/g, "");
 
+// When a question cites a SUBSECTION (e.g. §163(j)), the operative rule can live DEEP in a huge statute —
+// §163 is 107k chars and subsection (j)'s 30%-of-ATI limit starts at ~char 31k, past a naive head-slice, so
+// the engine never sees it (the §163(j) settled-law miss). Re-center the window on the cited subsection when
+// it begins beyond the head-slice; otherwise keep the head (the section opener wins for an early subsection).
+function sliceForQuestion(text: string, question: string, max: number): string {
+  if (text.length <= max) return text;
+  const m = question.match(/(?:§\s*\d+|\bsection\s+\d+|\birc\s+\d+)\s*\(([a-z])\)/i);
+  if (m) {
+    const sub = m[1].toLowerCase();
+    // subsection HEADER pattern "(j) Limitation..." — the letter then a Capitalized title. USC text is
+    // SPACE-separated (no newlines before subsections), and the capital avoids matching cross-references
+    // like "subsection (j) shall".
+    const idx = text.search(new RegExp(`\\(${sub}\\)\\s+[A-Z]`));
+    if (idx > max - 2000) {
+      const start = Math.max(0, idx - 300);
+      return text.slice(start, start + max);
+    }
+  }
+  return text.slice(0, max);
+}
+
 async function distill(provider: AIProvider, question: string, chunks: AuthorityChunk[]): Promise<AuthorityChunk[]> {
   // PARALLEL: each chunk's distill is an INDEPENDENT model call. Run them concurrently (Promise.all
   // preserves array order) instead of one-at-a-time — same paraphrases, same relevance + figure-leak
@@ -141,7 +162,7 @@ export async function fetchPrimary(
         effectiveDate: `${taxYear}-01-01`,
         sourceUrl: f.hit.sourceUrl,
         ingestedAt: nowIso,
-        text: f.clean.slice(0, 8000),
+        text: sliceForQuestion(f.clean, question, 8000),
         keywords: [],
         // Preserve the weighting signal the source already computed (was discarded before): the
         // §6662 authority rank and whether it may stand as sole authority (a proposed rule / PLR /
