@@ -163,7 +163,9 @@ async function main() {
   // --write + a filter, the new chunks are MERGED into the existing corpus (existing ones kept, not
   // re-paraphrased); with --write and no filter, the whole file is regenerated from all TARGETS.
   const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const targets = only.length ? TARGETS.filter((t) => only.some((o) => t.cite.toLowerCase().includes(o.toLowerCase()))) : TARGETS;
+  // EXACT section match (not substring) — "312" must select ONLY §312, never §3121; required for safe BULK runs.
+  const sectionOf = (cite: string) => cite.replace(/^IRC\s*§?\s*/i, "").trim().toLowerCase();
+  const targets = only.length ? TARGETS.filter((t) => only.some((o) => sectionOf(t.cite) === o.toLowerCase())) : TARGETS;
   // Provider via the FACTORY so ingestion honors PETAL_DEV_INFERENCE=codex-sub (runs on the codex sub, not
   // the metered Anthropic key). The figure-grounding gate below guards correctness regardless of model.
   const provider = getProvider("claude-sonnet-4-6");
