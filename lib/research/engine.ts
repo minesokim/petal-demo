@@ -48,7 +48,10 @@ import { reasonAndScore } from "../ai/reasoning";
 import { retrieve, retrieveLifecycle, unestablishedNamedForm, type AuthorityChunk, type AuthorityType, REGISTERED_CORPUS } from "../tax/authority/store";
 import { assessAuthorityWeight, type AuthorityAssessment } from "./authority-assess";
 import { findContraAuthorities } from "./contra-finder";
-import { graphRetrieve } from "./retrieval/graph-retrieve";
+// graphRetrieve is imported LAZILY inside the useGraph branch below: it pulls in @xenova/transformers, whose
+// native ONNX binary (libonnxruntime.so) is absent on Vercel's serverless runtime and crashes the WHOLE route
+// at module load. Default config never uses the graph path (lexical retrieve() is the real engine), so the
+// import must not be paid unless PETAL_GRAPH_RETRIEVAL=1 is explicitly set. (HONEST DEGRADATION on deploy.)
 import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
 import { isCaConformityQuestion } from "./fetch/ca-conformity";
@@ -599,6 +602,9 @@ async function researchAnswerImpl(
   let retrieved: AuthorityChunk[];
   if (useGraph) {
     try {
+      // LAZY import: only pay the @xenova/transformers (ONNX) load when graph retrieval is actually enabled,
+      // so the module-load crash on Vercel never happens under the default lexical config.
+      const { graphRetrieve } = await import("./retrieval/graph-retrieve");
       retrieved = await graphRetrieve(question, { taxYear, jurisdiction, k });
     } catch (e) {
       // HONEST DEGRADATION: log + flag the graph→corpus fallback so it surfaces on the answer, never silent.
