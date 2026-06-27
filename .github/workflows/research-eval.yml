@@ -1,15 +1,30 @@
 name: research-eval
 # The MOAT as an ENFORCED gate: the research AI's defensibility is a MEASURED error rate, so a regression
-# must FAIL a build, not ship silently. The full measure needs a live model (slow / costs quota / non-
-# deterministic), so it runs on a SCHEDULE + on demand here — NOT per-PR. The per-PR half (a model-free
-# deterministic recall gate over the golden set) runs in the normal `backend-ci` vitest suite.
+# must FAIL a build, not ship silently. Two tiers:
+#   - PER-PR (cheap tripwire): the SETTLED-LAW `verified` set (8 bright-line cases) gates every PR that
+#     touches the engine. A regression on settled law is the one thing that must never ship green — this is
+#     the floor the §1202 / §163(j) fetch fixes lifted to 8/8 on Claude, and it had NO CI job before.
+#   - NIGHTLY (comprehensive sweep): the GOLDEN (50) + BLUE J HARD (15) sets run on a schedule (slow / costs
+#     quota / non-deterministic), not per-PR. A model-free deterministic recall gate (coverage-manifest +
+#     moat-gate tests) ALSO runs per-PR in the normal `backend-ci` vitest suite with no key required.
 #
-# ACTIVATION: add an `ANTHROPIC_API_KEY` repository secret (a real Anthropic API key with headroom — the
-# run makes ~50 sequential calls). Until the secret is present the job is skipped, not failed.
+# ACTIVATION: add an `ANTHROPIC_API_KEY` repository secret (a real Anthropic key with headroom — the nightly
+# sweep makes ~65 sequential calls; the per-PR verified gate ~8). Until the secret is present every live step
+# is SKIPPED, not failed, so PRs are never blocked by a missing credential. GOVINFO_API_KEY is optional and
+# lights up live statute fetch for the verified set.
 on:
   schedule:
     - cron: "0 8 * * *" # daily 08:00 UTC
   workflow_dispatch: {} # manual "Run workflow" button
+  pull_request:
+    # Only gate PRs that actually touch the research engine — unrelated PRs don't pay the cost.
+    paths:
+      - "lib/research/**"
+      - "lib/ai/**"
+      - "lib/tax/**"
+      - "tests/research/**"
+      - "scripts/research-benchmark.mts"
+      - ".github/workflows/research-eval.yml"
 
 jobs:
   measured-error-rate:
@@ -21,22 +36,35 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - name: Research-AI measured error rate on production Claude — GOLDEN set (gated)
-        # Skip (don't fail) if the key secret isn't configured yet.
+      - name: Settled-law floor — VERIFIED set (gated; per-PR tripwire + nightly)
+        # The cheap, highest-value gate: 8 source-verified bright-line cases. Runs on every engine-touching PR
+        # AND nightly. Skip (don't fail) if the key isn't configured yet.
         if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PETAL_DEV_INFERENCE: "" # force the production Anthropic provider (not the codex dev proxy)
-          GOVINFO_API_KEY: ${{ secrets.GOVINFO_API_KEY }} # optional: lights up live statute fetch on a miss
+          GOVINFO_API_KEY: ${{ secrets.GOVINFO_API_KEY }} # optional: lights up live statute fetch for verified
+        # FLOOR: 7 of 8. Claude measures 8/8, codex 7/8 (lib/research/measured-baseline.ts); 7 catches a real
+        # settled-law regression while tolerating one flaky borderline / live-fetch hiccup. The verified cases
+        # are fetch-sourced, so --fetch is REQUIRED. NEVER lower this floor to make a release pass.
+        run: node --import tsx scripts/research-benchmark.mts --set verified --fetch --no-judge --gate 7
+      - name: Measured error rate — GOLDEN set (gated; nightly only)
+        # The 50-case currency/plumbing sweep. Kept OFF per-PR (slow / quota); the verified gate above is the
+        # per-PR tripwire.
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' && github.event_name != 'pull_request' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PETAL_DEV_INFERENCE: ""
+          GOVINFO_API_KEY: ${{ secrets.GOVINFO_API_KEY }}
         # FLOOR: 44 of 50 (88%). Conservative vs the ~49/50 (~98%) last measured (docs/RESEARCH_BENCHMARK.md)
         # so a flaky borderline case or two never red-lights CI, but any real >5-case regression FAILS the
         # build. Raise the floor as the engine improves; NEVER lower it to make a release pass.
         run: node --import tsx scripts/research-benchmark.mts --no-judge --gate 44
-      - name: Research-AI measured error rate on production Claude — BLUE J HARD set (gated)
+      - name: Measured error rate — BLUE J HARD set (gated; nightly only)
         # The held-out top-difficulty set (multi-section ordering, authority weighting, unsettled OBBBA
         # edges). Gating the MOAT on the hardest test, not just the currency set. Tier-E cases pin a HEDGE,
         # so a confident answer there is graded a miss by the deterministic grader.
-        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' && github.event_name != 'pull_request' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PETAL_DEV_INFERENCE: ""
