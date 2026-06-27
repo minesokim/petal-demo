@@ -17,10 +17,10 @@ import { appendMessage, updateMessage } from "@/lib/repository/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Give the streamed research run the widest function window the plan allows. Hobby's hard max is 300s (5 min)
-// and is also its default; Pro can raise this to 800s ("max") via this same line. A slower answer just ends
-// the stream — the durable run persists server-side and reconnects on reopen. (Bump to 800 after a Pro upgrade.)
-export const maxDuration = 300;
+// Widest function window the plan allows. On Vercel PRO this GA-caps at 800s (~13 min) — enough for a 3-5 min
+// codex-via-tunnel research run with margin. A slower answer just ends the stream; the durable run persists
+// server-side and reconnects on reopen. (Hobby's hard max was 300s.)
+export const maxDuration = 800;
 
 function sanitizeHistory(raw: unknown): AgentTurn[] {
   if (!Array.isArray(raw)) return [];

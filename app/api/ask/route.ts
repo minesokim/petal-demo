@@ -22,7 +22,7 @@ import { getFirmContext } from "@/lib/auth/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // Hobby's hard max (also its default); raise to 800 on Pro via this line
+export const maxDuration = 800; // Vercel Pro GA ceiling (~13 min) — covers a 3-5 min codex-via-tunnel run
 
 // ZDR-eligible chat model. Fast tier for conversational latency; override per-request
 // with { model } if a heavier answer is needed. Both Opus and Haiku are ZDR.

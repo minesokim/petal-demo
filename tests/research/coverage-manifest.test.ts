@@ -125,3 +125,15 @@ describe("capital gains / property spine (the audit's biggest hole; incl. §1061
     });
   }
 });
+
+describe("high-frequency individual / SMB provisions (next-ranked coverage)", () => {
+  // Spousal transfers, home office, bad debts, constructive ownership, and passive-activity losses — common in
+  // real return prep. Model-free presence guards so the batch can't silently regress.
+  for (const sec of ["IRC §1041", "IRC §280A", "IRC §166", "IRC §318", "IRC §469"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the high-frequency ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

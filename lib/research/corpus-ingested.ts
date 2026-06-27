@@ -1201,5 +1201,154 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "adjusted basis",
       "section 1016"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-1041",
+    "authorityType": "statute",
+    "citation": "IRC §1041",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1988-06-22",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1041",
+    "ingestedAt": "2026-06-27T03:12:54.779Z",
+    "text": "No gain or loss is recognized on a transfer of property from an individual to, or in trust for the benefit of, a spouse, or a former spouse if the transfer is incident to divorce. The transferee is treated as acquiring the property by gift and takes the transferor’s adjusted basis, so the transfer is nonrecognition with carryover basis rather than a basis step-up. A transfer is incident to divorce if it occurs within 1 year after the marriage ceases or is related to the cessation of the marriage. This nonrecognition rule does not apply if the transferee spouse or former spouse is a nonresident alien, or to a trust transfer to the extent liabilities assumed plus liabilities to which the property is subject exceed the total adjusted basis of the transferred property.",
+    "keywords": [
+      "irc §1041",
+      "1041",
+      "spousal transfers",
+      "divorce",
+      "incident to divorce",
+      "nonrecognition",
+      "carryover basis",
+      "gift treatment",
+      "former spouse",
+      "property transfer",
+      "nonresident alien",
+      "trust liabilities",
+      "adjusted basis"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-280a",
+    "authorityType": "statute",
+    "citation": "IRC §280A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1999-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/280A",
+    "ingestedAt": "2026-06-27T03:13:26.410Z",
+    "text": "For an individual or S corporation, IRC §280A generally disallows deductions for use of a dwelling unit used by the taxpayer during the taxable year as a residence, except for deductions allowable without regard to business or income-producing use. The disallowance does not apply to expenses allocable to a portion used exclusively and regularly as the taxpayer’s principal place of business, to meet or deal with patients, clients, or customers in the normal course of business, or in a separate unattached structure used in the taxpayer’s trade or business; for employees, the exclusive use must be for the employer’s convenience. Deductions for qualifying business, storage, day-care, or residential rental use are limited to gross income from that use reduced by specified otherwise allowable and related deductions, and any disallowed amount is carried to the succeeding taxable year subject to the same limitation. If a dwelling unit used as a residence is actually rented for less than 15 days during the taxable year, rental deductions are not allowed and the rental income is excluded from gross income.",
+    "keywords": [
+      "irc 280a",
+      "home office",
+      "business use of home",
+      "dwelling unit",
+      "used as residence",
+      "exclusive use",
+      "regular basis",
+      "principal place of business",
+      "clients customers",
+      "gross income limitation",
+      "carryforward",
+      "rental less than 15 days",
+      "rental income exclusion"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-166",
+    "authorityType": "statute",
+    "citation": "IRC §166",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/166",
+    "ingestedAt": "2026-06-27T03:13:55.591Z",
+    "text": "A taxpayer may deduct a debt that becomes wholly worthless during the taxable year, and the Secretary may allow a deduction for a partially worthless debt to the extent the debt is charged off during the taxable year and is recoverable only in part. The deductible amount is determined using the debt’s adjusted basis under section 1011. For a taxpayer other than a corporation, a nonbusiness debt is not deductible under the general bad-debt rule; if it becomes worthless during the taxable year, the resulting loss is treated as a loss from the sale or exchange of a capital asset held for not more than 1 year. A nonbusiness debt is any debt other than one created or acquired in connection with the taxpayer’s trade or business or one whose worthlessness loss is incurred in that trade or business, and section 166 does not apply to a debt evidenced by a security described in section 165(g)(2)(C).",
+    "keywords": [
+      "166",
+      "bad debt",
+      "worthless debt",
+      "partially worthless",
+      "charged off",
+      "adjusted basis",
+      "section 1011",
+      "nonbusiness debt",
+      "trade or business",
+      "capital asset",
+      "short-term capital loss",
+      "section 165(g)(2)(c)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-318",
+    "authorityType": "statute",
+    "citation": "IRC §318",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/318",
+    "ingestedAt": "2026-06-27T03:14:25.025Z",
+    "text": "For provisions of Subchapter C that expressly apply IRC §318, a person is treated as owning stock owned directly or indirectly by specified family members, including a spouse unless legally separated, children, grandchildren, parents, and legally adopted children treated as children by blood. Stock is attributed proportionately between partnerships, estates, trusts, corporations, and their owners or beneficiaries under the stated rules, including corporate attribution when a person owns 50 percent or more in value of the corporation and a trust remote contingent interest exception at 5 percent or less. A person with an option to acquire stock is treated as owning that stock, including options to acquire options; constructive ownership generally is treated as actual ownership for further attribution, subject to the stated limits on repeated family attribution and sidewise entity attribution, and S corporations are treated as partnerships for these attribution rules except in determining ownership of S corporation stock itself.",
+    "keywords": [
+      "irc 318",
+      "constructive ownership",
+      "stock attribution",
+      "family attribution",
+      "spouse",
+      "children",
+      "partnerships",
+      "estates",
+      "trusts",
+      "corporations",
+      "50 percent",
+      "options",
+      "s corporation",
+      "remote contingent interest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-469",
+    "authorityType": "statute",
+    "citation": "IRC §469",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/469",
+    "ingestedAt": "2026-06-27T03:15:05.306Z",
+    "text": "For an individual, estate, trust, closely held C corporation, or personal service corporation, a passive activity loss or passive activity credit for the taxable year is not allowed except as provided in §469. A passive activity is a trade or business in which the taxpayer does not materially participate—meaning involvement is not regular, continuous, and substantial—and, except for the special rental real estate rules, any rental activity is also passive. A disallowed loss or credit is treated as a deduction or credit allocable to the same activity in the next taxable year; for a former passive activity, unused amounts first offset income or tax liability from that activity and the remainder continues as passive. If the taxpayer disposes of the entire interest in a passive or former passive activity in a fully taxable transaction, the excess loss from that activity over net income or gain from all other passive activities is treated as a loss that is not from a passive activity, subject to the section’s special disposition rules.",
+    "keywords": [
+      "irc 469",
+      "passive activity loss",
+      "passive activity credit",
+      "material participation",
+      "rental activity",
+      "carryforward",
+      "suspended losses",
+      "fully taxable disposition",
+      "closely held c corporation",
+      "personal service corporation",
+      "real property business",
+      "former passive activity"
+    ]
   }
 ];
