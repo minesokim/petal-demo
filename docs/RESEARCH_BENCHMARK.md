@@ -233,3 +233,13 @@ corpus depth — not just retrieval mechanics.
   gate floors now live in `RELEASE_GATE` (measured-baseline.ts), guarded by `tests/research/measured-
   baseline.test.ts` (the floor can never be set above what was measured). Next: close the §1202/§163(j) fetch
   gaps to lift the settled-law floor, then corpus BREADTH (entity/multistate/circuit-split) per the C→A roadmap.
+- **2026-06-26 (later) — SETTLED-LAW FLOOR CLOSED: 5/8 → 8/8 (100%) on the PROD model (Claude).** Fixed the
+  two engine-bound fetch bugs the brutal librarian audit named as the #1 priority: §1202 (bare "section 1202"
+  collides across USC titles → zero Title-26 hits; added a disambiguation retry to "section 1202 qualified
+  small business stock") and §163(j) (the 30%-of-ATI rule sits at char ~31k in the 107k-char §163, past the
+  8k head-slice → re-center the chunk window on the cited subsection, tight 4k window so the codex distill
+  stops choking). VERIFIED set now: **Claude 8/8 (100%)**, **codex 7/8** (§199A-5 abstains only on the GPT-5.5
+  distill — a long-reg reasoning-token amplifier — grounds on Claude). Release-gate floor raised 5 → 7.
+  The audit's headline gap ("62.5% on settled law, 33 pts under the ~95% world-class bar") is CLOSED on the
+  production model. Remaining librarian gaps per the audit: corpus BREADTH (entity/multistate/circuit-split),
+  the premise gate, and making the live-model CI gate actually run + gate the verified set.

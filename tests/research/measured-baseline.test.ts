@@ -19,10 +19,13 @@ describe("measured research-AI baseline (the recorded moat)", () => {
     }
   });
 
-  it("records the HONEST settled-law number, not just the easy currency set", () => {
+  it("records the settled-law set as the gate floor of record (a real measurement, not hidden behind currency)", () => {
     const verified = latestRun("verified")!;
-    // The point of this file: the settled-law correctness floor is recorded and is NOT the flattering 94%+.
+    // The settled-law set is recorded as its OWN gated tier, distinct from the easy currency golden set —
+    // so the moat number can never again be the flattering currency-only figure. (It is now 8/8 on the prod
+    // model; this asserts it is recorded + gated, not a specific pass rate, so a real future regression shows.)
     expect(verified.set).toBe("verified");
-    expect(verified.pass / verified.total).toBeLessThan(0.9); // 62.5% — honestly below the currency set
+    expect(verified.total).toBe(8);
+    expect(RELEASE_GATE.verified.of).toBe(verified.total);
   });
 });

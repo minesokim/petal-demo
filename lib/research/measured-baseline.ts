@@ -22,11 +22,13 @@ export interface MeasuredRun {
 }
 
 export const MEASURED_BASELINE: MeasuredRun[] = [
-  // SETTLED BRIGHT-LINE LAW — the honest correctness floor. Lifted from 1/8 → 5/8 this session by fixing real
-  // fetch-routing bugs (Title-26 collision, Public-Law pollution, statute-lookup precision). The two still-
-  // failing (§1202 statute-collision, §163(j) buried-subsection) are concrete fetch gaps, model-independent.
-  { set: "verified", description: "settled bright-line law; every key verified in the cited primary source", model: "claude-sonnet-4-6 (+ opus judge)", config: "--set verified --fetch", total: 8, pass: 5, errorRatePct: 37.5, date: "2026-06-26" },
-  { set: "verified", description: "(same set) GPT-5.5 via codex sub — identical failures ⇒ engine-bound, not model-bound", model: "gpt-5.5 (codex)", config: "--set verified --fetch", total: 8, pass: 5, errorRatePct: 37.5, date: "2026-06-26" },
+  // SETTLED BRIGHT-LINE LAW — the honest correctness floor. Lifted 1/8 → 5/8 → 8/8 this session by fixing real
+  // fetch bugs: Title-26 collision + Public-Law pollution + statute-lookup precision, then the §1202 cross-
+  // title collision (disambiguation retry) and the §163(j) buried-subsection truncation (re-center the chunk
+  // window on the cited subsection). PROD model (Claude) = 8/8 / 100%. The audit's #1 gap (62.5% settled law,
+  // 33 pts under the ~95% world-class bar) is closed on the production model.
+  { set: "verified", description: "settled bright-line law; every key verified in the cited primary source — PROD model", model: "claude-sonnet-4-6 (+ opus judge)", config: "--set verified --fetch", total: 8, pass: 8, errorRatePct: 0.0, date: "2026-06-26" },
+  { set: "verified", description: "(same set) GPT-5.5 via codex sub — 7/8; §199A-5 abstains on the codex distill (GPT-5.5 reasoning-token amplifier on a long reg), grounds on Claude", model: "gpt-5.5 (codex)", config: "--set verified --fetch", total: 8, pass: 7, errorRatePct: 12.5, date: "2026-06-26" },
   // HARD / UNSETTLED multi-section + edge cases. Claude holds calibrated hedges better than GPT-5.5, which
   // over-answered 2 hedge-required cases (the calibration edge that IS the moat).
   { set: "bluej", description: "hard / unsettled multi-section + edge cases", model: "claude-sonnet-4-6 (+ opus judge)", config: "--set bluej --fetch", total: 15, pass: 7, errorRatePct: 53.3, date: "2026-06-26" },
@@ -40,7 +42,7 @@ export const MEASURED_BASELINE: MeasuredRun[] = [
 // is explained or fixed. The settled-law floor is the one that matters most — raise it as the §1202/§163(j)
 // fetch gaps close; never lower it.
 export const RELEASE_GATE = {
-  verified: { floor: 5, of: 8, note: "settled bright-line law — the honest correctness floor; lift by closing the §1202 / §163(j) fetch gaps" },
+  verified: { floor: 7, of: 8, note: "settled bright-line law — PROD model (Claude) is 8/8; floor 7 allows one run-to-run flake but blocks a real settled-law regression. Never lower it." },
   golden: { floor: 47, of: 50, note: "currency / plumbing" },
   bluej: { floor: 6, of: 15, note: "hard / unsettled — expected to include calibrated hedges; a confident-WRONG answer here is the real failure, not a hedge" },
 } as const;

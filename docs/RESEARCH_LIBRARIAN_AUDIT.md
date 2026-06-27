@@ -11,6 +11,13 @@ The §6662 weighting, four-bucket calibration, and grounding guards are genuinel
 but the librarian fails settled bright-line law at a MEASURED 62.5%, has zero entity law, no premise gate,
 and a moat that does not gate. **Not world-class, and not borderline.**
 
+> **UPDATE (2026-06-26, same day): the #1 gap — the settled-law floor — is CLOSED.** Fixed the two engine-
+> bound fetch bugs (§1202 cross-title collision; §163(j) buried-subsection truncation). VERIFIED settled-law
+> set now **8/8 (100%) on the prod model (Claude)**, codex 7/8. So "62.5%, 33 pts under world-class" no longer
+> holds. The OTHER gaps in this audit remain the real work: corpus BREADTH (entity/multistate/circuit-split),
+> the premise gate (still zero code), the contra-search corpus-emptiness honesty bug, and making the moat GATE
+> (wire the verified set into CI). The reasoning engine was always strong; the fuel and enforcement are next.
+
 | Dimension | Grade | The honest read |
 |---|---|---|
 | Retrieval / corpus | **D** | 62 chunks, 59 federal + 3 CA, 12 cases (11 Supreme + 1 circuit), ZERO entity law, zero circuit splits. ~18% of Blue J's breadth. The 16-source live fetch + cite-verify are the only thing off D-/F. |
