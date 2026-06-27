@@ -63,7 +63,7 @@ export const VERIFIED_CASES: GoldenCase[] = [
     taxYear: 2024,
     jurisdiction: "federal",
     expectedBucket: "answer",
-    mustClaim: "five years",
+    mustClaim: "5 year|five year",
     mustCiteAuthorityLike: "1202",
     notes: "VERIFIED in 26 U.S.C. §1202(a)/(b): the stock must be held for MORE THAN FIVE YEARS. Confirmed present in the fetched source.",
   },

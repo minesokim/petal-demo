@@ -89,7 +89,11 @@ export function gradeAnswer(answer: GradableAnswer, testCase: GoldenCase): Grade
   // must not be punished for that). Catches a stale engine that omits the correct/current figure
   // without false-positiving on a legitimately-mentioned-but-stale-elsewhere number.
   if (testCase.mustClaim && testCase.expectedBucket === "answer") {
-    if (!norm(answer.text).includes(norm(testCase.mustClaim))) {
+    // "|"-separated alternation: ANY listed form counts (e.g. "5 year|five year" so a correct answer is not
+    // failed for spelling the statute's "5 years" with a digit vs the word). NOT eval-dodging — the claim
+    // must still be present; this only accepts equivalent renderings of the SAME correct fact.
+    const alts = norm(testCase.mustClaim).split("|").map((s) => s.trim()).filter(Boolean);
+    if (!alts.some((a) => norm(answer.text).includes(a))) {
       reasons.push(`required claim absent from text: "${testCase.mustClaim}"`);
     }
   }
