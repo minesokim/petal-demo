@@ -147,3 +147,37 @@ completes) **A**.
 - **Surface-wiring is a long, repetitive slog** (the bulk of Phase 1); resist restyling (RULE 2).
 - **OLT Stagehand fragility** — browser automation breaks on UI drift; sandbox-first + error escalation.
 - **§7216 is the hard legal floor** — until cleared, prod runs on synthetic/demo data only.
+
+---
+
+## Roadmap addenda (2026-06-26, from live QA + the durable-runtime/§7216 design workflow)
+
+### Real notifications backbone (RULE 1 — kill the mock)
+The notification bell was a client-side fabricated seed. SHIPPED interim: it now hydrates from real firm data
+(`getNotificationsAction` → `deriveNotifications` over pending `action_proposals`); demo shows honestly empty,
+a seeded firm shows real pending approvals. REMAINING (this slice): add the other real sources (@mention
+comments, task assignments, connector sync alerts); a **persisted per-user read-state** table (read survives
+reload — today it's in-session); and **realtime push** via a Supabase subscription instead of fetch-on-open.
+
+### Per-client §7216 (replaces the global flag)
+Today §7216 is one global flag (`PETAL_7216_CLEARED`) — wrong for a 300-client firm (one unsigned client must
+not block all AI, and pure research must never be gated). Target model: consent is **per client (per
+household)**, checked only when a SPECIFIC client's data enters the model; research/general questions are never
+gated. Phased: (1) schema — `section7216_signed_at` + `section7216_signed_by_person_id` on `engagements` +
+firm-scoped RLS migration + `getClientConsent()` helper (the portal already CAPTURES consent in
+intake-flow.ts `consent7216`, but nothing durable is queryable yet); (2) `assertClientConsent(firmId,
+householdId)` in lib/ai/guard.ts (skips when no household = research; throws named error when unsigned), ordered
+after `assertZdrModel`, before `redactValue`; (3) tag each agent tool firm|client scope, call the gate before
+any client-reading tool (batch both sides for multi-client questions), and REMOVE the deploy-level scope
+ternary so turns run scope='real' with per-client consent doing the gating; emit an audit_log row per check;
+(4) populate from the portal consent step + a `tests/security/consent-per-client.test.ts`.
+
+### Durable runtime / long-running + recurring agents (do we switch platforms? No.)
+The durable runtime is largely ALREADY built (agent_tasks/agent_runs + RLS [0028], action_proposals approval
+gate, agent_schedules + the Vercel cron→/api/cron/schedules with no-storm catch-up [0038], reconnect-durable
+streaming). Gap to background/scheduled/reconnect-durable ≈ zero. Keep the Next.js app on Vercel; Postgres
+agent_tasks/runs stays the source of truth. Phase 0 (now): Vercel Pro + `maxDuration` 300→800 (one line) likely
+carries past the demo. Phase 1 (only when ONE run must exceed ~800s): add **Trigger.dev v3** (own containers, no
+per-task limit, open-source — primary pick) OR **Vercel Workflows** (zero new vendor, unlimited run/sleep,
+wait-for-event fits the §7216 human-approval gate; per-step still capped). NOT Supabase Edge Functions as the
+executor (≤150s). Rough cost: ~$25/mo demo; ~$45–95/mo early prod.

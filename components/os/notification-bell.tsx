@@ -14,6 +14,7 @@ import { Icon, I } from "@/components/os/icon";
 import { PetalMark } from "@/components/petal-mark";
 import { MemberAvatar } from "@/components/os/primitives";
 import { notificationsStore, useNotifications, type NotifKind } from "@/lib/notifications-store";
+import { getNotificationsAction } from "@/app/os/notifications-actions";
 
 const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--os-accent)]";
 
@@ -32,6 +33,15 @@ export function NotificationBell() {
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const rowRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+
+  // Hydrate the bell from REAL firm data (pending action_proposals) on mount — no fabricated seed (RULE 1).
+  useEffect(() => {
+    let alive = true;
+    getNotificationsAction()
+      .then(r => { if (alive) notificationsStore.hydrate(r.notifs); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const place = () => {
     const r = rowRef.current?.getBoundingClientRect();

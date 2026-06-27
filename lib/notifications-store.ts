@@ -1,8 +1,9 @@
 "use client";
 
-// Notification center — the current user's (Antonio's) inbox: @mentions from
-// teammates, approvals ready, assignments, and sync alerts. Seeded; reading marks
-// items read and moves the unread badge. Session-only.
+// Notification center — the current user's inbox: approvals ready (pending agent action_proposals), and (on
+// the roadmap) @mentions, assignments, and sync alerts. NO fabricated seed (RULE 1): the bell HYDRATES from
+// the server (getNotificationsAction → real RLS-scoped firm data), so the demo shows real-but-empty rather
+// than fake data. Reading marks items read in-session (persisted read-state is roadmapped).
 
 import { useSyncExternalStore } from "react";
 
@@ -20,15 +21,9 @@ export interface Notif {
   read: boolean;
 }
 
-const seed: Notif[] = [
-  { id: "nf-1", kind: "mention", title: "Elena Reyes mentioned you", body: "Park Family Dental · the Q2 books look off — can you confirm the payroll JE before we file?", actorId: "u-elena", href: "/os/clients/h-park?panel=Notes", at: "12m", read: false },
-  { id: "nf-2", kind: "approval", title: "3 returns ready for your sign-off", body: "Petal finished its pass — review and approve in Review mode.", href: "/os/review", at: "1h", read: false },
-  { id: "nf-3", kind: "assignment", title: "Raj Patel assigned you a task", body: "Chen Household · 1040 second review before transmit.", actorId: "u-raj", href: "/os/clients/h-chen", at: "2h", read: false },
-  { id: "nf-4", kind: "sync", title: "QuickBooks synced 14 invoices", body: "Reconciled against billing — nothing needs you.", href: "/os/connections", at: "3h", read: true },
-  { id: "nf-5", kind: "mention", title: "Daniel Okonkwo mentioned you", body: "Sandoval Plumbing · flagged the payroll filing, waiting on you.", actorId: "u-daniel", href: "/os/clients/h-sandoval?panel=Notes", at: "Yesterday", read: true },
-];
-
-const items: Notif[] = [...seed];
+// Starts EMPTY — populated by hydrate() from the server-derived real notifications. No mock seed.
+const items: Notif[] = [];
+const readIds = new Set<string>(); // in-session read marks, preserved across re-hydration
 let seq = 0;
 let version = 0;
 const listeners = new Set<() => void>();
@@ -37,8 +32,14 @@ function emit() { version++; listeners.forEach(l => l()); }
 export const notificationsStore = {
   all: (): Notif[] => [...items],
   unreadCount: () => items.filter(n => !n.read).length,
-  markRead(id: string) { const n = items.find(x => x.id === id); if (n && !n.read) { n.read = true; emit(); } },
-  markAllRead() { let changed = false; items.forEach(n => { if (!n.read) { n.read = true; changed = true; } }); if (changed) emit(); },
+  // Replace the list with the server-derived real notifications, preserving any in-session read marks.
+  hydrate(next: Notif[]) {
+    items.length = 0;
+    for (const n of next) items.push({ ...n, read: n.read || readIds.has(n.id) });
+    emit();
+  },
+  markRead(id: string) { readIds.add(id); const n = items.find(x => x.id === id); if (n && !n.read) { n.read = true; emit(); } },
+  markAllRead() { let changed = false; items.forEach(n => { readIds.add(n.id); if (!n.read) { n.read = true; changed = true; } }); if (changed) emit(); },
   add(n: Omit<Notif, "id" | "read" | "at"> & { at?: string }) {
     items.unshift({ id: `nf-new-${++seq}`, read: false, at: n.at ?? "Just now", ...n });
     emit();
