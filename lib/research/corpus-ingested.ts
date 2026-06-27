@@ -1350,5 +1350,159 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "real property business",
       "former passive activity"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-168",
+    "authorityType": "statute",
+    "citation": "IRC §168",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/168",
+    "ingestedAt": "2026-06-27T03:31:46.509Z",
+    "text": "Except as otherwise provided, IRC §168 determines the §167(a) depreciation deduction for tangible property by applying the applicable depreciation method, applicable recovery period, and applicable convention, with salvage value treated as zero. The general MACRS method is 200 percent declining balance switching to straight line when straight line on beginning adjusted basis yields a larger allowance; 150 percent declining balance applies to specified 15-year or 20-year property, qualified smart electric meter or grid property, and elected property, while straight line applies to nonresidential real property, residential rental property, railroad grading or tunnel bore, water utility property, qualified improvement property, and elected property. The applicable convention is generally half-year, mid-month for nonresidential real property, residential rental property, and railroad grading or tunnel bore, and mid-quarter when last-3-months placed-in-service basis exceeds 40 percent of the taxable year’s aggregate placed-in-service basis after statutory exclusions. Section 168(k) allows an additional first-year depreciation deduction for qualified property equal to the applicable percentage of the property’s adjusted basis.",
+    "keywords": [
+      "irc §168",
+      "section 168(k)",
+      "macrs",
+      "accelerated cost recovery",
+      "depreciation",
+      "applicable depreciation method",
+      "recovery period",
+      "half-year convention",
+      "mid-quarter convention",
+      "mid-month convention",
+      "declining balance",
+      "straight-line method",
+      "bonus depreciation",
+      "qualified property",
+      "additional first-year allowance"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-179",
+    "authorityType": "statute",
+    "citation": "IRC §179",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2025-07-04",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/179",
+    "ingestedAt": "2026-06-27T03:35:07.023Z",
+    "text": "Under IRC §179, a taxpayer may elect on its return to treat the cost of section 179 property as a current expense not chargeable to capital account, deductible in the taxable year the property is placed in service, if the election identifies the property and cost portion; a revocation, once made, is irrevocable. Section 179 property generally is purchased tangible property to which §168 applies or qualifying computer software, that is §1245 property or elected qualified real property, and that is acquired for use in the active conduct of a trade or business; estates and trusts are excluded. The aggregate cost taken into account is limited to $2,500,000, reduced (not below zero) by the amount §179 property placed in service exceeds $4,000,000, and the allowable deduction is further limited to active-trade-or-business taxable income computed without the §179 deduction, with disallowed amounts carried forward as provided. Qualified real property includes qualified improvement property and roofs, heating, ventilation, and air-conditioning property, fire protection and alarm systems, and security systems for nonresidential real property placed in service after the underlying property was first placed in service. The dollar amounts in the aggregate-cost limit and phaseout are subject to cost-of-living adjustment for taxable years beginning after 2025.",
+    "keywords": [
+      "irc 179",
+      "section 179",
+      "expensing election",
+      "placed in service",
+      "depreciable business assets",
+      "dollar limitation",
+      "phaseout threshold",
+      "taxable income limitation",
+      "active trade or business",
+      "carryover",
+      "qualified real property",
+      "qualified improvement property",
+      "section 1245 property",
+      "computer software"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-453",
+    "authorityType": "statute",
+    "citation": "IRC §453",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/453",
+    "ingestedAt": "2026-06-27T03:35:36.356Z",
+    "text": "Under IRC §453, income from an installment sale generally is taken into account under the installment method: an installment sale is a disposition of property in which at least one payment is to be received after the close of the taxable year of disposition, and income recognized for a taxable year is the portion of payments received that year equal to gross profit divided by total contract price. The installment-sale definition excludes dealer dispositions and dispositions of personal property required to be included in inventory if on hand at year end, and the rule also does not apply to certain revolving-credit personal property sales or installment obligations from sales of stock or securities traded on an established securities market. A taxpayer may elect out by the return due date, including extensions, for the year of disposition, and recapture income under sections 1245 or 1250 is recognized in the year of disposition with only gain in excess of recapture income taken into account under the installment method.",
+    "keywords": [
+      "irc 453",
+      "installment method",
+      "installment sale",
+      "gross profit",
+      "total contract price",
+      "payments received",
+      "dealer disposition",
+      "inventory",
+      "revolving credit",
+      "established securities market",
+      "election out",
+      "recapture income",
+      "section 1245",
+      "section 1250"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-165",
+    "authorityType": "statute",
+    "citation": "IRC §165",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/165",
+    "ingestedAt": "2026-06-27T03:36:28.558Z",
+    "text": "Section 165 allows a deduction for a loss sustained during the taxable year only to the extent it is not compensated by insurance or otherwise, with the amount determined by the adjusted basis provided in section 1011. For an individual, the deduction is limited to losses incurred in a trade or business, losses incurred in a transaction entered into for profit, and casualty or theft losses; for taxable years beginning after December 31, 2017, personal casualty losses are deductible only to the extent attributable to a federally declared disaster or a State declared disaster, subject to the exception for personal casualty gains. Theft losses are treated as sustained in the taxable year discovered, capital losses are allowed only as provided in sections 1211 and 1212, and a worthless security that is a capital asset is treated as sold or exchanged on the last day of the taxable year. Losses from wagering transactions are deductible in an amount equal to 90 percent of such losses and only to the extent of wagering gains for the taxable year.",
+    "keywords": [
+      "irc 165",
+      "losses",
+      "deduction",
+      "insurance compensation",
+      "adjusted basis",
+      "individual losses",
+      "casualty loss",
+      "theft loss",
+      "federally declared disaster",
+      "state declared disaster",
+      "capital losses",
+      "worthless securities",
+      "wagering losses"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-170",
+    "authorityType": "statute",
+    "citation": "IRC §170",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/170",
+    "ingestedAt": "2026-06-27T03:37:16.743Z",
+    "text": "IRC §170 allows a deduction for a charitable contribution, as defined in the section, only if payment is made within the taxable year and verified under Treasury regulations. For individuals, contributions to specified public charities and governmental units are generally limited by contribution-base percentages: cash contributions to those organizations are deductible up to the excess of 60% of contribution base over other contributions counted under the public-charity rule, capital-gain property to those organizations is generally limited to 30%, other contributions are generally limited to 30%, and capital-gain property to non-public-charity organizations is limited to the lesser of 20% or the stated excess amount. Excess contributions subject to these individual percentage limits are carried forward, in order, to each of the 5 succeeding taxable years. A charitable contribution includes gifts to specified governmental units for exclusively public purposes and to qualifying domestic organizations operated for listed exempt purposes, with no private inurement and no disqualifying political campaign activity.",
+    "keywords": [
+      "irc 170",
+      "charitable contribution",
+      "deduction",
+      "qualified organization",
+      "contribution base",
+      "adjusted gross income",
+      "cash contribution",
+      "public charity",
+      "capital gain property",
+      "percentage limitation",
+      "carryforward",
+      "governmental unit",
+      "private inurement"
+    ]
   }
 ];

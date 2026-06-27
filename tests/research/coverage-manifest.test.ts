@@ -137,3 +137,15 @@ describe("high-frequency individual / SMB provisions (next-ranked coverage)", ()
     });
   }
 });
+
+describe("core depreciation / deduction provisions", () => {
+  // §168 MACRS + §168(k) bonus, §179 expensing, §453 installment sales, §165 losses, §170 charitable —
+  // very high frequency in real returns. Model-free presence guards.
+  for (const sec of ["IRC §168", "IRC §179", "IRC §453", "IRC §165", "IRC §170"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the depreciation/deduction ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});
