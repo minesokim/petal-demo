@@ -48,12 +48,36 @@ export function ungroundedReplyFigures(reply: string, groundedTexts: string[], u
   // Figures in the reply not LITERALLY present in the anchors (user inputs + grounded output).
   const notLiteral = ungroundedFigures(reply, anchorsText);
   if (!notLiteral.length) return [];
-  // Of those, keep only the ones that are also not ARITHMETICALLY DERIVABLE from the anchors.
-  const anchors = figureValuesIn(anchorsText);
+  // Of those, keep only the ones that are also not ARITHMETICALLY DERIVABLE from the anchors. The anchor
+  // set unions the $-prefixed figures (figureValuesIn) with BARE money the user typed WITHOUT a "$"
+  // ("5 million", "2.65M", "5,000,000") — otherwise a question like "sold for 5 million, I own 53%" leaves
+  // 5,000,000 unanchored and the gate falsely flags the user's own $5,000,000 and the $2,650,000 = 53%×5M
+  // arithmetic built on it. (The leak we DO want is an invented legal parameter, never the client's numbers.)
+  const anchors = [...figureValuesIn(anchorsText), ...bareMoneyValues(anchorsText)];
   return notLiteral.filter((f) => {
     const v = figureValue(f);
     return v != null && !isArithmeticallyDerivable(v, anchors);
   });
+}
+
+// Money-shaped numbers written WITHOUT a leading "$" — comma-grouped (5,000,000) or magnitude-suffixed
+// (5 million / 2.65M / 5k). Deliberately NOT bare small integers ("3 years", "100 shareholders") so the
+// anchor set gains the user's dollar figures without absorbing every count in the text.
+function bareMoneyValues(text: string): number[] {
+  const out: number[] = [];
+  const re = /\$?\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?\s?(?:k|m|b|million|billion))\b/gi;
+  for (const m of text.matchAll(re)) {
+    const mm = m[1].toLowerCase().replace(/[\s,]/g, "").match(/^(\d+(?:\.\d+)?)(k|m|b|million|billion)?$/);
+    if (!mm) continue;
+    let n = parseFloat(mm[1]);
+    switch (mm[2]) {
+      case "k": n *= 1e3; break;
+      case "m": case "million": n *= 1e6; break;
+      case "b": case "billion": n *= 1e9; break;
+    }
+    if (Number.isFinite(n)) out.push(n);
+  }
+  return out;
 }
 
 // True if `v` equals an anchor, or a sum / difference / product / percentage of anchors (with one

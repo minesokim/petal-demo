@@ -52,4 +52,23 @@ describe("ungroundedReplyFigures — the parametric-leak sensor", () => {
   it("a figure-free reply is trivially grounded", () => {
     expect(ungroundedReplyFigures("Report the income regardless; confirm the form with the client.", [])).toEqual([]);
   });
+
+  it("does NOT flag the user's own BARE money (no $) or arithmetic on it — the founder-exit bug", () => {
+    // The user typed "5 million" (no $) and "53%". The reply restates $5,000,000 and computes
+    // $2,650,000 = 53% × 5M. None is a parametric leak — they are the user's numbers + math.
+    const userText = "if im a founder who has 53% equity in a company and sold it at a valuation of 5 million, how much would I get";
+    const reply = "53% of $5,000,000 is $2,650,000. Your gain is $2,650,000 minus basis. The QSBS per-issuer cap is the greater of $15,000,000 or 10x basis.";
+    const grounded = ["IRC §1202: per-issuer exclusion is the greater of $15,000,000 or 10 times basis"];
+    const leaks = ungroundedReplyFigures(reply, grounded, userText);
+    expect(leaks).not.toContain("$5,000,000");
+    expect(leaks).not.toContain("$2,650,000");
+    expect(leaks).toEqual([]); // $15,000,000 is grounded; the rest is the user's input + arithmetic
+  });
+
+  it("still flags a genuinely invented legal parameter even amid the user's bare money", () => {
+    const userText = "I sold for 5 million and own 53%";
+    // $13,610,000 (a stale estate exemption from memory) is neither the user's input, grounded, nor derivable.
+    const leaks = ungroundedReplyFigures("You owe nothing; the exemption is $13,610,000.", [], userText);
+    expect(leaks).toContain("$13,610,000");
+  });
 });
