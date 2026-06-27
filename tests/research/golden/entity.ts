@@ -173,4 +173,33 @@ export const ENTITY_CASES: GoldenCase[] = [
     mustClaim: "ordinary income|ordinary", mustCiteAuthorityLike: "1245",
     notes: "VERIFIED §1245(a): gain is recaptured as ordinary income to the extent of prior depreciation/amortization.",
   },
+  // ── Equity compensation (verified GROUNDING via live probe) ──
+  {
+    id: "entity-409A-additional-tax",
+    question: "What additional tax applies under IRC section 409A if a nonqualified deferred compensation plan fails to meet its requirements?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "answer",
+    mustClaim: "20 percent|20%|20 per", mustCiteAuthorityLike: "409A",
+    notes: "VERIFIED §409A(a)(1)(B): a 20% additional tax (plus premium interest) on the amount included; the engine grounds 'additional tax equal to 20 percent'.",
+  },
+  {
+    id: "entity-83b-30-day-election",
+    question: "How many days does a service provider have to make an IRC section 83(b) election?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "answer",
+    mustClaim: "30 day|30 days|thirty day", mustCiteAuthorityLike: "83",
+    notes: "VERIFIED §83(b)(2): the election must be made no later than 30 days after the transfer (engine grounds it).",
+  },
+  {
+    id: "entity-422-iso-price",
+    question: "What must the exercise price of an incentive stock option be, relative to the stock value at grant, under IRC section 422?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "answer",
+    mustClaim: "fair market value|at least the fair market|not less than the fair market|FMV", mustCiteAuthorityLike: "422",
+    notes: "VERIFIED §422(b)(4): the ISO exercise price must be at least the fair market value of the stock at grant.",
+  },
+  {
+    id: "entity-423-espp-price",
+    question: "What is the minimum option price allowed under a qualified IRC section 423 employee stock purchase plan?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "answer",
+    mustClaim: "85", mustCiteAuthorityLike: "423",
+    notes: "VERIFIED §423(b)(6): the option price may not be less than 85% of the FMV (at grant or exercise).",
+  },
 ];

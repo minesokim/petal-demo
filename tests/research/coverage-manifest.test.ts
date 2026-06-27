@@ -149,3 +149,14 @@ describe("core depreciation / deduction provisions", () => {
     });
   }
 });
+
+describe("equity compensation (§409A / ISOs / ESPP / restricted stock — the live-surfaced gap)", () => {
+  // The §409A discounted-option question was a literal coverage gap (honestly hedged). Now grounded.
+  for (const sec of ["IRC §83", "IRC §409A", "IRC §421", "IRC §422", "IRC §423", "IRC §424"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the equity-comp ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

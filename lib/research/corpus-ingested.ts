@@ -1504,5 +1504,188 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "governmental unit",
       "private inurement"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-83",
+    "authorityType": "statute",
+    "citation": "IRC §83",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1969-07-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/83",
+    "ingestedAt": "2026-06-27T04:41:08.913Z",
+    "text": "Under IRC §83, when property is transferred in connection with performing services, the service provider includes in gross income the excess of the property’s fair market value over any amount paid for it in the first taxable year the beneficial rights are transferable or no longer subject to a substantial risk of forfeiture, whichever occurs earlier. Fair market value is determined without regard to restrictions other than restrictions that by their terms will never lapse, and this rule does not apply if the property is sold or otherwise disposed of in an arm’s-length transaction before the rights become transferable or no longer subject to substantial risk of forfeiture. The service provider may make a §83(b) election to include that excess in income in the year of transfer instead; the election must be made no later than 30 days after the transfer and may not be revoked without the Secretary’s consent.",
+    "keywords": [
+      "irc 83",
+      "section 83",
+      "property transferred for services",
+      "gross income",
+      "fair market value",
+      "amount paid",
+      "substantial risk of forfeiture",
+      "transferable",
+      "vesting",
+      "83(b) election",
+      "30 days",
+      "arm's-length disposition"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-409a",
+    "authorityType": "statute",
+    "citation": "IRC §409A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2005-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/409A",
+    "ingestedAt": "2026-06-27T04:41:38.059Z",
+    "text": "Under IRC §409A, if during a taxable year a nonqualified deferred compensation plan fails to satisfy or is not operated in accordance with the statutory distribution, acceleration, and election requirements, all compensation deferred under the plan for that year and prior years is included in gross income for the affected participants to the extent the compensation is not subject to a substantial risk of forfeiture and was not previously included. Rights are subject to a substantial risk of forfeiture when conditioned on the future performance of substantial services, so vested deferred compensation is included upon a plan failure. The tax for that year is increased by interest at the underpayment rate plus 1 percentage point, computed as if the compensation had been included when first deferred or, if later, when no longer subject to a substantial risk of forfeiture, plus an additional tax equal to 20 percent of the compensation required to be included.",
+    "keywords": [
+      "irc 409a",
+      "section 409a",
+      "nonqualified deferred compensation",
+      "gross income inclusion",
+      "substantial risk of forfeiture",
+      "vested compensation",
+      "plan failure",
+      "distribution requirements",
+      "acceleration of benefits",
+      "deferral elections",
+      "additional tax",
+      "20 percent tax",
+      "premium interest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-421",
+    "authorityType": "statute",
+    "citation": "IRC §421",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2004-10-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/421",
+    "ingestedAt": "2026-06-27T04:42:11.284Z",
+    "text": "When stock is transferred to an individual on exercise of an option and the requirements of §422(a) or §423(a) are met, the individual recognizes no income at the time of transfer. No §162 deduction is allowed at any time to the employer corporation, its parent or subsidiary, or a corporation issuing or assuming the option in a §424(a) transaction for the transferred share, and those corporations are treated as receiving no amount for the share other than the option price. If the transfer would otherwise qualify but the holding-period requirements of §422(a)(1) or §423(a)(1) are not met, the resulting income increase or employer deduction is taken into account in the taxable year of the disposition, and no chapter 24 withholding is required on that income increase.",
+    "keywords": [
+      "irc 421",
+      "section 421",
+      "statutory stock option",
+      "incentive stock option",
+      "employee stock purchase plan",
+      "qualifying transfer",
+      "disqualifying disposition",
+      "holding period",
+      "no income at exercise",
+      "employer deduction",
+      "section 422",
+      "section 423",
+      "chapter 24 withholding"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-422",
+    "authorityType": "statute",
+    "citation": "IRC §422",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/422",
+    "ingestedAt": "2026-06-27T04:42:43.132Z",
+    "text": "Section 421(a) applies to stock transferred on exercise of an incentive stock option only if the employee does not dispose of the stock within 2 years after grant or within 1 year after transfer, and was an employee of the granting corporation or a related corporation from grant until 3 months before exercise. An incentive stock option must be granted to an employee under a stockholder-approved plan stating the shares and eligible employees, granted within 10 years of plan adoption or approval, exercisable no later than 10 years after grant, priced at not less than fair market value at grant, nontransferable except at death, and exercisable during life only by the employee. The more-than-10-percent shareholder limit does not disqualify the option if the exercise price is at least 110 percent of fair market value and the option is not exercisable after 5 years from grant; fair market value is determined without regard to restrictions other than restrictions that never lapse. To the extent the aggregate grant-date fair market value of stock first exercisable under incentive stock options by an individual in a calendar year exceeds $100,000, the excess options are treated as non-incentive stock options in grant order.",
+    "keywords": [
+      "irc 422",
+      "section 422",
+      "incentive stock option",
+      "iso",
+      "section 421",
+      "fair market value",
+      "exercise price",
+      "stockholder approval",
+      "employee option",
+      "holding period",
+      "10 percent shareholder",
+      "100000 limitation",
+      "nonstatutory option",
+      "grant date"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-423",
+    "authorityType": "statute",
+    "citation": "IRC §423",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/423",
+    "ingestedAt": "2026-06-27T04:43:14.921Z",
+    "text": "IRC §423 allows §421(a) treatment for stock transferred on exercise of an option granted under a qualified employee stock purchase plan if the employee makes no disposition within 2 years after the option grant or within 1 year after the stock transfer and satisfies the stated employment-period requirement. A qualified plan must grant options only to eligible employees, be approved by stockholders within 12 months before or after adoption, deny grants to employees owning 5 percent or more of the employer or related corporation stock, and generally provide the same rights and privileges to employees who receive options. The plan’s option price may not be less than the lesser of 85 percent of fair market value at grant or 85 percent of fair market value at exercise, and no employee may accrue purchase rights under all such plans exceeding $25,000 of grant-date fair market value for each calendar year the option is outstanding. Options must meet the stated exercise-period and transferability limits, and an option for which a §83(i) election is made is not treated as granted under an employee stock purchase plan.",
+    "keywords": [
+      "irc 423",
+      "section 423",
+      "employee stock purchase plan",
+      "espp",
+      "section 421(a)",
+      "holding period",
+      "equal rights",
+      "option price",
+      "85 percent",
+      "fair market value",
+      "25000 limit",
+      "stockholder approval",
+      "5 percent owner",
+      "section 83(i)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-424",
+    "authorityType": "statute",
+    "citation": "IRC §424",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1964-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/424",
+    "ingestedAt": "2026-06-27T04:43:46.838Z",
+    "text": "IRC §424 supplies definitions and special rules for statutory stock options under this part: a substitution or assumption of an option in a corporate merger, consolidation, acquisition, separation, reorganization, or liquidation qualifies only if the post-transaction spread is not greater than the pre-transaction spread and the employee receives no additional benefits. Stock received in specified nonrecognition distributions with respect to option stock is treated as transferred on exercise, and a disposition generally includes a sale, exchange, gift, or transfer of legal title, but excludes specified transfers such as transfers at death, certain nonrecognition exchanges, pledges, qualifying joint-tenancy events, and transfers between spouses or incident to divorce. For the percentage limitations in §§422(b)(6) and 423(b)(3), an individual is treated as owning stock held by specified family members, and entity-owned stock is attributed proportionately to shareholders, partners, or beneficiaries; parent and subsidiary status generally requires an unbroken corporate chain with 50 percent or more voting-power ownership. A modification, extension, or renewal of an option is treated as the grant of a new option, with “modification” limited to changes giving the employee additional benefits and excluding specified qualifying changes, and stockholder approval does not change the option grant date.",
+    "keywords": [
+      "irc 424",
+      "section 424",
+      "statutory stock options",
+      "incentive stock option",
+      "employee stock purchase plan",
+      "modification",
+      "extension",
+      "renewal",
+      "new option",
+      "corporate reorganization",
+      "assumption",
+      "substitution",
+      "disposition",
+      "stock attribution",
+      "parent subsidiary"
+    ]
   }
 ];
