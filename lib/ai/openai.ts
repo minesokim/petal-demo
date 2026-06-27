@@ -52,7 +52,15 @@ export class OpenAIProvider implements AIProvider {
       );
     }
     // The proxy holds the real auth (a Codex OAuth token); the SDK still needs a non-empty key.
-    this.client = new OpenAI({ baseURL, apiKey: process.env.PETAL_DEV_OPENAI_KEY ?? "codex-proxy" });
+    // PER-CALL TIMEOUT + retry: without this a stalled proxy/upstream response hangs the WHOLE process
+    // (it hung the --fetch benchmark twice). The SDK aborts a call after `timeout` and retries, so one slow
+    // response fails/retries that single call instead of wedging a 28-question run. Tunable via env.
+    this.client = new OpenAI({
+      baseURL,
+      apiKey: process.env.PETAL_DEV_OPENAI_KEY ?? "codex-proxy",
+      timeout: Number(process.env.PETAL_DEV_OPENAI_TIMEOUT_MS ?? 120_000),
+      maxRetries: Number(process.env.PETAL_DEV_OPENAI_MAX_RETRIES ?? 2),
+    });
   }
 
   private params(extra: Record<string, unknown>) {
