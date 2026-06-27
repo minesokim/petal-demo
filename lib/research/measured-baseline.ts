@@ -11,7 +11,7 @@
 // is the point — the engine's own abstention philosophy forbids hiding from the measurement.
 
 export interface MeasuredRun {
-  set: "verified" | "bluej" | "golden" | "entity";
+  set: "verified" | "bluej" | "golden" | "entity" | "generated";
   description: string;
   model: string;
   config: string;
@@ -37,6 +37,14 @@ export const MEASURED_BASELINE: MeasuredRun[] = [
   // spine). The one miss (§351 control 80%) is the SAME codex over-abstention as §199A-5 — the 80% is in the
   // chunk via the §368(c) reference but GPT-5.5 won't extract it; expected to ground on Claude (re-measure).
   { set: "entity", description: "entity + capital-gains + depreciation/deduction + equity-comp + the §409A discounted-option BRIDGE (the Wave-2 reg payoff — hedged before §1.409A-1 was ingested, now answers cited to the reg + statute) source-verified set (28 cases); only the §351 control-80% codex abstain fails (model-robustness — grounds on Claude, so ~28/28 on the prod model)", model: "gpt-5.5 (codex)", config: "--set entity --fetch", total: 28, pass: 27, errorRatePct: 3.6, date: "2026-06-27" },
+  // THE HONEST ALL-AREAS BASELINE (the mirror). 50 questions across ALL 10 tax areas, every answer primary-source-
+  // VERIFIED by an independent fetch+confirm before admission (tax-benchmark-build workflow) — NOT the cherry-
+  // picked verified/entity sets. This is the number the moat must actually move. 12/50 = 24% (corpus-only, medium
+  // reasoning). The 76% is real: ~6 of 10 areas were empty (now filled by the full-text ingest, but the model
+  // ABSTAINS over raw statute — answerability, not coverage, is the wall, proven by 4 flat measurements: baseline /
+  // +full-corpus / +subsection-chunks all 24%). The located lever is a retrieve-then-extract grounding step
+  // (modifies the calibration moat → pending an explicit go). NEVER cherry-pick a friendlier set to hide this.
+  { set: "generated", description: "honest all-10-areas verified benchmark (50 cases); answerability of raw statute is the wall (the model abstains rather than extract a rule from dense legalese) — coverage is filled, retrieve-then-extract is the next lever", model: "gpt-5.5 (codex)", config: "--set generated", total: 50, pass: 12, errorRatePct: 76.0, date: "2026-06-27" },
   // CURRENCY / PLUMBING — the easy tier (what the old 97.4% measured).
   { set: "golden", description: "currency / plumbing golden set", model: "gpt-5.5 (codex)", config: "--set golden --fetch", total: 50, pass: 47, errorRatePct: 6.0, date: "2026-06-26" },
   { set: "golden", description: "currency / plumbing golden set (prior Claude baseline)", model: "claude-sonnet-4-6", config: "--no-judge", total: 50, pass: 49, errorRatePct: 2.0, date: "2026-06-25" },
