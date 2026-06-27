@@ -2913,5 +2913,367 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "deferral feature"
     ],
     "delegationBasis": "express"
+  },
+  {
+    "chunkId": "ingested-irc-901",
+    "authorityType": "statute",
+    "citation": "IRC §901",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/901",
+    "ingestedAt": "2026-06-27T09:44:11.007Z",
+    "text": "Under IRC §901, a taxpayer that elects the benefits of the foreign tax credit rules may credit, subject to the §904 limitation, the applicable income, war-profits, and excess-profits taxes paid or accrued during the taxable year to a foreign country or U.S. possession, plus deemed-paid taxes under §960 for a corporation. The election for a taxable year may be made or changed before the period expires for filing a claim for credit or refund for that year, and the credit is not allowed against any tax treated under §26(b) as not imposed by Chapter 1. The allowable credit depends on the taxpayer category, including citizens and domestic corporations, residents, alien residents, nonresident alien individuals and foreign corporations under §906, and partners or estate or trust beneficiaries for their proportionate shares, subject to the special denials and holding-period rules in §901.",
+    "keywords": [
+      "irc 901",
+      "foreign tax credit",
+      "income taxes",
+      "war profits taxes",
+      "excess profits taxes",
+      "foreign country",
+      "united states possession",
+      "section 904 limitation",
+      "section 960 deemed paid taxes",
+      "tax credit election",
+      "paid or accrued",
+      "holding period",
+      "section 906"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-904",
+    "authorityType": "statute",
+    "citation": "IRC §904",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/904",
+    "ingestedAt": "2026-06-27T09:44:41.708Z",
+    "text": "Under IRC §904, the total foreign tax credit allowed under section 901(a) cannot exceed the same proportion of the U.S. tax against which the credit is taken as the taxpayer’s foreign-source taxable income, capped at total taxable income, bears to total taxable income for the taxable year. This limitation, related taxable-income rules, and excess-credit carry rules are applied separately to section 951A inclusions other than passive category income, foreign branch income, passive category income, and general category income. Excess foreign taxes paid or accrued may be treated as paid or accrued in the first preceding taxable year and then in the first 10 succeeding taxable years, in order, but only as a credit and not a deduction, and this carry rule does not apply to taxes paid or accrued with respect to section 951A amounts.",
+    "keywords": [
+      "irc 904",
+      "section 904",
+      "foreign tax credit",
+      "credit limitation",
+      "section 901",
+      "foreign-source taxable income",
+      "total taxable income",
+      "separate limitation categories",
+      "section 951a",
+      "foreign branch income",
+      "passive category income",
+      "general category income",
+      "excess foreign taxes",
+      "carryback carryover"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-951a",
+    "authorityType": "statute",
+    "citation": "IRC §951A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/951A",
+    "ingestedAt": "2026-06-27T09:46:26.411Z",
+    "text": "For taxable years before the amendments applicable after Dec. 31, 2025, a United States shareholder of a controlled foreign corporation includes in gross income its global intangible low-taxed income, determined as net CFC tested income in excess of the shareholder’s net deemed tangible income return, which is based on 10% of qualified business asset investment reduced by certain interest expense. For taxable years beginning after Dec. 31, 2025, IRC §951A requires each United States shareholder of any controlled foreign corporation to include in gross income the shareholder’s net CFC tested income. Net CFC tested income is the excess, if any, of the shareholder’s aggregate pro rata share of tested income of each CFC over the shareholder’s aggregate pro rata share of tested loss of each CFC; tested income disregards §952(b) income, subpart F income, §954(b)(4)-excluded income, related-person dividends, and foreign oil and gas extraction income, and is reduced by properly allocable deductions including taxes.",
+    "keywords": [
+      "irc 951a",
+      "951a",
+      "gilti",
+      "net cfc tested income",
+      "united states shareholder",
+      "controlled foreign corporation",
+      "tested income",
+      "tested loss",
+      "qualified business asset investment",
+      "qbai",
+      "net deemed tangible income return",
+      "subpart f",
+      "pro rata share",
+      "gross income inclusion"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-250",
+    "authorityType": "statute",
+    "citation": "IRC §250",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/250",
+    "ingestedAt": "2026-06-27T09:46:57.800Z",
+    "text": "For a domestic corporation, §250 allows a deduction for a percentage of its foreign-derived deduction eligible income and a percentage of its net CFC tested income included under §951A, plus the related §78 dividend amount. For taxable years before the 2025 amendments apply, the percentages are 37.5% for foreign-derived intangible income and 50% for global intangible low-taxed income; for taxable years beginning after December 31, 2025, the percentages are 33.34% for foreign-derived deduction eligible income and 40% for net CFC tested income and the related §78 amount. If the sum of the foreign-derived deduction eligible income and net CFC tested income otherwise taken into account exceeds taxable income determined without §250, those amounts are reduced under the statutory allocation rule before computing the deduction. Foreign-derived deduction eligible income generally is deduction eligible income from property sold to a non-U.S. person for foreign use or services provided to a person, or with respect to property, not located in the United States, subject to the stated related-party and intermediary rules.",
+    "keywords": [
+      "irc 250",
+      "section 250",
+      "fdii",
+      "foreign-derived deduction eligible income",
+      "deduction eligible income",
+      "net cfc tested income",
+      "gilti",
+      "section 951a",
+      "section 78",
+      "domestic corporation",
+      "taxable income limitation",
+      "foreign use",
+      "related party",
+      "foreign-derived intangible income"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2001",
+    "authorityType": "statute",
+    "citation": "IRC §2001",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2001",
+    "ingestedAt": "2026-06-27T09:47:26.517Z",
+    "text": "IRC §2001 imposes an estate tax on the transfer of the taxable estate of every decedent who is a citizen or resident of the United States. The tax equals the excess, if any, of the tentative tax under the §2001(c) rate schedule on the taxable estate plus adjusted taxable gifts over the gift tax that would have been payable under chapter 12 on gifts made by the decedent after December 31, 1976, using the modifications in §2001(g). Adjusted taxable gifts are taxable gifts made after December 31, 1976, excluding gifts includible in the decedent’s gross estate; the top bracket in the schedule is $345,800 plus 40 percent of the amount over $1,000,000.",
+    "keywords": [
+      "irc 2001",
+      "estate tax",
+      "taxable estate",
+      "decedent",
+      "citizen or resident",
+      "tentative tax",
+      "adjusted taxable gifts",
+      "chapter 12",
+      "gift tax payable",
+      "rate schedule",
+      "gross estate",
+      "section 2001(c)",
+      "section 2001(g)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2010",
+    "authorityType": "statute",
+    "citation": "IRC §2010",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2010",
+    "ingestedAt": "2026-06-27T09:48:35.246Z",
+    "text": "IRC §2010 allows every decedent’s estate a credit against the §2001 estate tax equal to the applicable credit amount, reduced by 20% of aggregate specific exemptions allowed under former §2521 for gifts made after September 8, 1976, and limited to the §2001 tax. The applicable credit amount is the §2001(c) tentative tax computed on the applicable exclusion amount, which equals the basic exclusion amount plus, for a surviving spouse, any deceased spousal unused exclusion amount (DSUE). For estates of decedents dying or gifts made after December 31, 2017 and before January 1, 2026, the prior temporary rule substituted $10,000,000 for the basic exclusion amount; for estates of decedents dying and gifts made after December 31, 2025, the basic exclusion amount is $15,000,000 and is inflation-adjusted for decedents dying after 2026, rounded to the nearest $10,000. A DSUE is available only if the deceased spouse died after December 31, 2010 and the executor timely files an estate tax return computing it and making an irrevocable portability election.",
+    "keywords": [
+      "irc 2010",
+      "section 2010",
+      "unified credit",
+      "estate tax",
+      "applicable credit amount",
+      "applicable exclusion amount",
+      "basic exclusion amount",
+      "dsue",
+      "portability election",
+      "surviving spouse",
+      "tentative tax",
+      "inflation adjustment",
+      "section 2001"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2503",
+    "authorityType": "statute",
+    "citation": "IRC §2503",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2503",
+    "ingestedAt": "2026-06-27T09:49:11.110Z",
+    "text": "For gift tax, “taxable gifts” are the donor’s total gifts made during the calendar year, reduced by the deductions allowed under subchapter C, section 2522 and following. Gifts to a person other than future interests are excluded up to the first $10,000 per donee, increased for gifts made after 1998 by the specified cost-of-living adjustment and rounded down to the next lowest $1,000 multiple; a present interest is not disqualified merely because it may be diminished by a power if no part can pass to another person. A transfer for a donee under age 21 is not treated as a future interest if the property and income may be used for the donee before age 21 and any unspent amount passes to the donee at age 21, or if the donee dies earlier, to the donee’s estate or under a section 2514(c) general power of appointment. Qualified direct payments for tuition to a section 170(b)(1)(A)(ii) educational organization or to a provider of section 213(d) medical care are not treated as gifts.",
+    "keywords": [
+      "irc 2503",
+      "taxable gifts",
+      "annual exclusion",
+      "present interest",
+      "future interest",
+      "inflation adjustment",
+      "minor trust",
+      "age 21",
+      "qualified transfer",
+      "tuition",
+      "medical care",
+      "direct payment",
+      "gift tax"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2056",
+    "authorityType": "statute",
+    "citation": "IRC §2056",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-08-06",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2056",
+    "ingestedAt": "2026-06-27T09:49:59.264Z",
+    "text": "For estate tax purposes, the taxable estate is reduced by the value of any interest in property that passes from the decedent to the surviving spouse, but only to the extent the interest is included in the gross estate and is not limited by §2056(b). A terminable interest generally is not deductible if the spouse’s interest may terminate or fail and another person may possess or enjoy the property afterward, but qualifying exceptions include certain survivorship conditions, life estates or insurance/annuity payments with qualifying powers of appointment, qualified terminable interest property for which the executor makes an irrevocable election, and certain qualified charitable remainder trusts. Qualified terminable interest property must pass from the decedent, give the surviving spouse a qualifying income interest for life, and be covered by the election. If the surviving spouse is not a United States citizen, the marital deduction is disallowed unless the property passes in a qualified domestic trust or the statutory citizenship/residency exception applies.",
+    "keywords": [
+      "2056",
+      "marital deduction",
+      "surviving spouse",
+      "gross estate",
+      "taxable estate",
+      "terminable interest",
+      "qtip",
+      "qualified terminable interest property",
+      "qualified domestic trust",
+      "qdot",
+      "noncitizen spouse",
+      "power of appointment",
+      "estate tax",
+      "section 2001"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-446",
+    "authorityType": "statute",
+    "citation": "IRC §446",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1984-07-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/446",
+    "ingestedAt": "2026-06-27T09:50:28.185Z",
+    "text": "Under IRC §446, taxable income is computed using the accounting method the taxpayer regularly uses to compute income in keeping its books, unless no method is regularly used or the method used does not clearly reflect income; in that case, taxable income is computed under a method that the Secretary determines clearly reflects income. Subject to that requirement, permissible methods include cash receipts and disbursements, an accrual method, any other method permitted by chapter 1, or a permitted combination under regulations prescribed by the Secretary; a taxpayer with more than one trade or business may use a different method for each. Except as otherwise expressly provided, a taxpayer must obtain the Secretary’s consent before computing taxable income under a changed accounting method, and failure to request the change does not avoid or reduce penalties or additions to tax based on lack of consent.",
+    "keywords": [
+      "irc §446",
+      "section 446",
+      "methods of accounting",
+      "taxable income",
+      "clear reflection of income",
+      "cash receipts and disbursements",
+      "accrual method",
+      "change in accounting method",
+      "secretary consent",
+      "multiple trades or businesses",
+      "penalties",
+      "additions to tax"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-451",
+    "authorityType": "statute",
+    "citation": "IRC §451",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/451",
+    "ingestedAt": "2026-06-27T09:50:58.256Z",
+    "text": "Under IRC §451, an item of gross income is included in the taxable year received unless the taxpayer’s accounting method properly accounts for it in a different period. For an accrual-method taxpayer, the all-events test is met when all events have occurred that fix the right to receive the income and the amount can be determined with reasonable accuracy, and it is not treated as met later than when the item is taken into account as revenue in an applicable financial statement. An accrual-method taxpayer receiving an advance payment generally includes it in gross income in the year received, but may elect for a category of advance payments to include the portion required under the financial-statement rule in the year received and the remaining portion in the following taxable year.",
+    "keywords": [
+      "irc 451",
+      "section 451",
+      "gross income",
+      "taxable year",
+      "accrual method",
+      "all events test",
+      "reasonable accuracy",
+      "applicable financial statement",
+      "financial accounting",
+      "advance payments",
+      "revenue inclusion",
+      "method of accounting"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-461",
+    "authorityType": "statute",
+    "citation": "IRC §461",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2021-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/461",
+    "ingestedAt": "2026-06-27T09:51:28.244Z",
+    "text": "Under IRC §461, a deduction or credit is taken in the proper taxable year under the taxpayer’s accounting method; for an accrual-method liability, the all-events test is not met before economic performance occurs, and the test requires that the fact of liability be fixed and the amount determinable with reasonable accuracy. Economic performance generally occurs as services or property are provided to the taxpayer, as the taxpayer uses property, as the taxpayer provides required services or property, or, for workers’ compensation and tort liabilities, as payments are made. For noncorporate taxpayers in taxable years beginning after December 31, 2020, and before January 1, 2027, an excess business loss is not allowed and is treated as a net operating loss for carryover purposes; the excess business loss is business deductions over business gross income or gain plus $250,000, or 200 percent of that amount for a joint return, with the stated inflation adjustment for taxable years beginning after December 31, 2025.",
+    "keywords": [
+      "irc 461",
+      "section 461",
+      "deduction timing",
+      "accrual method",
+      "all events test",
+      "economic performance",
+      "contested liabilities",
+      "recurring items",
+      "excess business loss",
+      "noncorporate taxpayers",
+      "net operating loss",
+      "section 461(l)",
+      "workers compensation",
+      "tort liabilities"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-263a",
+    "authorityType": "statute",
+    "citation": "IRC §263A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/263A",
+    "ingestedAt": "2026-06-27T09:51:56.150Z",
+    "text": "For property covered by §263A, a taxpayer may not currently deduct the direct costs of the property or the property’s proper share of allocable indirect costs, including taxes; those costs must be included in inventory costs if the property is inventory, or otherwise capitalized. The rule applies to real or tangible personal property produced by the taxpayer and to real or personal property described in §1221(a)(1) that the taxpayer acquires for resale, with “produce” including construct, build, install, manufacture, develop, or improve. The section does not apply for a taxable year to a taxpayer, other than a tax shelter barred from the cash method under §448(a)(3), that meets the §448(c) gross-receipts test for that year.",
+    "keywords": [
+      "263a",
+      "uniform capitalization",
+      "unicap",
+      "capitalization",
+      "inventory costs",
+      "direct costs",
+      "indirect costs",
+      "produced property",
+      "resale property",
+      "section 448(c)",
+      "gross receipts test",
+      "small business exception"
+    ]
   }
 ];
