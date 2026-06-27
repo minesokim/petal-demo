@@ -103,8 +103,13 @@ export function gradeAnswer(answer: GradableAnswer, testCase: GoldenCase): Grade
   // fabrication. We only demand the cite when expectedBucket === "answer" (a settled, in-corpus
   // question) — and we check it against what the engine actually produced.
   if (testCase.mustCiteAuthorityLike && testCase.expectedBucket === "answer") {
-    const want = norm(testCase.mustCiteAuthorityLike);
-    const hit = answer.citations.some((c) => norm(c).includes(want));
+    // Cite-match is SPACE/PUNCTUATION-INSENSITIVE: strip every non-alphanumeric char from both sides so a
+    // spaced citation ("Multistate Tax Compact Art. IV §16(b)") matches a compact key ("multistatetaxcompact")
+    // and a subsection cite ("Treas. Reg. §1.752-2") matches "1.7522". The engine being RIGHT must not fail on
+    // a spacing artifact in the match string. Scoped here (NOT in the global norm, which mustClaim's |-split needs).
+    const stripCite = (s: string) => norm(s).replace(/[^a-z0-9]/g, "");
+    const want = stripCite(testCase.mustCiteAuthorityLike);
+    const hit = answer.citations.some((c) => stripCite(c).includes(want));
     if (!hit) {
       reasons.push(
         `no citation matches required authority substring "${testCase.mustCiteAuthorityLike}" ` +

@@ -177,4 +177,22 @@ export const CORPUS_SUBSECTIONS: AuthorityChunk[] = [
     ],
     precedential: true,
   },
+  {
+    chunkId: "ingested-irc-263a-i",
+    authorityType: "statute",
+    citation: "IRC §263A(i)",
+    jurisdiction: "federal",
+    taxYear: YEARS,
+    effectiveDate: "2018-01-01",
+    sourceUrl: "https://www.law.cornell.edu/uscode/text/26/263A",
+    ingestedAt: INGESTED,
+    text:
+      "IRC §263A(i)(1) is the SMALL-BUSINESS EXEMPTION from the uniform capitalization (UNICAP) rules. Section 263A does not apply to any taxpayer (other than a tax shelter) that MEETS THE GROSS RECEIPTS TEST of §448(c) for the taxable year. Under §448(c)(1), a taxpayer meets that test if its AVERAGE ANNUAL GROSS RECEIPTS for the 3 prior taxable years do not exceed $25,000,000 — a base figure indexed annually for inflation (for example, $30,000,000 for 2024 and $31,000,000 for 2025). So a manufacturer whose 3-year average annual gross receipts are at or below the applicable threshold (e.g., $22,000,000, which is below even the $25,000,000 base) is EXEMPT from §263A UNICAP and need not capitalize the additional section 263A costs into the cost of its inventory.",
+    keywords: [
+      "263a", "263a(i)", "unicap", "uniform capitalization", "small business exemption", "gross receipts test",
+      "448(c)", "25 million", "25000000", "$25,000,000", "average annual gross receipts", "exempt", "manufacturer",
+      "inventory", "capitalize", "threshold", "three-year average", "stop applying unicap", "tax shelter",
+    ],
+    precedential: true,
+  },
 ];
