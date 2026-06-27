@@ -4456,5 +4456,394 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "adjusted financial statement income",
       "foreign-parented multinational group"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-367",
+    "authorityType": "statute",
+    "citation": "IRC §367",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/367",
+    "ingestedAt": "2026-06-27T10:59:06.200Z",
+    "text": "Under IRC §367, if a United States person transfers property to a foreign corporation in connection with an exchange described in §§332, 351, 354, 356, or 361, the foreign corporation is not treated as a corporation for determining how much gain must be recognized, subject to regulatory exceptions including certain stock or securities transfers and property designated by the Secretary. A transfer of a partnership interest to a foreign corporation in such an exchange is treated, except as regulations provide, as a transfer of the transferor’s pro rata share of the partnership assets. If a United States person transfers intangible property to a foreign corporation in a §351 or §361 exchange, §367(d) applies instead of §367(a), treating the transferor as selling the intangible for contingent payments over its useful life or at disposition; included amounts are ordinary income and are treated like royalties for §904(d). To the extent regulations provide, certain paid-in surplus or capital contributions to a foreign corporation are treated as sales or exchanges at fair market value, with gain equal to fair market value over adjusted basis.",
+    "keywords": [
+      "367",
+      "foreign corporation",
+      "united states person",
+      "outbound transfer",
+      "gain recognition",
+      "section 351",
+      "section 361",
+      "intangibles",
+      "contingent payments",
+      "ordinary income",
+      "partnership interests",
+      "capital contributions",
+      "fair market value"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1248",
+    "authorityType": "statute",
+    "citation": "IRC §1248",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1248",
+    "ingestedAt": "2026-06-27T10:59:34.583Z",
+    "text": "Under IRC §1248, when a United States person sells or exchanges stock in a foreign corporation and owned, directly or constructively under section 958, 10 percent or more of the total combined voting power at any time during the 5-year period ending on the sale or exchange date while the corporation was a controlled foreign corporation, recognized gain is included in gross income as a dividend. The dividend treatment applies only to the extent of the foreign corporation’s earnings and profits attributable to the stock that were accumulated in taxable years beginning after December 31, 1962, during the period the seller held the stock while the corporation was a controlled foreign corporation. If the taxpayer does not establish the relevant earnings and profits, all gain from the sale or exchange is treated as a dividend under this section.",
+    "keywords": [
+      "irc 1248",
+      "section 1248",
+      "cfc stock",
+      "controlled foreign corporation",
+      "united states person",
+      "sale or exchange",
+      "dividend recharacterization",
+      "earnings and profits",
+      "section 958 ownership",
+      "10 percent voting power",
+      "5-year period",
+      "gross income"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-960",
+    "authorityType": "statute",
+    "citation": "IRC §960",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/960",
+    "ingestedAt": "2026-06-27T11:01:19.469Z",
+    "text": "A domestic corporation that is a United States shareholder of a controlled foreign corporation and includes an item in gross income under §951(a)(1) is deemed, for subpart A foreign tax credit purposes, to have paid the CFC’s foreign income taxes properly attributable to that item. For a §951A inclusion, the deemed-paid amount is the applicable statutory percentage—80 percent before the 2025 amendment applies and 90 percent for taxable years beginning after December 31, 2025—of the domestic corporation’s inclusion percentage multiplied by the aggregate tested foreign income taxes paid or accrued by its CFCs. For distributions excluded under §959(a), and tiered CFC distributions under §959(b), deemed-paid taxes are limited to taxes properly attributable to the excluded portion and not previously deemed paid under §960; after June 28, 2025, no §901 credit is allowed for 10 percent of taxes on §959(a) amounts excluded by reason of a §951A(a) inclusion.",
+    "keywords": [
+      "irc 960",
+      "section 960",
+      "deemed paid credit",
+      "foreign tax credit",
+      "subpart f",
+      "gilti",
+      "section 951a",
+      "section 951",
+      "controlled foreign corporation",
+      "united states shareholder",
+      "foreign income taxes",
+      "tested foreign income taxes",
+      "inclusion percentage",
+      "previously taxed earnings",
+      "section 959"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2035",
+    "authorityType": "statute",
+    "citation": "IRC §2035",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-08-05",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2035",
+    "ingestedAt": "2026-06-27T11:01:49.986Z",
+    "text": "If, during the 3-year period ending on the date of death, the decedent transferred an interest in property or relinquished a power and the property would have been included in the gross estate under §§2036, 2037, 2038, or 2042 had the interest or power been retained at death, the gross estate includes the value that would have been so included. The gross estate is also increased by any chapter 12 gift tax paid by the decedent or the estate on gifts made by the decedent or the decedent’s spouse during that same 3-year period. For purposes of §303(b), §2032A, and subchapter C of chapter 64, the gross estate includes property interests transferred by the decedent within that period, subject to the stated gift-return exception, the life-insurance limitation, the §6166 coordination rule, and the exception for bona fide sales for adequate and full consideration; certain transfers from §676 grantor-owned revocable trust portions are treated as made directly by the decedent.",
+    "keywords": [
+      "irc 2035",
+      "section 2035",
+      "gross estate",
+      "three year rule",
+      "gift tax paid",
+      "chapter 12",
+      "sections 2036 2037 2038 2042",
+      "life insurance",
+      "retained interests",
+      "bona fide sale",
+      "revocable trust",
+      "section 6166"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2038",
+    "authorityType": "statute",
+    "citation": "IRC §2038",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1977-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2038",
+    "ingestedAt": "2026-06-27T11:02:20.357Z",
+    "text": "IRC §2038 includes in the decedent’s gross estate the value of transferred property, to the extent of the decedent’s transferred interest, unless the transfer was a bona fide sale for adequate and full consideration in money or money’s worth. For transfers after June 22, 1936, inclusion applies if, at death, enjoyment of the property was subject to change through a power held by the decedent alone or with any other person, in any capacity and regardless of when or how acquired, to alter, amend, revoke, or terminate, or if such a power was relinquished during the 3-year period ending on the date of death. For transfers on or before June 22, 1936, inclusion applies for a power to alter, amend, or revoke, or a relinquishment of such a power during that 3-year period. A power is treated as existing at death even if exercise requires prior notice or takes effect only after a stated period, with proper adjustment for interests that would have been excluded if the decedent had lived.",
+    "keywords": [
+      "irc 2038",
+      "section 2038",
+      "revocable transfers",
+      "gross estate",
+      "alter amend revoke",
+      "terminate power",
+      "decedent power",
+      "3-year period",
+      "bona fide sale",
+      "adequate consideration",
+      "date of death",
+      "trust transfer"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2040",
+    "authorityType": "statute",
+    "citation": "IRC §2040",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1982-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2040",
+    "ingestedAt": "2026-06-27T11:02:49.146Z",
+    "text": "Include in the decedent’s gross estate the value of property held by the decedent and another as joint tenants with right of survivorship, by the decedent and spouse as tenants by the entirety, or in joint bank accounts payable to either or the survivor, except the portion shown to have originally belonged to the other person and not to have been acquired from the decedent for less than adequate and full consideration in money or money’s worth. If the other person acquired the property or its consideration from the decedent for less than adequate and full consideration, exclude only the portion proportionate to the consideration furnished by that other person. For a qualified joint interest held by the decedent and spouse as tenants by the entirety or as joint tenants with right of survivorship where they are the only joint tenants, include one-half of the value of that interest in the gross estate.",
+    "keywords": [
+      "irc 2040",
+      "joint interests",
+      "gross estate",
+      "joint tenancy",
+      "right of survivorship",
+      "tenants by the entirety",
+      "qualified joint interest",
+      "spousal joint property",
+      "adequate consideration",
+      "contribution rule",
+      "joint bank account"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2041",
+    "authorityType": "statute",
+    "citation": "IRC §2041",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2041",
+    "ingestedAt": "2026-06-27T11:04:18.028Z",
+    "text": "Section 2041 includes in a decedent’s gross estate property subject to a general power of appointment: for a power created after October 21, 1942, to the extent the decedent held it at death or exercised or released it by a disposition that would be includible under sections 2035 to 2038 if made with the decedent’s own property; and for a power created on or before October 21, 1942, to the extent the decedent exercised it by will or such a disposition. A general power of appointment is a power exercisable in favor of the decedent, the decedent’s estate, the decedent’s creditors, or creditors of the decedent’s estate. A power to consume, invade, or appropriate property for the decedent is not a general power if limited by an ascertainable standard relating to health, education, support, or maintenance, and certain powers exercisable only with another person are also excluded or limited under the section’s joint-exercise rules. A post–October 21, 1942 power is treated as existing at death even if exercise requires notice or takes effect only after a stated period, and lapse of such a power during life is treated as a release only to the extent the appointable property exceeds the greater of $5,000 or 5 percent of the relevant asset value at the time of lapse.",
+    "keywords": [
+      "irc 2041",
+      "section 2041",
+      "powers of appointment",
+      "general power of appointment",
+      "gross estate",
+      "estate tax",
+      "ascertainable standard",
+      "health education support maintenance",
+      "release",
+      "lapse",
+      "creditors",
+      "joint exercise",
+      "sections 2035 to 2038"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2032a",
+    "authorityType": "statute",
+    "citation": "IRC §2032A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2032A",
+    "ingestedAt": "2026-06-27T11:04:46.810Z",
+    "text": "For an estate of a decedent who was a U.S. citizen or resident, the executor may irrevocably elect on the estate tax return to value qualified U.S. real property at its qualified farm or trade-or-business use value, if the required written agreement is signed by all persons with an interest in the designated property. Property qualifies only if it passed from the decedent to a qualified heir, was used at death by the decedent or a family member for farming or another trade or business, satisfies the 50 percent and 25 percent adjusted-gross-estate tests, and was owned, used, and materially participated in for periods totaling 5 years or more during the 8-year period ending at death. The aggregate estate-value reduction is limited to $750,000, increased for decedents dying after 1998 by the stated cost-of-living adjustment and rounded down to the next lowest $10,000 multiple. If, within 10 years after death and before the qualified heir’s death, the heir disposes of the property outside the family or ceases the qualified use, an additional estate tax applies and is due 6 months after the disposition or cessation.",
+    "keywords": [
+      "irc 2032a",
+      "section 2032a",
+      "special-use valuation",
+      "qualified real property",
+      "qualified heir",
+      "farm property",
+      "trade or business use",
+      "material participation",
+      "estate tax election",
+      "written agreement",
+      "recapture tax",
+      "additional estate tax",
+      "qualified use"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-448",
+    "authorityType": "statute",
+    "citation": "IRC §448",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/448",
+    "ingestedAt": "2026-06-27T11:05:15.311Z",
+    "text": "Under IRC §448, a C corporation, a partnership with a C corporation as a partner, or a tax shelter may not compute taxable income using the cash receipts and disbursements method unless an exception in the section applies. The C-corporation and partnership limits do not apply to a farming business, a qualified personal service corporation, or a corporation or partnership that meets the gross receipts test for the taxable year. The gross receipts test is met when average annual gross receipts for the 3-taxable-year period ending with the preceding taxable year do not exceed $25,000,000, adjusted for inflation for taxable years beginning after December 31, 2018; related persons treated as a single employer are aggregated, short years are annualized, returns and allowances reduce gross receipts, and predecessors are included.",
+    "keywords": [
+      "irc 448",
+      "section 448",
+      "cash method",
+      "cash receipts and disbursements",
+      "c corporation",
+      "partnership",
+      "tax shelter",
+      "gross receipts test",
+      "qualified personal service corporation",
+      "farming business",
+      "aggregation rules",
+      "inflation adjustment",
+      "predecessor",
+      "short taxable year"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-460",
+    "authorityType": "statute",
+    "citation": "IRC §460",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/460",
+    "ingestedAt": "2026-06-27T11:05:45.509Z",
+    "text": "Under IRC § 460, taxable income from a long-term contract generally must be determined under the percentage-of-completion method, using costs allocated to and incurred under the contract compared with estimated total contract costs, and a look-back interest computation applies when the contract is completed. A long-term contract is a contract for the manufacture, building, installation, or construction of property that is not completed in the taxable year it is entered into, with manufacturing contracts covered only for unique items or items normally requiring more than 12 calendar months to complete. The percentage-of-completion and related cost-allocation rules do not apply to residential construction contracts, or to other construction contracts of a qualifying non-tax-shelter taxpayer that estimates completion within 2 years and meets the section 448(c) gross receipts test. The look-back requirement also does not apply to certain small contracts completed within 2 years whose gross price does not exceed the lesser of $1,000,000 or 1 percent of the taxpayer’s average annual gross receipts for the 3 preceding taxable years.",
+    "keywords": [
+      "irc 460",
+      "long-term contracts",
+      "percentage-of-completion",
+      "look-back method",
+      "construction contracts",
+      "residential construction",
+      "gross receipts test",
+      "home construction",
+      "cost allocation",
+      "contract completion",
+      "small contracts",
+      "section 448(c)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-472",
+    "authorityType": "statute",
+    "citation": "IRC §472",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1985-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/472",
+    "ingestedAt": "2026-06-27T11:06:14.204Z",
+    "text": "A taxpayer may elect the §472 last-in, first-out inventory method for goods specified in an application filed at the time and manner prescribed by the Secretary, and the method must be used under regulations needed to clearly reflect income. Under the method, goods remaining on hand at year-end are treated first as goods in opening inventory, in order of acquisition, and then as goods acquired during the taxable year; the goods are inventoried at cost, and the opening inventory for the first LIFO year is treated as acquired at the same time and costed by average cost. The election applies only if the taxpayer uses the same specified procedures for reports or statements to shareholders, partners, proprietors, beneficiaries, or for credit purposes, and once used must continue in later years unless the Secretary approves or requires a change. For conformity purposes, members of the same financially related corporate group are generally treated as one taxpayer.",
+    "keywords": [
+      "irc 472",
+      "section 472",
+      "lifo",
+      "last-in first-out",
+      "inventory",
+      "cost method",
+      "average cost",
+      "lifo conformity",
+      "financial statements",
+      "credit purposes",
+      "shareholders",
+      "secretary approval",
+      "controlled group",
+      "financially related corporations"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6502",
+    "authorityType": "statute",
+    "citation": "IRC §6502",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2000-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6502",
+    "ingestedAt": "2026-06-27T11:06:39.593Z",
+    "text": "If a tax imposed by this title is assessed within the applicable limitation period, it may be collected by levy or by a court proceeding only if the levy is made or the proceeding is begun within 10 years after assessment. Collection may also proceed within the specified written collection period tied to an installment agreement or, after a release of levy under section 6343, within the written period agreed before the release. If a timely court proceeding to collect the tax is begun, the levy collection period is extended until the tax liability, or a judgment arising from it, is satisfied or becomes unenforceable. A levy is considered made on the date the notice of seizure under section 6335(a) is given.",
+    "keywords": [
+      "irc 6502",
+      "section 6502",
+      "collection after assessment",
+      "assessment",
+      "levy",
+      "court proceeding",
+      "10 years",
+      "collection statute expiration date",
+      "installment agreement",
+      "written agreement",
+      "release of levy",
+      "section 6343",
+      "notice of seizure",
+      "section 6335"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-7602",
+    "authorityType": "statute",
+    "citation": "IRC §7602",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2019-08-15",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/7602",
+    "ingestedAt": "2026-06-27T11:07:31.031Z",
+    "text": "For determining the correctness of a return, making a return where none was made, determining or collecting an internal revenue tax liability, or determining transferee or fiduciary liability, the Secretary may examine relevant books, papers, records, or other data and may summon the taxpayer, related officers or employees, record custodians, or other proper persons to appear, produce relevant materials, and testify under oath. This authority may also be used to inquire into offenses connected with administering or enforcing the internal revenue laws, but no summons or section 7604 enforcement action may be initiated for a person while a Justice Department referral is in effect for that person, with taxable periods or events and taxes imposed by separate chapters treated separately. For third-party contacts about determining or collecting a taxpayer’s liability, the IRS generally must give the taxpayer notice specifying a period not greater than 1 year and provide it not later than 45 days before that period begins, and must periodically and on request provide a record of persons contacted, subject to the stated authorization, jeopardy or reprisal, and pending criminal-investigation exceptions. The Secretary may not use financial-status or economic-reality techniques to determine unreported income without a reasonable indication that unreported income is likely, and materials obtained under this section may be shared with section 6103(n) persons only when required solely for expert evaluation and assistance, while only IRS or Office of Chief Counsel officers or employees may question summoned witnesses under oath.",
+    "keywords": [
+      "irc 7602",
+      "summons",
+      "examination",
+      "books and records",
+      "testimony under oath",
+      "tax liability",
+      "third-party contacts",
+      "justice department referral",
+      "section 7604",
+      "unreported income",
+      "financial status",
+      "economic reality",
+      "section 6103(n)"
+    ]
   }
 ];
