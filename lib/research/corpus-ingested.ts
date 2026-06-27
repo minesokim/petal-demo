@@ -1687,5 +1687,312 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "stock attribution",
       "parent subsidiary"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-162",
+    "authorityType": "statute",
+    "citation": "IRC §162",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/162",
+    "ingestedAt": "2026-06-27T05:08:27.491Z",
+    "text": "Section 162 allows a deduction for ordinary and necessary expenses paid or incurred during the taxable year in carrying on a trade or business, including reasonable compensation for services actually rendered, non-lavish travel meals and lodging while away from home, and required rentals or similar payments for business property in which the taxpayer has no title or equity. No deduction is allowed for items such as contributions or gifts covered by section 170, illegal bribes, kickbacks, certain Medicare or Medicaid kickbacks, lobbying and political expenditures, certain fines, penalties, and amounts paid to or at the direction of a government for law violations or investigations, and specified stock reacquisition expenses. A taxpayer is not treated as temporarily away from home for travel-expense purposes during employment that exceeds 1 year, subject to the stated Federal-employee exception. For a publicly held corporation, no deduction is allowed for applicable employee remuneration to a covered employee to the extent it exceeds $1,000,000 for the taxable year.",
+    "keywords": [
+      "irc 162",
+      "trade or business",
+      "ordinary and necessary",
+      "business expenses",
+      "travel expenses",
+      "rentals",
+      "illegal bribes",
+      "kickbacks",
+      "fines and penalties",
+      "lobbying",
+      "publicly held corporation",
+      "covered employee",
+      "employee remuneration",
+      "self-employed health insurance"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-195",
+    "authorityType": "statute",
+    "citation": "IRC §195",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2025-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/195",
+    "ingestedAt": "2026-06-27T05:08:57.431Z",
+    "text": "Start-up expenditures are not currently deductible unless the taxpayer makes the election allowed by IRC §195. If elected, the taxpayer may deduct in the taxable year the active trade or business begins the lesser of the start-up expenditures or $5,000, reduced but not below zero by the amount those expenditures exceed $50,000, and must deduct the remainder ratably over the 180-month period beginning with the month the active trade or business begins. Start-up expenditures include qualifying amounts paid or incurred to investigate, create, or prepare a profit activity to become an active trade or business, but exclude amounts deductible under sections 163(a), 164, 174, or 174A. The election is due by the return filing deadline, including extensions, for the taxable year the trade or business begins, and the selected period must be used for that year and later years.",
+    "keywords": [
+      "irc 195",
+      "section 195",
+      "start-up expenditures",
+      "capitalization",
+      "election to deduct",
+      "active trade or business",
+      "5000 deduction",
+      "50000 phaseout",
+      "180-month amortization",
+      "deferred expenses",
+      "business begins",
+      "sections 163 164 174 174a"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-212",
+    "authorityType": "statute",
+    "citation": "IRC §212",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/212",
+    "ingestedAt": "2026-06-27T05:09:15.366Z",
+    "text": "For an individual, IRC §212 allows a deduction for ordinary and necessary expenses paid or incurred during the taxable year for producing or collecting income. The deduction also applies to expenses for managing, conserving, or maintaining property held for income production, and to expenses connected with determining, collecting, or obtaining a refund of any tax.",
+    "keywords": [
+      "irc 212",
+      "section 212",
+      "ordinary and necessary expenses",
+      "production of income",
+      "collection of income",
+      "income-producing property",
+      "management expenses",
+      "conservation expenses",
+      "maintenance expenses",
+      "tax determination",
+      "tax collection",
+      "tax refund",
+      "individual deduction"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-132",
+    "authorityType": "statute",
+    "citation": "IRC §132",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2025-07-04",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/132",
+    "ingestedAt": "2026-06-27T05:10:08.619Z",
+    "text": "IRC §132 excludes from gross income fringe benefits that qualify as no-additional-cost services, qualified employee discounts, working-condition fringes, de minimis fringes, qualified transportation fringes, qualified moving-expense reimbursements, qualified retirement-planning services, qualified military base realignment and closure fringes, and employer-provided on-premises athletic facilities. A no-additional-cost service must be sold to customers in the employer’s ordinary line of business and provided without substantial additional cost; a qualified employee discount is limited to the employer’s gross profit percentage for property or 20 percent for services; a working-condition fringe is property or services that would be deductible under section 162 or 167 if paid by the employee; and a de minimis fringe is so small that accounting for it is unreasonable or administratively impracticable. Qualified transportation fringes include commuter-highway-vehicle transportation, transit passes, and qualified parking, subject to the stated monthly dollar limits and cost-of-living adjustment rules; cash reimbursements may qualify under the stated conditions, and choosing between such a fringe and taxable compensation does not by itself create gross income. For taxable years beginning after December 31, 2017, the qualified moving-expense reimbursement exclusion generally does not apply except for specified Armed Forces moves and specified intelligence-community relocations, and several exclusions for highly compensated employees apply only if the benefit is available on substantially the same terms under a nondiscriminatory reasonable classification.",
+    "keywords": [
+      "irc 132",
+      "fringe benefits",
+      "gross income exclusion",
+      "no-additional-cost service",
+      "qualified employee discount",
+      "working condition fringe",
+      "de minimis fringe",
+      "qualified transportation fringe",
+      "qualified moving expense reimbursement",
+      "qualified retirement planning services",
+      "on-premises athletic facility",
+      "nondiscrimination",
+      "highly compensated employee"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-274",
+    "authorityType": "statute",
+    "citation": "IRC §274",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/274",
+    "ingestedAt": "2026-06-27T05:10:37.584Z",
+    "text": "IRC §274 disallows deductions for expenses for activities generally considered entertainment, amusement, or recreation, related facilities, business/social club memberships, and qualified transportation fringes provided to employees, subject to listed exceptions. Food and beverage expenses are not deductible unless they are not lavish or extravagant under the circumstances and the taxpayer or an employee is present when furnished; exceptions include specified compensation, reimbursement/accounting arrangements, employee recreational or social activities, items available to the public, items sold for adequate consideration, and amounts includible in the recipient’s income. Travel, meal and lodging, gift, and listed-property expenses require adequate records or corroborating evidence showing amount, time and place or date and description, business purpose, and business relationship; business gifts to an individual are capped at $25 per taxable year, with stated exclusions for certain low-cost imprinted items and promotional materials.",
+    "keywords": [
+      "irc 274",
+      "section 274",
+      "entertainment expenses",
+      "amusement",
+      "recreation",
+      "business meals",
+      "food and beverages",
+      "substantiation",
+      "listed property",
+      "business gifts",
+      "club dues",
+      "qualified transportation fringe",
+      "reimbursed expenses",
+      "employee recreation"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-267",
+    "authorityType": "statute",
+    "citation": "IRC §267",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2016-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/267",
+    "ingestedAt": "2026-06-27T05:11:07.903Z",
+    "text": "IRC §267 disallows a deduction for a loss from a direct or indirect sale or exchange of property between related persons described in §267(b), including specified family members, an individual and a corporation owned more than 50 percent in value by or for the individual, corporations in the same controlled group, certain trust, estate, partnership, S corporation, C corporation, and exempt-organization relationships. If such a disallowed-loss property is later sold or otherwise disposed of at a gain, the transferee recognizes gain only to the extent it exceeds the properly allocable disallowed loss, subject to the stated exceptions for wash sales and transfers from tax-indifferent parties. For related-party expenses and interest, if the payee’s accounting method prevents inclusion unless paid and the parties are related at the close of the payor’s taxable year, the payor’s deduction is allowed only when the amount is includible in the payee’s gross income, or later if otherwise required. Losses between members of the same controlled group are deferred, rather than denied, until the property leaves the controlled group or another prescribed recognition time applies.",
+    "keywords": [
+      "irc 267",
+      "section 267",
+      "related parties",
+      "loss disallowance",
+      "sale or exchange",
+      "matching rule",
+      "expenses",
+      "interest",
+      "controlled group",
+      "constructive ownership",
+      "family members",
+      "disallowed loss",
+      "gain offset",
+      "cash method payee"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-312",
+    "authorityType": "statute",
+    "citation": "IRC §312",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/312",
+    "ingestedAt": "2026-06-27T05:11:57.394Z",
+    "text": "Under IRC §312, a corporation’s earnings and profits are decreased, to the extent of E&P, by property distributions with respect to stock: money, the principal amount or aggregate issue price of its obligations, and the adjusted basis of other property distributed, with proper adjustments for liabilities. If distributed property other than the corporation’s own obligation has fair market value above its E&P adjusted basis, E&P is first increased by the excess and the distribution reduction uses fair market value instead of adjusted basis; certain stock, securities, rights, or property distributions are not treated as distributions of E&P when gain is not recognized or the distribution is excluded under §305(a). For E&P computations, recognized corporate gains and losses affect E&P, depreciation and amortization are recomputed under the §312 rules including straight-line or alternative depreciation system rules, discharge-of-indebtedness income applied to reduce basis does not increase E&P, and specified accounting adjustments apply for construction-period carrying charges, intangible drilling costs, mineral exploration and development costs, LIFO inventories, installment sales, completed-contract accounting, and certain redemptions.",
+    "keywords": [
+      "irc 312",
+      "section 312",
+      "earnings and profits",
+      "e&p",
+      "property distributions",
+      "appreciated property",
+      "fair market value",
+      "adjusted basis",
+      "liabilities",
+      "stock distributions",
+      "depreciation",
+      "discharge of indebtedness",
+      "lifo",
+      "installment sales",
+      "redemptions"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-721",
+    "authorityType": "statute",
+    "citation": "IRC §721",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/721",
+    "ingestedAt": "2026-06-27T05:12:24.305Z",
+    "text": "Under IRC §721, neither a partnership nor any partner recognizes gain or loss when property is contributed to the partnership in exchange for an interest in the partnership. This nonrecognition rule does not apply to gain realized on a transfer of property to a partnership that would be treated as an investment company within the meaning of §351 if the partnership were incorporated. The Secretary may issue regulations denying nonrecognition for gain on a transfer to a partnership if the gain, when recognized, would be included in the gross income of a person other than a United States person; transfers of intangibles are subject to the regulatory authority referenced in §367(d)(3).",
+    "keywords": [
+      "irc 721",
+      "section 721",
+      "partnership contribution",
+      "nonrecognition",
+      "gain or loss",
+      "property contribution",
+      "partnership interest",
+      "investment company",
+      "section 351",
+      "foreign person",
+      "gross income",
+      "intangibles",
+      "section 367"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-751",
+    "authorityType": "statute",
+    "citation": "IRC §751",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-08-06",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/751",
+    "ingestedAt": "2026-06-27T05:13:12.255Z",
+    "text": "On a sale or exchange of all or part of a partnership interest, the money received, or the fair market value of property received, that is attributable to the partnership’s unrealized receivables or inventory items is treated as amount realized from the sale or exchange of property other than a capital asset. Certain distributions that exchange unrealized receivables or substantially appreciated inventory items for other partnership property, or other partnership property (including money) for unrealized receivables or substantially appreciated inventory items, are treated under regulations as a sale or exchange between the distributee partner and the partnership, except for property the distributee contributed and section 736(a) payments. Inventory items are substantially appreciated if their fair market value exceeds 120 percent of the partnership’s adjusted basis, and unrealized receivables include specified rights to payment and listed recapture- or ordinary-income-type property to the extent stated in the section.",
+    "keywords": [
+      "irc 751",
+      "section 751",
+      "unrealized receivables",
+      "inventory items",
+      "hot assets",
+      "partnership interest sale",
+      "ordinary income",
+      "capital asset",
+      "partnership distributions",
+      "deemed sale",
+      "substantially appreciated inventory",
+      "section 736",
+      "fair market value",
+      "adjusted basis"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-358",
+    "authorityType": "statute",
+    "citation": "IRC §358",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1998-10-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/358",
+    "ingestedAt": "2026-06-27T05:13:40.571Z",
+    "text": "In an exchange to which IRC §358 applies under sections 351, 354, 355, 356, or 361, the basis of nonrecognition property received is the same as the basis of the property exchanged, decreased by the fair market value of other property received, money received, and any recognized loss, and increased by any amount treated as a dividend and any recognized gain not treated as a dividend. Other property received, other than money, takes a basis equal to its fair market value. Basis is allocated among the nonrecognition properties under regulations, with special allocation rules for section 355 distributions involving retained distributing-corporation stock or securities. A liability assumed by another party as part of the exchange is treated as money received, except for liabilities excluded under section 357(c)(3).",
+    "keywords": [
+      "irc 358",
+      "section 358",
+      "basis",
+      "nonrecognition exchange",
+      "section 351",
+      "section 354",
+      "section 355",
+      "section 356",
+      "section 361",
+      "boot",
+      "fair market value",
+      "money received",
+      "recognized gain",
+      "recognized loss",
+      "assumed liability"
+    ]
   }
 ];

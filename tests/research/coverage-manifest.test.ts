@@ -160,3 +160,15 @@ describe("equity compensation (§409A / ISOs / ESPP / restricted stock — the l
     });
   }
 });
+
+describe("Wave 1 batch 1 — high-frequency statute breadth (the bulk-ingest shift)", () => {
+  // §162 business expenses, §195 startup, §212, §132 fringe, §274 meals, §267 related-party, §312 E&P,
+  // §721/§751 partnership, §358 incorporation basis. (§312 ingested without colliding with §3121 — filter fix.)
+  for (const sec of ["IRC §162", "IRC §195", "IRC §212", "IRC §132", "IRC §274", "IRC §267", "IRC §312", "IRC §721", "IRC §751", "IRC §358"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Wave 1 ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});
