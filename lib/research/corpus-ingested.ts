@@ -1426,8 +1426,8 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
     ],
     "effectiveDate": "2024-01-01",
     "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/453",
-    "ingestedAt": "2026-06-27T03:35:36.356Z",
-    "text": "Under IRC §453, income from an installment sale generally is taken into account under the installment method: an installment sale is a disposition of property in which at least one payment is to be received after the close of the taxable year of disposition, and income recognized for a taxable year is the portion of payments received that year equal to gross profit divided by total contract price. The installment-sale definition excludes dealer dispositions and dispositions of personal property required to be included in inventory if on hand at year end, and the rule also does not apply to certain revolving-credit personal property sales or installment obligations from sales of stock or securities traded on an established securities market. A taxpayer may elect out by the return due date, including extensions, for the year of disposition, and recapture income under sections 1245 or 1250 is recognized in the year of disposition with only gain in excess of recapture income taken into account under the installment method.",
+    "ingestedAt": "2026-06-27T11:11:55.263Z",
+    "text": "Under IRC §453, income from an installment sale— a disposition of property for which at least one payment is to be received after the close of the taxable year of disposition—generally is reported under the installment method, unless the taxpayer elects out. Under that method, income recognized for a taxable year equals the same proportion of payments received in that year as gross profit bears to total contract price; purchaser debt is generally not a payment unless payable on demand or readily tradable. The installment-sale rules do not apply to dealer dispositions, dispositions of inventory-type personal property, revolving-credit-plan personal property dispositions, or installment obligations from sales of stock or securities traded on an established securities market, and all payments to be received in excluded current-inclusion cases are treated as received in the year of disposition. Recapture income is recognized in the year of disposition, with only gain exceeding recapture income taken into account under the installment method.",
     "keywords": [
       "irc 453",
       "installment method",
@@ -1437,12 +1437,10 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "payments received",
       "dealer disposition",
       "inventory",
-      "revolving credit",
-      "established securities market",
-      "election out",
+      "revolving credit plan",
+      "publicly traded securities",
       "recapture income",
-      "section 1245",
-      "section 1250"
+      "election out"
     ]
   },
   {
@@ -4844,6 +4842,375 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "financial status",
       "economic reality",
       "section 6103(n)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-121",
+    "authorityType": "statute",
+    "citation": "IRC §121",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/121",
+    "ingestedAt": "2026-06-27T11:09:22.498Z",
+    "text": "IRC §121 excludes gain from gross income on the sale or exchange of property if, during the 5-year period ending on the sale or exchange date, the taxpayer owned and used the property as the taxpayer’s principal residence for periods aggregating 2 years or more. The exclusion is limited to $250,000, or $500,000 for qualifying joint returns where either spouse meets the ownership requirement, both spouses meet the use requirement, and neither spouse used the exclusion for another sale during the prior 2-year period. The exclusion generally cannot be used if another §121 exclusion applied to a sale or exchange during the 2-year period ending on the current sale date, but a reduced exclusion may apply for a sale due to a change in place of employment, health, or unforeseen circumstances. Gain allocated to periods of nonqualified use and gain attributable to depreciation adjustments for periods after May 6, 1997 are not excluded.",
+    "keywords": [
+      "irc §121",
+      "section 121",
+      "principal residence",
+      "home sale exclusion",
+      "gain exclusion",
+      "ownership requirement",
+      "use requirement",
+      "joint return",
+      "two-year rule",
+      "reduced exclusion",
+      "employment change",
+      "health",
+      "unforeseen circumstances",
+      "nonqualified use",
+      "depreciation"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-108",
+    "authorityType": "statute",
+    "citation": "IRC §108",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/108",
+    "ingestedAt": "2026-06-27T11:09:53.815Z",
+    "text": "Under IRC §108, cancellation-of-debt income is excluded from gross income if the discharge occurs in a title 11 case, occurs while the taxpayer is insolvent, or involves qualified farm indebtedness, qualified real property business indebtedness for a taxpayer other than a C corporation, or qualified principal residence indebtedness discharged before January 1, 2026, or under a written arrangement entered into before that date. The title 11 exclusion takes precedence over the other listed exclusions; the insolvency exclusion is limited to the taxpayer’s insolvency immediately before the discharge and takes precedence over the qualified farm and qualified real property business exclusions, while the principal residence exclusion takes precedence over insolvency unless the taxpayer elects otherwise. Amounts excluded under the title 11, insolvency, or qualified farm rules reduce tax attributes in the statutory order, including net operating losses, credit carryovers, capital losses, property basis, passive activity carryovers, and foreign tax credit carryovers, with reductions made after determining tax for the discharge year. Qualified real property business debt exclusions reduce the basis of the taxpayer’s depreciable real property, subject to the limitations stated in §108(c).",
+    "keywords": [
+      "irc 108",
+      "section 108",
+      "discharge of indebtedness",
+      "cancellation of debt",
+      "gross income exclusion",
+      "title 11",
+      "bankruptcy",
+      "insolvency",
+      "qualified farm indebtedness",
+      "qualified real property business indebtedness",
+      "qualified principal residence indebtedness",
+      "tax attribute reduction",
+      "net operating loss",
+      "basis reduction"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-368",
+    "authorityType": "statute",
+    "citation": "IRC §368",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/368",
+    "ingestedAt": "2026-06-27T11:10:25.585Z",
+    "text": "For purposes of the corporate reorganization provisions, a “reorganization” includes a statutory merger or consolidation; a voting-stock acquisition of another corporation’s stock resulting in control; a voting-stock acquisition of substantially all of another corporation’s properties, with assumed liabilities disregarded in testing stock-only consideration; specified transfers of assets to a controlled corporation followed by a qualifying distribution under section 354, 355, or 356; a recapitalization; a mere change in identity, form, or place of organization; or a qualifying transfer of assets in a title 11 or similar case followed by such a distribution. A transaction described both as a substantially-all-assets acquisition and as a controlled-corporation asset transfer is treated only as the latter, and certain otherwise qualifying reorganizations are not disqualified merely because acquired assets or stock are transferred to a controlled subsidiary or because controlling-corporation stock is used under the stated conditions. For these provisions, “control” generally means ownership of stock possessing at least 80 percent of total combined voting power and at least 80 percent of the total number of shares of all other classes, and “party to a reorganization” includes the resulting corporation and the acquired and acquiring corporations, with stated inclusions for controlling corporations.",
+    "keywords": [
+      "irc 368",
+      "section 368",
+      "reorganization",
+      "statutory merger",
+      "consolidation",
+      "stock-for-stock",
+      "asset acquisition",
+      "substantially all properties",
+      "control",
+      "recapitalization",
+      "mere change",
+      "title 11",
+      "section 354",
+      "section 355",
+      "section 356"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-381",
+    "authorityType": "statute",
+    "citation": "IRC §381",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/381",
+    "ingestedAt": "2026-06-27T11:10:56.247Z",
+    "text": "In an acquisition of a corporation’s assets by another corporation in a section 332 subsidiary liquidation, or in a section 361 transfer connected with a section 368(a)(1)(A), (C), (D), (F), or (G) reorganization, the acquiring corporation succeeds to and takes into account the distributor’s or transferor’s specified tax items as of the close of the day of distribution or transfer, subject to section 381’s stated conditions and limitations. Except for a section 368(a)(1)(F) reorganization, the distributor’s or transferor’s taxable year ends on the date the distribution or transfer is completed, and the acquiring corporation cannot carry back its post-acquisition net operating loss or net capital loss to a taxable year of the distributor or transferor. The carryover items include net operating loss carryovers, earnings and profits or deficits, capital loss carryovers, accounting methods, inventory basis methods, depreciation treatment, installment obligations, certain deferred deductions and assumed obligations, charitable contribution excesses, disallowed business interest carryovers, and specified credit and subchapter items.",
+    "keywords": [
+      "section 381",
+      "irc 381",
+      "corporate acquisitions",
+      "carryovers",
+      "section 332 liquidation",
+      "section 361 transfer",
+      "section 368 reorganization",
+      "net operating loss",
+      "earnings and profits",
+      "capital loss carryover",
+      "accounting methods",
+      "credits",
+      "disallowed business interest",
+      "tax attributes"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1031",
+    "authorityType": "statute",
+    "citation": "IRC §1031",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1031",
+    "ingestedAt": "2026-06-27T11:11:26.175Z",
+    "text": "Under IRC §1031, no gain or loss is recognized when real property held for productive use in a trade or business or for investment is exchanged solely for like-kind real property to be held for productive use in a trade or business or for investment; this does not apply to real property held primarily for sale, and U.S. real property and foreign real property are not like kind. In a deferred exchange, replacement property is treated as not like-kind unless it is identified on or before the 45th day after the relinquished property is transferred and received by the earlier of 180 days after that transfer or the extended return due date for the taxable year of the transfer. If the taxpayer also receives money or other nonqualifying property, recognize gain only up to the money plus the fair market value of the other property, and recognize no loss. Basis generally carries over from the property exchanged, reduced by money received and adjusted for recognized gain or loss, with another party’s assumption of the taxpayer’s liability treated as money received.",
+    "keywords": [
+      "irc 1031",
+      "section 1031",
+      "like-kind exchange",
+      "real property",
+      "investment property",
+      "trade or business",
+      "nonrecognition",
+      "boot",
+      "deferred exchange",
+      "45 days",
+      "180 days",
+      "basis",
+      "foreign real property"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1296",
+    "authorityType": "statute",
+    "citation": "IRC §1296",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1998-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1296",
+    "ingestedAt": "2026-06-27T11:12:24.816Z",
+    "text": "Under IRC §1296, a United States person that owns, or is treated as owning, marketable stock of a passive foreign investment company at the close of a taxable year may elect mark-to-market treatment for that stock. If year-end fair market value exceeds adjusted basis, the excess is included in gross income and treated as ordinary income; if adjusted basis exceeds year-end fair market value, the deduction is limited to the lesser of that excess or the stock’s unreversed inclusions, and is treated as ordinary loss. Basis is increased by inclusions and decreased by allowed deductions, and the election applies for the year made and all later taxable years unless the stock ceases to be marketable stock or the Secretary consents to revocation.",
+    "keywords": [
+      "irc 1296",
+      "section 1296",
+      "pfic",
+      "passive foreign investment company",
+      "mark to market election",
+      "marketable stock",
+      "fair market value",
+      "adjusted basis",
+      "ordinary income",
+      "ordinary loss",
+      "unreversed inclusions",
+      "basis adjustments",
+      "section 1291"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-663",
+    "authorityType": "statute",
+    "citation": "IRC §663",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-08-06",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/663",
+    "ingestedAt": "2026-06-27T11:12:56.218Z",
+    "text": "Under IRC §663, amounts properly paid or credited under the governing instrument as a gift or bequest of a specific sum of money or specific property, and paid all at once or in not more than 3 installments, are excluded from amounts under sections 661(a) and 662(a); an amount payable only from income is not treated as such a specific gift or bequest. Amounts qualifying for the section 642(c) deduction, and amounts already taken into account under section 651 or 661 for a preceding taxable year because credited or required to be distributed then, are also excluded. If an estate or trust properly pays or credits an amount within the first 65 days of a taxable year, the executor or fiduciary may elect, as prescribed by regulations, to treat it as paid or credited on the last day of the preceding taxable year. For determining distributable net income under sections 661 and 662, substantially separate and independent shares of different beneficiaries in a single trust, and similar shares in an estate with more than 1 beneficiary, are treated as separate trusts or estates under regulations.",
+    "keywords": [
+      "irc 663",
+      "section 663",
+      "trust distributions",
+      "estate distributions",
+      "distributable net income",
+      "dni",
+      "specific bequest",
+      "specific sum",
+      "specific property",
+      "3 installments",
+      "65 day election",
+      "sections 661 and 662",
+      "section 642(c)",
+      "separate shares"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2632",
+    "authorityType": "statute",
+    "citation": "IRC §2632",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2001-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2632",
+    "ingestedAt": "2026-06-27T11:13:26.131Z",
+    "text": "An individual may allocate GST exemption at any time on or before the due date for the individual’s estate tax return, determined with extensions, whether or not an estate tax return is required, in the manner prescribed by the Secretary. If the individual makes a lifetime direct skip, or a lifetime indirect skip to a GST trust, any unused GST exemption is automatically allocated to the transferred property to the extent needed to make the inclusion ratio zero, or the entire unused portion is allocated if the transfer exceeds the unused exemption, unless the individual elects out. For indirect skips, the individual may elect out for a particular transfer or for any or all transfers to a particular trust, and may elect to treat a trust as a GST trust; the stated elections are made on a timely filed gift tax return as provided in the section. Any GST exemption not allocated within the estate-return period is deemed allocated first to direct-skip property at death and then to trusts from which a taxable distribution or taxable termination might occur at or after death, proportionately by nonexempt portions within each category.",
+    "keywords": [
+      "irc 2632",
+      "gst exemption",
+      "allocation",
+      "direct skip",
+      "indirect skip",
+      "gst trust",
+      "inclusion ratio",
+      "automatic allocation",
+      "elect out",
+      "gift tax return",
+      "estate tax return",
+      "taxable distribution",
+      "taxable termination"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6501",
+    "authorityType": "statute",
+    "citation": "IRC §6501",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6501",
+    "ingestedAt": "2026-06-27T11:13:54.887Z",
+    "text": "Under IRC §6501, tax generally must be assessed within 3 years after the taxpayer’s return is filed, and an early-filed return is treated as filed on the last day prescribed for filing. The period is extended to 6 years for substantial omissions, including omitted gross income exceeding 25 percent of the gross income stated on the return, certain omitted foreign-asset income over $5,000, omitted section 951(a) income, and comparable 25 percent omissions for estate, gift, and excise tax returns. Tax may be assessed, and court collection without assessment may begin, at any time for a false or fraudulent return with intent to evade tax, a failure to file a return, or a covered willful attempt to defeat or evade tax; the assessment period may also be extended by written agreement made before the existing period expires.",
+    "keywords": [
+      "irc 6501",
+      "assessment",
+      "statute of limitations",
+      "3 years",
+      "6 years",
+      "substantial omission",
+      "gross income",
+      "false return",
+      "fraudulent return",
+      "failure to file",
+      "willful evasion",
+      "extension by agreement",
+      "collection"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-4958",
+    "authorityType": "statute",
+    "citation": "IRC §4958",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/4958",
+    "ingestedAt": "2026-06-27T11:14:28.193Z",
+    "text": "IRC §4958 imposes a 25 percent tax on each excess benefit transaction, payable by any disqualified person, when an applicable tax-exempt organization provides a direct or indirect economic benefit to or for that person that exceeds the consideration received and the organization has not clearly treated the benefit as compensation for services. If the excess benefit is not corrected within the taxable period, the disqualified person owes an additional tax equal to 200 percent of the excess benefit; correction means undoing the excess benefit as much as possible and restoring the organization to a financial position not worse than if the disqualified person had dealt under the highest fiduciary standards. An organization manager who knowingly participates in an excess benefit transaction owes a 10 percent tax on the excess benefit unless the participation was not willful and was due to reasonable cause, with a maximum manager tax of $20,000 for any one transaction. Applicable tax-exempt organizations include organizations described in §501(c)(3), §501(c)(4), or §501(c)(29) and exempt under §501(a), and organizations so described during the 5-year period ending on the transaction date, but not private foundations; disqualified persons include persons with substantial influence during that 5-year period, certain family members, 35-percent controlled entities, and specified donor-advised-fund, sponsoring-organization, and supporting-organization persons.",
+    "keywords": [
+      "irc 4958",
+      "excess benefit transaction",
+      "disqualified person",
+      "applicable tax-exempt organization",
+      "section 501(c)(3)",
+      "section 501(c)(4)",
+      "section 501(c)(29)",
+      "organization manager",
+      "initial tax",
+      "additional tax",
+      "correction",
+      "taxable period",
+      "donor advised fund",
+      "supporting organization",
+      "35-percent controlled entity"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-513",
+    "authorityType": "statute",
+    "citation": "IRC §513",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/513",
+    "ingestedAt": "2026-06-27T11:14:56.272Z",
+    "text": "For an organization subject to section 511, an unrelated trade or business is a trade or business whose conduct is not substantially related—apart from the organization’s need for income or funds or its use of the profits—to the performance of the exempt purpose or function on which its section 501 exemption is based. The term does not include a business in which substantially all work is performed without compensation, a qualifying convenience operation for members, students, patients, officers, or employees, or the sale of merchandise substantially all of which was received as gifts or contributions. A trade or business includes an activity carried on to produce income from selling goods or performing services, and an activity carried on for profit is not excluded from unrelated-trade-or-business status merely because it does not produce profit.",
+    "keywords": [
+      "irc 513",
+      "section 513",
+      "unrelated trade or business",
+      "section 511",
+      "section 501",
+      "substantially related",
+      "exempt purpose",
+      "volunteer labor",
+      "convenience exception",
+      "donated merchandise",
+      "trade or business",
+      "income production"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-41",
+    "authorityType": "statute",
+    "citation": "IRC §41",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/41",
+    "ingestedAt": "2026-06-27T11:15:46.434Z",
+    "text": "For purposes of section 38, IRC §41 determines the research credit as the sum of 20% of the excess, if any, of qualified research expenses over the base amount, 20% of specified basic research payments, and 20% of amounts paid or incurred to an energy research consortium for energy research. Qualified research expenses are in-house research expenses and contract research expenses paid or incurred in carrying on a trade or business; in-house expenses include wages for qualified services, supplies used in qualified research, and regulated computer-use amounts, and contract research expenses generally equal 65% of amounts paid to nonemployees for qualified research. The base amount is the fixed-base percentage multiplied by average annual gross receipts for the 4 preceding taxable years and may not be less than 50% of current-year qualified research expenses. A taxpayer may elect the alternative simplified credit, under which the subsection (a)(1) credit is 14% of current-year qualified research expenses exceeding 50% of the average qualified research expenses for the 3 preceding taxable years, or 6% of current-year qualified research expenses if the taxpayer has no qualified research expenses in any one of those 3 preceding years.",
+    "keywords": [
+      "irc 41",
+      "section 41",
+      "research credit",
+      "qualified research expenses",
+      "base amount",
+      "alternative simplified credit",
+      "contract research expenses",
+      "in-house research expenses",
+      "qualified services",
+      "supplies",
+      "basic research payments",
+      "energy research consortium",
+      "fixed-base percentage",
+      "section 174a"
     ]
   }
 ];

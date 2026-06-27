@@ -179,13 +179,15 @@ function specificityScore(chunk: AuthorityChunk, q: string, df: Map<string, numb
   // found by keyword matching) PLUS a fallback discount. Gating both on the full-text tier leaves the curated
   // corpus (OBBBA / cases / distilled) ranking EXACTLY as before — so full-text fills genuine gaps without
   // crowding out a precise curated chunk (the §70201 tips chunk, the Cohan case) that also matches.
-  // Full-text chunks have sparse keywords, so a body-term-overlap signal lets the RIGHT full-text chunk rank
-  // first among full-text candidates (tiering in retrieve() already puts the whole full-text tier below curated).
-  if (chunk.chunkId.startsWith("fulltext-") && qTerms.length) {
+  // BODY-TEXT overlap for EVERY chunk: count distinct query terms present in the chunk's text (a BM25-like signal
+  // — the answer lives in the body, not the sparse keyword list). A modest per-hit weight + a cap keeps it from
+  // overwhelming the section bonus, while letting the on-point distilled chunk (whose body matches the question's
+  // terms) surface over a tangential keyword match. (Tiering still puts the full-text tier below curated.)
+  if (qTerms.length) {
     const body = lcText(chunk);
     let hits = 0;
     for (const t of qTerms) if (body.includes(t)) hits++;
-    score += Math.min(hits, 6) * 0.5;
+    score += Math.min(hits, 6) * 0.4;
   }
   return score;
 }
