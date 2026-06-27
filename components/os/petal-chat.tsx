@@ -197,11 +197,12 @@ export function usePetalChat(scopeHouseholdId?: string) {
 
   // Append one persisted turn to the active thread. RLS-scoped + audited server-
   // side; best-effort (a persistence failure must never break the live reply).
-  const persist = useCallback((role: "user" | "assistant", content: string, metadata?: Record<string, unknown>) => {
+  const persist = useCallback((role: "user" | "assistant", content: string, metadata?: Record<string, unknown>): Promise<void> => {
     const c = content.trim();
-    if (!c || !threadRef.current) return;
-    threadRef.current
+    if (!c || !threadRef.current) return Promise.resolve();
+    return threadRef.current
       .then(id => { if (id) return appendMessageAction(id, role, c, metadata); })
+      .then(() => {})
       .catch(() => {});
   }, []);
 
@@ -231,7 +232,10 @@ export function usePetalChat(scopeHouseholdId?: string) {
     if (!threadRef.current) {
       threadRef.current = createThreadAction(message.slice(0, 60)).then(r => r?.id ?? null);
     }
-    persist("user", message);
+    // Persist the user turn and KEEP the promise: the durable run creates the assistant row server-side at
+    // stream start, so the user message must land FIRST or a reload sorts answer-above-question (createdAt
+    // race). We gate streamAgent on this below.
+    const userPersisted = persist("user", message);
 
     const settle = (answer: ChatAnswer, replyForHistory?: string) => {
       if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
@@ -306,7 +310,10 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // stream errors (network failure or an `error` frame).
     // Resolve the thread id first so the run is persisted SERVER-SIDE (durable: survives navigation / tab
     // close, reconnects on reopen). threadRef was set just above (new thread) or by openThread (existing).
-    Promise.resolve(threadRef.current)
+    // Wait for the user turn to be written BEFORE the stream opens — the server creates the assistant row at
+    // stream start, so this guarantees user.createdAt < assistant.createdAt (no answer-above-question on reload).
+    userPersisted
+      .then(() => threadRef.current)
       .then(tid => streamAgent({ message, history, threadId: tid, pushStep, pushText, signal: ac.signal }))
       .then(({ reply, proposedActions, citations, calibration, ungroundedFigures, runPersisted }) => {
         const text = (reply ?? "").trim() || "Done.";
