@@ -600,7 +600,7 @@ function DotSpinner({ className }: { className?: string }) {
       className={cn("inline-block animate-spin", className)}
       style={{
         aspectRatio: "1",
-        ["--_c" as string]: "no-repeat radial-gradient(farthest-side, var(--os-ink) 92%, transparent)",
+        ["--_c" as string]: "no-repeat radial-gradient(farthest-side, var(--os-ink-subtle) 92%, transparent)",
         background: "var(--_c) top, var(--_c) left, var(--_c) right, var(--_c) bottom",
         backgroundSize: "34% 34%",
       } as React.CSSProperties}
@@ -611,7 +611,7 @@ function DotSpinner({ className }: { className?: string }) {
 function StepDot({ done }: { done: boolean }) {
   return (
     <span className="flex size-3.5 shrink-0 items-center justify-center">
-      {done ? <FilledCheck /> : <DotSpinner className="size-3.5" />}
+      {done ? <FilledCheck /> : <DotSpinner className="size-2" />}
     </span>
   );
 }
