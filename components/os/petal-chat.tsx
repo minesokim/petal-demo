@@ -467,7 +467,7 @@ function StreamedParagraph({ text, active, onDone }: { text: string; active: boo
     if (done && !fired.current) { fired.current = true; onDone(); }
   }, [done, onDone]);
   return (
-    <p className="text-[13px] leading-relaxed text-[var(--os-ink)]">
+    <p className="text-[15.6px] leading-relaxed text-[var(--os-ink)]">
       <Rich text={active ? visible : text} />
     </p>
   );
