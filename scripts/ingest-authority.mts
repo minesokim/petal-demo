@@ -11,8 +11,10 @@ import { authorityChunkSchema, type AuthorityChunk } from "../lib/tax/authority/
 
 // ── Targets: Phase-1 federal scope (1040 + the 4 due-diligence credits + gap-closers). Each entry
 // is a real, resolvable primary source. taxYear lists the years the rule (as fetched) governs. ──
-type Target = { cite: string; url: string; type: AuthorityChunk["authorityType"]; taxYear: number[]; note: string };
+type Target = { cite: string; url: string; type: AuthorityChunk["authorityType"]; taxYear: number[]; note: string; delegationBasis?: AuthorityChunk["delegationBasis"]; anchor?: string };
 const lii = (n: string) => `https://www.law.cornell.edu/uscode/text/26/${n}`;
+// LII also hosts the Treasury Regulations (CFR Title 26) in the same clean format — reuse the pipeline.
+const cfr = (n: string) => `https://www.law.cornell.edu/cfr/text/26/${n}`;
 const TARGETS: Target[] = [
   { cite: "IRC §3121", url: lii("3121"), type: "statute", taxYear: [2024, 2025], note: "FICA definitions — tips are wages (so tips run through payroll FICA, not SE tax)" },
   { cite: "IRC §1402", url: lii("1402"), type: "statute", taxYear: [2024, 2025], note: "net earnings from self-employment — defines the SE-tax base (excludes W-2 wages/tips)" },
@@ -120,6 +122,19 @@ const TARGETS: Target[] = [
   { cite: "IRC §332", url: lii("332"), type: "statute", taxYear: [2024, 2025, 2026], note: "complete liquidation of a SUBSIDIARY — no gain or loss is recognized to a PARENT corporation on the receipt of property in a complete liquidation of a subsidiary in which the parent owns at least 80% (vote and value), provided the distribution is in cancellation of stock; the subsidiary also generally recognizes no gain or loss under §337, and the parent takes a carryover basis under §334(b)" },
   { cite: "IRC §362", url: lii("362"), type: "statute", taxYear: [2024, 2025, 2026], note: "basis to a CORPORATION of property received — on a §351 transfer or as a contribution to capital, the corporation's basis in the property equals the transferor's adjusted basis increased by any gain the transferor recognized; an anti-loss-importation/built-in-loss rule limits an aggregate basis in excess of the property's FMV" },
   { cite: "IRC §723", url: lii("723"), type: "statute", taxYear: [2024, 2025, 2026], note: "basis of property contributed to a PARTNERSHIP — the partnership's basis in property contributed by a partner is the contributing partner's adjusted basis at the time of contribution (a carryover/transferred basis), increased by any gain the contributing partner recognized under §721(b)" },
+  // ── WAVE 2 (TREASURY REGULATIONS — the §6662 authority-weighting fuel). delegationBasis tags the
+  // post-Loper-Bright strength: express (specific statutory grant) keeps full weight; general_7805
+  // (interpretive) is contestable. These wake the dormant DELEGATION_FACTOR in lib/tax/authority/weighting.ts. ──
+  { cite: "Treas. Reg. §1.6662-4", url: cfr("1.6662-4"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "the SUBSTANTIAL-AUTHORITY standard for the §6662 accuracy penalty — substantial authority exists only if the WEIGHT of authorities supporting the treatment is substantial in relation to the weight of contrary authorities; an OBJECTIVE standard more stringent than reasonable basis but less stringent than more-likely-than-not; lists the types that count as authority (the Code, regulations, court cases, revenue rulings/procedures, etc.) and that a conclusion in a treatise or a tax professional's opinion is NOT authority" },
+  { cite: "Treas. Reg. §1.6664-4", url: cfr("1.6664-4"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "the REASONABLE-CAUSE and good-faith exception to the §6662 penalty — no penalty applies to a portion of an underpayment for which the taxpayer shows reasonable cause and acted in good faith; the determination is made case by case, the most important factor being the extent of the taxpayer's effort to assess the proper tax liability; reasonable reliance on professional advice can qualify if based on all pertinent facts" },
+  { cite: "Treas. Reg. §1.199A-1", url: cfr("1.199A-1"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "express", note: "operational rules for the §199A qualified business income deduction — defines qualified business income (QBI), the combined QBI amount, and the deduction equal to the lesser of 20% of QBI plus 20% of qualified REIT dividends/PTP income, or 20% of taxable income over net capital gain; coordinates the W-2-wage and UBIA limits and the SSTB rules for taxpayers above the threshold" },
+  { cite: "Treas. Reg. §1.469-5T", url: cfr("1.469-5T"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "express", note: "the seven tests for MATERIAL PARTICIPATION in a §469 activity — an individual materially participates if they participate more than 500 hours in the year; OR their participation is substantially all the participation; OR more than 100 hours and not less than any other individual; OR it is a significant-participation activity aggregating over 500 hours; OR material participation in any 5 of the prior 10 years; OR (personal service activity) any 3 prior years; OR a facts-and-circumstances regular/continuous/substantial test" },
+  { cite: "Treas. Reg. §1.704-1", url: cfr("1.704-1"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "express", note: "the SUBSTANTIAL-ECONOMIC-EFFECT safe harbor for partnership allocations under §704(b) — an allocation has economic effect only if the partnership maintains capital accounts under the regulatory rules, liquidates according to positive capital-account balances, and requires a partner with a deficit to restore it (or the allocation meets a qualified income offset); 'substantiality' requires a reasonable possibility the allocation substantially affects the dollars the partners receive independent of tax consequences" },
+  { cite: "Treas. Reg. §301.7701-3", url: cfr("301.7701-3"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "entity classification ('CHECK-THE-BOX') — an eligible entity with two or more members defaults to a PARTNERSHIP or may elect to be an association taxable as a corporation; a single-member eligible entity defaults to DISREGARDED as separate from its owner or may elect corporate treatment; the election is filed on Form 8832 and an entity generally may not change its election again during the 60 months after a prior election" },
+  { cite: "Treas. Reg. §1.83-7", url: cfr("1.83-7"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "taxation of NONQUALIFIED (nonstatutory) stock options under §83 — if the option has a readily ascertainable fair market value at grant, §83(a) applies at grant; if it does NOT (the usual case, e.g. private-company options), there is no tax at grant and §83 applies at EXERCISE, taxing the spread between the stock's fair market value and the amount paid" },
+  { cite: "Treas. Reg. §1.409A-1", url: cfr("1.409A-1"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "express", anchor: "may never be less than the fair market value", note: "definitions for §409A nonqualified deferred compensation, including the STOCK-RIGHTS rule — a stock option or stock appreciation right is NOT deferred compensation subject to §409A only if the exercise price may never be less than the fair market value of the underlying stock on the date the right is granted (and the number of shares is fixed); a DISCOUNTED option (an exercise price below grant-date fair market value) therefore IS nonqualified deferred compensation subject to §409A" },
+  { cite: "Treas. Reg. §1.162-1", url: cfr("1.162-1"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "business expenses under §162 — ordinary and necessary expenses of carrying on a trade or business are deductible, including a reasonable allowance for salaries, repairs that do not add value or prolong useful life, rent, and other operating costs; capital expenditures, personal expenses, and amounts otherwise disallowed are not deductible" },
+  { cite: "Treas. Reg. §1.61-1", url: cfr("1.61-1"), type: "regulation", taxYear: [2024, 2025, 2026], delegationBasis: "general_7805", note: "gross income under §61 — gross income means all income from whatever source derived, realized in any form, whether in money, property, or services; it includes income realized in any form unless a specific statutory exclusion applies" },
   // IRC §1202 (QSBS) — DISABLED pending a fix. The figure-grounded chunk is correct on the tiers
   // but the LII operative text refers to "the applicable date" WITHOUT pinning it to a calendar date,
   // and the "OBBBA enacted July 4, 2025" fact lives in a chunk a QSBS query doesn't co-retrieve. Result:
@@ -139,25 +154,32 @@ function figureCores(text: string): string[] {
 }
 function norm(s: string): string { return s.replace(/[^\d.]/g, ""); } // digits-and-dots stream of the source
 
-async function fetchSource(url: string): Promise<string> {
+async function fetchSource(url: string, anchor?: string): Promise<string> {
   const res = await fetch(url, { headers: { "user-agent": "PetalAuthorityIngest/1.0 (tax-research corpus)" } });
   if (!res.ok) throw new Error(`fetch ${res.status}`);
   const raw = await res.text();
-  // Strip scripts/styles/tags to plain text; collapse whitespace; cap tokens.
-  return raw
+  // Strip scripts/styles/tags to plain text; collapse whitespace.
+  const stripped = raw
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&[a-z]+;/gi, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 24000);
+    .trim();
+  // RE-CENTER the 24000-char window on the cited rule when it's buried past the cap (the §163(j)/§1.409A-1
+  // fix) — keeps the distill grounded in the ACTUAL subsection instead of letting the cap drop it.
+  if (anchor) {
+    const i = stripped.toLowerCase().indexOf(anchor.toLowerCase());
+    if (i >= 0) { const start = Math.max(0, i - 4000); return stripped.slice(start, start + 24000); }
+    throw new Error(`anchor not found: "${anchor.slice(0, 40)}"`); // fail loud, don't silently ingest the wrong window
+  }
+  return stripped.slice(0, 24000);
 }
 
 const SYS = `You ingest US tax PRIMARY AUTHORITY into a research corpus. From the provided source text of ONE provision, write a single concise "operative rule" paraphrase a tax preparer could rely on. RULES: use ONLY facts/figures present in the provided text — never add a number, threshold, rate, or year from your own knowledge; if the text doesn't state a figure, don't include it. Public-domain factual paraphrase (statute isn't copyrightable). Output STRICT JSON only: {"text": string (the operative-rule paraphrase, 2-5 sentences), "keywords": string[] (8-15 lowercase retrieval terms incl. the section number and key concepts), "effectiveDate": "YYYY-MM-DD" (when this rule took effect; use the provided text or a conservative Jan 1 of the earliest listed tax year)}.`;
 
 async function buildChunk(t: Target, provider: AIProvider): Promise<AuthorityChunk | null> {
-  const source = await fetchSource(t.url);
+  const source = await fetchSource(t.url, t.anchor);
   const { text: out } = await provider.generateText({
     system: SYS,
     prompt: `Citation: ${t.cite}\nHint: ${t.note}\nTax years this should serve: ${t.taxYear.join(", ")}\n\nSOURCE TEXT:\n${source}`,
@@ -183,6 +205,8 @@ async function buildChunk(t: Target, provider: AIProvider): Promise<AuthorityChu
     ingestedAt: new Date().toISOString(),
     text: parsed.text,
     keywords: [...new Set(parsed.keywords.map((k) => k.toLowerCase()))],
+    // Post-Loper-Bright delegation strength — wakes the §6662 weighting engine's DELEGATION_FACTOR for regs.
+    ...(t.delegationBasis ? { delegationBasis: t.delegationBasis } : {}),
   };
   const v = authorityChunkSchema.safeParse(chunk);
   if (!v.success) { console.log(`✗ ${t.cite}: schema ${v.error.issues[0]?.message}`); return null; }
@@ -197,7 +221,8 @@ async function main() {
   // re-paraphrased); with --write and no filter, the whole file is regenerated from all TARGETS.
   const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
   // EXACT section match (not substring) — "312" must select ONLY §312, never §3121; required for safe BULK runs.
-  const sectionOf = (cite: string) => cite.replace(/^IRC\s*§?\s*/i, "").trim().toLowerCase();
+  // Strips the IRC / Treas. Reg. prefix so a reg arg like "1.6662-4" selects "Treas. Reg. §1.6662-4".
+  const sectionOf = (cite: string) => cite.replace(/^(IRC|Treas\.?\s*Reg\.?|Reg\.?|Prop\.?\s*Reg\.?)\s*§?\s*/i, "").trim().toLowerCase();
   const targets = only.length ? TARGETS.filter((t) => only.some((o) => sectionOf(t.cite) === o.toLowerCase())) : TARGETS;
   // Provider via the FACTORY so ingestion honors PETAL_DEV_INFERENCE=codex-sub (runs on the codex sub, not
   // the metered Anthropic key). The figure-grounding gate below guards correctness regardless of model.

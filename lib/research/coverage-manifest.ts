@@ -32,6 +32,10 @@ export function provisionKey(chunk: AuthorityChunk): string | null {
   if (obbba) return `OBBBA §${obbba[1]}`;
   const rtc = cite.match(/R&TC\s*§?\s*([\d.]+)/i) ?? id.match(/rtc-?([\d.]+)/i);
   if (rtc) return `Cal. R&TC §${rtc[1].replace(/\.$/, "")}`;
+  // Treasury Regulations key on the FULL reg number (e.g. §1.6662-4, §301.7701-3) — BEFORE the IRC
+  // fallback, which would otherwise collapse "§1.6662-4" to "IRC §1" (a reg-vs-statute mis-key).
+  const reg = cite.match(/Treas\.?\s*Reg\.?\s*§?\s*([0-9][0-9A-Za-z.\-]*)/i);
+  if (reg) return `Treas. Reg. §${reg[1].toUpperCase()}`;
   const irc = cite.match(/§\s*(\d+[A-Za-z]?)/) ?? id.match(/irc-?(\d+[a-z]?)/i);
   if (irc) return `IRC §${irc[1].toUpperCase()}`;
   return null;
@@ -131,6 +135,9 @@ export function normalizeSection(section: string): string | null {
   // explicit OBBBA prefix, is OBBBA — so "§70432" alone still resolves correctly.
   const big = s.match(/(?:OBBBA\s*)?§?\s*(\d{4,5})\b/i);
   if (big && (/OBBBA/i.test(s) || Number(big[1]) >= 10000)) return `OBBBA §${big[1]}`;
+  // Treasury Reg. cites resolve to the reg key (matching provisionKey) — before the IRC fallback.
+  const reg = s.match(/Treas\.?\s*Reg\.?\s*§?\s*([0-9][0-9A-Za-z.\-]*)/i);
+  if (reg) return `Treas. Reg. §${reg[1].toUpperCase()}`;
   const irc = s.match(/§?\s*(\d+[A-Za-z]?)/);
   if (irc) return `IRC §${irc[1].toUpperCase()}`;
   return null;

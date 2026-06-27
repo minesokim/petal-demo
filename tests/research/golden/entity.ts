@@ -202,4 +202,11 @@ export const ENTITY_CASES: GoldenCase[] = [
     mustClaim: "85", mustCiteAuthorityLike: "423",
     notes: "VERIFIED §423(b)(6): the option price may not be less than 85% of the FMV (at grant or exercise).",
   },
+  {
+    id: "entity-409A-discounted-option-bridge",
+    question: "A startup granted employees discounted stock options, with an exercise price below fair market value at grant. What is the tax exposure under section 409A when the options vest?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "answer",
+    mustClaim: "deferred compensation|20 percent|20%", mustCiteAuthorityLike: "409A",
+    notes: "THE WAVE-2 PAYOFF: this exact multi-hop question HEDGED before the §1.409A-1 reg was ingested. The reg carries the BRIDGE (a below-FMV option IS deferred comp subject to §409A); the statute carries the consequences (income at vesting + 20% additional tax). Now grounds, citing Treas. Reg. §1.409A-1 + IRC §409A. A regression here = the reg corpus broke.",
+  },
 ];

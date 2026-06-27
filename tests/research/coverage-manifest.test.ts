@@ -196,3 +196,24 @@ describe("Wave 1 batch 3 — basis fundamentals, retirement, benefits, entity ba
     });
   }
 });
+
+describe("Wave 2 — Treasury Regulations (the §6662 authority-weighting fuel)", () => {
+  // Regs register under their OWN key (Treas. Reg. §x), NOT collapsed into IRC §1 (provisionKey fix).
+  // §1.6662-4 (substantial-authority standard), §1.6664-4 (reasonable cause), §1.199A-1 (QBI),
+  // §1.469-5T (material participation), §1.704-1 (SEE), §301.7701-3 (check-the-box), §1.83-7 (NQ options),
+  // §1.162-1 / §1.61-1, and §1.409A-1 (the discounted-option BRIDGE that closed the live-surfaced gap).
+  for (const sec of [
+    "Treas. Reg. §1.6662-4", "Treas. Reg. §1.6664-4", "Treas. Reg. §1.199A-1", "Treas. Reg. §1.469-5T",
+    "Treas. Reg. §1.704-1", "Treas. Reg. §301.7701-3", "Treas. Reg. §1.83-7", "Treas. Reg. §1.162-1",
+    "Treas. Reg. §1.61-1", "Treas. Reg. §1.409A-1",
+  ]) {
+    it(`${sec} is LOADED as a regulation for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Wave 2 reg ingest`).toBe(true);
+      if (s.covered) {
+        expect(s.entry.sourceCount).toBeGreaterThan(0);
+        expect(s.entry.tiers, `${sec} should register as a regulation, not a statute`).toContain("regulation");
+      }
+    });
+  }
+});

@@ -2603,5 +2603,315 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "recognized gain",
       "subchapter k"
     ]
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-6662-4",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.6662-4",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.6662-4",
+    "ingestedAt": "2026-06-27T05:39:29.130Z",
+    "text": "For purposes of the section 6662 substantial-understatement penalty, substantial authority for a tax treatment exists only if, under an objective analysis of the law applied to the relevant facts, the weight of supporting authorities is substantial in relation to the weight of contrary authorities; the taxpayer’s belief and the chance of audit are irrelevant. The standard is more stringent than reasonable basis but less stringent than more-likely-than-not. Authority includes sources such as the Code, regulations, revenue rulings and procedures, tax treaties and official explanations, court cases, specified congressional and Joint Committee materials, qualifying IRS rulings and memoranda, IRS releases, and Internal Revenue Bulletin pronouncements, but not conclusions in treatises, legal periodicals, legal opinions, or tax professionals’ opinions. If substantial authority supports a non-tax-shelter item, the tax attributable to that item is not included in the understatement.",
+    "keywords": [
+      "1.6662-4",
+      "6662",
+      "substantial authority",
+      "substantial understatement",
+      "accuracy penalty",
+      "objective standard",
+      "reasonable basis",
+      "more likely than not",
+      "weight of authorities",
+      "tax treatment",
+      "tax shelter",
+      "revenue rulings",
+      "court cases",
+      "tax professional opinion"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-6664-4",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.6664-4",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.6664-4",
+    "ingestedAt": "2026-06-27T05:39:56.184Z",
+    "text": "Under Treas. Reg. §1.6664-4, the section 6662 penalty may not be imposed on any portion of an underpayment for which the taxpayer shows reasonable cause and good faith. The determination is made case by case from all pertinent facts and circumstances, with the taxpayer’s effort to assess the proper tax liability generally the most important factor. Reliance on an information return, professional tax advice, an appraisal, or other facts can establish reasonable cause and good faith only when the reliance was reasonable and the taxpayer acted in good faith, including that advice was based on all pertinent facts, applicable law, and no unreasonable assumptions.",
+    "keywords": [
+      "1.6664-4",
+      "reasonable cause",
+      "good faith",
+      "section 6662",
+      "accuracy-related penalty",
+      "underpayment",
+      "professional advice",
+      "reliance",
+      "facts and circumstances",
+      "information return",
+      "appraisal",
+      "proper tax liability"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-199a-1",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.199A-1",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.199A-1",
+    "ingestedAt": "2026-06-27T05:40:27.525Z",
+    "text": "Section 199A deduction is computed for an individual, including a trust or estate to the extent its deduction is determined under §1.199A-6, from QBI—the net qualified items of income, gain, deduction, and loss with respect to a trade or business—and from qualified REIT dividends and qualified PTP income. If taxable income does not exceed the threshold amount, the deduction is the lesser of 20 percent of total QBI plus 20 percent of the combined qualified REIT dividends and qualified PTP income, or 20 percent of taxable income over net capital gain. If taxable income exceeds the threshold amount, the deduction is the lesser of the QBI component plus the qualified REIT dividend/qualified PTP income component, or 20 percent of taxable income over net capital gain; the QBI component applies SSTB exclusions, aggregation, netting and carryover, and the W-2 wage and UBIA limits in the prescribed order. Negative total QBI and negative combined qualified REIT dividends/qualified PTP income do not produce a current deduction component and are carried forward for section 199A purposes without affecting deductibility under other Code provisions.",
+    "keywords": [
+      "§1.199a-1",
+      "section 199a",
+      "qbi",
+      "qualified business income",
+      "threshold amount",
+      "qualified reit dividends",
+      "qualified ptp income",
+      "w-2 wages",
+      "ubia",
+      "sstb",
+      "phase-in range",
+      "net capital gain",
+      "carryover"
+    ],
+    "delegationBasis": "express"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-469-5t",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.469-5T",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.469-5T",
+    "ingestedAt": "2026-06-27T05:41:15.689Z",
+    "text": "For purposes of §469, except for the limited-partner and specified farming exceptions, an individual materially participates in an activity for a taxable year if one of the listed tests is met. The tests include: more than 500 hours of participation; participation constituting substantially all participation by all individuals; more than 100 hours and not less than any other individual’s participation; significant-participation activities with aggregate participation exceeding 500 hours; material participation in any five of the immediately preceding ten taxable years; for a personal service activity, material participation in any three preceding taxable years; or, under all facts and circumstances, regular, continuous, and substantial participation. A significant-participation activity is a trade or business activity in which the individual participates more than 100 hours and would not otherwise materially participate, and spouse participation counts as the individual’s participation.",
+    "keywords": [
+      "1.469-5t",
+      "material participation",
+      "section 469",
+      "passive activity",
+      "500 hours",
+      "100 hours",
+      "significant participation activity",
+      "personal service activity",
+      "facts and circumstances",
+      "regular continuous substantial",
+      "spouse participation",
+      "limited partner"
+    ],
+    "delegationBasis": "express"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-704-1",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.704-1",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1976-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.704-1",
+    "ingestedAt": "2026-06-27T05:41:43.330Z",
+    "text": "Under Treas. Reg. §1.704-1, a partnership allocation is respected under section 704(b) if it has substantial economic effect, is otherwise in accordance with the partner’s interest in the partnership, or is deemed to be in accordance with that interest under the special rules; otherwise the item is reallocated according to the partner’s interest in the partnership. An allocation has economic effect only if it is consistent with the partners’ underlying economic arrangement, including capital-account maintenance, liquidation according to positive capital accounts, and deficit restoration or a qualified income offset. The economic effect must also be substantial, meaning there is a reasonable possibility the allocation substantially affects the dollar amounts partners receive apart from tax consequences.",
+    "keywords": [
+      "1.704-1",
+      "704(b)",
+      "partnership allocations",
+      "substantial economic effect",
+      "economic effect",
+      "capital accounts",
+      "liquidation",
+      "deficit restoration",
+      "qualified income offset",
+      "partner interest",
+      "distributive share",
+      "tax consequences"
+    ],
+    "delegationBasis": "express"
+  },
+  {
+    "chunkId": "ingested-treas-reg-301-7701-3",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §301.7701-3",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/301.7701-3",
+    "ingestedAt": "2026-06-27T05:42:14.507Z",
+    "text": "An eligible entity that is not otherwise classified as a corporation may choose its federal tax classification: an entity with at least two members may elect association or partnership status, and a single-owner entity may elect association status or to be disregarded as separate from its owner. If no election is filed, a domestic eligible entity defaults to a partnership when it has two or more members and to disregarded status when it has one owner; foreign eligible entities apply the stated limited-liability default rules. An election or classification change is made by filing Form 8832 with the designated service center, and the election is effective on the date specified on the form or, if none is specified, on the filing date, subject to the stated limits on retroactive and prospective effective dates. After an eligible entity elects to change classification, it generally cannot elect another classification change during the sixty months after the election’s effective date, unless the Commissioner permits it under the ownership-change rule.",
+    "keywords": [
+      "301.7701-3",
+      "entity classification",
+      "eligible entity",
+      "check-the-box",
+      "form 8832",
+      "partnership",
+      "association",
+      "corporation",
+      "disregarded entity",
+      "single owner",
+      "domestic eligible entity",
+      "foreign eligible entity",
+      "limited liability",
+      "sixty months"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-83-7",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.83-7",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2003-07-02",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.83-7",
+    "ingestedAt": "2026-06-27T05:42:36.203Z",
+    "text": "For an employee, independent contractor, or beneficiary who receives a nonqualified option in connection with services, §83(a) applies at grant only if the option has a readily ascertainable fair market value when granted. If the option lacks a readily ascertainable fair market value at grant, §83(a) and §83(b) apply when the option is exercised or otherwise disposed of, and compensation is recognized at the time and in the amount determined under those rules. An option actively traded on an established market has a readily ascertainable fair market value; an option not so traded generally does not unless it is transferable, immediately exercisable in full, not subject to significant value-affecting restrictions or conditions, and the value of the entire option privilege can be measured with reasonable accuracy. A sale or disposition in an arm’s-length transaction is treated like exercise for §83 purposes, except for certain dispositions to related persons on or after July 2, 2003.",
+    "keywords": [
+      "1.83-7",
+      "section 83",
+      "nonqualified stock options",
+      "nonstatutory options",
+      "readily ascertainable fair market value",
+      "grant",
+      "exercise",
+      "compensation",
+      "employee",
+      "independent contractor",
+      "option privilege",
+      "arm's length transaction",
+      "related persons"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-162-1",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.162-1",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.162-1",
+    "ingestedAt": "2026-06-27T05:43:05.061Z",
+    "text": "Under Treas. Reg. §1.162-1, a taxpayer may deduct from gross income ordinary and necessary expenditures directly connected with or pertaining to the taxpayer’s trade or business, except items used for another deduction or credit. Deductible business expenses include items such as management expenses, commissions, labor, supplies, incidental repairs, business automobile operating costs, business travel while away from home, advertising and selling expenses, business casualty-type insurance premiums, and rent for business property. An item is not treated as a business expense to the extent it is included in inventory cost or used to determine the gain or loss basis of plant, equipment, or other property, and other statutory disallowance rules may apply. The allowable ordinary and necessary business-expense deduction is deductible in full even if it exceeds the gross income from that business for the taxable year.",
+    "keywords": [
+      "1.162-1",
+      "section 162",
+      "business expenses",
+      "ordinary and necessary",
+      "trade or business",
+      "gross income",
+      "incidental repairs",
+      "business travel",
+      "advertising",
+      "rent",
+      "inventory cost",
+      "basis",
+      "deduction"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-61-1",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.61-1",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.61-1",
+    "ingestedAt": "2026-06-27T05:43:23.736Z",
+    "text": "Gross income means all income from whatever source derived unless excluded by law. It includes income realized in any form, including money, property, services, meals, accommodations, stock, other property, and cash. The examples listed in section 61 and related regulations are illustrative and do not limit gross income; if another Code or regulatory provision specifically includes, excludes, or specially treats an item, that provision controls.",
+    "keywords": [
+      "1.61-1",
+      "section 61",
+      "gross income",
+      "all income",
+      "whatever source derived",
+      "excluded by law",
+      "money",
+      "property",
+      "services",
+      "cash",
+      "meals",
+      "accommodations",
+      "stock",
+      "specific treatment"
+    ],
+    "delegationBasis": "general_7805"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-409a-1",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.409A-1",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.409A-1",
+    "ingestedAt": "2026-06-27T05:45:00.507Z",
+    "text": "Under Treas. Reg. §1.409A-1, a nonstatutory option to purchase service recipient stock is not treated as providing deferred compensation only if its exercise price may never be less than the grant-date fair market value of the underlying stock, the number of shares is fixed on the original grant date, the option is subject to section 83 taxation, and it has no additional deferral feature beyond income recognition at exercise, disposition, or substantial vesting of acquired stock. A stock appreciation right similarly is not deferred compensation only if it is limited to appreciation over a grant-date exercise price for a fixed number of shares, that exercise price may never be less than grant-date fair market value, and it has no other deferral feature beyond recognition at exercise. An option or stock appreciation right with terms that are or could become discounted below grant-date fair market value, or that includes an additional right to defer compensation beyond exercise, generally provides deferred compensation subject to section 409A.",
+    "keywords": [
+      "§1.409a-1",
+      "section 409a",
+      "deferred compensation",
+      "stock rights",
+      "nonstatutory stock options",
+      "stock appreciation rights",
+      "exercise price",
+      "fair market value",
+      "grant date",
+      "service recipient stock",
+      "discounted options",
+      "section 83",
+      "deferral feature"
+    ],
+    "delegationBasis": "express"
   }
 ];
