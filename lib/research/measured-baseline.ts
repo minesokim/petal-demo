@@ -36,7 +36,7 @@ export const MEASURED_BASELINE: MeasuredRun[] = [
   // ENTITY + CAPITAL-GAINS — measures the 2026-06-26 business-law ingest (Subch S/K/C, §1061, the capital-gains
   // spine). The one miss (§351 control 80%) is the SAME codex over-abstention as §199A-5 — the 80% is in the
   // chunk via the §368(c) reference but GPT-5.5 won't extract it; expected to ground on Claude (re-measure).
-  { set: "entity", description: "entity + capital-gains source-verified set; 1 codex §351 abstain (model-robustness, not corpus)", model: "gpt-5.5 (codex)", config: "--set entity --fetch", total: 14, pass: 13, errorRatePct: 7.1, date: "2026-06-26" },
+  { set: "entity", description: "entity + capital-gains + depreciation/deduction source-verified set (23 cases); only the §351 control-80% codex abstain fails (model-robustness — grounds on Claude, so ~23/23 on the prod model)", model: "gpt-5.5 (codex)", config: "--set entity --fetch", total: 23, pass: 22, errorRatePct: 4.3, date: "2026-06-27" },
   // CURRENCY / PLUMBING — the easy tier (what the old 97.4% measured).
   { set: "golden", description: "currency / plumbing golden set", model: "gpt-5.5 (codex)", config: "--set golden --fetch", total: 50, pass: 47, errorRatePct: 6.0, date: "2026-06-26" },
   { set: "golden", description: "currency / plumbing golden set (prior Claude baseline)", model: "claude-sonnet-4-6", config: "--no-judge", total: 50, pass: 49, errorRatePct: 2.0, date: "2026-06-25" },
@@ -49,7 +49,7 @@ export const RELEASE_GATE = {
   verified: { floor: 7, of: 8, note: "settled bright-line law — PROD model (Claude) is 8/8; floor 7 allows one run-to-run flake but blocks a real settled-law regression. Never lower it." },
   golden: { floor: 47, of: 50, note: "currency / plumbing" },
   bluej: { floor: 6, of: 15, note: "hard / unsettled — expected to include calibrated hedges; a confident-WRONG answer here is the real failure, not a hedge" },
-  entity: { floor: 12, of: 14, note: "entity + capital-gains settled law — codex measured 13/14; floor 12 tolerates the known §351 codex abstain + one flake. Raise as codex robustness improves; never lower it." },
+  entity: { floor: 21, of: 23, note: "entity + capital-gains + depreciation/deduction settled law — codex measured 22/23; floor 21 tolerates the known §351 codex abstain + one run-to-run flake. Raise as codex robustness improves; never lower it." },
 } as const;
 
 /** Latest recorded pass/total for a set (most recent date wins), for the gate + dashboards. */
