@@ -4070,5 +4070,391 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "rights to property",
       "united states"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-871",
+    "authorityType": "statute",
+    "citation": "IRC §871",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/871",
+    "ingestedAt": "2026-06-27T10:49:15.132Z",
+    "text": "IRC §871 imposes a 30 percent tax for each taxable year on U.S.-source amounts received by a nonresident alien individual as interest, dividends, rents, salaries, wages, annuities, compensation, and other fixed or determinable annual or periodical gains, profits, and income, but only to the extent the amounts are not effectively connected with a U.S. trade or business. A nonresident alien individual present in the United States for periods aggregating 183 days or more during the taxable year is also taxed at 30 percent on the excess of U.S.-source capital-asset gains over allocable U.S.-source capital-asset losses, subject to the statutory recognition and exclusion rules. If the nonresident alien individual is engaged in a U.S. trade or business, taxable income effectively connected with that business is taxed as provided in section 1 or 55, and gross income for that purpose includes only effectively connected gross income.",
+    "keywords": [
+      "irc 871",
+      "nonresident alien",
+      "u.s. source income",
+      "30 percent tax",
+      "fdap",
+      "effectively connected income",
+      "u.s. trade or business",
+      "capital gains",
+      "183 days",
+      "section 1",
+      "section 55",
+      "withholding"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-881",
+    "authorityType": "statute",
+    "citation": "IRC §881",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/881",
+    "ingestedAt": "2026-06-27T10:50:04.686Z",
+    "text": "For each taxable year, a foreign corporation is subject to a 30 percent tax on U.S.-source interest, dividends, rents, salaries, wages, premiums, annuities, compensation, other fixed or determinable annual or periodical income, specified §631 gains, specified original-issue-discount amounts, and certain contingent gains from intangibles, but only to the extent the amount received is not effectively connected with a U.S. trade or business. No tax is imposed under §881(a)(1) or (a)(3) on qualifying portfolio interest, amounts described in §871(i)(2), or qualifying regulated-investment-company interest-related dividends and short-term capital gain dividends, subject to the stated exceptions. Certain corporations organized in Guam, American Samoa, the Northern Mariana Islands, or the Virgin Islands are not treated as foreign corporations if they meet the ownership, income, and obligation-use tests; qualifying Puerto Rico corporations apply a 10 percent rate to dividends instead of 30 percent, subject to the Puerto Rico withholding-tax limitation.",
+    "keywords": [
+      "irc 881",
+      "foreign corporation",
+      "30 percent tax",
+      "us-source income",
+      "fdap",
+      "effectively connected income",
+      "portfolio interest",
+      "original issue discount",
+      "regulated investment company",
+      "interest-related dividends",
+      "short-term capital gain dividends",
+      "possessions corporations",
+      "puerto rico",
+      "withholding tax"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1441",
+    "authorityType": "statute",
+    "citation": "IRC §1441",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2014-12-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1441",
+    "ingestedAt": "2026-06-27T10:50:33.617Z",
+    "text": "IRC §1441 generally requires a person having control, receipt, custody, disposal, or payment of U.S.-source gross income items of a nonresident alien individual or foreign partnership to deduct and withhold tax equal to 30% of those items. Covered items include interest other than original issue discount as defined in section 1273, dividends, rents, salaries, wages, premiums, annuities, compensation, and other fixed or determinable annual or periodical gains, profits, and income, plus specified gains and amounts referenced in section 871(a). A 14% withholding rate applies to the specified scholarship or fellowship amounts received by certain temporarily present nonresident alien individuals in F, J, M, or Q nonimmigrant status, and withholding is not required for listed exceptions such as certain effectively connected income, portfolio interest, and other amounts exempted by the section.",
+    "keywords": [
+      "irc 1441",
+      "section 1441",
+      "withholding",
+      "nonresident alien",
+      "foreign partnership",
+      "u.s. source income",
+      "fdap",
+      "30 percent",
+      "14 percent",
+      "scholarship",
+      "fellowship",
+      "effectively connected income",
+      "portfolio interest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-959",
+    "authorityType": "statute",
+    "citation": "IRC §959",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/959",
+    "ingestedAt": "2026-06-27T10:51:02.986Z",
+    "text": "Under IRC § 959, earnings and profits of a foreign corporation attributable to amounts included in a United States shareholder’s gross income under section 951(a) are not included again when distributed to that shareholder or certain successor United States persons, or when they otherwise would be included under section 951(a)(1)(B), including through a section 958(a) ownership chain. For section 951(a) purposes, those previously taxed earnings and profits distributed through a section 958(a) chain are also excluded from another controlled foreign corporation’s gross income in the chain. Distributions are allocated first to earnings and profits attributable to section 951(a)(1)(B) and referenced section 951(a)(1)(C) amounts, then to section 951(a)(1)(A) earnings and profits as adjusted, and then to other earnings and profits; excluded distributions are not dividends and immediately reduce earnings and profits.",
+    "keywords": [
+      "irc 959",
+      "section 959",
+      "previously taxed income",
+      "previously taxed earnings",
+      "earnings and profits",
+      "section 951(a)",
+      "controlled foreign corporation",
+      "gross income exclusion",
+      "distributions",
+      "ordering rules",
+      "section 958(a)",
+      "nondividend distribution",
+      "section 1248"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2033",
+    "authorityType": "statute",
+    "citation": "IRC §2033",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1962-10-17",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2033",
+    "ingestedAt": "2026-06-27T10:51:16.417Z",
+    "text": "For estate tax purposes, the gross estate includes the value of every item of property to the extent of the decedent’s interest in that property at the time of death. The includible amount is measured by the value of the interest the decedent held when the decedent died.",
+    "keywords": [
+      "irc 2033",
+      "section 2033",
+      "gross estate",
+      "decedent",
+      "property interest",
+      "time of death",
+      "estate tax",
+      "included property",
+      "value",
+      "ownership interest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2042",
+    "authorityType": "statute",
+    "citation": "IRC §2042",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2042",
+    "ingestedAt": "2026-06-27T10:51:36.950Z",
+    "text": "The gross estate includes amounts receivable by the executor as insurance under policies on the decedent’s life. It also includes amounts receivable by other beneficiaries under policies on the decedent’s life if, at death, the decedent possessed any incidents of ownership, exercisable alone or with another person. An incident of ownership includes a reversionary interest only if its value exceeded 5 percent of the policy value immediately before death; a reversionary interest includes a possibility that the policy or proceeds may return to the decedent or the estate, or be subject to the decedent’s power of disposition.",
+    "keywords": [
+      "irc 2042",
+      "section 2042",
+      "life insurance",
+      "gross estate",
+      "executor",
+      "beneficiaries",
+      "incidents of ownership",
+      "reversionary interest",
+      "5 percent",
+      "power of disposition",
+      "policy proceeds",
+      "estate tax"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2522",
+    "authorityType": "statute",
+    "citation": "IRC §2522",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2522",
+    "ingestedAt": "2026-06-27T10:52:08.152Z",
+    "text": "In computing taxable gifts for the calendar year, a donor may deduct gifts made to or for the use of the United States, States, the District of Columbia, qualifying charitable, religious, scientific, literary, educational, amateur-sports, fraternal, and veterans organizations, subject to the citizen/resident and nonresident-specific limitations in §2522. No deduction is allowed for certain disqualified organizations or for most split-interest transfers unless the charitable interest is structured as an allowed charitable remainder annuity trust, charitable remainder unitrust, pooled income fund, guaranteed annuity, or fixed-percentage yearly interest. Qualified reformations, qualifying real-property easement transfers, and donor-advised-fund contributions may qualify only if the statutory conditions are met, including exclusive legal control acknowledgment for donor-advised funds. For fractional gifts of tangible personal property, deductions can be denied or recaptured with interest, and the gift tax increased by 10 percent of the recaptured amount, if the donor fails to contribute all remaining interests by the earlier of 10 years after the initial fractional contribution or death, or if the donee lacks substantial physical possession and related exempt use during the required period.",
+    "keywords": [
+      "irc §2522",
+      "2522",
+      "gift tax",
+      "taxable gifts",
+      "charitable deduction",
+      "charitable gifts",
+      "split-interest transfers",
+      "charitable remainder trust",
+      "pooled income fund",
+      "donor advised fund",
+      "fractional gifts",
+      "qualified easement",
+      "nonresident gifts",
+      "recapture"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2523",
+    "authorityType": "statute",
+    "citation": "IRC §2523",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-03-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2523",
+    "ingestedAt": "2026-06-27T10:52:37.233Z",
+    "text": "For a gift made during a calendar year to a donee who is the donor’s spouse at the time of the gift, the donor may deduct, in computing taxable gifts for that calendar year, an amount equal to the value of the transferred property interest. The deduction is disallowed for certain terminable interests if the donor or another person may possess or enjoy the property after the spouse’s interest ends, but qualifying life estates with the spouse’s power of appointment and elected qualified terminable interest property are treated as transferred to the spouse. No gift-tax marital deduction is allowed if the donor’s spouse is not a United States citizen; instead, for gifts that would otherwise qualify, section 2503(b) is applied by substituting “$100,000” for “$10,000,” except for transfers resulting from acquisition of rights under a described joint and survivor annuity.",
+    "keywords": [
+      "irc 2523",
+      "gift to spouse",
+      "gift tax",
+      "marital deduction",
+      "taxable gifts",
+      "terminable interest",
+      "qualified terminable interest property",
+      "qtip election",
+      "life estate",
+      "power of appointment",
+      "noncitizen spouse",
+      "section 2503(b)",
+      "joint and survivor annuity"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1223",
+    "authorityType": "statute",
+    "citation": "IRC §1223",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1223",
+    "ingestedAt": "2026-06-27T10:53:04.965Z",
+    "text": "For IRC §1223 holding-period purposes, a taxpayer generally includes the prior holding period when property received has the same basis, in whole or in part, as the property exchanged or as it would have had in another person’s hands. This tacking rule applies to specified substituted-basis and carryover-basis situations, including certain exchanges, involuntary conversions, section 355 distributions, wash-sale replacement stock or securities, section 307 stock or rights, and specified nonrecognition replacement property. Property acquired from or passing from a decedent with a section 1014 basis, and sold or otherwise disposed of within 1 year after the decedent’s death, is treated as held for more than 1 year.",
+    "keywords": [
+      "irc 1223",
+      "holding period",
+      "tacking",
+      "carryover basis",
+      "substituted basis",
+      "exchange",
+      "gift",
+      "decedent",
+      "section 1014",
+      "long-term",
+      "wash sale",
+      "nonrecognition"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6213",
+    "authorityType": "statute",
+    "citation": "IRC §6213",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6213",
+    "ingestedAt": "2026-06-27T10:53:33.431Z",
+    "text": "After a notice of deficiency authorized by §6212 is mailed, the taxpayer may petition the Tax Court for redetermination within 90 days, or 150 days if the notice is addressed to a person outside the United States, with Saturday, Sunday, or a District of Columbia legal holiday not counted as the last day. Except as provided in §§6851, 6852, or 6861, the IRS may not assess the deficiency or begin or prosecute levy or court collection for taxes under subtitle A or B or chapters 41, 42, 43, or 44 until the notice is mailed, the petition period expires, and, if a timely Tax Court petition is filed, the Tax Court decision is final. If no timely petition is filed, the mailed deficiency must be assessed and paid on notice and demand; a taxpayer may waive these restrictions in writing.",
+    "keywords": [
+      "6213",
+      "deficiency",
+      "notice of deficiency",
+      "90-day letter",
+      "tax court petition",
+      "assessment restriction",
+      "collection bar",
+      "levy",
+      "redetermination",
+      "150 days",
+      "waiver",
+      "notice and demand"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6330",
+    "authorityType": "statute",
+    "citation": "IRC §6330",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1999-01-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6330",
+    "ingestedAt": "2026-06-27T10:54:02.754Z",
+    "text": "Under IRC §6330, the IRS generally may not levy on a person’s property or rights to property unless it first gives written notice, at least 30 days before the first levy for the unpaid tax period, of the person’s right to request a hearing. If the person timely requests the hearing in writing and states the grounds, the hearing is held by the IRS Independent Office of Appeals before an officer or employee with no prior involvement unless waived. At the hearing, the taxpayer may raise relevant issues including spousal defenses, challenges to the appropriateness of collection actions, collection alternatives, and challenges to the underlying liability if the taxpayer did not receive a statutory notice of deficiency or otherwise have an opportunity to dispute it. The Appeals determination must consider legal and procedural verification, the issues raised, and whether the proposed collection action is no more intrusive than necessary, and the taxpayer may petition the Tax Court for review within 30 days of the determination.",
+    "keywords": [
+      "irc 6330",
+      "section 6330",
+      "collection due process",
+      "levy notice",
+      "cdp hearing",
+      "irs independent office of appeals",
+      "impartial officer",
+      "collection alternatives",
+      "spousal defenses",
+      "underlying liability",
+      "tax court review",
+      "suspension of levy"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-55",
+    "authorityType": "statute",
+    "citation": "IRC §55",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/55",
+    "ingestedAt": "2026-06-27T10:55:51.142Z",
+    "text": "IRC §55 imposes an alternative minimum tax, in addition to other subtitle A tax, equal to the positive excess of tentative minimum tax over the sum of regular tax and, for an applicable corporation, the §59A tax. For a noncorporate taxpayer, tentative minimum tax is 26% of taxable excess up to $175,000 and 28% above $175,000, reduced by the alternative minimum tax foreign tax credit; taxable excess is AMTI over the exemption amount, and AMTI is taxable income adjusted under §§56 and 58 and increased by §57 tax-preference items. For an applicable corporation, tentative minimum tax is the excess of 15% of adjusted financial statement income under §56A over the corporate AMT foreign tax credit, while a corporation that is not an applicable corporation has zero tentative minimum tax. The noncorporate exemption amount and phaseout are determined under §55(d), including the after-2017 substitutions, inflation adjustments, married-separate 50% rules, and estate-or-trust rules; regular tax is §26(b) regular tax liability reduced by the foreign tax credit under §27(a), with the specified exclusions and without farm-and-fishing income averaging.",
+    "keywords": [
+      "irc 55",
+      "section 55",
+      "alternative minimum tax",
+      "tentative minimum tax",
+      "regular tax",
+      "alternative minimum taxable income",
+      "amti",
+      "exemption amount",
+      "taxable excess",
+      "applicable corporation",
+      "adjusted financial statement income",
+      "corporate amt",
+      "foreign tax credit"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-59",
+    "authorityType": "statute",
+    "citation": "IRC §59",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/59",
+    "ingestedAt": "2026-06-27T10:57:10.705Z",
+    "text": "IRC §59 supplies special AMT rules: the AMT foreign tax credit is the §27 credit recomputed by treating the pre-credit tentative minimum tax as the §904 tax, applying §904 using alternative minimum taxable income, and using the applicable §55(b)(1) rate for high-taxed-income determinations; a simplified §904 limitation election, once properly made, applies to later years unless revoked with the Secretary’s consent. Estates and trusts compute AMTI under subchapter J with part VI adjustments, and RICs, REITs, common trust funds, partners, and S corporation shareholders apply the specified allocation or election rules for items treated differently from regular tax. A taxpayer may elect the stated ratable writeoff for specified qualified expenditures, and elected amounts are not §57(a) tax preferences and are not subject to §56; AMTI limitations under §§704(d), 465, and 1366(d) are applied with §§56–58 adjustments. For children subject to §1(g), the §55 exemption cannot exceed earned income plus the indexed $5,000 amount; §59 also defines “applicable corporation” for corporate AMT by adjusted-financial-statement-income tests and provides the corporate AMT foreign tax credit, including a 5-year carryover of certain excess foreign taxes.",
+    "keywords": [
+      "irc 59",
+      "section 59",
+      "alternative minimum tax",
+      "amt foreign tax credit",
+      "pre-credit tentative minimum tax",
+      "section 904 limitation",
+      "alternative minimum taxable income",
+      "tax preferences",
+      "qualified expenditures",
+      "estates and trusts",
+      "unearned income minor children",
+      "applicable corporation",
+      "corporate amt",
+      "adjusted financial statement income",
+      "foreign-parented multinational group"
+    ]
   }
 ];
