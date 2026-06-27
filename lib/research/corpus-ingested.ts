@@ -3670,5 +3670,405 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "section 512",
       "capital loss carryover"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-861",
+    "authorityType": "statute",
+    "citation": "IRC §861",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/861",
+    "ingestedAt": "2026-06-27T10:29:00.227Z",
+    "text": "IRC §861 treats specified gross income as from sources within the United States, including interest from the United States, the District of Columbia, noncorporate residents, or domestic corporations; dividends from domestic corporations and certain dividends from foreign corporations tied to effectively connected U.S. business income; compensation for labor or personal services performed in the United States; rents and royalties from property located in or used in the United States; gains from disposition of a United States real property interest; certain inventory-sale, insurance-underwriting, social security, and guarantee income. Compensation for U.S.-performed services is excluded from U.S.-source income for a nonresident alien temporarily present for not more than 90 days if aggregate compensation does not exceed $3,000 and the statutory employer/contract conditions are met, and also for certain regular crew members of foreign vessels. Taxable income from U.S. sources is determined by deducting expenses, losses, and other deductions properly allocated or apportioned to those U.S.-source gross-income items, plus a ratable share of deductions that cannot definitely be allocated; the remainder is included in full as taxable income from U.S. sources.",
+    "keywords": [
+      "irc 861",
+      "us-source income",
+      "interest",
+      "dividends",
+      "personal services",
+      "nonresident alien",
+      "rents",
+      "royalties",
+      "us real property interest",
+      "inventory property",
+      "underwriting income",
+      "social security benefits",
+      "guarantees",
+      "deduction allocation",
+      "apportionment"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-863",
+    "authorityType": "statute",
+    "citation": "IRC §863",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/863",
+    "ingestedAt": "2026-06-27T10:29:31.347Z",
+    "text": "Items of gross income, expenses, losses, and deductions not specified in §§861(a) and 862(a) are allocated or apportioned to U.S. or foreign sources under regulations prescribed by the Secretary, with properly related deductions and a ratable share of unallocable deductions reducing U.S.-source taxable income. Income derived partly from U.S. and partly from foreign sources, including services performed partly in and partly outside the United States and specified inventory transactions, is apportioned under prescribed processes or formulas; covered inventory sale or exchange income is allocated solely based on production activities. Transportation income beginning and ending in the United States is U.S.-source, and 50 percent of other transportation income that begins or ends in the United States is U.S.-source, subject to the stated personal-service and vessel rules. Space or ocean activity income is generally U.S.-source for a United States person and foreign-source for others, while international communications income is split 50 percent U.S. and 50 percent foreign for United States persons and is generally foreign-source for non-U.S. persons unless attributable to a U.S. office or fixed place of business.",
+    "keywords": [
+      "irc §863",
+      "source rules",
+      "allocation",
+      "apportionment",
+      "gross income",
+      "deductions",
+      "partly within partly without",
+      "inventory property",
+      "production activities",
+      "transportation income",
+      "space activity",
+      "ocean activity",
+      "international communications income",
+      "united states person"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-865",
+    "authorityType": "statute",
+    "citation": "IRC §865",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/865",
+    "ingestedAt": "2026-06-27T10:30:01.637Z",
+    "text": "Under IRC §865, except as otherwise provided in the section, income from a sale, exchange, or other disposition of personal property is sourced by the seller’s residence: a United States resident has United States-source income, and a nonresident has foreign-source income. Inventory property is excluded from this general rule and is sourced under §§861(a)(6), 862(a)(6), and 863, except that income from U.S.-cut unprocessed softwood timber is United States-source. Gain from depreciable personal property up to depreciation adjustments is allocated between United States and foreign sources based on United States depreciation adjustments relative to total depreciation adjustments, and excess gain is sourced as inventory property. For intangibles, noncontingent sale payments follow §865, contingent payments are sourced as royalties, goodwill is sourced to the country where generated, and special office-or-fixed-place-of-business rules may override residence sourcing, including a foreign-office rule for United States residents only if at least 10 percent foreign income tax is actually paid.",
+    "keywords": [
+      "irc 865",
+      "section 865",
+      "personal property",
+      "source rules",
+      "residence sourcing",
+      "united states resident",
+      "nonresident",
+      "inventory property",
+      "depreciable property",
+      "depreciation adjustments",
+      "intangibles",
+      "goodwill",
+      "royalties",
+      "fixed place of business"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-245a",
+    "authorityType": "statute",
+    "citation": "IRC §245A",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/245A",
+    "ingestedAt": "2026-06-27T10:30:29.652Z",
+    "text": "Under IRC §245A, a domestic corporation that is a United States shareholder with respect to a specified 10-percent owned foreign corporation may deduct an amount equal to the foreign-source portion of any dividend received from that foreign corporation. A specified 10-percent owned foreign corporation excludes a passive foreign investment company with respect to the shareholder unless it is a controlled foreign corporation, and the foreign-source portion is based on the ratio of undistributed foreign earnings to total undistributed earnings. No foreign tax credit or deduction is allowed for taxes related to a dividend for which the §245A deduction is allowed, and the deduction does not apply to hybrid dividends or to amounts treated as dividends under section 1291(d)(2)(B).",
+    "keywords": [
+      "irc 245a",
+      "section 245a",
+      "foreign-source dividend",
+      "dividends received deduction",
+      "domestic corporation",
+      "united states shareholder",
+      "specified 10-percent owned foreign corporation",
+      "controlled foreign corporation",
+      "passive foreign investment company",
+      "hybrid dividend",
+      "foreign tax credit",
+      "undistributed foreign earnings"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2032",
+    "authorityType": "statute",
+    "citation": "IRC §2032",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1986-10-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2032",
+    "ingestedAt": "2026-06-27T10:31:16.995Z",
+    "text": "Under IRC §2032, if the executor elects alternate valuation on the estate tax return, the gross estate is valued using the disposition date for property distributed, sold, exchanged, or otherwise disposed of within 6 months after death, and using the date 6 months after death for other property. An interest or estate affected by mere lapse of time is included at its date-of-death value, adjusted only for later changes in value not due to mere lapse of time; charitable and marital deduction property is valued under the specified date-of-death and adjustment rules when the election is made. The election is allowed only if it decreases both the value of the gross estate and the sum of the chapter 11 tax and chapter 13 tax on property includible in the gross estate, reduced by allowable credits, and no deduction is allowed for an item already effectively allowed through alternate valuation. The executor must make the election on the chapter 11 return, the election is irrevocable, and it may not be made if that return is filed more than 1 year after the prescribed filing time, including extensions.",
+    "keywords": [
+      "irc 2032",
+      "section 2032",
+      "alternate valuation",
+      "gross estate",
+      "executor election",
+      "estate tax return",
+      "6 months",
+      "date of disposition",
+      "charitable deduction",
+      "marital deduction",
+      "chapter 11 tax",
+      "chapter 13 tax",
+      "generation-skipping tax",
+      "irrevocable election"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2036",
+    "authorityType": "statute",
+    "citation": "IRC §2036",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-12-18",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2036",
+    "ingestedAt": "2026-06-27T10:31:46.330Z",
+    "text": "Under IRC §2036, a decedent’s gross estate includes the value of transferred property, to the extent of the decedent’s retained interest, if the transfer was not a bona fide sale for adequate and full consideration and the decedent retained for life, for a period not ascertainable without reference to death, or for a period that did not in fact end before death, the possession or enjoyment of the property, the right to its income, or the right to designate who may possess, enjoy, or receive income from it. Retaining the direct or indirect right to vote shares of a controlled corporation is treated as retaining enjoyment of the transferred property. A corporation is controlled if, at any time after the transfer and during the 3-year period ending on the decedent’s death, the decedent owned, or had the right alone or with another person to vote, stock with at least 20 percent of the total combined voting power.",
+    "keywords": [
+      "irc 2036",
+      "section 2036",
+      "gross estate",
+      "retained life estate",
+      "transfers",
+      "retained enjoyment",
+      "income right",
+      "designation right",
+      "bona fide sale",
+      "adequate consideration",
+      "voting rights",
+      "controlled corporation",
+      "20 percent",
+      "3-year period"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2518",
+    "authorityType": "statute",
+    "citation": "IRC §2518",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1982-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2518",
+    "ingestedAt": "2026-06-27T10:32:25.882Z",
+    "text": "For purposes of Subtitle B, if a person makes a qualified disclaimer of an interest in property, the interest is treated as never having been transferred to that person. A qualified disclaimer is an irrevocable and unqualified written refusal received by the transferor, the transferor’s legal representative, or the holder of legal title no later than 9 months after the later of the transfer creating the interest or the person’s attaining age 21, provided the person has not accepted the interest or any of its benefits. The refused interest must pass without direction by the disclaimant and must pass either to the spouse of the decedent or to someone other than the disclaimant; an undivided portion may be disclaimed, and a power over property is treated as an interest. A written transfer of the transferor’s entire interest that meets similar timing and nonacceptance requirements and goes to the person or persons who would have received the property under a qualified disclaimer is treated as a qualified disclaimer.",
+    "keywords": [
+      "irc 2518",
+      "qualified disclaimer",
+      "disclaimer",
+      "irrevocable refusal",
+      "written refusal",
+      "9 months",
+      "age 21",
+      "accepted benefits",
+      "spouse of decedent",
+      "undivided portion",
+      "power over property",
+      "entire interest",
+      "subtitle b"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1033",
+    "authorityType": "statute",
+    "citation": "IRC §1033",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1033",
+    "ingestedAt": "2026-06-27T10:32:56.177Z",
+    "text": "Under IRC §1033, no gain is recognized when property is compulsorily or involuntarily converted by destruction, theft, seizure, requisition, condemnation, or threat or imminence of requisition or condemnation into property similar or related in service or use. If the conversion is into money or non-similar property, the taxpayer may elect nonrecognition to the extent the amount realized is reinvested in similar or related replacement property, or stock acquired to obtain control of a corporation owning such property, during the replacement period. The replacement period begins on the disposition date or the earliest threat/imminence date, whichever is earlier, and generally ends 2 years after the close of the first taxable year in which any conversion gain is realized; for condemned real property held for productive use in a trade or business or for investment, like-kind property qualifies and the period is 3 years. Replacement property basis is generally reduced by the gain not recognized, and specified related-person limits and disaster, livestock, reclamation, and hazard-mitigation rules may apply.",
+    "keywords": [
+      "irc 1033",
+      "section 1033",
+      "involuntary conversion",
+      "nonrecognition",
+      "replacement property",
+      "similar or related use",
+      "condemnation",
+      "theft",
+      "destruction",
+      "requisition",
+      "replacement period",
+      "basis reduction",
+      "like-kind real property",
+      "related person"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1060",
+    "authorityType": "statute",
+    "citation": "IRC §1060",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1993-08-11",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1060",
+    "ingestedAt": "2026-06-27T10:33:24.072Z",
+    "text": "In an applicable asset acquisition, the consideration received for assets constituting a trade or business is allocated among the acquired assets, for both the transferee’s basis and the transferor’s gain or loss, in the same manner as amounts are allocated under section 338(b)(5). If the transferee and transferor agree in writing on the allocation of consideration or the fair market value of any assets, that agreement binds both parties unless the Secretary determines it is not appropriate. The transferor and transferee must furnish required information to the Secretary, including amounts allocated to section 197 intangibles, any modifications of those amounts, and other necessary information about the transferred assets.",
+    "keywords": [
+      "irc 1060",
+      "section 1060",
+      "applicable asset acquisition",
+      "trade or business",
+      "asset allocation",
+      "consideration",
+      "transferee basis",
+      "transferor gain or loss",
+      "section 338(b)(5)",
+      "written allocation agreement",
+      "fair market value",
+      "section 197 intangibles",
+      "information reporting",
+      "secretary"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1091",
+    "authorityType": "statute",
+    "citation": "IRC §1091",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1091",
+    "ingestedAt": "2026-06-27T10:34:14.545Z",
+    "text": "Under IRC §1091, a loss from the sale or other disposition of stock or securities is not deductible under §165 if, from 30 days before through 30 days after the sale or disposition, the taxpayer acquires, or enters into a contract or option to acquire, substantially identical stock or securities by purchase or by an exchange on which the entire gain or loss is recognized. This disallowance does not apply to a dealer in stock or securities if the loss is sustained in a transaction made in the ordinary course of that business; similar rules apply to losses on closing short sales and on the sale, exchange, or termination of securities futures contracts to sell when substantially identical positions are entered into during the same period. For stock or securities whose acquisition caused nondeductibility, basis is the basis of the stock or securities sold or disposed of, adjusted by the difference, if any, between the acquisition price and the sale or disposition price; stock or securities include contracts or options to acquire or sell stock or securities, and cash settlement alone does not prevent the section from applying.",
+    "keywords": [
+      "irc 1091",
+      "wash sale",
+      "stock or securities",
+      "loss disallowance",
+      "section 165",
+      "substantially identical",
+      "30 days before",
+      "30 days after",
+      "basis adjustment",
+      "contract or option",
+      "short sale",
+      "securities futures contract",
+      "dealer exception",
+      "cash settlement"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1235",
+    "authorityType": "statute",
+    "citation": "IRC §1235",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2014-12-19",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1235",
+    "ingestedAt": "2026-06-27T10:34:38.518Z",
+    "text": "Under IRC §1235, a transfer other than by gift, inheritance, or devise, by a holder of all substantial rights to a patent—or an undivided interest that includes a part of all such rights—is treated as the sale or exchange of a capital asset held for more than 1 year. This treatment applies even if consideration is paid periodically over a period generally coterminous with the transferee’s use of the patent or is contingent on the patent’s productivity, use, or disposition. A holder is the individual creator, or an individual who acquired the interest for money or money’s worth paid to the creator before actual reduction to practice, if that individual is neither the creator’s employer nor related to the creator under §1235(c). The rule does not apply to direct or indirect transfers between persons described in §267(b) or §707(b), applying the §1235(c) modifications for “25 percent or more” ownership and family limited to spouse, ancestors, and lineal descendants.",
+    "keywords": [
+      "irc 1235",
+      "section 1235",
+      "sale of patents",
+      "patent transfer",
+      "all substantial rights",
+      "undivided interest",
+      "capital asset",
+      "long-term capital gain",
+      "holder",
+      "creator",
+      "actual reduction to practice",
+      "contingent payments",
+      "related persons",
+      "section 267(b)",
+      "section 707(b)"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6511",
+    "authorityType": "statute",
+    "citation": "IRC §6511",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6511",
+    "ingestedAt": "2026-06-27T10:35:10.520Z",
+    "text": "Under IRC §6511, a taxpayer generally must file a claim for credit or refund of an overpayment for a tax requiring a return within 3 years after the return was filed or 2 years after the tax was paid, whichever period expires later; if no return was filed, the claim is due within 2 years after the tax was paid. No credit or refund may be allowed after that filing period unless a timely claim is filed, and the allowable amount is capped by the applicable lookback period: for a claim filed within the 3-year period, tax paid during the 3 years immediately before the claim plus any return-extension period; otherwise, tax paid during the 2 years immediately before the claim. If no claim was filed, the refund is limited as if a claim had been filed on the date the credit or refund is allowed, subject to the section’s special rules for agreed assessment extensions, specified carrybacks and credits, and financial disability.",
+    "keywords": [
+      "irc 6511",
+      "refund claim",
+      "credit claim",
+      "overpayment",
+      "limitations period",
+      "3-year period",
+      "2-year period",
+      "lookback period",
+      "timely claim",
+      "return filed",
+      "tax paid",
+      "financial disability"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6321",
+    "authorityType": "statute",
+    "citation": "IRC §6321",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6321",
+    "ingestedAt": "2026-06-27T10:35:20.372Z",
+    "text": "If a person liable for any tax neglects or refuses to pay after demand, the unpaid amount becomes a lien in favor of the United States. The lien covers the tax plus any interest, additional amount, addition to tax, assessable penalty, and accruing costs, and attaches to all property and rights to property, real or personal, belonging to that person.",
+    "keywords": [
+      "6321",
+      "irc 6321",
+      "federal tax lien",
+      "lien for taxes",
+      "tax liability",
+      "demand for payment",
+      "neglects or refuses",
+      "unpaid tax",
+      "interest",
+      "penalties",
+      "assessable penalty",
+      "all property",
+      "rights to property",
+      "united states"
+    ]
   }
 ];
