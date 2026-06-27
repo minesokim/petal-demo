@@ -2301,5 +2301,307 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "redemption premium",
       "shareholder proportionate interest"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-1001",
+    "authorityType": "statute",
+    "citation": "IRC §1001",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1977-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1001",
+    "ingestedAt": "2026-06-27T05:27:07.647Z",
+    "text": "Under IRC §1001, gain from a sale or other disposition of property is the excess of the amount realized over the adjusted basis provided in §1011 for determining gain, and loss is the excess of that adjusted basis over the amount realized. The amount realized is the money received plus the fair market value of any non-money property received, with the stated adjustments for real property taxes treated under §164(d). Except as otherwise provided in Subtitle A, the entire amount of gain or loss determined under §1001 on a sale or exchange of property is recognized.",
+    "keywords": [
+      "irc 1001",
+      "section 1001",
+      "gain",
+      "loss",
+      "amount realized",
+      "adjusted basis",
+      "section 1011",
+      "fair market value",
+      "sale or exchange",
+      "property disposition",
+      "recognition",
+      "real property taxes",
+      "section 164d"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1012",
+    "authorityType": "statute",
+    "citation": "IRC §1012",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2011-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1012",
+    "ingestedAt": "2026-06-27T05:27:34.986Z",
+    "text": "The basis of property is generally its cost, except as otherwise provided in the specified subchapters governing basis, corporate distributions and adjustments, partnerships, and capital gains and losses. Cost of real property excludes real property taxes treated under section 164(d) as imposed on the taxpayer. For a sale, exchange, or other disposition of a specified security on or after the applicable date, the basis conventions prescribed under section 1012 are applied account by account; stock acquired in connection with a dividend reinvestment plan after December 31, 2011 may use a method permitted for regulated investment company stock, and transferred plan stock carries over its immediately prior plan basis as adjusted for transfer fees or charges.",
+    "keywords": [
+      "1012",
+      "cost basis",
+      "basis of property",
+      "real property taxes",
+      "section 164(d)",
+      "specified security",
+      "account by account",
+      "average basis",
+      "dividend reinvestment plan",
+      "regulated investment company",
+      "covered securities",
+      "stock basis"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1016",
+    "authorityType": "statute",
+    "citation": "IRC §1016",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1016",
+    "ingestedAt": "2026-06-27T05:28:24.241Z",
+    "text": "Under IRC §1016, a taxpayer must properly adjust the basis of property for expenditures, receipts, losses, or other items properly chargeable to capital account, subject to the stated exclusions for certain deducted carrying charges, circulation expenditures, and annuity or life insurance contract charges. Basis must also be adjusted for exhaustion, wear and tear, obsolescence, amortization, and depletion by the amount allowed that reduced tax, but not less than the amount allowable; if no depreciation method was adopted under section 167, the allowable amount is determined under the straight-line method. Additional basis adjustments apply for the enumerated items in the section, including tax-free or basis-reducing stock distributions, bond premium rules, certain deductions, S corporation and controlled foreign corporation stock, specified credits, nonrecognition transactions, additional estate tax elections, and gas-guzzler tax on certain automobiles. If property has a substituted basis, these adjustments are made after first making similar adjustments for the relevant prior holding period of the transferor, donor, grantor, or other property holder.",
+    "keywords": [
+      "irc 1016",
+      "section 1016",
+      "adjustments to basis",
+      "adjusted basis",
+      "capital account",
+      "depreciation",
+      "amortization",
+      "depletion",
+      "allowed or allowable",
+      "straight line method",
+      "substituted basis",
+      "stock distributions",
+      "bond premium",
+      "s corporation stock",
+      "tax credits"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-401",
+    "authorityType": "statute",
+    "citation": "IRC §401",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/401",
+    "ingestedAt": "2026-06-27T05:29:11.929Z",
+    "text": "IRC §401 treats a trust created or organized in the United States as a qualified trust when it is part of an employer stock bonus, pension, or profit-sharing plan maintained for the exclusive benefit of employees or their beneficiaries, contributions are made for distribution under the plan, and plan assets cannot be diverted to other purposes before all employee and beneficiary liabilities are satisfied. The plan must meet the minimum participation standards of §410, the minimum vesting standards of §411, nondiscrimination rules that do not favor highly compensated employees, applicable contribution and benefit limits, required-distribution rules, and any applicable owner-employee, top-heavy, joint-and-survivor-annuity, or related qualification requirements. Section 401(k) permits a qualified cash-or-deferred arrangement under which employees may elect to defer compensation into the plan rather than receive it currently.",
+    "keywords": [
+      "irc 401",
+      "401(a)",
+      "401(k)",
+      "qualified trust",
+      "pension plan",
+      "profit-sharing plan",
+      "stock bonus plan",
+      "exclusive benefit",
+      "minimum participation",
+      "minimum vesting",
+      "nondiscrimination",
+      "highly compensated employees",
+      "required distributions",
+      "cash or deferred arrangement"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-125",
+    "authorityType": "statute",
+    "citation": "IRC §125",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/125",
+    "ingestedAt": "2026-06-27T05:29:40.099Z",
+    "text": "Under IRC §125, a participant is not required to include an amount in gross income solely because a cafeteria plan lets the participant choose among plan benefits. A cafeteria plan must be a written plan covering only employees and allowing participants to choose among two or more benefits consisting of cash and qualified benefits, and it generally may not provide deferred compensation. The exclusion is unavailable for highly compensated participants if the plan discriminates in favor of highly compensated individuals as to eligibility or highly compensated participants as to contributions and benefits, and is unavailable for key employees if qualified benefits for key employees exceed 25 percent of aggregate qualified benefits under the plan. A health flexible spending arrangement benefit is not a qualified benefit unless the plan limits salary reduction contributions to the stated statutory amount as adjusted for inflation.",
+    "keywords": [
+      "irc 125",
+      "cafeteria plan",
+      "written plan",
+      "qualified benefits",
+      "gross income",
+      "cash election",
+      "employee benefits",
+      "nondiscrimination",
+      "highly compensated participants",
+      "key employees",
+      "health flexible spending arrangement",
+      "salary reduction contributions"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-105",
+    "authorityType": "statute",
+    "citation": "IRC §105",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/105",
+    "ingestedAt": "2026-06-27T05:30:29.559Z",
+    "text": "Under IRC §105, amounts an employee receives through accident or health insurance for personal injuries or sickness are included in gross income to the extent attributable to employer contributions not included in the employee’s income or paid by the employer, unless §105 provides an exclusion. Gross income does not include those amounts when paid directly or indirectly to reimburse §213(d) medical care expenses of the taxpayer, spouse, specified dependents, or a child described in §152(f)(1) who has not attained age 27 by the end of the taxable year, except to the extent attributable to prior-year §213 deductions. Gross income also does not include payments for permanent loss or loss of use of a body member or function, or permanent disfigurement, of the taxpayer, spouse, or dependent, if computed by reference to the nature of the injury and without regard to the employee’s absence from work. For discriminatory self-insured medical reimbursement plans, the §105(b) exclusion does not apply to excess reimbursements paid to highly compensated individuals.",
+    "keywords": [
+      "irc 105",
+      "section 105",
+      "accident and health plans",
+      "employer contributions",
+      "gross income",
+      "medical care reimbursements",
+      "section 213(d)",
+      "personal injuries or sickness",
+      "permanent loss",
+      "disfigurement",
+      "self-insured medical reimbursement",
+      "highly compensated individual"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-106",
+    "authorityType": "statute",
+    "citation": "IRC §106",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2020-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/106",
+    "ingestedAt": "2026-06-27T05:30:58.719Z",
+    "text": "IRC §106 generally excludes from an employee’s gross income employer-provided coverage under an accident or health plan, including employer-paid health coverage. Employer contributions to an employee’s Archer MSA or health savings account are treated as employer-provided accident or health coverage to the extent they do not exceed the applicable section 220 or section 223 limitation, and the employee is not taxed merely because the employee may choose those contributions instead of another employer health plan. Gross income includes employer-provided coverage for qualified long-term care services when provided through a flexible spending or similar arrangement. For purposes of sections 106 and 105, menstrual care product expenses are treated as medical care, and QSEHRA payments or reimbursements for medical care are not treated as employer-provided accident or health plan coverage for any month the individual lacks minimum essential coverage.",
+    "keywords": [
+      "irc 106",
+      "section 106",
+      "employer-provided coverage",
+      "accident or health plan",
+      "gross income exclusion",
+      "health insurance premiums",
+      "archer msa",
+      "health savings account",
+      "hsa contributions",
+      "flexible spending arrangement",
+      "long-term care",
+      "qsehra",
+      "minimum essential coverage",
+      "menstrual care products"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-332",
+    "authorityType": "statute",
+    "citation": "IRC §332",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/332",
+    "ingestedAt": "2026-06-27T05:31:27.865Z",
+    "text": "A corporation recognizes no gain or loss when it receives property distributed in complete liquidation of another corporation, but only if the recipient owned stock of the liquidating corporation meeting section 1504(a)(2) on the plan-adoption date and continuously until receiving the property. The liquidation must either cancel or redeem all of the liquidating corporation’s stock and transfer all property within the taxable year, or be completed through a planned series of cancellation-or-redemption distributions within 3 years from the close of the taxable year of the first distribution; failure to complete the transfer or maintain the required ownership prevents the distributions from qualifying. Special rules require dividend treatment for certain liquidating distributions from regulated investment companies or real estate investment trusts, and deny section 332 treatment for specified distributions to foreign corporations in liquidation of applicable holding companies, subject to the controlled-foreign-corporation coordination rule.",
+    "keywords": [
+      "332",
+      "section 332",
+      "complete liquidation",
+      "subsidiary liquidation",
+      "no gain or loss",
+      "stock cancellation",
+      "section 1504",
+      "3-year completion",
+      "regulated investment company",
+      "real estate investment trust",
+      "foreign corporation",
+      "applicable holding company",
+      "section 301",
+      "controlled foreign corporation"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-362",
+    "authorityType": "statute",
+    "citation": "IRC §362",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2004-10-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/362",
+    "ingestedAt": "2026-06-27T05:31:57.170Z",
+    "text": "A corporation’s basis in property acquired in a section 351 transfer, as paid-in surplus, as a shareholder contribution to capital, or in a reorganization to which this part applies generally equals the transferor’s basis, increased by gain recognized by the transferor on the transfer. Nonshareholder contributions to capital are treated differently: contributed property other than money has zero basis, and contributed money reduces basis in property acquired during the 12-month period beginning when the contribution is received, with any excess reducing basis in other property as prescribed by regulations. Basis may not be increased above fair market value because of gain recognized from assumption of a liability, and built-in-loss rules can limit imported or transferred aggregate basis to the property’s fair market value immediately after the transaction, with reductions allocated by built-in losses unless the permitted section 351 election shifts the limitation to the transferor’s stock basis.",
+    "keywords": [
+      "irc 362",
+      "section 362",
+      "basis to corporations",
+      "section 351",
+      "contribution to capital",
+      "paid-in surplus",
+      "reorganization",
+      "transferor basis",
+      "recognized gain",
+      "assumption of liability",
+      "built-in loss",
+      "fair market value",
+      "importation of loss",
+      "stock basis"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-723",
+    "authorityType": "statute",
+    "citation": "IRC §723",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/723",
+    "ingestedAt": "2026-06-27T05:32:11.053Z",
+    "text": "For property a partner contributes to a partnership, the partnership’s basis in the property is the contributing partner’s adjusted basis in that property at the time of contribution. That basis is increased by any gain the contributing partner recognizes under section 721(b) at that time.",
+    "keywords": [
+      "irc 723",
+      "section 723",
+      "partnership basis",
+      "contributed property",
+      "partner contribution",
+      "adjusted basis",
+      "carryover basis",
+      "transferred basis",
+      "contributing partner",
+      "section 721(b)",
+      "recognized gain",
+      "subchapter k"
+    ]
   }
 ];

@@ -184,3 +184,15 @@ describe("Wave 1 batch 2 — individual + SMB breadth", () => {
     });
   }
 });
+
+describe("Wave 1 batch 3 — basis fundamentals, retirement, benefits, entity basis", () => {
+  // §1001 realization, §1012 cost basis, §1016 basis adjustments, §401 qualified plans, §125 cafeteria,
+  // §105/§106 health benefits, §332 subsidiary liquidation, §362 corp basis, §723 partnership basis.
+  for (const sec of ["IRC §1001", "IRC §1012", "IRC §1016", "IRC §401", "IRC §125", "IRC §105", "IRC §106", "IRC §332", "IRC §362", "IRC §723"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Wave 1 batch 3 ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});
