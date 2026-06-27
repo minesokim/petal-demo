@@ -87,3 +87,16 @@ describe("entity law — Subchapter S core (the audit's #1 binding gap; first ba
     });
   }
 });
+
+describe("entity law — Subchapter K core (partnerships; audit gap #1 continued)", () => {
+  // Partnerships were 100% UNGROUNDED before this batch. §704 (distributive share / substantial economic
+  // effect), §752 (liabilities → outside basis) and §754 (basis-adjustment election) are the exact sections
+  // the re-audit named. Model-free presence guards so the partnership corpus can't silently regress.
+  for (const sec of ["IRC §704", "IRC §705", "IRC §722", "IRC §731", "IRC §752", "IRC §754"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Subchapter K ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

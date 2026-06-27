@@ -624,5 +624,185 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "section 1362 election",
       "net unrealized built-in gain"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-704",
+    "authorityType": "statute",
+    "citation": "IRC §704",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/704",
+    "ingestedAt": "2026-06-27T01:47:25.268Z",
+    "text": "A partner’s distributive share of partnership income, gain, loss, deduction, or credit is determined by the partnership agreement, except as otherwise provided in chapter 1. If the agreement does not provide for the item, or if the agreement’s allocation lacks substantial economic effect, the item is determined according to the partner’s interest in the partnership based on all facts and circumstances. For contributed property, income, gain, loss, and deduction are allocated to account for the difference between the partnership’s basis and the property’s fair market value at contribution, including special rules for built-in loss and certain distributions within 7 years. A partner may deduct partnership losses, including capital losses, only to the extent of the adjusted basis of the partner’s partnership interest at the end of the partnership year, with excess loss allowed under the statutory carryover rule.",
+    "keywords": [
+      "704",
+      "irc 704",
+      "partner distributive share",
+      "partnership agreement",
+      "substantial economic effect",
+      "partner interest",
+      "contributed property",
+      "built-in gain",
+      "built-in loss",
+      "adjusted basis",
+      "loss limitation",
+      "carryover",
+      "partnership loss",
+      "fair market value"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-705",
+    "authorityType": "statute",
+    "citation": "IRC §705",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1975-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/705",
+    "ingestedAt": "2026-06-27T01:47:56.724Z",
+    "text": "Except as provided by the alternative rule in subsection (b), a partner’s adjusted basis in a partnership interest is the basis determined under section 722 for contributions or section 742 for transfers. Increase that basis by the partner’s distributive share for the taxable year and prior taxable years of partnership taxable income under section 703(a), tax-exempt income, and the excess of depletion deductions over the basis of the property subject to depletion. Decrease the basis, but not below zero, by partnership distributions under section 733 and by the partner’s distributive share for the taxable year and prior taxable years of partnership losses and nondeductible expenditures not properly chargeable to capital account; also decrease it, but not below zero, by the partner’s depletion deduction for partnership oil and gas property to the extent specified by section 613A(c)(7)(D). Regulations may permit adjusted basis to be determined by reference to the partner’s proportionate share of the adjusted basis of partnership property upon a partnership termination.",
+    "keywords": [
+      "irc 705",
+      "section 705",
+      "partner basis",
+      "outside basis",
+      "partnership interest",
+      "distributive share",
+      "taxable income",
+      "tax-exempt income",
+      "partnership losses",
+      "distributions",
+      "nondeductible expenditures",
+      "depletion",
+      "section 722",
+      "section 742",
+      "section 733"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-722",
+    "authorityType": "statute",
+    "citation": "IRC §722",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/722",
+    "ingestedAt": "2026-06-27T01:48:17.959Z",
+    "text": "Under IRC § 722, a partner’s basis in a partnership interest acquired by contributing property, including money, to the partnership equals the amount of money contributed plus the partner’s adjusted basis in the contributed property at the time of contribution. That basis is increased by any gain recognized by the contributing partner under section 721(b) at that time.",
+    "keywords": [
+      "irc 722",
+      "section 722",
+      "partner basis",
+      "partnership interest",
+      "contributing partner",
+      "property contribution",
+      "money contribution",
+      "adjusted basis",
+      "time of contribution",
+      "section 721(b)",
+      "recognized gain",
+      "subchapter k"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-731",
+    "authorityType": "statute",
+    "citation": "IRC §731",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1997-08-05",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/731",
+    "ingestedAt": "2026-06-27T01:48:47.738Z",
+    "text": "On a partnership distribution to a partner, the partner recognizes no gain except to the extent money distributed exceeds the partner’s adjusted basis in the partnership interest immediately before the distribution; for this gain rule, money includes marketable securities taken at fair market value on the distribution date. The partner recognizes no loss except on a liquidation of the partner’s interest where only money, section 751(c) unrealized receivables, and section 751(d) inventory are distributed, and then only to the extent the partner’s adjusted basis exceeds the sum of the money distributed and the section 732 basis of those receivables and inventory. Gain or loss recognized under this rule is treated as from the sale or exchange of the distributee partner’s partnership interest, and the partnership recognizes no gain or loss on a distribution of property, including money. Section 731 is subject to exceptions under sections 736, 751, and 737.",
+    "keywords": [
+      "irc 731",
+      "section 731",
+      "partnership distribution",
+      "partner gain",
+      "partner loss",
+      "money distributed",
+      "outside basis",
+      "liquidating distribution",
+      "marketable securities",
+      "unrealized receivables",
+      "inventory",
+      "section 732",
+      "section 751"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-752",
+    "authorityType": "statute",
+    "citation": "IRC §752",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/752",
+    "ingestedAt": "2026-06-27T01:49:06.680Z",
+    "text": "Under IRC §752, any increase in a partner’s share of partnership liabilities, or any increase in a partner’s individual liabilities because the partner assumes partnership liabilities, is treated as a contribution of money by that partner to the partnership. Any decrease in a partner’s share of partnership liabilities, or any decrease in a partner’s individual liabilities because the partnership assumes the partner’s individual liabilities, is treated as a distribution of money to the partner. A liability to which property is subject is treated, up to the property’s fair market value, as a liability of the property owner; on a sale or exchange of a partnership interest, liabilities are treated as liabilities would be in a sale or exchange of nonpartnership property.",
+    "keywords": [
+      "irc 752",
+      "section 752",
+      "partnership liabilities",
+      "partner liabilities",
+      "contribution of money",
+      "distribution of money",
+      "assumption of liabilities",
+      "property subject to liability",
+      "fair market value",
+      "sale or exchange",
+      "partnership interest",
+      "outside basis"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-754",
+    "authorityType": "statute",
+    "citation": "IRC §754",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1954-08-16",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/754",
+    "ingestedAt": "2026-06-27T01:49:24.461Z",
+    "text": "If a partnership files an election under regulations prescribed by the Secretary, the basis of partnership property is adjusted for a property distribution as provided in section 734 and for a transfer of a partnership interest as provided in section 743. The election applies to all partnership property distributions and all transfers of partnership interests during the taxable year for which it is filed and all later taxable years. The partnership may revoke the election only subject to limitations provided by the Secretary’s regulations.",
+    "keywords": [
+      "irc §754",
+      "section 754",
+      "partnership election",
+      "basis adjustment",
+      "partnership property",
+      "property distribution",
+      "section 734",
+      "partnership interest transfer",
+      "section 743",
+      "taxable year",
+      "revocation",
+      "secretary regulations"
+    ]
   }
 ];
