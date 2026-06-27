@@ -8,6 +8,29 @@
 
 import { describe, it, expect } from "vitest";
 import { COVERAGE_MANIFEST, coverageFor, normalizeSection, identifyProvisions, namedCoverageGaps } from "../../lib/research/coverage-manifest";
+import { CORPUS_CASELAW } from "../../lib/research/corpus-caselaw";
+
+describe("Wave 3 batch 1 — landmark case law (the §6662 authority-weighting lever)", () => {
+  // Web-verified holdings (cites checked against LII; Loper Bright via Justia). These give the weighting
+  // engine REAL court authority across levels — incl. Loper Bright (post-Chevron, the delegation hinge).
+  const ids = CORPUS_CASELAW.map((c) => c.chunkId);
+  for (const id of [
+    "case-crane-v-commissioner", "case-commissioner-v-tufts", "case-indopco-v-commissioner",
+    "case-knetsch-v-united-states", "case-cottage-savings-v-commissioner", "case-commissioner-v-banks",
+    "case-frank-lyon-v-united-states", "case-loper-bright-v-raimondo",
+  ]) {
+    it(`${id} is loaded as a precedential Supreme Court authority`, () => {
+      const c = CORPUS_CASELAW.find((x) => x.chunkId === id);
+      expect(c, `${id} should be in the case corpus`).toBeTruthy();
+      expect(c!.authorityType).toBe("case");
+      expect(c!.precedential).toBe(true);
+      expect(c!.courtLevel).toBe("supreme");
+    });
+  }
+  it("the case corpus has no duplicate chunkIds", () => {
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
 
 describe("coverage manifest — derived from the real corpus", () => {
   it("catalogs the loaded provisions (non-trivial, section-keyed)", () => {
