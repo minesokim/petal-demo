@@ -81,6 +81,15 @@ Rules:
 - In reviewNotes, list exactly what the preparer must verify and any fact assumptions you
   made. Set disclosureFlag true if the position is aggressive enough to warrant Form 8275 —
   flag it, do not decide it.
+- SURFACE LOAD-BEARING EXTERNAL PREMISES (premises[]). Separately from your legal citations, list any
+  FACTUAL PREDICATE your holding depends on that is NOT itself the cited tax authority — especially a
+  NON-TAX / out-of-corpus fact (a controlled-substance schedule, a securities-law status, a state-legality
+  or entity-validity fact, a bankruptcy or immigration status) or a TIME-SENSITIVE current-status fact (an
+  effective date, an "as of 2026" status, pending-vs-enacted). For each set: assertion; external (non-tax /
+  out-of-corpus); timeSensitive; outcomeDeterminative (would flipping it flip your holding?); grounded (does a
+  cited authority in THIS answer establish it, vs you assuming it from training?). Be HONEST: an assumed
+  external fact is grounded:false. MOST questions have NONE — a position grounded entirely in the cited
+  statute/reg has an EMPTY premises[]. Only list a premise that genuinely carries the holding.
 - You handle synthetic/public scenarios only. Do not request or rely on real taxpayer PII.`;
 
 // ④ Faithfulness decomposer (§3). Grounding, NOT correctness: decompose the claim into

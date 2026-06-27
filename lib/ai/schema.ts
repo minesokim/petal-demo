@@ -23,10 +23,26 @@ export const ConfidenceSignals = z.object({
 });
 export type ConfidenceSignals = z.infer<typeof ConfidenceSignals>;
 
+/** A load-bearing FACTUAL PREDICATE a position rests on, distinct from the legal authority it cites. The
+ *  premise gate (lib/research/premise-gate) hedges when an outcome-determinative external/time-sensitive one
+ *  is ungrounded — the §280E cannabis class (the holding turned on a Title-21 fact the tax corpus can't ground). */
+export const Premise = z.object({
+  assertion: z.string(), // the fact assumed, e.g. "marijuana is a Schedule I/II controlled substance in 2026"
+  external: z.boolean(), // a NON-TAX / out-of-corpus fact (drug schedule, securities status, state legality)
+  timeSensitive: z.boolean(), // depends on a current status / effective date that can change
+  outcomeDeterminative: z.boolean(), // flipping it flips the holding
+  grounded: z.boolean(), // verified against a cited authority IN THIS ANSWER (vs assumed from training)
+});
+export type Premise = z.infer<typeof Premise>;
+
 /** One proposed position the preparer reviews and adopts (or not). Never "final". */
 export const Position = z.object({
   claim: z.string(),
   citations: z.array(CitationRef),
+  // Load-bearing factual premises this position rests on, beyond its legal citations. The premise gate
+  // hedges when an outcome-determinative external/time-sensitive one is ungrounded. Optional + defaulted so a
+  // model that omits it never breaks the shape — existing behavior is unchanged until the field is populated.
+  premises: z.array(Premise).optional().default([]),
   computedValueRefs: z.array(z.string()), // tool-result ids for any filed figure
   confidenceSignals: ConfidenceSignals,
   // SELF-HEALING: the model occasionally emits reviewNotes as a bare array of strings (or drops a field).

@@ -53,6 +53,7 @@ import { namedCoverageGaps } from "./coverage-manifest";
 import { fetchPrimary } from "./fetch/fetch-primary";
 import { isCaConformityQuestion } from "./fetch/ca-conformity";
 import { verifyCitations } from "./fetch/courtlistener";
+import { hedgeForcingPremise } from "./premise-gate";
 import type { Citation, Jurisdiction } from "../tax/types";
 import type { ReasoningOutput } from "../ai/schema";
 import { compute } from "../tax-ai/compute";
@@ -126,7 +127,7 @@ export type AnswerBucket = "answer" | "hedge" | "coverage_gap" | "abstain";
  */
 //   fetched      → corpus had nothing, but a LIVE fetch of primary authority grounded a position
 //                  on the fetched text (bucket answer; carries a verify-currency caveat)
-export type CalibrationReason = "grounded" | "fetched" | "indeterminate" | "unsettled" | "coverage_gap" | "ungrounded";
+export type CalibrationReason = "grounded" | "fetched" | "indeterminate" | "unsettled" | "coverage_gap" | "ungrounded" | "premise_unverified";
 
 /**
  * The INV-1 split's engine-derived half. When a research question is compute-flavored AND maps
@@ -530,6 +531,20 @@ async function tryFetchGround(
   reviewNotes.push(
     "Answered from a LIVE FETCH of primary authority (not the vetted corpus) — verify the cite and that it is current for the tax year before relying on it.",
   );
+  // PREMISE GATE on the fetch path too (mirrors the corpus path) — a fetched, grounded position resting on an
+  // unverified outcome-determinative external/time-sensitive premise must HEDGE, not assert (the §280E class).
+  for (const p of groundedPositions) {
+    const prem = hedgeForcingPremise(p.premises);
+    if (!prem) continue;
+    return {
+      answer:
+        `${composeAnswer(groundedPositions)}\n\nThis conclusion depends on a fact outside tax authority that I could not verify: "${prem.assertion}". It is ${prem.external ? "an external, non-tax fact" : "a current-status fact"}${prem.timeSensitive ? " that can change over time" : ""}. If it has changed, the conclusion may not hold — confirm it before relying on this.`,
+      citations,
+      bucket: "hedge",
+      calibration: "premise_unverified",
+      reviewNotes: [...reviewNotes, `Hedged on an unverified load-bearing premise: "${prem.assertion}" — the legal analysis is grounded; this predicate is not.`],
+    };
+  }
   return {
     answer: composeAnswer(groundedPositions),
     citations,
@@ -807,6 +822,30 @@ async function researchAnswerImpl(
         reviewNotes,
       };
     }
+  }
+
+  // ── PREMISE GATE ──────────────────────────────────────────────────────────────────────────
+  // A grounded position can still rest on an UNVERIFIED external/time-sensitive premise the cited tax
+  // authority does not establish (the §280E cannabis class — the holding turned on marijuana's Title-21 CSA
+  // schedule, a fact outside any tax corpus). Asserting on it is "confidently wrong on an external premise."
+  // If a surviving position carries a hedge-forcing premise (outcome-determinative + external/time-sensitive
+  // + ungrounded), HEDGE — ship the legal analysis but NAME the dependency and route the preparer to verify
+  // it, rather than assert. "Cited, grounded, abstaining" extended from the rule to the predicate it rests on.
+  for (const p of groundedPositions) {
+    const prem = hedgeForcingPremise(p.premises);
+    if (!prem) continue;
+    return {
+      answer:
+        `${composeAnswer(groundedPositions)}\n\nThis conclusion depends on a fact outside tax authority that I could not verify: "${prem.assertion}". It is ${prem.external ? "an external, non-tax fact" : "a current-status fact"}${prem.timeSensitive ? " that can change over time" : ""}. If it has changed, the conclusion may not hold — confirm it before relying on this.`,
+      citations,
+      bucket: "hedge",
+      calibration: "premise_unverified",
+      currencyNote,
+      reviewNotes: [
+        ...reviewNotes,
+        `Hedged on an unverified load-bearing premise: "${prem.assertion}". The legal analysis is grounded; this predicate is not — verify it (it is outcome-determinative).`,
+      ],
+    };
   }
 
   // ── INV-1 COMPUTE-HANDOFF ──────────────────────────────────────────────────────────────────
