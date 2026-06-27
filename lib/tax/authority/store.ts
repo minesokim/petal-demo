@@ -126,12 +126,33 @@ function sectionNumbersOf(chunk: AuthorityChunk): string[] {
   for (const kw of chunk.keywords) if (/^\d{2,4}[a-z]?$/.test(kw)) out.add(kw.toLowerCase());
   return [...out];
 }
-function specificityScore(chunk: AuthorityChunk, q: string): number {
-  let score = chunk.keywords.reduce(
-    (s, kw) => s + (q.includes(kw) ? 1 + (kw.length >= 5 ? 1 : 0) : 0),
-    0,
-  );
-  // +2 when the query names this chunk's section number (e.g. a "§164" query → the §164 chunk).
+// Corpus-wide document frequency per keyword (memoized per corpus reference) — an IDF-style signal so a
+// COMMON keyword ("deduction", "income", in many chunks) contributes LESS than a DISTINCTIVE one ("sham",
+// "economic substance", "carryforward"). This stops tangential common-word matches (e.g. §6694/§165 on
+// "deduction") from out-ranking on-point doctrine/authority for conceptual (no-section-number) queries.
+const _docFreqCache = new WeakMap<AuthorityChunk[], Map<string, number>>();
+function docFreq(corpus: AuthorityChunk[]): Map<string, number> {
+  const cached = _docFreqCache.get(corpus);
+  if (cached) return cached;
+  const m = new Map<string, number>();
+  for (const c of corpus) {
+    for (const kw of new Set(c.keywords.map((k) => k.toLowerCase()))) m.set(kw, (m.get(kw) ?? 0) + 1);
+  }
+  _docFreqCache.set(corpus, m);
+  return m;
+}
+// Gentle rarity multiplier: distinctive keywords keep full weight; genuinely common ones are damped. The
+// section-number bonus below is NOT damped (a named §-cite is always a strong, intended signal).
+function rarityFactor(df: number): number {
+  return df >= 10 ? 0.4 : df >= 5 ? 0.7 : 1.0;
+}
+function specificityScore(chunk: AuthorityChunk, q: string, df: Map<string, number>): number {
+  let score = chunk.keywords.reduce((s, kw) => {
+    if (!q.includes(kw)) return s;
+    const base = 1 + (kw.length >= 5 ? 1 : 0);
+    return s + base * rarityFactor(df.get(kw.toLowerCase()) ?? 1);
+  }, 0);
+  // +2 when the query names this chunk's section number (e.g. a "§164" query → the §164 chunk). Undamped.
   if (sectionNumbersOf(chunk).some((sec) => q.includes(sec))) score += 2;
   return score;
 }
@@ -152,9 +173,11 @@ export function retrieve(
       isEligibleForYear(c, taxYear),
   );
 
-  // 2 — specificity-weighted keyword-overlap rank over the eligible set only.
+  // 2 — specificity-weighted keyword-overlap rank over the eligible set only. Document frequency is computed
+  //     over the FULL corpus (not the year-filtered subset) so a keyword's rarity is stable across years.
+  const df = docFreq(corpus);
   return eligible
-    .map((c) => ({ c, score: specificityScore(c, q) }))
+    .map((c) => ({ c, score: specificityScore(c, q, df) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, k)
