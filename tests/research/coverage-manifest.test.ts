@@ -9,6 +9,19 @@
 import { describe, it, expect } from "vitest";
 import { COVERAGE_MANIFEST, coverageFor, normalizeSection, identifyProvisions, namedCoverageGaps } from "../../lib/research/coverage-manifest";
 import { CORPUS_CASELAW } from "../../lib/research/corpus-caselaw";
+import { retrieve } from "../../lib/tax/authority/store";
+
+describe("retrieval ranking — doctrine cases must surface for conceptual (no-section-number) queries", () => {
+  // REGRESSION GUARD for the economic-substance keyword fix: a natural doctrinal query ("economic effect",
+  // "respected for tax purposes") previously ranked Knetsch/Gregory BELOW tangential common-word matches
+  // (§6694/§165), so the engine abstained. Expanded doctrinal keywords put them in the top 3. Model-free.
+  it("an economic-substance question retrieves Knetsch + Gregory in the top 3", () => {
+    const q = "A taxpayer entered a transaction that has no business purpose or economic effect other than generating tax deductions. Will it be respected for tax purposes?";
+    const top3 = retrieve(q, { taxYear: 2026, jurisdiction: "federal", k: 3 }).map((c) => c.citation);
+    expect(top3.some((c) => /Knetsch/.test(c)), `top3 should include Knetsch; got ${top3.join(", ")}`).toBe(true);
+    expect(top3.some((c) => /Gregory/.test(c)), `top3 should include Gregory; got ${top3.join(", ")}`).toBe(true);
+  });
+});
 
 describe("Wave 3 batch 1 — landmark case law (the §6662 authority-weighting lever)", () => {
   // Web-verified holdings (cites checked against LII; Loper Bright via Justia). These give the weighting
