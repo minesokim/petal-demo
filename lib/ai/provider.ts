@@ -10,6 +10,11 @@ export type GenerateArgs<T> = {
   maxTokens?: number;
   /** cost-meter tag for this call (e.g. "research:reason"); defaults to the method name. */
   operation?: string;
+  /** Per-call reasoning effort for reasoning models (GPT-5.x). Absent ⇒ the provider's default effort.
+   * A LATENCY lever: a narrow, structured, rubric-bound call (faithfulness labeling, a binary freshness
+   * verdict) does NOT need the proposer's full reasoning budget. Lowering it changes SPEED, not the
+   * abstention semantics — the grounding GATE is deterministic code (deriveTier), not the model's effort. */
+  effort?: "low" | "medium" | "high";
 };
 
 // Plain-text completion seam (the assistant chat). Same provider, no schema:

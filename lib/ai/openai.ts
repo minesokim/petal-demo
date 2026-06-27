@@ -63,9 +63,11 @@ export class OpenAIProvider implements AIProvider {
     });
   }
 
-  private params(extra: Record<string, unknown>) {
+  private params(extra: Record<string, unknown>, effort?: string) {
     // reasoning_effort is valid for GPT-5.x reasoning models; cast keeps tsc happy across SDK minors.
-    return { reasoning_effort: this.reasoningEffort, ...extra } as never;
+    // PER-CALL effort (args.effort) overrides the constructor default — a LATENCY lever for the narrow,
+    // structured calls (faithfulness, freshness judge) that do not need the proposer's full reasoning.
+    return { reasoning_effort: effort ?? this.reasoningEffort, ...extra } as never;
   }
 
   // GPT-5.x REASONING tokens are billed against max_completion_tokens, so a small visible-output
@@ -73,8 +75,11 @@ export class OpenAIProvider implements AIProvider {
   // empty/truncated content → a dropped chunk or a silent abstain. (Diagnosed: this is the codex-
   // specific amplifier of research over-abstention.) Add a reasoning RESERVE sized by effort so the
   // caller's requested OUTPUT budget is actually available for visible tokens on top of reasoning.
-  private withReserve(maxTokens: number): number {
-    const reserve = this.reasoningEffort === "high" ? 9000 : this.reasoningEffort === "medium" ? 5000 : 2000;
+  // The reserve is sized by the EFFECTIVE effort (per-call override falls back to the constructor default),
+  // so a "low"-effort call carries a small 2000 reserve instead of the proposer's 9000 — the latency win.
+  private withReserve(maxTokens: number, effort?: string): number {
+    const eff = effort ?? this.reasoningEffort;
+    const reserve = eff === "high" ? 9000 : eff === "medium" ? 5000 : 2000;
     return maxTokens + reserve;
   }
 
@@ -83,14 +88,14 @@ export class OpenAIProvider implements AIProvider {
     const parameters = zodToJsonSchema(args.schema, { target: "openApi3" }) as Record<string, unknown>;
     const res = await this.client.chat.completions.create(this.params({
       model,
-      max_completion_tokens: this.withReserve(args.maxTokens ?? 1024),
+      max_completion_tokens: this.withReserve(args.maxTokens ?? 1024, args.effort),
       messages: [
         { role: "system", content: redactText(args.system) },
         { role: "user", content: redactText(args.prompt) },
       ],
       tools: [{ type: "function", function: { name: "emit", description: "Return the structured result.", parameters } }],
       tool_choice: { type: "function", function: { name: "emit" } },
-    }));
+    }, args.effort));
     recordUsage({ operation: args.operation ?? "generateObject", model, usage: openaiUsage(res.usage) });
     const call = res.choices[0]?.message?.tool_calls?.[0];
     if (!call || call.type !== "function") throw new Error("no function tool_call in OpenAI response");
