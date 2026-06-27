@@ -186,11 +186,15 @@ describe("step 4 — the 3-bucket calibration fix", () => {
 
   it("should-be-covered but retrieval EMPTY → COVERAGE_GAP (explicit decline, no fabrication)", async () => {
     // A question with zero keyword overlap retrieves nothing → the empty-retrieval coverage-gap
-    // branch. This is the gap that must NOT masquerade as a calibrated hedge.
+    // branch. This is the gap that must NOT masquerade as a calibrated hedge. (Topic chosen to be
+    // genuinely out-of-corpus: the former CFC example now tangentially hits §351's "controlled
+    // corporation" after the Subchapter-C ingest, so it lands in the abstain branch below instead —
+    // both are honest declines; this case specifically exercises EMPTY retrieval. Verified empty via
+    // retrieve() over the live corpus.)
     const ans = await researchAnswer(
       abstainingProposer,
       undefined,
-      "Explain the controlled-foreign-corporation Subpart F inclusion ordering rules.",
+      "Explain the generation-skipping transfer tax inclusion ratio computation.",
       { taxYear: 2025, jurisdiction: "federal" },
     );
     expect(ans.bucket).toBe("coverage_gap");
