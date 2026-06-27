@@ -102,7 +102,7 @@ const GROUNDING: { label: string; href: string; icon?: keyof typeof I; petal?: b
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[var(--os-selected)] px-3.5 py-2 text-[13px] leading-relaxed text-[var(--os-ink)]">
+      <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[var(--os-selected)] px-3.5 py-2 text-[13.3px] leading-relaxed text-[var(--os-ink)]">
         {text}
       </div>
     </div>

@@ -474,7 +474,7 @@ function StreamedParagraph({ text, active, onDone }: { text: string; active: boo
     if (done && !fired.current) { fired.current = true; onDone(); }
   }, [done, onDone]);
   return (
-    <p className="text-[15.6px] leading-relaxed text-[var(--os-ink)]">
+    <p className="text-[13.3px] leading-relaxed text-[var(--os-ink)]">
       <Rich text={active ? visible : text} />
     </p>
   );
@@ -568,13 +568,13 @@ function titleFromMessage(message: string): string {
 // A small FILLED check-circle — the completed-step marker. The circle springs in and the tick DRAWS on
 // (pathLength 0→1) for a smooth "check" animation rather than a hard pop. Fills its container (size-full),
 // so the caller controls the size.
-function FilledCheck() {
+function FilledCheck({ className }: { className?: string }) {
   return (
     <motion.svg
       viewBox="0 0 16 16"
       fill="none"
       aria-hidden="true"
-      className="size-full text-[var(--os-ink-subtle)]"
+      className={cn("text-[var(--os-ink-subtle)]", className ?? "size-full")}
       initial={{ scale: 0.4, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 500, damping: 22 }}
@@ -618,7 +618,8 @@ function DotSpinner({ className }: { className?: string }) {
 function StepDot({ done }: { done: boolean }) {
   return (
     <span className="flex size-3.5 shrink-0 items-center justify-center">
-      {done ? <FilledCheck /> : <DotSpinner className="size-2" />}
+      {/* checkmark rendered at half size (size-2 ≈ 7px) per the requested smaller marker */}
+      {done ? <FilledCheck className="size-2" /> : <DotSpinner className="size-2" />}
     </span>
   );
 }
@@ -629,7 +630,18 @@ function StepDot({ done }: { done: boolean }) {
 // trace is visible; one click collapses to just the title. Once the answer streams (`settling`) it reads done.
 function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settling?: boolean; title?: string }) {
   const [open, setOpen] = useState(true);
-  const header = title || steps[steps.length - 1]?.label || "Thinking";
+  // ONE-BY-ONE reveal: the stream can deliver several steps in a burst, but we reveal them SEQUENTIALLY with
+  // a minimum dwell so each shows its loading spinner first, then completes as the next appears — never the
+  // "all finished at once" dump. revealCount = how many are currently visible; the last visible one spins.
+  const [revealCount, setRevealCount] = useState(1);
+  useEffect(() => {
+    if (settling) { setRevealCount(steps.length); return; } // answer streaming → reveal all, all complete
+    if (revealCount >= steps.length) return; // caught up — the last revealed step keeps spinning while it works
+    const t = window.setTimeout(() => setRevealCount((c) => Math.min(c + 1, steps.length)), 480);
+    return () => window.clearTimeout(t);
+  }, [revealCount, steps.length, settling]);
+  const shown = settling ? steps : steps.slice(0, Math.max(1, Math.min(revealCount, steps.length)));
+  const header = title || shown[shown.length - 1]?.label || "Thinking";
   return (
     <div className="space-y-2">
       <button
@@ -658,10 +670,12 @@ function CognitionTrace({ steps, settling, title }: { steps: TraceStep[]; settli
             className="overflow-hidden"
           >
             <div className="ml-[7px] space-y-1.5 border-l border-[var(--os-border)] pl-3.5">
-              {steps.map((s, i) => {
+              {shown.map((s, i) => {
                 const hasChips = !!s.chips && s.chips.length > 0;
-                const current = !settling && i === steps.length - 1 && !hasChips;
-                const showPhase = !!s.phase && s.phase !== (i > 0 ? steps[i - 1].phase : undefined);
+                // The most-recently-revealed step is the one still "working" (spinner); everything above it is
+                // done. As the queue advances (or the answer streams), this one completes and the next reveals.
+                const current = !settling && i === shown.length - 1 && !hasChips;
+                const showPhase = !!s.phase && s.phase !== (i > 0 ? shown[i - 1].phase : undefined);
                 return (
                   <motion.div
                     key={`${i}-${s.label}`}
@@ -905,7 +919,7 @@ export function PetalAnswerView({
     // text (not kept around until done). Before any text streams, show the live cognition trace.
     if (streamingText) {
       return (
-        <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--os-ink)]">
+        <p className="whitespace-pre-wrap text-[13.3px] leading-relaxed text-[var(--os-ink)]">
           <Rich text={streamingText} />
         </p>
       );
