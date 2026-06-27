@@ -21,10 +21,11 @@ describe("contra-authority finder", () => {
     expect(r.contra.map((c) => c.chunkId)).toEqual(["CON"]);
   });
 
-  it("a search that surfaces no other authority is still searched=true (and makes no model call)", async () => {
+  it("an EMPTY candidate pool returns searched=FALSE — don't lift the §6662 cap on corpus-emptiness (and no model call)", async () => {
     const provider = new MockProvider(() => { throw new Error("model must not be called when there are no candidates"); });
     const r = await findContraAuthorities(provider, "zzz unrelated query", "x", support, { taxYear: 2025, jurisdiction: "federal", corpus: support });
-    expect(r.searched).toBe(true);
+    // No candidate to weigh ⇒ not a real for-vs-against weighing ⇒ the MLTN cap must NOT lift (honest).
+    expect(r.searched).toBe(false);
     expect(r.contra).toEqual([]);
   });
 

@@ -8,10 +8,11 @@ import type { Jurisdiction } from "@/lib/tax/types";
 // (contraSearched). This is that search: retrieve a BROAD topical candidate set (beyond the supporting
 // chunks the engine grounded on) and have the model classify each candidate's STANCE toward the position,
 // returning only the ones that cut AGAINST it. It never fabricates authority — it classifies chunkIds that
-// are already in the corpus. Running it (even when it finds nothing) is what legitimately sets
-// contraSearched=true, so the cap can lift to "more-likely-than-not" when support strongly outweighs and no
-// controlling contrary holding exists. A FAILED search returns searched=false — an outage must never be
-// laundered into "we searched and found no contra".
+// are already in the corpus. Classifying a REAL candidate pool (and finding none contrary) is what
+// legitimately sets contraSearched=true, so the cap can lift to "more-likely-than-not" when support strongly
+// outweighs and no controlling contrary holding exists. Two cases return searched=FALSE so the cap does NOT
+// lift: a FAILED search (an outage must never be laundered into "we searched and found no contra"), and an
+// EMPTY candidate pool (corpus too thin to surface anything to weigh — that is "we can't tell", not "clear").
 
 const ContraOut = z.object({ contraChunkIds: z.array(z.string()) });
 
@@ -35,7 +36,12 @@ export async function findContraAuthorities(
   // position — these are the candidates that could be contrary.
   const candidates = retrieve(question, { taxYear: opts.taxYear, jurisdiction: opts.jurisdiction, k: 8 }, opts.corpus)
     .filter((c) => !supportIds.has(c.chunkId));
-  if (candidates.length === 0) return { contra: [], searched: true }; // a real search ran; nothing else on point
+  // An EMPTY candidate pool is NOT a confident "no contrary authority exists." On a thin corpus it almost
+  // always means we lack the BREADTH to weigh for-vs-against at all — so reporting searched=true would lift
+  // the §6662 cap to "more-likely-than-not" on corpus-emptiness, a false penalty-protection confidence on
+  // exactly the contested questions where it matters. A real weighing requires a real candidate pool to
+  // classify; with none, report searched=FALSE so the cap honestly stays at substantial-authority.
+  if (candidates.length === 0) return { contra: [], searched: false };
 
   const block = candidates.map((c) => `[${c.chunkId}] ${c.citation}: ${c.text.slice(0, 300)}`).join("\n");
   try {
