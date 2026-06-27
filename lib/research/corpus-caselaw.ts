@@ -281,6 +281,7 @@ export const CORPUS_CASELAW: AuthorityChunk[] = [
     keywords: ["aragona","trust material participation","section469","469","real estate professional","passive activity","1411","fiduciary","unsettled","split"],
     courtLevel: "tax",
     precedential: true,
+    contested: true, // the IRS has NOT acquiesced; how a trust establishes material participation is open
   },
   {
     chunkId: "case-chai-v-commissioner",
@@ -296,4 +297,5 @@ export const CORPUS_CASELAW: AuthorityChunk[] = [
     courtLevel: "circuit",
     circuit: "2",
     precedential: true,
+    contested: true, // the §6751(b) approval-timing rule is still litigated/refined across circuits
   },];

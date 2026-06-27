@@ -209,4 +209,19 @@ export const ENTITY_CASES: GoldenCase[] = [
     mustClaim: "deferred compensation|20 percent|20%", mustCiteAuthorityLike: "409A",
     notes: "THE WAVE-2 PAYOFF: this exact multi-hop question HEDGED before the §1.409A-1 reg was ingested. The reg carries the BRIDGE (a below-FMV option IS deferred comp subject to §409A); the statute carries the consequences (income at vesting + 20% additional tax). Now grounds, citing Treas. Reg. §1.409A-1 + IRC §409A. A regression here = the reg corpus broke.",
   },
+  // ── CONTESTED / UNSETTLED issues — the engine must HEDGE (the moat the regrade flagged as dead code). ──
+  {
+    id: "entity-aragona-trust-rentals-unsettled",
+    question: "Can a trust qualify as a real estate professional and materially participate in its rental real estate so the rental losses are treated as nonpassive?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "hedge",
+    mustClaim: "unsettled|material participation|contested|trust",
+    notes: "CONTESTED (Aragona, 142 T.C. 165): a trust CAN materially participate through its trustees, but the IRS has NOT acquiesced and HOW a trust does so is open. The engine must HEDGE (calibration 'unsettled'), not assert. FAILED (answered) before the contested-authority gate was wired; passes after.",
+  },
+  {
+    id: "entity-chai-6751b-timing-unsettled",
+    question: "By what point must an IRS immediate supervisor approve a penalty in writing under section 6751(b)?",
+    taxYear: 2026, jurisdiction: "federal", expectedBucket: "hedge",
+    mustClaim: "unsettled|supervisory approval|notice of deficiency|contested|6751",
+    notes: "CONTESTED (Chai, 851 F.3d 190): the §6751(b) approval-timing rule is still litigated/refined across circuits. The engine must HEDGE, not assert a single deadline as settled. FAILED before the contested-authority gate; passes after.",
+  },
 ];

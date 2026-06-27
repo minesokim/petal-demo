@@ -261,14 +261,14 @@ function defaultIsIndeterminate(question: string): boolean {
   return INDETERMINACY_HINTS.some((re) => re.test(question));
 }
 
-// NOTE on the `unsettled` calibration reason: it is intentionally NOT derived from the question's
-// wording any more. A wording heuristic (round-2/3 "Fix 4") cannot tell "I failed to retrieve a
-// settled rule" from "the law is genuinely open" — it just trusts the asker's framing, which is the
-// 10a failure (calling a settled-but-unloaded 1099-K threshold "still in flux"). "unsettled" must
-// come from RETRIEVED authority that is itself non-final (a proposed/reserved reg, a live circuit
-// conflict in the retrieved text). The corpus carries no non-final tier yet, so `unsettled` is
-// dormant — and that is honest: with nothing loaded, the truthful answer is a coverage gap, not a
-// claim that the law is open. Reintroduce `unsettled` here once the corpus tags non-final authority.
+// NOTE on the `unsettled` calibration reason: it is NEVER derived from the question's wording. A wording
+// heuristic (round-2/3 "Fix 4") cannot tell "I failed to retrieve a settled rule" from "the law is genuinely
+// open" — it just trusts the asker's framing, which is the 10a failure (calling a settled-but-unloaded 1099-K
+// threshold "still in flux"). "unsettled" comes ONLY from RETRIEVED authority that is itself non-final. That
+// is now WIRED: chunks carry `contested?: boolean` (a live circuit split / non-acquiesced holding — e.g.
+// Aragona, Chai), assessAuthorityWeight surfaces it, and the CONTESTED-AUTHORITY GATE near the end of this
+// pipeline routes a GROUNDED contested answer to bucket "hedge" / calibration "unsettled". With nothing
+// contested retrieved, the path never fires — so a coverage gap is still a coverage gap, never "unsettled".
 
 // ── A retrieved cite's verification verdict (the 10.22(c)(1) fix, in code) ───────────────────
 type CiteVerification =
@@ -921,6 +921,30 @@ async function researchAnswerImpl(
     } catch {
       /* best-effort: a verification failure must never break the grounded answer */
     }
+  }
+
+  // ── CONTESTED-AUTHORITY GATE (the "unsettled" calibration, now WIRED) ───────────────────────
+  // If a grounded SUPPORTING authority is itself NON-FINAL (a live circuit split / a holding the IRS has not
+  // acquiesced to — chunk.contested, surfaced by assessAuthorityWeight), the law on this point is genuinely
+  // OPEN. Ship the grounded analysis but HEDGE: name the contested authority, flag that a contrary result is
+  // possible, recommend disclosure. This is the ONLY honest trigger for "unsettled" — retrieved non-final
+  // authority, NOT the asker's wording (the 10a failure the dormant note warned about). Mirrors the premise gate.
+  if (weightOfAuthority.contested) {
+    const contestedCites = groundedChunks.filter((c) => c.contested).map((c) => c.citation);
+    return {
+      answer:
+        `${answer}\n\nNote: the law on this point is UNSETTLED. The analysis above rests on non-final authority (${contestedCites.join("; ")}) — a live split or a position the IRS has not accepted — so a contrary result is reasonably possible. Treat this as a contested position: document the authority relied on and consider Form 8275 disclosure.`,
+      citations,
+      bucket: "hedge",
+      calibration: "unsettled",
+      currencyNote,
+      reviewNotes: [
+        ...reviewNotes,
+        `Hedged as UNSETTLED: grounded in contested / non-final authority (${contestedCites.join("; ")}). The analysis is real, but the law here is genuinely open — present both positions, do not assert a single answer.`,
+      ],
+      computation,
+      weightOfAuthority,
+    };
   }
 
   return {

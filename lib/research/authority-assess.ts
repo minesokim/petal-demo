@@ -18,6 +18,8 @@ export type AuthorityAssessment = {
   rationale: string;
   /** Honesty boundary: what was actually weighed, so the standard is never read as more than it is. */
   scopeNote: string;
+  /** A grounded supporting authority is NON-FINAL (circuit split / non-acquiescence) ⇒ the engine hedges. */
+  contested: boolean;
 };
 
 function toWeighed(c: AuthorityChunk, stance: "for" | "against"): WeighedAuthority {
@@ -59,5 +61,8 @@ export function assessAuthorityWeight(
     controllingContra: w.controllingContra,
     rationale: w.rationale,
     scopeNote,
+    // The answer rests on at least one NON-FINAL authority (a live circuit split / non-acquiesced holding) ⇒
+    // the law on this point is genuinely open. The engine routes this to a hedge (calibration "unsettled").
+    contested: support.some((c) => c.contested === true),
   };
 }

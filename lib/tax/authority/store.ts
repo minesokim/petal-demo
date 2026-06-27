@@ -53,6 +53,11 @@ export type AuthorityChunk = {
   delegationBasis?: "express" | "general_7805" | "skidmore"; // post-Loper-Bright reg delegation strength
   courtLevel?: "tax" | "district" | "circuit" | "supreme"; // for case authority
   circuit?: string; // controlling circuit for a holding (e.g. "9", "DC", "Fed")
+  // NON-FINAL / CONTESTED authority: a live circuit split, a holding the IRS has NOT acquiesced to, or a
+  // proposed/reserved reg. When the engine GROUNDS an answer in a contested chunk, the law on that point is
+  // genuinely open → the answer must HEDGE (bucket "hedge", calibration "unsettled"), not assert. This is the
+  // ONLY honest source of "unsettled" — it comes from retrieved non-final authority, never the asker's wording.
+  contested?: boolean;
 };
 
 // Mandatory-metadata schema. A chunk missing any required field fails validation, so a
@@ -77,6 +82,7 @@ export const authorityChunkSchema = z.object({
   delegationBasis: z.enum(["express", "general_7805", "skidmore"]).optional(),
   courtLevel: z.enum(["tax", "district", "circuit", "supreme"]).optional(),
   circuit: z.string().optional(),
+  contested: z.boolean().optional(), // non-final authority (circuit split / non-acquiescence) ⇒ engine hedges
 });
 
 export type RetrieveOpts = {
@@ -200,6 +206,7 @@ export function retrieveLifecycle(
 ): LifecycleHit | null {
   const { taxYear, jurisdiction } = opts;
   const q = query.toLowerCase();
+  const df = docFreq(corpus);
   const top = corpus
     .filter(
       (c) =>
@@ -208,7 +215,7 @@ export function retrieveLifecycle(
         taxYear > c.sunsetAfter && // the asked year is past the sunset
         c.supersededFrom === undefined, // a REPLACED rule is amended, not expired
     )
-    .map((c) => ({ c, score: specificityScore(c, q) }))
+    .map((c) => ({ c, score: specificityScore(c, q, df) }))
     .filter((x) => x.score >= LIFECYCLE_MIN_SCORE)
     .sort((a, b) => b.score - a.score)[0];
   if (!top) return null;
