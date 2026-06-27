@@ -12,28 +12,29 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
     "jurisdiction": "federal",
     "taxYear": [
       2024,
-      2025
+      2025,
+      2026
     ],
     "effectiveDate": "2024-01-01",
     "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/3121",
-    "ingestedAt": "2026-06-24T09:19:16.876Z",
-    "text": "Under IRC §3121(a), 'wages' for FICA purposes means all remuneration for employment, including the cash value of remuneration paid in any medium other than cash, subject to enumerated exclusions. Cash tips received by an employee in any calendar month are included in wages—and therefore subject to employer and employee FICA taxes under Chapter 21—unless the amount of such cash tips in that month is less than $20; tips paid in any medium other than cash are excluded from wages entirely. Because tips meeting the $20-per-month threshold are FICA wages processed through the employer's payroll, they are not subject to self-employment tax. The Social Security wage base cap applies to the taxes imposed under §§3101(a) and 3111(a) once remuneration paid by a single employer equals the contribution and benefit base determined under §230 of the Social Security Act for that calendar year.",
+    "ingestedAt": "2026-06-27T11:45:23.545Z",
+    "text": "For FICA chapter 21, “wages” means all remuneration for employment, including the cash value of remuneration and benefits paid in any medium other than cash, unless a specific §3121(a) exclusion applies. For the taxes imposed by §§3101(a) and 3111(a), remuneration paid by an employer to an employee after the employee has reached the Social Security Act contribution and benefit base for that calendar year is excluded; other exclusions include specified sickness, disability, medical, death, retirement-plan, cafeteria-plan, fringe-benefit, and certain noncash or low-dollar service payments. Cash tips received by an employee in the course of employment are wages for a calendar month only when they are $20 or more; noncash tips are excluded. “Employment” generally means service of whatever nature performed by an employee for the person employing the employee, including service within the United States and specified service connected with American vessels, American aircraft, American employers, or §233 Social Security Act agreements, subject to the listed statutory exclusions.",
     "keywords": [
-      "irc 3121",
-      "fica wages",
-      "tips as wages",
+      "3121",
+      "fica",
+      "wages",
+      "employment",
       "cash tips",
-      "twenty dollar tip threshold",
-      "employment definition",
-      "payroll fica",
-      "self-employment tax exclusion",
-      "contribution and benefit base",
+      "noncash tips",
       "social security wage base",
-      "remuneration",
-      "chapter 21",
-      "tip income",
-      "employer fica",
-      "employee fica"
+      "contribution and benefit base",
+      "oasdi",
+      "fringe benefits",
+      "retirement plans",
+      "employer contributions",
+      "payroll tax",
+      "employee",
+      "employer"
     ]
   },
   {
@@ -256,27 +257,26 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
     "jurisdiction": "federal",
     "taxYear": [
       2024,
-      2025
+      2025,
+      2026
     ],
     "effectiveDate": "2018-01-01",
     "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/163",
-    "ingestedAt": "2026-06-24T09:20:45.745Z",
-    "text": "Under IRC §163(a), all interest paid or accrued within the taxable year on indebtedness is generally deductible. For individual taxpayers, 'personal interest' is disallowed, but 'qualified residence interest' is excepted and remains deductible; qualified residence interest includes interest on acquisition indebtedness (debt incurred to acquire, construct, or substantially improve a qualified residence and secured by it) up to a $1,000,000 aggregate limit ($500,000 for married filing separately) for indebtedness incurred on or before December 15, 2017, and up to $750,000 ($375,000 for married filing separately) for indebtedness incurred after December 15, 2017, with home equity indebtedness interest disallowed for taxable years beginning after December 31, 2017. Investment interest deductions for non-corporate taxpayers are limited to net investment income for the taxable year, with any disallowed amount carried forward to the succeeding taxable year.",
+    "ingestedAt": "2026-06-27T11:46:49.984Z",
+    "text": "Section 163 generally allows a deduction for interest paid or accrued on indebtedness, but a noncorporate taxpayer may not deduct personal interest except for listed categories such as trade-or-business interest, investment interest, passive-activity interest, qualified residence interest, certain estate-tax-extension interest, and education-loan interest. For taxable years beginning after December 31, 2017, qualified residence interest excludes home-equity indebtedness interest and acquisition indebtedness is limited to $750,000 ($375,000 for a married individual filing separately), while debt incurred on or before December 15, 2017 remains outside that reduced limit and is subject to the $1,000,000 ($500,000 MFS) acquisition-indebtedness limit. Acquisition indebtedness means debt incurred to acquire, construct, or substantially improve a qualified residence and secured by that residence; a refinancing keeps the original debt’s date only to the extent the refinancing does not exceed the refinanced debt and only within the stated refinancing-period limits.",
     "keywords": [
-      "irc §163",
+      "irc 163",
+      "section 163",
       "interest deduction",
+      "personal interest",
       "qualified residence interest",
       "acquisition indebtedness",
       "home equity indebtedness",
       "mortgage interest",
-      "personal interest disallowance",
-      "investment interest limitation",
-      "net investment income",
-      "750000 limit",
-      "1000000 limit",
+      "december 15 2017",
+      "refinancing",
       "married filing separately",
-      "carryforward disallowed interest",
-      "taxable year 2024 2025"
+      "qualified residence"
     ]
   },
   {
@@ -1244,22 +1244,23 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
     ],
     "effectiveDate": "1999-01-01",
     "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/280A",
-    "ingestedAt": "2026-06-27T03:13:26.410Z",
-    "text": "For an individual or S corporation, IRC §280A generally disallows deductions for use of a dwelling unit used by the taxpayer during the taxable year as a residence, except for deductions allowable without regard to business or income-producing use. The disallowance does not apply to expenses allocable to a portion used exclusively and regularly as the taxpayer’s principal place of business, to meet or deal with patients, clients, or customers in the normal course of business, or in a separate unattached structure used in the taxpayer’s trade or business; for employees, the exclusive use must be for the employer’s convenience. Deductions for qualifying business, storage, day-care, or residential rental use are limited to gross income from that use reduced by specified otherwise allowable and related deductions, and any disallowed amount is carried to the succeeding taxable year subject to the same limitation. If a dwelling unit used as a residence is actually rented for less than 15 days during the taxable year, rental deductions are not allowed and the rental income is excluded from gross income.",
+    "ingestedAt": "2026-06-27T11:47:20.444Z",
+    "text": "For an individual or S corporation, deductions attributable to use of a dwelling unit used during the taxable year as a residence are disallowed except as §280A provides, while deductions allowable without regard to business or income-producing use are not affected. The disallowance does not apply to amounts allocable to a portion used exclusively and regularly as the taxpayer’s principal place of business, to meet or deal with patients, clients, or customers in the normal course of business, or, for an unattached separate structure, in connection with the taxpayer’s trade or business; for an employee, the exclusive use must be for the employer’s convenience. Deductions allowed for qualifying business, storage, day care, or residence-rental use are limited to gross income from that use reduced by specified otherwise-allowable and non-use deductions, and disallowed amounts are carried to the succeeding taxable year subject to the same limitation. If a dwelling unit used as a residence is actually rented for less than 15 days during the taxable year, no rental-use deductions are allowed and the rental income is excluded from gross income.",
     "keywords": [
       "irc 280a",
       "home office",
-      "business use of home",
       "dwelling unit",
-      "used as residence",
+      "residence",
       "exclusive use",
       "regular basis",
       "principal place of business",
       "clients customers",
+      "separate structure",
       "gross income limitation",
       "carryforward",
-      "rental less than 15 days",
-      "rental income exclusion"
+      "rental use",
+      "less than 15 days",
+      "s corporation"
     ]
   },
   {
@@ -5212,5 +5213,65 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "fixed-base percentage",
       "section 174a"
     ]
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-752-2",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.752-2",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.752-2",
+    "ingestedAt": "2026-06-27T11:47:50.665Z",
+    "text": "Under Treas. Reg. §1.752-2, a partner’s share of a recourse partnership liability is the portion for which the partner, or a related person, bears the economic risk of loss, and a liability is taken into account only once if risks overlap. Economic risk of loss is determined by a constructive liquidation in which partnership liabilities become payable in full, partnership assets are generally treated as having zero value, partnership property is deemed disposed of, tax items are allocated, and the partnership liquidates; the partner bears risk to the extent the partner or related person would have an unreimbursed payment obligation. Recognized payment obligations include guarantees, indemnities, reimbursement agreements, capital contribution obligations, deficit-restoration obligations, and obligations imposed by law, but are reduced for reimbursement rights and disregarded if sufficiently contingent. Bottom-dollar payment obligations generally are not recognized, except where the partner or related person remains liable for at least 90 percent of an otherwise recognized initial payment obligation, and disclosed bottom-dollar obligations must be reported on Form 8275 or a successor form.",
+    "keywords": [
+      "1.752-2",
+      "recourse liability",
+      "partnership liability",
+      "economic risk of loss",
+      "constructive liquidation",
+      "payment obligation",
+      "deficit restoration obligation",
+      "guarantee",
+      "reimbursement right",
+      "bottom dollar obligation",
+      "form 8275",
+      "related person"
+    ],
+    "delegationBasis": "express"
+  },
+  {
+    "chunkId": "ingested-treas-reg-1-707-3",
+    "authorityType": "regulation",
+    "citation": "Treas. Reg. §1.707-3",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/cfr/text/26/1.707-3",
+    "ingestedAt": "2026-06-27T11:48:21.926Z",
+    "text": "Under Treas. Reg. §1.707-3, a partner’s transfer of property to a partnership, together with the partnership’s transfer of money or other consideration to that partner, is treated as a sale of the property in whole or in part if the facts and circumstances show that the consideration would not have been transferred but for the property transfer and, for non-simultaneous transfers, the later transfer is not dependent on entrepreneurial risks of partnership operations. Consideration includes an assumption of, or taking subject to, a liability, and a disguised sale is treated as a sale or exchange for all Internal Revenue Code purposes on the date the partnership is considered the owner of the property. Transfers between the partner and partnership within a two-year period are presumed to be a sale unless the facts and circumstances clearly establish otherwise; transfers more than two years apart are presumed not to be a sale unless the facts and circumstances clearly establish that they are.",
+    "keywords": [
+      "treas. reg. §1.707-3",
+      "1.707-3",
+      "disguised sale",
+      "partnership",
+      "partner transfer",
+      "property transfer",
+      "money consideration",
+      "liability assumption",
+      "two-year presumption",
+      "facts and circumstances",
+      "entrepreneurial risks",
+      "sale or exchange"
+    ],
+    "delegationBasis": "express"
   }
 ];
