@@ -37,24 +37,36 @@ const SECTIONS: string[] = [
   "501","502","503","508","509","511","512","513","514","4940","4941","4942","4958",
 ];
 
-// Parse the whole Title-26 USLM XML into { sectionNumber -> full operative text }. Real Code sections carry
-// identifier="/us/usc/t26/sN"; inline quoted-section blocks (notes) have empty nums. Because inline sections
-// NEST inside real ones, matching </section> is unsafe — instead SPLIT on the real-section identifiers and take
-// each section's span up to the next, then strip tags. Robust to nesting.
-function parseUSLM(xml: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const re = /<section\b[^>]*\bidentifier="\/us\/usc\/t26\/s([0-9]+[A-Za-z]?)"[^>]*>/gi;
-  const marks: { sec: string; start: number }[] = [];
-  for (const m of xml.matchAll(re)) marks.push({ sec: m[1].toUpperCase(), start: m.index! });
-  for (let i = 0; i < marks.length; i++) {
-    const block = xml.slice(marks[i].start, marks[i + 1]?.start ?? xml.length);
-    const text = block
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&#?[a-z0-9]+;/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 48000);
-    if (text.length > (out.get(marks[i].sec)?.length ?? 0)) out.set(marks[i].sec, text);
+const strip = (s: string) => s.replace(/<[^>]+>/g, " ").replace(/&#?[a-z0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+
+// Parse Title-26 USLM into SUBSECTION-precise units: each real section (identifier="/us/usc/t26/sN") is split at
+// its TOP-LEVEL <subsection identifier=".../sN/x"> boundaries, so each emitted unit is a focused operative rule
+// (§N(a), §N(b), …) with a precise citation — far more answerable than a blind 2,000-char window over dense text.
+// Boundary-splitting (not </subsection> matching) is robust to the nested inline quoted-section blocks.
+type Unit = { sec: string; cite: string; text: string };
+function parseUSLM(xml: string): Unit[] {
+  const out: Unit[] = [];
+  const secMarks: { sec: string; start: number }[] = [];
+  for (const m of xml.matchAll(/<section\b[^>]*\bidentifier="\/us\/usc\/t26\/s([0-9]+[A-Za-z]?)"[^>]*>/gi)) {
+    secMarks.push({ sec: m[1].toUpperCase(), start: m.index! });
+  }
+  for (let i = 0; i < secMarks.length; i++) {
+    const sec = secMarks[i].sec;
+    const block = xml.slice(secMarks[i].start, secMarks[i + 1]?.start ?? xml.length);
+    const subRe = new RegExp(`<subsection\\b[^>]*\\bidentifier="/us/usc/t26/s${sec}/([A-Za-z0-9]+)"[^>]*>`, "gi");
+    const subs: { sub: string; start: number }[] = [];
+    for (const m of block.matchAll(subRe)) subs.push({ sub: m[1], start: m.index! });
+    if (subs.length === 0) {
+      const t = strip(block).slice(0, 6000);
+      if (t.length > 120) out.push({ sec, cite: `IRC §${sec}`, text: t });
+      continue;
+    }
+    const head = strip(block.slice(0, subs[0].start)).slice(0, 4000); // section heading + chapeau
+    if (head.length > 120) out.push({ sec, cite: `IRC §${sec}`, text: head });
+    for (let j = 0; j < subs.length; j++) {
+      const t = strip(block.slice(subs[j].start, subs[j + 1]?.start ?? block.length)).slice(0, 6000);
+      if (t.length > 80) out.push({ sec, cite: `IRC §${sec}(${subs[j].sub})`, text: t });
+    }
   }
   return out;
 }
@@ -81,31 +93,33 @@ async function main() {
   console.log(`reading the full Title-26 USLM XML from ${USLM_FILE}…`);
   const xml = readFileSync(USLM_FILE, "utf8");
   console.log(`parsing ${(xml.length / 1e6).toFixed(1)}MB of USLM…`);
-  const byNum = parseUSLM(xml);
-  console.log(`parsed ${byNum.size} sections from the Code; selecting the tier-1 list (${SECTIONS.length})`);
+  const units = parseUSLM(xml);
+  const want = new Set(SECTIONS.map((s) => s.toUpperCase()));
+  const selected = units.filter((u) => want.has(u.sec));
+  console.log(`parsed ${units.length} subsection units; ${selected.length} in the tier-1 list`);
 
   const chunks: AuthorityChunk[] = [];
-  let ok = 0, fail = 0;
-  const missing: string[] = [];
-  for (const sec of SECTIONS) {
-    const text = byNum.get(sec.toUpperCase());
-    if (!text || text.length < 200) { fail++; missing.push(sec); continue; }
-    ok++;
-    windows(text).forEach((w, wi) => {
+  const seen = new Set<string>();
+  for (const u of selected) {
+    seen.add(u.sec);
+    windows(u.text).forEach((w, wi) => {
+      const idBase = u.cite.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       chunks.push({
-        chunkId: `fulltext-irc-${sec.toLowerCase()}-${wi}`,
+        chunkId: `fulltext-${idBase}-${wi}`,
         authorityType: "statute",
-        citation: `IRC §${sec.toUpperCase()}`,
+        citation: u.cite, // SUBSECTION-precise, e.g. "IRC §163(h)" — a focused operative rule
         jurisdiction: "federal",
         taxYear: YEARS,
         effectiveDate: `${YEARS[0]}-01-01`,
-        sourceUrl: lii(sec),
+        sourceUrl: lii(u.sec),
         ingestedAt: NOW,
         text: w,
-        keywords: keywordsFor(w, sec),
+        keywords: keywordsFor(w, u.sec),
       });
     });
   }
+  const missing = SECTIONS.filter((s) => !seen.has(s.toUpperCase()));
+  let ok = seen.size, fail = missing.length;
   if (missing.length) console.log(`(not found in USLM: ${missing.join(", ")})`);
   const header = `// AUTO-GENERATED by scripts/ingest-fulltext.mts — RAW full-text IRC chunks (Phase-1 corpus). Do not hand-edit.
 // ${chunks.length} chunks across ${ok} sections (${fail} failed). The text IS the primary source (no distillation),
