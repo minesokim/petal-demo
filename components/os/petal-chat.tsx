@@ -591,14 +591,27 @@ function FilledCheck() {
 // moment it completes. A step is "done" once it is no longer the live one (the next step starting, or
 // the answer streaming, marks the prior step complete). All markers are size-3 (12px) so the spinner,
 // the check, and the phase globe read as one consistent small circle.
+// The 4-dot radial-gradient spinner (dots at top/left/right/bottom, rotating) in BLACK (--os-ink) — the live
+// "working" loader shown while a step runs. Replaces the petal-logo/ring indicator per the requested design.
+function DotSpinner({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("inline-block animate-spin", className)}
+      style={{
+        aspectRatio: "1",
+        ["--_c" as string]: "no-repeat radial-gradient(farthest-side, var(--os-ink) 92%, transparent)",
+        background: "var(--_c) top, var(--_c) left, var(--_c) right, var(--_c) bottom",
+        backgroundSize: "34% 34%",
+      } as React.CSSProperties}
+    />
+  );
+}
+
 function StepDot({ done }: { done: boolean }) {
   return (
-    <span className="flex size-3 shrink-0 items-center justify-center">
-      {done ? (
-        <FilledCheck />
-      ) : (
-        <span className="size-3 animate-spin rounded-full border-[1.5px] border-[var(--os-border-strong)] border-t-[var(--os-ink-muted)]" />
-      )}
+    <span className="flex size-3.5 shrink-0 items-center justify-center">
+      {done ? <FilledCheck /> : <DotSpinner className="size-3.5" />}
     </span>
   );
 }
