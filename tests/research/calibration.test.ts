@@ -35,11 +35,12 @@ function groundingProposer(claim: string, chunkIds: string[]) {
 }
 
 describe("calibration reason-codes", () => {
-  it("a not-loaded provision -> coverage_gap that NAMES the missing section (the EV credit, §30D)", async () => {
-    const r = await researchAnswer(abstaining, undefined, "Walk me through the $7,500 clean vehicle credit for a new EV bought in 2026.", empty);
+  it("a not-loaded provision -> coverage_gap that NAMES the missing section (§7872 below-market loans)", async () => {
+    // (§30D is now LOADED by the full-text ingest; §7872 below-market-loan rules remain genuinely unloaded.)
+    const r = await researchAnswer(abstaining, undefined, "Walk me through the below-market loan imputed-interest rules under section 7872 for 2026.", empty);
     expect(r.bucket).toBe("coverage_gap");
     expect(r.calibration).toBe("coverage_gap");
-    expect(`${r.answer} ${r.currencyNote} ${r.reviewNotes.join(" ")}`).toMatch(/30D/);
+    expect(`${r.answer} ${r.currencyNote} ${r.reviewNotes.join(" ")}`).toMatch(/7872/);
   });
 
   it("NO false 'unsettled' on empty retrieval — a 'circuit split' question is an honest coverage_gap", async () => {

@@ -78,7 +78,8 @@ describe("coverage manifest — derived from the real corpus", () => {
 
   it("reports the still-open diagnostic GAPS as honestly not_loaded (the confident-wrong root cause)", () => {
     // Genuinely not in the corpus (the 1099-K rule §6050W was ingested to close that one):
-    for (const gap of ["IRC §30D", "IRC §25D", "IRC §6041"]) {
+    // §30D/§25D were gaps but are now LOADED by the full-text ingest; these remain genuinely unloaded.
+    for (const gap of ["IRC §6041", "IRC §6045", "IRC §1256"]) {
       const s = coverageFor(gap, 2026, "federal");
       expect(s.covered, `${gap} should be not_loaded`).toBe(false);
       if (!s.covered) expect(s.reason).toBe("not_loaded");
@@ -112,8 +113,10 @@ describe("identifyProvisions + namedCoverageGaps — naming a gap from a questio
     expect(namedCoverageGaps(q, 2026, "federal")).not.toContain("IRC §6050W"); // closed by the ingest
   });
 
-  it("maps an EV clean-vehicle question to IRC §30D (a still-open not-loaded gap)", () => {
-    expect(namedCoverageGaps("Walk me through the clean vehicle credit for a new EV", 2026, "federal")).toContain("IRC §30D");
+  it("§30D (clean vehicle) is now LOADED by the full-text ingest, so it is no longer flagged as a coverage gap", () => {
+    // NOTE: the full-text §30D is the raw statute; OBBBA's post-Sept-2025 termination lives in the OBBBA corpus +
+    // the currency layer — a known follow-up (the full-text chunks need supersession tags for OBBBA-affected law).
+    expect(namedCoverageGaps("Walk me through the clean vehicle credit for a new EV", 2026, "federal")).not.toContain("IRC §30D");
   });
 
   it("a LOADED provision (QBI / §199A) is identified but NOT flagged as a gap", () => {

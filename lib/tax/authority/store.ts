@@ -16,6 +16,7 @@ import { CORPUS_2025 } from "./corpus-2025";
 import { CORPUS_OBBBA } from "../../research/corpus-obbba";
 import { CORPUS_INGESTED } from "../../research/corpus-ingested";
 import { CORPUS_CASELAW } from "../../research/corpus-caselaw";
+import { CORPUS_FULLTEXT } from "../../research/corpus-fulltext";
 
 export type AuthorityType = "statute" | "regulation" | "irs_guidance" | "case" | "form_instruction";
 
@@ -98,7 +99,7 @@ export type RetrieveOpts = {
 // supersession filter still guarantees a stale pre-OBBBA chunk can never surface for an
 // in-scope year. (CORPUS_OBBBA's ObbbaAuthorityChunk is a structural superset of
 // AuthorityChunk, so it slots in without widening the type.)
-export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OBBBA, ...CORPUS_INGESTED, ...CORPUS_CASELAW];
+export const REGISTERED_CORPUS: AuthorityChunk[] = [...CORPUS_2025, ...CORPUS_OBBBA, ...CORPUS_INGESTED, ...CORPUS_CASELAW, ...CORPUS_FULLTEXT];
 
 // retrieve(query, {taxYear, jurisdiction, k}). Order is load-bearing:
 //   1. FILTER: keep only chunks whose taxYear list includes the requested year AND whose
@@ -152,14 +153,40 @@ function docFreq(corpus: AuthorityChunk[]): Map<string, number> {
 function rarityFactor(df: number): number {
   return df >= 10 ? 0.4 : df >= 5 ? 0.7 : 1.0;
 }
-function specificityScore(chunk: AuthorityChunk, q: string, df: Map<string, number>): number {
+// FULL-TEXT overlap (Phase-1: raw statute chunks have only sparse auto-keywords, so keyword-list matching can't
+// find them for a conceptual query — but their TEXT contains the query's terms). Count distinct significant query
+// terms appearing in the chunk's body, weighted below a keyword hit and capped so a long raw window can't bury a
+// section-named match. Lowercased text is cached per chunk (computed once, reused across queries).
+const _lcText = new WeakMap<AuthorityChunk, string>();
+function lcText(c: AuthorityChunk): string {
+  let t = _lcText.get(c);
+  if (t === undefined) { t = c.text.toLowerCase(); _lcText.set(c, t); }
+  return t;
+}
+const STOP_Q = new Set("about above after again against because before being between both during each first found from have here into more most much only other over same shall should some such than that their them then there these they this those through under until very what when where which while will with would your".split(" "));
+export function queryTerms(q: string): string[] {
+  return [...new Set(q.match(/[a-z][a-z-]{4,}/g) ?? [])].filter((t) => !STOP_Q.has(t));
+}
+function specificityScore(chunk: AuthorityChunk, q: string, df: Map<string, number>, qTerms: string[]): number {
   let score = chunk.keywords.reduce((s, kw) => {
     if (!q.includes(kw)) return s;
     const base = 1 + (kw.length >= 5 ? 1 : 0);
     return s + base * rarityFactor(df.get(kw.toLowerCase()) ?? 1);
   }, 0);
-  // +2 when the query names this chunk's section number (e.g. a "§164" query → the §164 chunk). Undamped.
+  // +2 when the query NAMES this chunk's section number (e.g. a "§164" query → the §164 chunk).
   if (sectionNumbersOf(chunk).some((sec) => q.includes(sec))) score += 2;
+  // FULL-TEXT chunks ONLY: a body-term-overlap signal (raw statute chunks have sparse keywords, so they can't be
+  // found by keyword matching) PLUS a fallback discount. Gating both on the full-text tier leaves the curated
+  // corpus (OBBBA / cases / distilled) ranking EXACTLY as before — so full-text fills genuine gaps without
+  // crowding out a precise curated chunk (the §70201 tips chunk, the Cohan case) that also matches.
+  // Full-text chunks have sparse keywords, so a body-term-overlap signal lets the RIGHT full-text chunk rank
+  // first among full-text candidates (tiering in retrieve() already puts the whole full-text tier below curated).
+  if (chunk.chunkId.startsWith("fulltext-") && qTerms.length) {
+    const body = lcText(chunk);
+    let hits = 0;
+    for (const t of qTerms) if (body.includes(t)) hits++;
+    score += Math.min(hits, 6) * 0.5;
+  }
   return score;
 }
 
@@ -182,12 +209,18 @@ export function retrieve(
   // 2 — specificity-weighted keyword-overlap rank over the eligible set only. Document frequency is computed
   //     over the FULL corpus (not the year-filtered subset) so a keyword's rarity is stable across years.
   const df = docFreq(corpus);
-  return eligible
-    .map((c) => ({ c, score: specificityScore(c, q, df) }))
+  const qTerms = queryTerms(q);
+  const scored = eligible
+    .map((c) => ({ c, score: specificityScore(c, q, df, qTerms) }))
     .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k)
-    .map((x) => x.c);
+    .sort((a, b) => b.score - a.score);
+  // TIERED retrieval: high-precision CURATED authority first (its ranking is exactly as before the full-text
+  // corpus existed), then raw FULL-TEXT chunks ONLY to fill the remaining slots. So the full-text corpus adds
+  // COVERAGE for empty areas without ever crowding out a curated chunk that matches (the §70201 tips chunk, the
+  // Cohan case, the entity §-chunks). When a curated chunk exists, the full-text is invisible.
+  const curated = scored.filter((x) => !x.c.chunkId.startsWith("fulltext-"));
+  const fulltext = scored.filter((x) => x.c.chunkId.startsWith("fulltext-"));
+  return [...curated, ...fulltext].slice(0, k).map((x) => x.c);
 }
 
 export type LifecycleHit = { chunk: AuthorityChunk; boundaryYear: number; firstYear: number };
@@ -207,6 +240,7 @@ export function retrieveLifecycle(
   const { taxYear, jurisdiction } = opts;
   const q = query.toLowerCase();
   const df = docFreq(corpus);
+  const qTerms = queryTerms(q);
   const top = corpus
     .filter(
       (c) =>
@@ -215,7 +249,7 @@ export function retrieveLifecycle(
         taxYear > c.sunsetAfter && // the asked year is past the sunset
         c.supersededFrom === undefined, // a REPLACED rule is amended, not expired
     )
-    .map((c) => ({ c, score: specificityScore(c, q, df) }))
+    .map((c) => ({ c, score: specificityScore(c, q, df, qTerms) }))
     .filter((x) => x.score >= LIFECYCLE_MIN_SCORE)
     .sort((a, b) => b.score - a.score)[0];
   if (!top) return null;
