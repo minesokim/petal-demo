@@ -67,8 +67,10 @@ function sliceForQuestion(text: string, question: string, max: number): string {
     // like "subsection (j) shall".
     const idx = text.search(new RegExp(`\\(${sub}\\)\\s+[A-Z]`));
     if (idx > max - 2000) {
+      // Focused window on the subsection — a TIGHT slice (not the full head budget) so the distill gets just
+      // the operative subsection, not 8k chars of a 107k-char statute the codex/GPT-5.5 distill chokes on.
       const start = Math.max(0, idx - 300);
-      return text.slice(start, start + max);
+      return text.slice(start, start + Math.min(max, 4000));
     }
   }
   return text.slice(0, max);
