@@ -103,16 +103,19 @@ async function streamAgent({
   threadId,
   pushStep,
   pushText,
+  signal,
 }: {
   message: string;
   history: { role: "user" | "assistant"; content: string }[];
   threadId?: string | null;
   pushStep: (step: TraceStep) => void;
   pushText: (delta: string, turn: number) => void;
+  signal?: AbortSignal; // aborting it cancels the fetch + the reader → the run stops (the Stop button)
 }): Promise<AgentResult> {
   const res = await fetch("/api/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal,
     // threadId activates DURABLE server-side persistence: the run survives navigation / tab close and
     // reconnects on reopen. Omitted ⇒ the server doesn't persist and the client persists on settle (below).
     body: JSON.stringify({ message, history, threadId: threadId ?? undefined }),
@@ -184,6 +187,14 @@ export function usePetalChat(scopeHouseholdId?: string) {
   // duplicate thread). null = not yet created; cleared on reset/new chat.
   const threadRef = useRef<Promise<string | null> | null>(null);
 
+  // In-flight run control. abortRef backs the Stop button (aborts the agent fetch); thinkingSince drives the
+  // "this may take longer" banner + the elapsed timer; notifyArmedRef fires a browser notification when a
+  // slow answer lands while the tab is hidden (the "Notify me" affordance).
+  const abortRef = useRef<AbortController | null>(null);
+  const notifyArmedRef = useRef(false);
+  const [thinkingSince, setThinkingSince] = useState<number | null>(null);
+  const [notifyArmed, setNotifyArmed] = useState(false);
+
   // Append one persisted turn to the active thread. RLS-scoped + audited server-
   // side; best-effort (a persistence failure must never break the live reply).
   const persist = useCallback((role: "user" | "assistant", content: string, metadata?: Record<string, unknown>) => {
@@ -206,6 +217,12 @@ export function usePetalChat(scopeHouseholdId?: string) {
       { id: thinkingId, role: "petal", answer: { paragraphs: [] }, thinking: true, liveSteps: [], traceTitle: titleFromMessage(message) },
     ]);
 
+    // Start an abortable run + arm the in-flight UI (Stop button + elapsed-time "may take longer" banner).
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setThinkingSince(Date.now());
+
     const history = historyRef.current.slice();
     historyRef.current = [...history, { role: "user", content: message }];
 
@@ -219,6 +236,14 @@ export function usePetalChat(scopeHouseholdId?: string) {
     const settle = (answer: ChatAnswer, replyForHistory?: string) => {
       if (replyForHistory) historyRef.current = [...historyRef.current, { role: "assistant", content: replyForHistory }];
       setMessages(m => m.map(msg => (msg.id === thinkingId ? { ...msg, answer, thinking: false, liveSteps: undefined, streamingText: undefined, streamTurn: undefined } : msg)));
+      setThinkingSince(null);
+      // Browser notification for a slow answer the user walked away from — armed via "Notify me", only when
+      // the tab is hidden, and NEVER on a user-initiated Stop (an aborted run).
+      if (notifyArmedRef.current && !ac.signal.aborted && typeof document !== "undefined" && document.hidden && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try { new Notification("Petal finished your answer", { body: titleFromMessage(message), tag: "petal-answer" }); } catch {}
+      }
+      notifyArmedRef.current = false;
+      setNotifyArmed(false);
     };
 
     // Append a streamed thinking step to the in-flight bubble (Claude-style live trace).
@@ -282,7 +307,7 @@ export function usePetalChat(scopeHouseholdId?: string) {
     // Resolve the thread id first so the run is persisted SERVER-SIDE (durable: survives navigation / tab
     // close, reconnects on reopen). threadRef was set just above (new thread) or by openThread (existing).
     Promise.resolve(threadRef.current)
-      .then(tid => streamAgent({ message, history, threadId: tid, pushStep, pushText }))
+      .then(tid => streamAgent({ message, history, threadId: tid, pushStep, pushText, signal: ac.signal }))
       .then(({ reply, proposedActions, citations, calibration, ungroundedFigures, runPersisted }) => {
         const text = (reply ?? "").trim() || "Done.";
         const ans = answerFromReply(text);
@@ -299,6 +324,11 @@ export function usePetalChat(scopeHouseholdId?: string) {
         if (!runPersisted) persist("assistant", text, restorableAnswerMeta(ans));
       })
       .catch((err: unknown) => {
+        // The user pressed Stop → the fetch aborted; settle the bubble as stopped, do NOT retry/fallback.
+        if (ac.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
+          settle(answerFromReply("Stopped."));
+          return;
+        }
         // A §7216 gate is an honest, terminal answer — show it inline, don't paper over it with
         // a scripted demo or an /api/ask retry. Any OTHER failure falls back to /api/ask.
         const code = err instanceof Error ? err.message : "";
@@ -381,7 +411,18 @@ export function usePetalChat(scopeHouseholdId?: string) {
     );
   }, []);
 
-  return { messages, send, reset, openThread, analyze };
+  // Stop the in-flight run (aborts the agent fetch → the catch settles the bubble "Stopped").
+  const stop = useCallback(() => { abortRef.current?.abort(); }, []);
+  // Arm a browser notification for when a slow answer finishes (and request permission if not yet decided).
+  const armNotify = useCallback(() => {
+    notifyArmedRef.current = true;
+    setNotifyArmed(true);
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      void Notification.requestPermission().catch(() => {});
+    }
+  }, []);
+
+  return { messages, send, reset, openThread, analyze, stop, armNotify, isThinking: thinkingSince !== null, thinkingSince, notifyArmed };
 }
 
 const prefersReduced = () =>

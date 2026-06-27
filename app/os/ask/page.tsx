@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { PetalMark } from "@/components/petal-mark";
 import { PetalLogo } from "@/components/petal-logo";
 import { Icon, I } from "@/components/os/icon";
-import { Mic } from "lucide-react";
+import { Mic, X } from "lucide-react";
 import { usePetalChat, PetalAnswerView, type ChatMsg } from "@/components/os/petal-chat";
 import { SUGGESTED_QUESTIONS } from "@/lib/fixtures/demo-chat";
 import { skills, households, householdById } from "@/lib/fixtures/firm";
@@ -24,7 +24,7 @@ import { useAutogrow } from "@/lib/os/use-autogrow";
 import { useUser } from "@clerk/nextjs";
 
 /** Unified composer - same in the empty state and in-conversation. + attach · Skills · mic · send. */
-function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void }) {
+function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach, busy, onStop }: { value: string; onChange: (v: string) => void; onSubmit: () => void; autoFocus?: boolean; big?: boolean; onAttach?: (file: File) => void; busy?: boolean; onStop?: () => void }) {
   const [skillsOpen, setSkillsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   // claude.ai-style composer: grows from one line up to ~17 lines as you type / shift+enter, then scrolls.
@@ -35,7 +35,7 @@ function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { val
         ref={taRef}
         value={value}
         onChange={e => onChange(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(); } }}
+        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!busy) onSubmit(); } }}
         rows={1}
         autoFocus={autoFocus}
         placeholder="Ask Petal anything, or describe work to run…"
@@ -71,7 +71,11 @@ function Composer({ value, onChange, onSubmit, autoFocus, big, onAttach }: { val
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <Tip label="Voice input" side="top"><button aria-label="Voice" className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><Mic className="size-[17px]" strokeWidth={1.75} /></button></Tip>
-          <Tip label="Send" side="top"><button onClick={onSubmit} disabled={!value.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button></Tip>
+          {busy ? (
+            <Tip label="Stop" side="top"><button type="button" onClick={onStop} aria-label="Stop generating" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95"><span className="size-2.5 rounded-[2px] bg-current" /></button></Tip>
+          ) : (
+            <Tip label="Send" side="top"><button onClick={onSubmit} disabled={!value.trim()} aria-label="Send" className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--os-primary)] text-[var(--os-primary-fg)] transition-transform active:scale-95 disabled:opacity-30"><Icon icon={I.send} size={15} /></button></Tip>
+          )}
         </div>
       </div>
     </div>
@@ -124,7 +128,19 @@ function AskPetalInner() {
   const params = useSearchParams();
   const [scopeId, setScopeId] = useState<string | undefined>(undefined);
   const [scopeOpen, setScopeOpen] = useState(false);
-  const { messages, send, reset, openThread, analyze } = usePetalChat(scopeId);
+  const { messages, send, reset, openThread, analyze, stop, armNotify, isThinking, thinkingSince, notifyArmed } = usePetalChat(scopeId);
+  // Elapsed-time tick while a run is in flight → the "this may take longer" banner (Harvey-style) appears
+  // once a question is clearly going to run long (~18s, which reliably precedes a >1-min answer).
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  useEffect(() => {
+    setBannerDismissed(false);
+    if (!thinkingSince) { setElapsedMs(0); return; }
+    setElapsedMs(Date.now() - thinkingSince);
+    const t = window.setInterval(() => setElapsedMs(Date.now() - thinkingSince), 1000);
+    return () => window.clearInterval(t);
+  }, [thinkingSince]);
+  const showLongBanner = isThinking && elapsedMs > 18000 && !bannerDismissed;
   const firstName = useUser().user?.firstName ?? "there"; // the signed-in preparer's real name (Clerk); /os/ask has no FirmDataProvider
   useConnections(); // re-render the grounding rail when a source is (dis)connected
   const [dragOver, setDragOver] = useState(false);
@@ -254,7 +270,7 @@ function AskPetalInner() {
                 </div>
 
                 <div className="mt-7">
-                  <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus big onAttach={analyze} />
+                  <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus big onAttach={analyze} busy={isThinking} onStop={stop} />
                 </div>
               </div>
             )}
@@ -264,7 +280,21 @@ function AskPetalInner() {
           {hasConvo && (
           <div className="px-6 pb-5 pt-2">
             <div className="mx-auto max-w-[720px]">
-              <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus onAttach={analyze} />
+              {showLongBanner && (
+                <div className="mb-2 flex items-center gap-2.5 rounded-xl border border-[var(--os-border)] bg-[var(--os-surface)] px-3.5 py-2.5">
+                  <span className="size-3.5 shrink-0 animate-spin rounded-full border-[1.5px] border-[var(--os-border-strong)] border-t-transparent" />
+                  <span className="flex-1 text-[12.5px] leading-snug text-[var(--os-ink-muted)]">
+                    {notifyArmed
+                      ? "This may take longer — you'll get a notification when it's ready. Feel free to switch tabs."
+                      : "This may take longer. Switch tabs to multitask, or get a notification when it's ready."}
+                  </span>
+                  {!notifyArmed && (
+                    <button onClick={armNotify} className="shrink-0 rounded-md bg-[var(--os-primary)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--os-primary-fg)] transition-transform active:scale-95">Notify me</button>
+                  )}
+                  <button onClick={() => setBannerDismissed(true)} aria-label="Dismiss" className="grid size-6 shrink-0 place-items-center rounded-md text-[var(--os-ink-subtle)] transition-colors hover:bg-[var(--os-hover)] hover:text-[var(--os-ink)]"><X className="size-3.5" /></button>
+                </div>
+              )}
+              <Composer value={input} onChange={setInput} onSubmit={() => submit()} autoFocus onAttach={analyze} busy={isThinking} onStop={stop} />
               <p className="mt-1.5 text-center text-[11px] text-[var(--os-ink-subtle)]">Petal answers only from sources it can cite. Output never touches a record until you approve it.</p>
             </div>
           </div>
