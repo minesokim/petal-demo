@@ -30,6 +30,22 @@ describe("Wave 3 batch 1 — landmark case law (the §6662 authority-weighting l
   it("the case corpus has no duplicate chunkIds", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
+  // Circuit-split / unsettled-issue cases (batch 2): tagged at their real court level, text carries the
+  // 'unsettled' signal the calibration layer reads (so it can hedge, not over-answer, on contested issues).
+  it("Aragona (trust material participation) is a precedential Tax Court authority flagged unsettled", () => {
+    const c = CORPUS_CASELAW.find((x) => x.chunkId === "case-frank-aragona-trust-v-commissioner");
+    expect(c, "Aragona should be loaded").toBeTruthy();
+    expect(c!.courtLevel).toBe("tax");
+    expect(c!.precedential).toBe(true);
+    expect(c!.keywords).toContain("unsettled");
+  });
+  it("Chai (§6751(b) approval timing) is a precedential 2d-Circuit authority flagged unsettled", () => {
+    const c = CORPUS_CASELAW.find((x) => x.chunkId === "case-chai-v-commissioner");
+    expect(c, "Chai should be loaded").toBeTruthy();
+    expect(c!.courtLevel).toBe("circuit");
+    expect(c!.circuit).toBe("2");
+    expect(c!.keywords).toContain("unsettled");
+  });
 });
 
 describe("coverage manifest — derived from the real corpus", () => {
