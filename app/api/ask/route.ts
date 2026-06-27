@@ -22,6 +22,7 @@ import { getFirmContext } from "@/lib/auth/context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // widest function window on Hobby (raise to 300 on Pro)
 
 // ZDR-eligible chat model. Fast tier for conversational latency; override per-request
 // with { model } if a heavier answer is needed. Both Opus and Haiku are ZDR.

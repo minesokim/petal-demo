@@ -17,6 +17,10 @@ import { appendMessage, updateMessage } from "@/lib/repository/chat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Give the streamed research run the widest function window the plan allows (Hobby caps at 60s; raise to 300
+// on Pro). A slow codex-via-tunnel answer can still exceed this — the stream just ends; the durable run
+// persists server-side and reconnects on reopen.
+export const maxDuration = 60;
 
 function sanitizeHistory(raw: unknown): AgentTurn[] {
   if (!Array.isArray(raw)) return [];
