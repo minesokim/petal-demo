@@ -3275,5 +3275,400 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "gross receipts test",
       "small business exception"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-954",
+    "authorityType": "statute",
+    "citation": "IRC §954",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/954",
+    "ingestedAt": "2026-06-27T10:07:17.428Z",
+    "text": "For purposes of §952(a)(2), a controlled foreign corporation’s foreign base company income is the sum of its foreign personal holding company income, foreign base company sales income, and foreign base company services income, each reduced for properly allocable deductions under regulations. Foreign personal holding company income generally includes dividends, interest, royalties, rents, annuities, certain net gains from property, commodities and foreign currency transactions, income equivalent to interest, net income from notional principal contracts, payments in lieu of dividends, and specified personal service contract income, subject to stated active-business and related-person exceptions. Foreign base company sales income generally covers related-person purchase or sale income involving personal property manufactured, produced, grown, or extracted outside the CFC’s country of organization and sold or purchased for use, consumption, or disposition outside that country; foreign base company services income covers specified services performed for or on behalf of a related person outside the CFC’s country of organization. If foreign base company income plus gross insurance income is less than the lesser of 5 percent of gross income or $1,000,000, none of the gross income is treated as foreign base company income or insurance income; if it exceeds 70 percent of gross income, the entire gross income is so treated, subject to the deduction rules and the exception for income taxed by a foreign country at an effective rate greater than 90 percent of the maximum section 11 rate.",
+    "keywords": [
+      "irc §954",
+      "foreign base company income",
+      "subpart f",
+      "controlled foreign corporation",
+      "foreign personal holding company income",
+      "foreign base company sales income",
+      "foreign base company services income",
+      "de minimis rule",
+      "full inclusion rule",
+      "high tax exception",
+      "gross insurance income",
+      "related person",
+      "allocable deductions"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-956",
+    "authorityType": "statute",
+    "citation": "IRC §956",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/956",
+    "ingestedAt": "2026-06-27T10:07:47.852Z",
+    "text": "For any controlled foreign corporation, a United States shareholder’s IRC §956 amount for a taxable year is the lesser of the shareholder’s pro rata share of the CFC’s applicable earnings, or the excess of the shareholder’s pro rata share of the average United States property held directly or indirectly by the CFC at each quarter-end over the shareholder’s section 959(c)(1)(A) earnings and profits amount. Property is taken into account at its adjusted basis for earnings-and-profits purposes, reduced by any liability to which the property is subject. United States property generally includes tangible property located in the United States, stock of a domestic corporation, an obligation of a United States person, and certain rights for use in the United States, subject to the listed statutory exceptions; a CFC may also be treated under regulations as holding a United States-person obligation if it pledges or guarantees that obligation.",
+    "keywords": [
+      "irc 956",
+      "section 956",
+      "controlled foreign corporation",
+      "united states shareholder",
+      "united states property",
+      "applicable earnings",
+      "pro rata share",
+      "quarter-end average",
+      "adjusted basis",
+      "liabilities",
+      "domestic corporation stock",
+      "obligation of united states person",
+      "pledges and guarantees",
+      "section 959"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-965",
+    "authorityType": "statute",
+    "citation": "IRC §965",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/965",
+    "ingestedAt": "2026-06-27T10:08:18.389Z",
+    "text": "For the last taxable year of a deferred foreign income corporation beginning before January 1, 2018, its subpart F income is increased by the greater of its accumulated post-1986 deferred foreign income determined as of November 2, 2017, or December 31, 2017, and the United States shareholder takes its pro rata share into income, subject to reductions for allocated foreign earnings-and-profits deficits. A United States shareholder is allowed a participation-exemption deduction designed to subject the included amount to an 8 percent rate on the portion exceeding the shareholder’s aggregate foreign cash position and a 15.5 percent rate on the cash-position portion. Foreign tax credits and deductions are disallowed for the applicable percentage of taxes tied to amounts for which the section 965 deduction is allowed. A United States shareholder may elect to pay the net tax liability under section 965 in 8 installments: 8 percent for each of the first 5 installments, then 15 percent, 20 percent, and 25 percent.",
+    "keywords": [
+      "irc 965",
+      "section 965",
+      "transition tax",
+      "deferred foreign income",
+      "subpart f income",
+      "united states shareholder",
+      "specified foreign corporation",
+      "deferred foreign income corporation",
+      "post-1986 earnings and profits",
+      "foreign cash position",
+      "participation exemption deduction",
+      "foreign tax credit",
+      "installment election"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1291",
+    "authorityType": "statute",
+    "citation": "IRC §1291",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1291",
+    "ingestedAt": "2026-06-27T10:09:06.099Z",
+    "text": "IRC §1291 applies to a United States person’s excess distribution from passive foreign investment company stock, and to gain recognized on a disposition of that stock as if the gain were an excess distribution, unless the PFIC is a qualified electing fund for the relevant holding-period years or an applicable mark-to-market election or rule prevents application of this section. The excess distribution or disposition gain is allocated ratably to each day in the taxpayer’s holding period; only amounts allocated to the current year and specified pre-PFIC periods are included in current-year gross income as ordinary income. Amounts allocated to other prior taxable years increase current-year tax by the highest rate of tax in effect for each such year under section 1 or 11, plus interest computed under section 6621 from that year’s return due date to the current-year return due date, without extensions.",
+    "keywords": [
+      "irc §1291",
+      "section 1291",
+      "pfic",
+      "passive foreign investment company",
+      "excess distribution",
+      "stock disposition",
+      "holding period",
+      "ordinary income",
+      "deferred tax amount",
+      "interest charge",
+      "highest tax rate",
+      "qualified electing fund",
+      "mark-to-market",
+      "section 1296"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2031",
+    "authorityType": "statute",
+    "citation": "IRC §2031",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2031",
+    "ingestedAt": "2026-06-27T10:09:53.087Z",
+    "text": "For estate tax purposes, the gross estate includes, to the extent provided in this part, the value at the time of the decedent’s death of all property, whether real or personal, tangible or intangible, wherever situated. If corporate stock or securities are unlisted and cannot be valued by bid-and-asked prices or sales prices because there are no sales, their value must consider all other factors plus the value of listed stock or securities of corporations in the same or a similar business. If the executor timely and irrevocably elects the qualified conservation easement exclusion, the estate may exclude the lesser of the applicable percentage of qualifying land value reduced by any section 2055(f) deduction, or $500,000, subject to the subsection’s limits for debt-financed property and retained development rights.",
+    "keywords": [
+      "2031",
+      "gross estate",
+      "date of death",
+      "property valuation",
+      "real property",
+      "personal property",
+      "unlisted stock",
+      "securities",
+      "qualified conservation easement",
+      "executor election",
+      "debt-financed property",
+      "development right",
+      "section 2055",
+      "estate tax"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2053",
+    "authorityType": "statute",
+    "citation": "IRC §2053",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2005-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2053",
+    "ingestedAt": "2026-06-27T10:10:26.938Z",
+    "text": "For the estate tax imposed by section 2001, the taxable estate is determined by deducting from the gross estate amounts allowable under the law of the jurisdiction administering the estate for funeral expenses, administration expenses, claims against the estate, and unpaid mortgages or indebtedness on property included in the gross estate without reduction for that debt. Administration expenses for gross-estate property not subject to claims are also deductible to the extent they would be deductible if the property were subject to claims and are paid before the section 6501 assessment limitations period expires. Deductions for claims, mortgages, or indebtedness based on a promise or agreement are limited to bona fide obligations for adequate and full consideration in money or money’s worth, with the stated exception for certain charitable promises, and no deduction is allowed for specified post-death income taxes, nonaccrued property taxes, estate or inheritance-type taxes, certain remainderman claims, or section 6166 interest. The executor may elect a deduction for certain actually paid foreign death taxes on foreign-situs property passing for public, charitable, or religious uses if the statutory conditions are met, but that election waives the corresponding foreign death-tax credit for the tax deducted.",
+    "keywords": [
+      "irc 2053",
+      "section 2053",
+      "estate deductions",
+      "taxable estate",
+      "gross estate",
+      "funeral expenses",
+      "administration expenses",
+      "claims against estate",
+      "unpaid mortgages",
+      "indebtedness",
+      "local law",
+      "foreign death taxes",
+      "charitable transfers",
+      "section 6166 interest"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2055",
+    "authorityType": "statute",
+    "citation": "IRC §2055",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2055",
+    "ingestedAt": "2026-06-27T10:11:00.856Z",
+    "text": "For estate tax purposes under IRC §2055, the taxable estate is reduced by the amount of qualifying bequests, legacies, devises, or transfers from the gross estate to or for the use of governmental entities for exclusively public purposes, qualified religious, charitable, scientific, literary, educational and similar organizations, qualifying trustees or fraternal organizations for those purposes, qualifying veterans’ organizations, and qualifying employee stock ownership plans. The deduction is reduced if estate, succession, legacy, inheritance, or estate tax is payable from the otherwise deductible bequest, and the deduction for any transfer cannot exceed the value of the transferred property included in the gross estate. If both charitable and noncharitable interests in the same property pass from the decedent, the charitable deduction generally is disallowed unless the charitable interest is structured as a qualifying charitable remainder annuity trust, charitable remainder unitrust, pooled income fund, guaranteed annuity, or fixed yearly percentage interest, subject to the statutory reformation rules. Contributions to donor advised funds require an eligible sponsoring organization and a contemporaneous written acknowledgment that the sponsoring organization has exclusive legal control over the contributed assets.",
+    "keywords": [
+      "irc 2055",
+      "estate tax",
+      "charitable deduction",
+      "gross estate",
+      "qualified charity",
+      "public purposes",
+      "charitable remainder trust",
+      "pooled income fund",
+      "split interest",
+      "donor advised fund",
+      "qualified reformation",
+      "veterans organization"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-2601",
+    "authorityType": "statute",
+    "citation": "IRC §2601",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1986-10-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/2601",
+    "ingestedAt": "2026-06-27T10:11:25.255Z",
+    "text": "IRC §2601 imposes a tax on every generation-skipping transfer, as that term is defined in subchapter B. The current amended rule generally applies to generation-skipping transfers made after October 22, 1986, subject to the special transitional rules and exceptions stated in the effective-date notes.",
+    "keywords": [
+      "2601",
+      "irc 2601",
+      "generation-skipping transfer",
+      "gst tax",
+      "tax imposed",
+      "subchapter b",
+      "direct skip",
+      "taxable distribution",
+      "taxable termination",
+      "transfer",
+      "effective date",
+      "transitional rules"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-481",
+    "authorityType": "statute",
+    "citation": "IRC §481",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2017-12-22",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/481",
+    "ingestedAt": "2026-06-27T10:11:58.691Z",
+    "text": "When a taxpayer computes taxable income for a year under a method of accounting different from the preceding year, the taxpayer must take into account adjustments necessary solely because of the change to prevent amounts from being duplicated or omitted, subject to the stated exception for years to which §481 does not apply unless the taxpayer initiated the change. If the prior method was used for the 2 preceding taxable years and the increase in taxable income from the §481(a) adjustments exceeds $3,000, the tax attributable to that increase is limited as provided by allocating one-third of the increase to the year of change and one-third to each of the 2 preceding taxable years; an alternative limitation applies when the taxpayer establishes income under the new method for consecutive preceding years. For an eligible terminated S corporation, any §481(a) adjustment attributable to the specified revocation is taken into account ratably over the 6-taxable-year period beginning with the year of change.",
+    "keywords": [
+      "section 481",
+      "irc 481",
+      "accounting method change",
+      "481(a) adjustment",
+      "year of change",
+      "duplication",
+      "omission",
+      "taxable income increase",
+      "three year allocation",
+      "new method allocation",
+      "eligible terminated s corporation",
+      "s corporation revocation",
+      "c corporation conversion"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-471",
+    "authorityType": "statute",
+    "citation": "IRC §471",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/471",
+    "ingestedAt": "2026-06-27T10:12:26.663Z",
+    "text": "Under IRC §471, when the Secretary determines that inventories are necessary to clearly determine a taxpayer’s income, the taxpayer must take inventories on a basis prescribed by the Secretary that conforms as nearly as may be to the best accounting practice in the trade or business and most clearly reflects income. An inventory method is not treated as failing to clearly reflect income solely because it estimates inventory shrinkage confirmed by a physical count after year-end, if the taxpayer regularly and consistently counts inventories at each location and properly adjusts inventories and estimating methods for differences from actual shrinkage. For a taxpayer that meets the gross receipts test of §448(c), other than a tax shelter barred from the cash method under §448(a)(3), the general inventory rule does not apply for that taxable year, and the taxpayer’s inventory accounting is acceptable if it treats inventory as non-incidental materials and supplies or conforms to its applicable financial statement or, if none, its books and records. A method change under this small-business rule is treated as taxpayer-initiated and made with the Secretary’s consent for §481 purposes.",
+    "keywords": [
+      "irc 471",
+      "inventories",
+      "inventory accounting",
+      "clear reflection of income",
+      "best accounting practice",
+      "inventory shrinkage",
+      "physical count",
+      "small business exemption",
+      "gross receipts test",
+      "section 448(c)",
+      "tax shelter",
+      "non-incidental materials and supplies",
+      "applicable financial statement",
+      "section 481"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-501",
+    "authorityType": "statute",
+    "citation": "IRC §501",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/501",
+    "ingestedAt": "2026-06-27T10:12:49.857Z",
+    "text": "An organization described in IRC §501(c) or §501(d), or in §401(a), is exempt from taxation under Subtitle A unless exemption is denied under §502 or §503. A §501(c)(3) organization must be a corporation, community chest, fund, or foundation organized and operated exclusively for one or more listed exempt purposes, including religious, charitable, scientific, testing for public safety, literary, educational, amateur sports, or prevention of cruelty purposes. Its net earnings may not inure to any private shareholder or individual, no substantial part of its activities may be lobbying except as allowed under §501(h), and it may not participate or intervene in any political campaign for or against a candidate for public office. An exempt organization remains subject to tax on unrelated business income and certain other activities to the extent provided in the specified parts of Subchapter F.",
+    "keywords": [
+      "irc 501",
+      "section 501",
+      "501(a)",
+      "501(c)(3)",
+      "exempt organizations",
+      "tax exemption",
+      "charitable organization",
+      "private inurement",
+      "lobbying",
+      "political campaign",
+      "unrelated business income",
+      "religious",
+      "educational",
+      "scientific"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-512",
+    "authorityType": "statute",
+    "citation": "IRC §512",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/512",
+    "ingestedAt": "2026-06-27T10:13:19.735Z",
+    "text": "Under IRC §512, unrelated business taxable income is generally an exempt organization’s gross income from an unrelated trade or business under §513 that it regularly carries on, minus chapter deductions directly connected with that business, computed with the statutory modifications. Those modifications generally exclude dividends, interest, securities-lending payments, loan-commitment consideration, annuities, royalties, certain rents, most property-disposition gains or losses, and specified research income, together with directly connected deductions; however, debt-financed property income and deductions are included as determined under §514. An organization with more than one unrelated trade or business computes UBTI separately for each business, does not treat any business’s UBTI as below zero, sums the separate amounts, and then subtracts the $1,000 specific deduction. Special rules apply to foreign organizations, certain §501(c)(7), (9), (17), and (19) organizations, controlled-entity payments, and certain foreign-corporation insurance income.",
+    "keywords": [
+      "irc 512",
+      "section 512",
+      "unrelated business taxable income",
+      "ubti",
+      "unrelated trade or business",
+      "exempt organization",
+      "modifications",
+      "passive income",
+      "dividends",
+      "interest",
+      "royalties",
+      "rents",
+      "debt-financed property",
+      "section 514",
+      "specific deduction"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-514",
+    "authorityType": "statute",
+    "citation": "IRC §514",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/514",
+    "ingestedAt": "2026-06-27T10:13:55.138Z",
+    "text": "In computing unrelated business taxable income under section 512 for any taxable year, an organization must include for each debt-financed property gross income equal to the percentage, not exceeding 100 percent, of total gross income from or on account of the property that the property’s average acquisition indebtedness bears to its average adjusted basis while held. The same percentage applies to deductions directly connected with the debt-financed property or its income, with depreciation computed only by the straight-line method, except that the percentage is not applied to capital loss carrybacks or carryovers under section 1212. Debt-financed property generally means income-producing property with acquisition indebtedness at any time during the taxable year, or during the 12-month period ending on disposition if disposed of, subject to the statutory exclusions for substantially related exempt use and other listed excluded property; acquisition indebtedness generally includes debt incurred to acquire or improve the property, debt that would not have been incurred but for the acquisition or improvement, and reasonably foreseeable later debt tied to it.",
+    "keywords": [
+      "irc 514",
+      "section 514",
+      "unrelated debt-financed income",
+      "ubti",
+      "debt-financed property",
+      "acquisition indebtedness",
+      "average adjusted basis",
+      "debt basis fraction",
+      "exempt organization",
+      "straight-line depreciation",
+      "section 512",
+      "capital loss carryover"
+    ]
   }
 ];
