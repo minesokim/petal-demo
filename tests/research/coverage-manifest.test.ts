@@ -172,3 +172,15 @@ describe("Wave 1 batch 1 — high-frequency statute breadth (the bulk-ingest shi
     });
   }
 });
+
+describe("Wave 1 batch 2 — individual + SMB breadth", () => {
+  // §152 dependents, §172 NOL, §1211/§1212 capital-loss limits, §72 distributions, §408 IRAs, §6695 preparer
+  // penalties, §7701 definitions/economic-substance, §243 DRD, §305 stock dividends. (§72 ≠ §722/§752.)
+  for (const sec of ["IRC §152", "IRC §172", "IRC §1211", "IRC §1212", "IRC §72", "IRC §408", "IRC §6695", "IRC §7701", "IRC §243", "IRC §305"]) {
+    it(`${sec} is now LOADED for 2026`, () => {
+      const s = coverageFor(sec, 2026, "federal");
+      expect(s.covered, `${sec} should be loaded after the Wave 1 batch 2 ingest`).toBe(true);
+      if (s.covered) expect(s.entry.sourceCount).toBeGreaterThan(0);
+    });
+  }
+});

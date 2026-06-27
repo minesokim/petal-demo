@@ -1994,5 +1994,312 @@ export const CORPUS_INGESTED: AuthorityChunk[] = [
       "recognized loss",
       "assumed liability"
     ]
+  },
+  {
+    "chunkId": "ingested-irc-152",
+    "authorityType": "statute",
+    "citation": "IRC §152",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/152",
+    "ingestedAt": "2026-06-27T05:17:19.142Z",
+    "text": "Under IRC §152, a dependent is either a qualifying child or a qualifying relative, subject to exceptions for individuals who themselves are dependents, certain married individuals filing joint returns, and certain noncitizens or nonnationals. A qualifying child must have the specified family relationship to the taxpayer, share the taxpayer’s principal place of abode for more than one-half of the taxable year, be younger than the taxpayer and either under age 19, a student under age 24, or permanently and totally disabled, not provide over one-half of the child’s own support, and not file a joint return other than only to claim a refund. A qualifying relative must have one of the specified family relationships to the taxpayer or live in the taxpayer’s household, have gross income for the calendar year below the section 151(d) exemption amount, receive over one-half of support from the taxpayer, and not be a qualifying child of any taxpayer. Special rules apply for tie-breakers, multiple-support agreements, divorced or separated parents, students’ scholarships, adopted and foster children, and kidnapped children.",
+    "keywords": [
+      "irc 152",
+      "dependent",
+      "qualifying child",
+      "qualifying relative",
+      "support test",
+      "gross income test",
+      "relationship test",
+      "residency test",
+      "joint return",
+      "student",
+      "disabled",
+      "divorced parents",
+      "multiple support agreement"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-172",
+    "authorityType": "statute",
+    "citation": "IRC §172",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2021-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/172",
+    "ingestedAt": "2026-06-27T05:17:51.225Z",
+    "text": "For a taxable year beginning after December 31, 2020, the net operating loss deduction equals the aggregate net operating losses arising in taxable years beginning before January 1, 2018 carried to the year, plus the lesser of post-2017 net operating losses carried to the year or 80 percent of taxable income computed without the deductions under sections 172, 199A, and 250 and reduced by the pre-2018 carried amount. A net operating loss is the excess of deductions allowed by chapter 1 over gross income, computed with the statutory modifications. A post-2017 net operating loss is carried over to each following taxable year, while carrybacks apply only as provided for farming losses, certain insurance companies, and the special rules for losses arising in taxable years beginning after December 31, 2017 and before January 1, 2021.",
+    "keywords": [
+      "irc 172",
+      "section 172",
+      "net operating loss",
+      "nol deduction",
+      "carryover",
+      "carryback",
+      "80 percent limitation",
+      "taxable income",
+      "post-2017 losses",
+      "pre-2018 losses",
+      "farming loss",
+      "insurance companies",
+      "sections 199a and 250"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1211",
+    "authorityType": "statute",
+    "citation": "IRC §1211",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1987-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1211",
+    "ingestedAt": "2026-06-27T05:18:16.456Z",
+    "text": "Under IRC § 1211, a corporation may deduct losses from sales or exchanges of capital assets only to the extent of gains from such sales or exchanges. A taxpayer other than a corporation may deduct such capital losses to the extent of such gains, plus, if losses exceed gains, the lower of $3,000 ($1,500 for a married individual filing a separate return) or the excess of the losses over the gains.",
+    "keywords": [
+      "irc 1211",
+      "section 1211",
+      "capital losses",
+      "capital gains",
+      "capital assets",
+      "corporations",
+      "noncorporate taxpayers",
+      "married filing separately",
+      "3000 limitation",
+      "1500 limitation",
+      "sales or exchanges",
+      "loss limitation"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-1212",
+    "authorityType": "statute",
+    "citation": "IRC §1212",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2010-12-23",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/1212",
+    "ingestedAt": "2026-06-27T05:19:28.049Z",
+    "text": "Under IRC §1212, a corporation’s net capital loss for a loss year is carried first to the earliest eligible year: generally as a capital loss carryback to each of the 3 preceding taxable years, subject to the foreign-expropriation and net-operating-loss limits, and then as a carryover to each of the 5 succeeding taxable years; foreign expropriation capital losses are carried over to each of the 10 succeeding taxable years, and carried corporate net capital losses are treated as short-term capital losses. A corporation may not carry a net capital loss back to a year in which it was a regulated investment company or real estate investment trust, and regulated investment companies instead carry net short-term and net long-term capital loss components into the next taxable year with their respective character. For taxpayers other than corporations, the excess net short-term capital loss over net long-term capital gain becomes a short-term capital loss in the succeeding taxable year, and the excess net long-term capital loss over net short-term capital gain becomes a long-term capital loss in the succeeding taxable year, after treating the lesser of the §1211(b) allowed amount or adjusted taxable income as short-term capital gain. A noncorporate taxpayer may elect to carry a net section 1256 contracts loss back to each of the 3 preceding taxable years to the extent of prior net section 1256 contract gain without increasing or producing a net operating loss, with 40 percent treated as short-term and 60 percent as long-term.",
+    "keywords": [
+      "irc 1212",
+      "section 1212",
+      "capital loss carryover",
+      "capital loss carryback",
+      "net capital loss",
+      "short-term capital loss",
+      "long-term capital loss",
+      "corporations",
+      "noncorporate taxpayers",
+      "section 1211(b)",
+      "regulated investment company",
+      "foreign expropriation capital loss",
+      "section 1256 contracts",
+      "net operating loss"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-72",
+    "authorityType": "statute",
+    "citation": "IRC §72",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/72",
+    "ingestedAt": "2026-06-27T05:19:57.881Z",
+    "text": "IRC §72 generally includes amounts received as an annuity in gross income, but excludes the portion determined by the exclusion ratio: investment in the contract as of the annuity starting date over the expected return, limited to unrecovered investment. Investment in the contract is generally premiums or other consideration paid, reduced by prior excludable amounts received; if annuity payments cease by reason of death before the investment is fully recovered, the unrecovered investment is deductible as provided. For qualified employer retirement plan annuities, the statutory simplified method applies instead of the general exclusion ratio, recovering investment over the applicable anticipated-payment period. Amounts received under an annuity, endowment, or life insurance contract that are not received as annuities are generally taxed after the annuity starting date, and before that date are taxed first to the extent allocable to income on the contract, with remaining amounts treated as recovery of investment; qualified-plan pre-annuity distributions use the statutory pro rata investment-to-account-balance allocation.",
+    "keywords": [
+      "irc 72",
+      "section 72",
+      "annuities",
+      "exclusion ratio",
+      "investment in contract",
+      "annuity starting date",
+      "expected return",
+      "unrecovered investment",
+      "qualified employer retirement plan",
+      "simplified method",
+      "nonannuity distributions",
+      "gross income",
+      "basis recovery",
+      "account balance"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-408",
+    "authorityType": "statute",
+    "citation": "IRC §408",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/408",
+    "ingestedAt": "2026-06-27T05:20:27.866Z",
+    "text": "An individual retirement account under IRC §408 is a U.S. trust for the exclusive benefit of an individual or beneficiaries only if its governing instrument limits non-rollover contributions to cash and to the section 219(b)(1)(A) amount, uses a qualifying trustee, prohibits life insurance investment, makes the individual’s interest nonforfeitable, prevents commingling except in permitted common funds, and follows distribution rules similar to section 401(a)(9). Amounts paid or distributed from an individual retirement account or annuity are included in the payee’s or distributee’s gross income under section 72 unless a specific exception applies, including a qualifying rollover. A rollover generally requires the amount rolled over to be paid into an IRA, annuity, or eligible retirement plan within 60 days, is limited if the individual had another nontaxable IRA rollover during the preceding 1-year period, and is unavailable for required distributions and for inherited IRAs acquired from someone other than a spouse.",
+    "keywords": [
+      "irc 408",
+      "individual retirement account",
+      "ira",
+      "individual retirement annuity",
+      "rollover contribution",
+      "60-day rollover",
+      "1-year limitation",
+      "gross income",
+      "section 72",
+      "section 219",
+      "required distributions",
+      "inherited ira",
+      "nonforfeitable",
+      "trustee"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-6695",
+    "authorityType": "statute",
+    "citation": "IRC §6695",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/6695",
+    "ingestedAt": "2026-06-27T05:20:58.230Z",
+    "text": "A tax return preparer is subject to separate assessable penalties for failing to furnish the taxpayer a copy of a return or refund claim, failing to sign when required, failing to furnish the required identifying number, failing to retain the required copy or list, or failing to file correct information returns, generally $50 per failure unless due to reasonable cause and not willful neglect, with the stated $25,000 maximums where applicable. A preparer who endorses or otherwise negotiates a taxpayer’s tax refund check must pay $500 per check, except for a bank depositing the full amount into the taxpayer’s account for the taxpayer’s benefit. A preparer who fails to comply with regulatory due-diligence requirements for head-of-household filing status or for the credits under sections 24, 25A(a)(1), or 32 must pay $500 for each failure. For failures relating to returns or refund claims filed in calendar years beginning after 2014, the dollar amounts in this section are inflation-adjusted and rounded under subsection (h).",
+    "keywords": [
+      "irc 6695",
+      "tax return preparer",
+      "assessable penalties",
+      "failure to furnish copy",
+      "failure to sign",
+      "identifying number",
+      "retain copy or list",
+      "information returns",
+      "refund check negotiation",
+      "due diligence",
+      "head of household",
+      "child tax credit",
+      "american opportunity credit",
+      "earned income credit",
+      "inflation adjustment"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-7701",
+    "authorityType": "statute",
+    "citation": "IRC §7701",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2024-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/7701",
+    "ingestedAt": "2026-06-27T05:21:25.918Z",
+    "text": "When a term is used in the Internal Revenue Code and no contrary meaning is distinctly expressed or manifestly incompatible with the provision’s intent, IRC §7701 supplies the default meaning. A “person” includes an individual, trust, estate, partnership, association, company, or corporation; a “partnership” includes unincorporated business, financial, or venture arrangements that are not trusts, estates, or corporations; and a “corporation” includes associations, joint-stock companies, and insurance companies. The section also defines domestic and foreign entities, fiduciary, taxpayer, taxable year, fiscal year, trade or business, United States person, foreign estate, foreign trust, tax return preparer, and other recurring Code terms.",
+    "keywords": [
+      "irc 7701",
+      "definitions",
+      "person",
+      "partnership",
+      "corporation",
+      "domestic",
+      "foreign",
+      "fiduciary",
+      "taxpayer",
+      "taxable year",
+      "trade or business",
+      "united states person",
+      "foreign trust",
+      "tax return preparer"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-243",
+    "authorityType": "statute",
+    "citation": "IRC §243",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "2018-01-01",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/243",
+    "ingestedAt": "2026-06-27T05:21:57.699Z",
+    "text": "Under IRC §243, a corporation may deduct 50% of dividends received from a domestic corporation subject to tax under chapter 1, except the deduction is 100% for dividends received by a small business investment company operating under the Small Business Investment Act of 1958 and for qualifying dividends. For a dividend received from a 20-percent owned corporation, the 50% amount is replaced by 65%; a 20-percent owned corporation is one in which the taxpayer owns 20% or more of the stock by vote and value, excluding stock described in section 1504(a)(4). A qualifying dividend generally is a dividend received from a corporation in the same affiliated group at the close of the day received and paid out of earnings and profits of a taxable year ending after December 31, 1963, during which both corporations were group members each day, subject to the section’s affiliated-group consistency and insurance-company election rules. Section 243 also excludes section 591 amounts and REIT dividends from dividend treatment for this deduction, subjects RIC dividends to section 854, and treats certain foreign-corporation dividends attributable to earnings and profits accumulated by a taxable domestic corporation as domestic-corporation dividends.",
+    "keywords": [
+      "irc 243",
+      "section 243",
+      "dividends received deduction",
+      "drd",
+      "domestic corporation",
+      "50 percent",
+      "65 percent",
+      "100 percent",
+      "20-percent owned corporation",
+      "affiliated group",
+      "qualifying dividends",
+      "small business investment company",
+      "regulated investment company",
+      "real estate investment trust",
+      "foreign corporation"
+    ]
+  },
+  {
+    "chunkId": "ingested-irc-305",
+    "authorityType": "statute",
+    "citation": "IRC §305",
+    "jurisdiction": "federal",
+    "taxYear": [
+      2024,
+      2025,
+      2026
+    ],
+    "effectiveDate": "1969-01-10",
+    "sourceUrl": "https://www.law.cornell.edu/uscode/text/26/305",
+    "ingestedAt": "2026-06-27T05:22:26.754Z",
+    "text": "Under IRC §305, a corporation’s distribution of its own stock, including rights to acquire that stock, to shareholders with respect to its stock is generally excluded from gross income. The exclusion does not apply, and the distribution is treated as a section 301 property distribution, if shareholders may elect stock or property, the distribution is disproportionate by giving some shareholders property while increasing others’ proportionate interests, common shareholders receive different mixes of common and preferred stock, the distribution is with respect to preferred stock, or convertible preferred stock is distributed unless it is shown that the distribution will not produce a disproportionate result. Regulatory deemed-distribution rules also apply to changes in conversion ratio, redemption price differences, certain redemptions, recapitalizations, or similar transactions that increase a shareholder’s proportionate interest in corporate earnings and profits or assets.",
+    "keywords": [
+      "irc 305",
+      "section 305",
+      "stock distribution",
+      "stock dividend",
+      "stock rights",
+      "gross income exclusion",
+      "section 301",
+      "disproportionate distribution",
+      "preferred stock",
+      "convertible preferred stock",
+      "conversion ratio",
+      "redemption premium",
+      "shareholder proportionate interest"
+    ]
   }
 ];
